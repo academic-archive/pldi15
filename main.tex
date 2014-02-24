@@ -1,0 +1,120 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+
+\usepackage[numbers]{natbib}
+
+\usepackage[utf8]{inputenc} %for utf8 input
+\usepackage{amssymb} %for shift symbol
+\usepackage{amsmath}
+\usepackage{listings} %for code
+\usepackage{mathpartir} %for typing rules
+\usepackage{microtype} %better micro typing
+\usepackage{stmaryrd} %for llbracket
+\usepackage{mathabx} % for boxes
+\usepackage{graphicx} %to include png images
+\usepackage{xcolor} %for colors
+\usepackage{url}
+
+%----------------------------------------------------
+
+\usepackage{prettyref}
+\newcommand{\pref}[1]{\prettyref{#1}}
+\newcommand{\Pref}[1]{\prettyref{#1} \vpageref[]{#1}}
+\newcommand{\ppref}[1]{\vpageref[]{#1}}
+\newrefformat{fig}{Figure~\ref{#1}}
+\newrefformat{tab}{Table~\ref{#1}}
+\newrefformat{cha}{Challenge~\ref{#1}}
+\newrefformat{compiler}{Point~\ref{#1} of \pref{thm:compiler}}
+
+%----------------------------------------------------
+
+\usepackage{amsthm}
+\theoremstyle{newstyle}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+
+%----------------------------------------------------
+
+\input{definitions}
+
+\title{Automatic Amortized Analysis for Imperative Code}
+\date{}
+\author{}
+
+
+\begin{document}
+\maketitle
+
+\section{Decreasing to zero}
+
+We start with a programming language with loops counting
+downwards to 0.  Statements and expressions are defined
+below.  Assignments of complex expressions can be simulated
+by sequencing assignments of simple expressions.
+%
+\begin{mathpar}
+S := \code{assert}(\Gamma)
+\mid x \leftarrow E
+\mid \code{while}(0 < x)~S
+\mid S;S
+
+\and
+
+E := x + y \mid x - y % \mid y
+\end{mathpar}
+%
+We define a deductive system to derive judgements of the
+form $\Gamma; Q \vdash S \dashv Q'; \Delta$ with the following
+intended semantics
+$$
+\forall H_1\, H_2\, S\, n,
+    ( H_1 \models \Gamma \land
+      (H_1, S) \Downarrow_n H_2
+    ) \Rightarrow
+    ( H_2 \models \Delta \land
+      \Phi_{H_1}(Q) \ge n + \Phi_{H_2}(Q')
+    ).
+$$
+
+\begin{mathpar}
+
+\Rule{Assert}
+{}
+{ \Gamma; Q \vdash \code{assert}(\Delta) \dashv Q; \Gamma, \Delta }
+
+\\ \Rule{AssignP}
+{ \Gamma \models \Delta[x/x+y] }
+{\Gamma; Q + y\cdot q_x \vdash x \leftarrow x + y \dashv Q; \Delta}
+
+\and\Rule{AssignM}
+{  \Gamma \models \Delta[x/x-y]
+\\ \Gamma \models c \le y \le x
+}
+{ \Gamma; Q \vdash x \leftarrow x - y \dashv c \cdot q_x + V; \Delta }
+
+\\ \Rule{While}
+{ \Gamma, 0 < x ; Q \vdash S \dashv Q; \Gamma }
+{ \Gamma; Q + M_w \vdash \code{while}(0 < x)~S \dashv Q; \Gamma }
+
+\and\Rule{Seq}
+{  \Gamma; Q \vdash S_1 \dashv Q'; \Delta
+\\ \Delta; Q' \vdash S_2 \dashv Q''; \Gamma'
+}
+{ \Gamma; Q \vdash S_1;S_2 \dashv Q''; \Gamma' }
+
+\end{mathpar}
+
+\section{Decreasing differences}
+The second iteration is a system more symmetric where the potentials
+are linear functions in differences of variables.  This time, the while
+condition can be a bit more complex.  In the rest, $k$
+denotes a non-negative constant.
+$$
+S := \code{while}(k < x - y) \mid \dots
+$$
+
+
+
+\end{document}

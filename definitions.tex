@@ -1,0 +1,189 @@
+\lstset{
+   numbers=none, %use numbers=left
+   numberstyle=\tiny,
+   stepnumber=1,
+   numbersep=5pt,
+   basicstyle=\tt\small,
+   escapechar=\#,
+   mathescape,
+%   language=CaML,
+   columns=flexible,
+%   basewidth=0.455em,
+   xleftmargin=\leftmargini,
+%   xrightmargin=\leftmargini,
+%   morekeywords={mod,div,matchD},
+   deletekeywords={as},
+   literate={<-}{$\;\leftarrow\;\;\,$}{3} {->}{$\;\rightarrow\;\;\,$}{3},
+   firstnumber=auto % use name=NAME to identify split listings
+%
+% Placement: belowskip,aboveskip,lineskip,boxpos=l|c|r
+%
+% wonna figure-style listings? Use: caption={Useless code,label=useless
+%
+% keywordstyle=\color{black}\bfseries\underbar
+% morekeywords={one,two,three,four}
+}
+% \lstinline!! 
+% use basicstyle=\small ?
+
+%How many languages are there in CompCert?
+\newcommand{\howmanylanguages}[0]{11}
+
+%How many passes are there in CompCert?
+\newcommand{\howmanypasses}[0]{20}
+
+\newcommand{\lines}[1]{\textsl{{\scriptsize #1}}}
+
+\newcommand{\valid}[4]{\ensuremath{\mathit{valid}(#1,#2,#3,#4)}}
+\newcommand{\safePre}[4]{\ensuremath{\mathit{safe}(#1,#2,#3,#4)}}
+\newcommand{\safePost}[3]{\ensuremath{\mathit{safeK}(#1,#2,#3)}}
+
+\newcommand{\refines}[0]{\ensuremath{\prec}}
+
+\newcommand{\qrefines}[0]{\ensuremath{\mathop{\prec_Q}}}
+
+\newcommand{\pruned}[1]{\ensuremath{\overline{ #1} }}
+
+\newcommand{\sem}[1]{\ensuremath{\llbracket #1 \rrbracket}}
+
+\newcommand{\progs}[0]{\ensuremath{\mathcal{P}}}
+
+\newcommand{\id}[0]{\ensuremath{\mathit{x}}}
+
+\newcommand{\xevent}[0]{\ensuremath{\nu}}
+\newcommand{\cevent}[0]{\ensuremath{\mu}}
+\newcommand{\event}[0]{\ensuremath{\iota}}
+
+\newcommand{\evalue}[0]{\ensuremath{v}}
+
+\newcommand{\intval}[1]{\ensuremath{\mathsf{int}(#1)}}
+
+\newcommand{\floatval}[1]{\ensuremath{\mathsf{float}(#1)}}
+
+\newcommand{\call}[1]{\ensuremath{\mathsf{call}(#1)}}
+\newcommand{\return}[1]{\ensuremath{\mathsf{ret}(#1)}}
+\newcommand{\malloc}[1]{\ensuremath{\mathsf{malloc}(#1)}}
+\newcommand{\free}[1]{\ensuremath{\mathsf{free}(#1)}}
+
+\newcommand{\trace}[0]{\ensuremath{t}}
+
+\newcommand{\Trace}[0]{\ensuremath{T}}
+
+\newcommand{\conv}[2]{\ensuremath{\mathsf{conv}(#1,#2)}}
+
+\newcommand{\divt}[1]{\ensuremath{\mathsf{div}(#1)}}
+
+\newcommand{\fail}[1]{\ensuremath{\mathsf{fail}(#1)}}
+
+\newcommand{\behav}[0]{\ensuremath{B}}
+
+\newcommand{\getchar}[0]{\ensuremath{\mathsf{getchar}}}
+
+\newcommand{\Z}[0]{\ensuremath{\mathbb{Z}}}
+\newcommand{\N}[0]{\ensuremath{\mathbb{N}}}
+
+\newcommand{\weight}[2]{\ensuremath{W_{#2}(#1)}}
+\newcommand{\tval}[2]{\ensuremath{V_{#2}(#1)}}
+
+\newcommand{\prefs}[1]{\ensuremath{\mathit{prefs}(#1)}}
+
+\newcommand{\type}[1]{\ensuremath{\mathsf{#1}}}
+
+\newcommand{\code}[1]{\ensuremath{\mathsf{#1}}}
+
+\newcommand{\env}[0]{\ensuremath{\mathit{\theta}}}
+
+\newcommand{\mem}[0]{\ensuremath{\mathit{H}}}
+
+\newcommand{\Mem}[0]{\ensuremath{\mathit{Mem}}}
+
+\newcommand{\Var}[0]{\ensuremath{\mathit{Var}}}
+
+\newcommand{\Val}[0]{\ensuremath{\mathit{Val}}}
+
+\newcommand{\Aux}[0]{\ensuremath{\mathit{Aux}}}
+
+\newcommand{\Input}[0]{\ensuremath{\mathit{StdIn}}}
+
+\newcommand{\Assn}[0]{\ensuremath{\mathit{Assn}}}
+\newcommand{\State}[0]{\ensuremath{\mathit{State}}}
+
+\newcommand{\Prop}[0]{\ensuremath{\mathit{Prop}}}
+
+\newcommand{\ret}[0]{\ensuremath{\mathit{ret}}}
+
+\newcommand{\htriple}[3]{\ensuremath{\{#1\}\, #2\, \{#3\}}}
+
+\newcommand{\smallstep}[1]{\ensuremath{ \to_{#1}}}
+
+\newcommand{\conform}[2]{\ensuremath{\mathit{agree}(#1,#2)}}
+
+\newcommand{\dom}[1]{\ensuremath{ \text{dom}(#1)}}
+\newcommand{\img}[1]{\ensuremath{ \text{img}(#1)}}
+
+\newcommand{\pimp}[2]{\ensuremath{#1 \Rightarrow #2}}
+
+\newcommand{\Assert}[0]{\ensuremath{\mathit{Assert}}}
+
+\newcommand{\VAssert}[0]{\ensuremath{\mathit{VAssert}}}
+
+\newcommand{\eenv}[0]{\ensuremath{\Sigma}}
+
+\newcommand{\genv}[0]{\ensuremath{\Delta}}
+
+\newcommand{\fenv}[0]{\ensuremath{\Sigma}}
+
+\newcommand{\Fundef}[0]{\ensuremath{\mathit{Fundef}}}
+
+\newcommand{\funs}[0]{\ensuremath{\mathit{FID}}}
+
+\newcommand{\vars}[0]{\ensuremath{\mathit{VID}}}
+
+\newcommand{\statements}[0]{\ensuremath{\mathcal{S}}}
+
+\newcommand{\traces}[0]{\ensuremath{\mathcal{T}}}
+
+\newcommand{\behavs}[0]{\ensuremath{\mathcal{B}}}
+
+\newcommand{\events}[0]{\ensuremath{\mathcal{E}}}
+
+\newcommand{\initState}[2]{\ensuremath{\mathit{initSt}(#1,#2)}}
+
+\newcommand{\retState}[1]{\ensuremath{\mathit{retState}(#1)}}
+
+\newcommand{\Potential}[0]{\ensuremath{\mathit{Pot}}}
+
+\newcommand{\evalE}[3]{\ensuremath{\llbracket #1 \rrbracket_{#3}^{#2}}}
+
+\newcommand{\Kseq}[2]{\ensuremath{\mathsf{Kseq}\, #1 \, #2 \,}}
+
+\newcommand{\Kloop}[2]{\ensuremath{\mathsf{Kloop}\, #1 \, #2 \,}}
+
+\newcommand{\Kstop}[0]{\ensuremath{\mathsf{Kstop}}}
+
+\newcommand{\Kcall}[4]{\ensuremath{\mathsf{Kcall}\, #1 \, #2 \, #3 \, #4 \,}}
+
+\newcommand{\cont}[0]{\ensuremath{K}}
+
+\newcommand{\used}[0]{\ensuremath{\sqbullet}}
+
+\newcommand{\init}[0]{\ensuremath{\square}}
+
+\newcommand{\FV}[1]{\ensuremath{\text{FV}(#1)}}
+
+\newcommand{\loc}[0]{\ensuremath{\text{Loc}}}
+
+%-------------------------------------------------------
+%Type rules (mathpatir)
+
+\newcommand{\Rule}[4][]{\ensuremath{\inferrule*[right={\!(#2)},#1]{#3}{#4}}}
+\newcommand{\RuleToplabel}[4][]{\ensuremath{\inferrule[(#2)]{#3}{#4}}}
+\newcommand{\RuleNolabel}[3][]{\ensuremath{\inferrule*[#1]{#2}{#3}}}
+
+%-------------------------------------------------------
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 
