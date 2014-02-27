@@ -55,9 +55,11 @@ below.  Assignments of complex expressions can be simulated
 by sequencing assignments of simple expressions.
 %
 \begin{mathpar}
-S := \code{assert}(\Gamma)
-\mid x \leftarrow E
+S := \code{skip}
+\mid \code{assert}(\Gamma)
+\mid x \gets E
 \mid \code{while}(0 < x)~S
+\mid \code{if}(?)~S~\code{else}~S
 \mid S;S
 
 \and
@@ -66,55 +68,82 @@ E := x + y \mid x - y % \mid y
 \end{mathpar}
 %
 We define a deductive system to derive judgements of the
-form $\Gamma; Q \vdash S \dashv Q'; \Delta$ with the following
+form $\Gamma; Q \vdash S \dashv Q'; \Gamma'$ with the following
 intended semantics
 $$
-\forall H_1\, H_2\, S\, n,
-    ( H_1 \models \Gamma \land
-      (H_1, S) \Downarrow_n H_2
+\forall H\, H'\, S\, n,
+    ( H \models \Gamma \land
+      (H, S) \Downarrow_n H'
     ) \Rightarrow
-    ( H_2 \models \Delta \land
-      \Phi_{H_1}(Q) \ge n + \Phi_{H_2}(Q')
+    ( H' \models \Gamma' \land
+      \Phi_{H}(Q) \ge n + \Phi_{H'}(Q')
     ).
 $$
 
 \begin{mathpar}
 
-\Rule{Assert}
+\Rule{Skip}
+{}
+{ \Gamma; Q \vdash \code{skip} \dashv Q; \Gamma }
+
+\and \Rule{Assert}
 {}
 { \Gamma; Q \vdash \code{assert}(\Delta) \dashv Q; \Gamma, \Delta }
 
 \\ \Rule{AssignP}
-{ \Gamma \models \Delta[x/x+y] }
-{\Gamma; Q + y\cdot q_x \vdash x \leftarrow x + y \dashv Q; \Delta}
+{ \Gamma \models \Gamma'[x/x+y] }
+{\Gamma; Q + y\cdot q_x \vdash x \gets x + y \dashv Q; \Gamma'}
 
 \and\Rule{AssignM}
-{  \Gamma \models \Delta[x/x-y]
+{  \Gamma \models \Gamma'[x/x-y]
 \\ \Gamma \models c \le y \le x
 }
-{ \Gamma; Q \vdash x \leftarrow x - y \dashv c \cdot q_x + V; \Delta }
+{ \Gamma; Q \vdash x \gets x - y \dashv c \cdot q_x + V; \Gamma' }
 
 \\ \Rule{While}
-{ \Gamma, 0 < x ; Q \vdash S \dashv Q; \Gamma }
-{ \Gamma; Q + M_w \vdash \code{while}(0 < x)~S \dashv Q; \Gamma }
+{ \Gamma, 0 < x ; Q - M_w \vdash S \dashv Q; \Gamma }
+{ \Gamma; Q \vdash \code{while}(0 < x)~S \dashv Q; \Gamma, x \le 0 }
 
 \and\Rule{Seq}
-{  \Gamma; Q \vdash S_1 \dashv Q'; \Delta
-\\ \Delta; Q' \vdash S_2 \dashv Q''; \Gamma'
+{  \Gamma; Q \vdash S_1 \dashv Q'; \Gamma'
+\\ \Gamma'; Q' \vdash S_2 \dashv Q''; \Gamma''
 }
-{ \Gamma; Q \vdash S_1;S_2 \dashv Q''; \Gamma' }
+{ \Gamma; Q \vdash S_1;S_2 \dashv Q''; \Gamma'' }
 
 \end{mathpar}
 
 \section{Decreasing differences}
 The second iteration is a system more symmetric where the potentials
-are linear functions in differences of variables.  This time, the while
-condition can be a bit more complex.  In the rest, $k$
+are linear functions in differences of variables.  From now on $k$
 denotes a non-negative constant.
 $$
-S := \code{while}(k < x - y) \mid \dots
+S := \code{while}(k < x - y)~S \mid \dots
 $$
 
+\begin{mathpar}
+
+\Rule{AssignOpK}
+{  \Gamma \models \Gamma'[x/x \pm y], y = k
+\\ \Gamma \models x \pm y \in [x, u]
+\\ \textstyle q'_y = q_y + \sum_u q^1_{xu} - \sum_v q_{xv}
+\\ q_{xu} = q^1_{xu} + q^2_{xu}
+}
+{ \textstyle
+  \Gamma; Q \vdash x \gets x \pm y \dashv \sum_u k \cdot q^2_{xu} + Q'; \Gamma'
+}
+
+\and \Rule{AssignOp}
+{  \Gamma \models \Gamma'[x/x \pm y]
+\\ \Gamma \models x \pm y \in [x, u]
+\\ \textstyle q'_y = q_y + \sum_u q_{xu} - \sum_v q_{xv}
+}
+{ \textstyle
+  \Gamma; Q \vdash x \gets x \pm y \dashv Q'; \Gamma'
+}
+
+\\ \mbox{(The other rules are unchanged)}
+
+\end{mathpar}
 
 
 \end{document}
