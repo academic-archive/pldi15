@@ -119,23 +119,36 @@ denotes a non-negative constant.
 $$
 S := \code{while}(k < x - y)~S \mid \dots
 $$
+%
+In the rules below we take as convention that $q_{x}$ for a variable
+$x$ is in fact $q_{x0}$ where 0 is a special variable fixed to zero
+in all contraint contexts.
 
 \begin{mathpar}
 
 \Rule{AssignOpK}
-{  \Gamma \models \Gamma'[x/x \pm y], y = k
-\\ \Gamma \models x \pm y \in [x, u]
-\\ \textstyle q'_y = q_y + \sum_u q^1_{xu} - \sum_v q_{xv}
-\\ q_{xu} = q^1_{xu} + q^2_{xu}
+{  \Gamma \models \Gamma'[x/x \pm y]
+\\ \Gamma \models y = k
+\\ \mathcal U = \left\{ u \mid \Gamma \models x \pm y \in \inter x u \right\}
+\\ \textstyle q'_y = q_y
+      + \sum_{u \in \mathcal U} p_{xu}
+      - \sum_{v \not\in \mathcal U} q_{xv}
+\\ q_{xu} = p_{xu} + r_{xu}
 }
 { \textstyle
-  \Gamma; Q \vdash x \gets x \pm y \dashv \sum_u k \cdot q^2_{xu} + Q'; \Gamma'
+  \Gamma; Q
+  \vdash x \gets x \pm y \dashv
+  \sum_u k \cdot r_{xu} + Q'; \Gamma'
+  % q_x is not omitted, v_{x} is in fact a shorthand for
+  % v_{x0} where 0 is a variable equal to 0.
 }
 
 \and \Rule{AssignOp}
 {  \Gamma \models \Gamma'[x/x \pm y]
-\\ \Gamma \models x \pm y \in [x, u]
-\\ \textstyle q'_y = q_y + \sum_u q_{xu} - \sum_v q_{xv}
+\\ \mathcal U = \left\{ u \mid \Gamma \models x \pm y \in \inter x u \right\}
+\\ \textstyle q'_y = q_y
+      + \sum_{u \in \mathcal U} q_{xu}
+      - \sum_{v \not\in \mathcal U} q_{xv}
 }
 { \textstyle
   \Gamma; Q \vdash x \gets x \pm y \dashv Q'; \Gamma'
