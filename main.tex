@@ -55,6 +55,7 @@ below.  Assignments of complex expressions can be simulated
 by sequencing assignments of simple expressions.
 %
 \begin{mathpar}
+
 S := \code{skip}
 \mid \code{assert}(\Gamma)
 \mid x \gets E
@@ -158,5 +159,60 @@ in all contraint contexts.
 
 \end{mathpar}
 
+\section{Cost aware semantics}
+
+This big step semantics counts the number of iterations of
+while loops in a program as it executes it.  Non-deterministically,
+the {\sc S:Bubble} rule can be called to interrupt a computation.
+It has the same effect as raising an exception.  We symbolize an
+immutable heap with the notation $\circ H$, this kind of heap just
+bubbles up through the semantics. In the rules, $X$ stands for
+either $H$ or $\circ H$ for some $H$.
+
+\begin{mathpar}
+
+\Rule{S:Bubble}
+{}
+{ (H, S) \Downarrow_0 \circ H }
+
+\and \Rule{S:Skip}
+{}
+{ (H, \code{skip}) \Downarrow_0 H }
+
+\and \Rule{S:Assign}
+{}
+{ (H, x \gets e) \Downarrow_0 H[x \gets \llbracket e \rrbracket_H] }
+
+\and \Rule{S:Assert}
+{ \Gamma \models H }
+{ (H, \code{assert}(\Gamma)) \Downarrow_0 H }
+
+\and \Rule{S:WhileStop}
+{ \neg (k < \llbracket x - y \rrbracket_H) }
+{ (H, \code{while}(k < x - y)~S) \Downarrow_0 H }
+
+\and \Rule{S:WhileStep}
+{  k < \llbracket x - y \rrbracket_H
+\\ (H, S; \code{while}(k < x - y)~S) \Downarrow_n X
+}
+{ (H, \code{while}(k < x - y)~S) \Downarrow_{n+1} X }
+
+\and \Rule{S:If}
+{  (H, S_i) \Downarrow_n X
+\\ i \in \{1, 2\}
+}
+{ (H, \code{if}(?)~S_1~\code{else}~S_2) \Downarrow_n X }
+
+\and \Rule{S:Seq}
+{  (H, S_1) \Downarrow_{n_1} H'
+\\ (H', S_2) \Downarrow_{n_2} H''
+}
+{ (H, S_1; S_2) \Downarrow_{n_1 + n_2} H'' }
+
+\and \Rule{S:SeqBubble}
+{ (H, S_1) \Downarrow_n \circ H' }
+{ (H, S_1; S_2) \Downarrow_n \circ H' }
+
+\end{mathpar}
 
 \end{document}
