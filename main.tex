@@ -85,29 +85,29 @@ $$
 
 \Rule{Skip}
 {}
-{ \Gamma; Q \vdash \code{skip} \dashv Q; \Gamma }
+{ \Gamma; Q + M_s \vdash \code{skip} \dashv Q; \Gamma }
 
 \and \Rule{Assert}
 {}
-{ \Gamma; Q \vdash \code{assert}(\Delta) \dashv Q; \Gamma, \Delta }
+{ \Gamma; Q + M_a \vdash \code{assert}(\Delta) \dashv Q; \Gamma, \Delta }
 
-\\ \Rule{AssignP}
-{ \Gamma \models \Gamma'[x/x+y] }
-{\Gamma; Q + y\cdot q_x \vdash x \gets x + y \dashv Q; \Gamma'}
+% \\ \Rule{AssignP}
+% { \Gamma \models \Gamma'[x/x+y] }
+% {\Gamma; Q + M_s + y\cdot q_x \vdash x \gets x + y \dashv Q; \Gamma'}
 
-\and\Rule{AssignM}
-{  \Gamma \models \Gamma'[x/x-y]
-\\ \Gamma \models c \le y \le x
-}
-{ \Gamma; Q \vdash x \gets x - y \dashv c \cdot q_x + V; \Gamma' }
+% \and\Rule{AssignM}
+% {  \Gamma \models \Gamma'[x/x-y]
+% \\ \Gamma \models c \le y \le x
+% }
+% { \Gamma; Q + M_s \vdash x \gets x - y \dashv c \cdot q_x + V; \Gamma' }
 
 \\ \Rule{While}
-{ \Gamma, 0 < x ; Q - M_w \vdash S \dashv Q; \Gamma }
-{ \Gamma; Q \vdash \code{while}(0 < x)~S \dashv Q; \Gamma, x \le 0 }
+{ \Gamma, 0 < x ; Q - M_w^2 \vdash S \dashv Q; \Gamma }
+{ \Gamma; Q + M_w^1 \vdash \code{while}(0 < x)~S \dashv Q - M_w^3; \Gamma, x \le 0 }
 
 \and\Rule{Seq}
-{  \Gamma; Q \vdash S_1 \dashv Q'; \Gamma'
-\\ \Gamma'; Q' \vdash S_2 \dashv Q''; \Gamma''
+{  \Gamma; Q - M_s^1 \vdash S_1 \dashv Q'; \Gamma'
+\\ \Gamma'; Q' - M_s^2 \vdash S_2 \dashv Q''; \Gamma''
 }
 { \Gamma; Q \vdash S_1;S_2 \dashv Q''; \Gamma'' }
 
@@ -137,7 +137,7 @@ in all contraint contexts.
 \\ q_{xu} = p_{xu} + r_{xu}
 }
 { \textstyle
-  \Gamma; Q
+  \Gamma; Q + M_s
   \vdash x \gets x \pm y \dashv
   \sum_u k \cdot r_{xu} + Q'; \Gamma'
   % q_x is not omitted, v_{x} is in fact a shorthand for
@@ -152,7 +152,7 @@ in all contraint contexts.
       - \sum_{v \not\in \mathcal U} q_{xv}
 }
 { \textstyle
-  \Gamma; Q \vdash x \gets x \pm y \dashv Q'; \Gamma'
+  \Gamma; Q + M_s \vdash x \gets x \pm y \dashv Q'; \Gamma'
 }
 
 \\ \mbox{(The other rules are unchanged)}
@@ -163,55 +163,62 @@ in all contraint contexts.
 
 This big step semantics counts the number of iterations of
 while loops in a program as it executes it.  Non-deterministically,
-the {\sc S:Bubble} rule can be called to interrupt a computation.
-It has the same effect as raising an exception.  We symbolize an
-immutable heap with the notation $\circ H$, this kind of heap just
+the {\sc S:Abort} rule can be called to interrupt a computation.
+It has the same effect as raising an exception.  We symbolize a
+frozen heap with the notation $\circ H$, this kind of heap just
 bubbles up through the semantics. In the rules, $X$ stands for
-either $H$ or $\circ H$ for some $H$.
+either $\circ$ or $H$.
 
 \begin{mathpar}
 
-\Rule{S:Bubble}
-{}
-{ (H, S) \Downarrow_0 \circ H }
+\Rule{S:Abort}
+{ }
+{ (H, S) \Downarrow_0 \circ }
 
 \and \Rule{S:Skip}
-{}
-{ (H, \code{skip}) \Downarrow_0 H }
+{ }
+{ (H, \code{skip}) \Downarrow_{M_s} H }
 
 \and \Rule{S:Assign}
-{}
-{ (H, x \gets e) \Downarrow_0 H[x \gets \llbracket e \rrbracket_H] }
+{ }
+{ (H, x \gets e) \Downarrow_{M_s} H[x \mapsto \llbracket e \rrbracket_H] }
 
 \and \Rule{S:Assert}
-{ \Gamma \models H }
-{ (H, \code{assert}(\Gamma)) \Downarrow_0 H }
+{ H \models \Gamma }
+{ (H, \code{assert}(\Gamma)) \Downarrow_{M_a} H }
 
 \and \Rule{S:WhileStop}
 { \neg (k < \llbracket x - y \rrbracket_H) }
-{ (H, \code{while}(k < x - y)~S) \Downarrow_0 H }
+{ (H, \code{while}(k < x - y)~S) \Downarrow_{M_w^3} H }
 
 \and \Rule{S:WhileStep}
 {  k < \llbracket x - y \rrbracket_H
-\\ (H, S; \code{while}(k < x - y)~S) \Downarrow_n X
+\\ (H, S) \Downarrow_{q_1} H'
+\\ (H', \code{while}(k < x - y)~S) \Downarrow_{q_2} X
 }
-{ (H, \code{while}(k < x - y)~S) \Downarrow_{n+1} X }
+{ (H, \code{while}(k < x - y)~S) \Downarrow_{M_w^1 \cdot q_1 \cdot M_w^2 \cdot q_2} X }
+
+\and \Rule{S:WhileStepAbort}
+{  k < \llbracket x - y \rrbracket_H
+\\ (H, S) \Downarrow_{q_1} \circ
+}
+{ (H, \code{while}(k < x - y)~S) \Downarrow_{M_w^1 \cdot q_1 } \circ }
 
 \and \Rule{S:If}
-{  (H, S_i) \Downarrow_n X
+{  (H, S_i) \Downarrow_q X
 \\ i \in \{1, 2\}
 }
-{ (H, \code{if}(?)~S_1~\code{else}~S_2) \Downarrow_n X }
+{ (H, \code{if}(?)~S_1~\code{else}~S_2) \Downarrow_{M_c^i \cdot q} X }
 
 \and \Rule{S:Seq}
-{  (H, S_1) \Downarrow_{n_1} H'
-\\ (H', S_2) \Downarrow_{n_2} X
+{  (H, S_1) \Downarrow_{q_1} H'
+\\ (H', S_2) \Downarrow_{q_2} X
 }
-{ (H, S_1; S_2) \Downarrow_{n_1 + n_2} X }
+{ (H, S_1; S_2) \Downarrow_{M_s^1 \cdot q_1 \cdot M_s^2 \cdot q_2} X }
 
-\and \Rule{S:SeqBubble}
-{ (H, S_1) \Downarrow_n \circ H' }
-{ (H, S_1; S_2) \Downarrow_n \circ H' }
+\and \Rule{S:SeqAbort}
+{ (H, S_1) \Downarrow_q \circ }
+{ (H, S_1; S_2) \Downarrow_q \circ }
 
 \end{mathpar}
 
