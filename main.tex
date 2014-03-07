@@ -165,9 +165,8 @@ This big step semantics counts the number of iterations of
 while loops in a program as it executes it.  Non-deterministically,
 the {\sc S:Abort} rule can be called to interrupt a computation.
 It has the same effect as raising an exception.  We symbolize a
-frozen heap with the notation $\circ H$, this kind of heap just
-bubbles up through the semantics. In the rules, $X$ stands for
-either $\circ$ or $H$.
+frozen computation with the notation $\circ$.  In the rules, $X$
+stands for either $\circ$ or $H$.
 
 \begin{mathpar}
 
@@ -221,5 +220,16 @@ either $\circ$ or $H$.
 { (H, S_1; S_2) \Downarrow_{(q,q')} \circ }
 
 \end{mathpar}
+
+\section{Soundness theorem}
+
+\begin{theorem}[Terminating case]
+For any $S$, $H$, $H'$, $q$, $q'$, $\Gamma$, $\Gamma'$, $Q$ and $Q'$ such
+that $\Gamma; Q \vdash S \dashv Q'; \Gamma'$ and $H \models \Gamma$ and
+$(H,s) \Downarrow_{(q,q')} H'$, we have
+$H' \models \Gamma'$ and
+$q \le \Phi_H(Q)$ and
+$\Phi_H(Q) \ge q' + \Phi_{H'}(Q')$.
+\end{theorem}
 
 \end{document}
