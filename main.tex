@@ -193,32 +193,32 @@ either $\circ$ or $H$.
 
 \and \Rule{S:WhileStep}
 {  k < \llbracket x - y \rrbracket_H
-\\ (H, S) \Downarrow_{q_1} H'
-\\ (H', \code{while}(k < x - y)~S) \Downarrow_{q_2} X
+\\ (H, S) \Downarrow_{(q_1, q'_1)} H'
+\\ (H', \code{while}(k < x - y)~S) \Downarrow_{(q_2, q'_2)} X
 }
-{ (H, \code{while}(k < x - y)~S) \Downarrow_{M_w^1 \cdot q_1 \cdot M_w^2 \cdot q_2} X }
+{ (H, \code{while}(k < x - y)~S) \Downarrow_{M_w^1 \cdot (q_1, q'_1) \cdot M_w^2 \cdot (q_2, q'_2)} X }
 
 \and \Rule{S:WhileStepAbort}
 {  k < \llbracket x - y \rrbracket_H
-\\ (H, S) \Downarrow_{q_1} \circ
+\\ (H, S) \Downarrow_{(q_1, q'_1)} \circ
 }
-{ (H, \code{while}(k < x - y)~S) \Downarrow_{M_w^1 \cdot q_1 } \circ }
+{ (H, \code{while}(k < x - y)~S) \Downarrow_{M_w^1 \cdot (q_1, q'_1) } \circ }
 
 \and \Rule{S:If}
-{  (H, S_i) \Downarrow_q X
+{  (H, S_i) \Downarrow_{(q, q')} X
 \\ i \in \{1, 2\}
 }
-{ (H, \code{if}(?)~S_1~\code{else}~S_2) \Downarrow_{M_c^i \cdot q} X }
+{ (H, \code{if}(?)~S_1~\code{else}~S_2) \Downarrow_{M_c^i \cdot (q, q')} X }
 
 \and \Rule{S:Seq}
-{  (H, S_1) \Downarrow_{q_1} H'
-\\ (H', S_2) \Downarrow_{q_2} X
+{  (H, S_1) \Downarrow_{(q_1, q'_1)} H'
+\\ (H', S_2) \Downarrow_{(q_2, q'_2)} X
 }
-{ (H, S_1; S_2) \Downarrow_{M_s^1 \cdot q_1 \cdot M_s^2 \cdot q_2} X }
+{ (H, S_1; S_2) \Downarrow_{M_s^1 \cdot (q_1, q'_1) \cdot M_s^2 \cdot (q_2, q'_2)} X }
 
 \and \Rule{S:SeqAbort}
-{ (H, S_1) \Downarrow_q \circ }
-{ (H, S_1; S_2) \Downarrow_q \circ }
+{ (H, S_1) \Downarrow_{(q,q')} \circ }
+{ (H, S_1; S_2) \Downarrow_{(q,q')} \circ }
 
 \end{mathpar}
 
