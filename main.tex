@@ -14,6 +14,7 @@
 \usepackage{graphicx} %to include png images
 \usepackage{xcolor} %for colors
 \usepackage{url}
+\usepackage{enumitem}
 
 %----------------------------------------------------
 
@@ -69,17 +70,8 @@ E := x + y \mid x - y % \mid y
 \end{mathpar}
 %
 We define a deductive system to derive judgements of the
-form $\Gamma; Q \vdash S \dashv Q'; \Gamma'$ with the following
-intended semantics
-$$
-\forall H\, H'\, S\, n,
-    ( H \models \Gamma \land
-      (H, S) \Downarrow_n H'
-    ) \Rightarrow
-    ( H' \models \Gamma' \land
-      \Phi_{H}(Q) \ge n + \Phi_{H'}(Q')
-    ).
-$$
+form $\Gamma; Q \vdash S \dashv Q'; \Gamma'$.  The semantics
+of this judgement are defined below in the soundness section.
 
 \begin{mathpar}
 
@@ -229,7 +221,56 @@ that $\Gamma; Q \vdash S \dashv Q'; \Gamma'$ and $H \models \Gamma$ and
 $(H,s) \Downarrow_{(q,q')} H'$, we have
 $H' \models \Gamma'$ and
 $q \le \Phi_H(Q)$ and
-$\Phi_H(Q) \ge q' + \Phi_{H'}(Q')$.
+$\Phi_H(Q) - \Phi_{H'}(Q') \ge q - q'$.
 \end{theorem}
+
+\begin{proof} By induction on the big step semantics.
+
+\begin{itemize}
+
+\item Case {\sc S:Skip}.
+  We have $(H, \code{skip}) \Downarrow_{M_s} H$.
+  By assumption, $H \models \Gamma$. \\
+  Since $\Phi_H(Q + M_s) = \Phi_H(Q) + M_s$,
+  \begin{itemize}[topsep=0pt]
+  \item
+    if $M_s \ge 0$ we have,
+      $M_s \le \Phi_H(Q + M_s)$ and
+      $\Phi_H(Q + M_s) - \Phi_H(Q) \ge M_s - 0$;
+  \item
+    if $M_s < 0$ we have,
+      $0 \le \Phi_H(Q + M_s)$ and
+      $\Phi_H(Q + M_s) - \Phi_H(Q) \ge 0 - (-M_s)$.
+  \end{itemize}
+
+\item Case {\sc S:Seq}.
+  By transitivity and induction hypothesis, it is
+  easy to get $H'' \models \Gamma''$.  Now we prove
+  the quantitative part of the theorem.  We have
+  $(q, q') = M_s^1 \cdot (q_1, q'_1) \cdot M_s^2 \cdot (q_2, q'_2)$.
+  We assume $\forall i \in \{1, 2\},~M_s^i \ge 0$.
+  \begin{itemize}[topsep=0pt]
+  \item
+    The first case is when $q'_1 > M_s^2 + q_2$ then $q = M_s^1 + q_1$
+    and since $q_1 \le \Phi_H(Q - M_s^1)$ (by induction) we have
+    $q \le \Phi_H(Q)$.
+  \item
+    The second case is when $q'_1 \le M_s^2 + q_2$ then $q = M_s^1 + q_1 + M_s^2 + q_2 - q'_1$. \\
+    Since $\Phi_H(Q - M_s^1) - \Phi_{H'}(Q') \ge q_1 - q'_1$
+    and $q_2 \le \Phi_{H'}(Q' - M_s^2)$ we have:
+    \begin{align*}
+    q &\le M_s^1 + \Phi_H(Q - M_s^1) - \Phi_{H'}(Q') + M_s^2 + q_2 \\
+      &= \Phi_H(Q) + (q_2 - \Phi_{H'}(Q' - M_s^2)) \le \Phi_H(Q).
+   \end{align*}
+  \end{itemize}
+  We obtain $\Phi_H(Q) - \Phi_{H''}(Q'') \ge q - q'$ by simply chaining
+  the two induction hypothesis and using the fact that $q - q' =
+  (q_1 + M_s^1 - q'_1) + (q_2 + M_s^2 - q'_2)$.
+
+\item Case {\sc S:WhileStop}.
+\item Case {\sc S:WhileStep}.
+
+\end{itemize}
+\end{proof}
 
 \end{document}
