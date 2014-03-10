@@ -94,8 +94,8 @@ of this judgement are defined below in the soundness section.
 % { \Gamma; Q + M_s \vdash x \gets x - y \dashv c \cdot q_x + V; \Gamma' }
 
 \\ \Rule{While}
-{ \Gamma, 0 < x ; Q - M_w^2 \vdash S \dashv Q; \Gamma }
-{ \Gamma; Q + M_w^1 \vdash \code{while}(0 < x)~S \dashv Q - M_w^3; \Gamma, x \le 0 }
+{ \Gamma, 0 < x ; Q - M_w^1 \vdash S \dashv M_w^2 + Q; \Gamma }
+{ \Gamma; Q \vdash \code{while}(0 < x)~S \dashv Q - M_w^3; \Gamma, x \le 0 }
 
 \and\Rule{Seq}
 {  \Gamma; Q - M_s^1 \vdash S_1 \dashv Q'; \Gamma'
@@ -153,9 +153,9 @@ in all contraint contexts.
 
 \section{Cost aware semantics}
 
-This big step semantics counts the number of iterations of
-while loops in a program as it executes it.  Non-deterministically,
-the {\sc S:Abort} rule can be called to interrupt a computation.
+This big step semantics is parameterized by a metric that sets
+the cost of each program operation.  Non-deterministically,
+the rule {\sc S:Abort} can be called to interrupt a computation.
 It has the same effect as raising an exception.  We symbolize a
 frozen computation with the notation $\circ$.  In the rules, $X$
 stands for either $\circ$ or $H$.
@@ -248,7 +248,8 @@ $\Phi_H(Q) - \Phi_{H'}(Q') \ge q - q'$.
   easy to get $H'' \models \Gamma''$.  Now we prove
   the quantitative part of the theorem.  We have
   $(q, q') = M_s^1 \cdot (q_1, q'_1) \cdot M_s^2 \cdot (q_2, q'_2)$.
-  We assume $\forall i \in \{1, 2\},~M_s^i \ge 0$.
+  We assume $\forall i \in \{1, 2\},~M_s^i \ge 0$, the other cases
+  are similar.
   \begin{itemize}[topsep=0pt]
   \item
     The first case is when $q'_1 > M_s^2 + q_2$ then $q = M_s^1 + q_1$
@@ -268,7 +269,25 @@ $\Phi_H(Q) - \Phi_{H'}(Q') \ge q - q'$.
   (q_1 + M_s^1 - q'_1) + (q_2 + M_s^2 - q'_2)$.
 
 \item Case {\sc S:WhileStop}.
+  This proof goes just like in the {\sc S:Skip} case.
+
 \item Case {\sc S:WhileStep}.
+  Here again we assume $\forall i \in \{1, 2, 3\},~M_w^i \ge 0$.
+  \begin{itemize}[topsep=0pt]
+  \item
+    If $q'_1 > M_w^2 + q_2$ then $q = M_w^1 + q_1$ and by induction
+    we get $q_1 \le \Phi_H(Q - M_w^1)$, so $q \le \Phi_H(Q)$.
+  \item
+    If $q'_1 \le M_w^2 + q_2$ then $q = M_w^1 + q_1 + M_w^2 + q_2 - q'_1$.
+    And we proceed like in the sequence case.
+  \end{itemize}
+  We obtain $\Phi_H(Q) - \Phi_{H''}(Q - M_w^3) \ge q - q'$ using the identity
+  $q - q' = (M_w^1 + M_w^2 + q_1 - q'_1) + q_2 - q'_2$ and the two
+  induction hypothesis
+  \begin{itemize}[topsep=0pt]
+  \item $\Phi_H(Q - M_w^1) - \Phi_{H'}(Q + M_w^2) \ge q_1 - q'_1$ and
+  \item $\Phi_{H'}(Q) - \Phi_{H''}(Q - M_w^3) \ge q_2 - q'_2.$
+  \end{itemize}
 
 \end{itemize}
 \end{proof}
