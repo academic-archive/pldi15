@@ -2,3 +2,6 @@ tw
 *.aux
 *.log
 *.pdf
+
+src/*.cm[iox]
+src/app
