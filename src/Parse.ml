@@ -213,8 +213,8 @@ let p_prog: prog pm =
     ]
   )
 
-let prog s =
-  match p_prog s with
+let prog ic =
+  match p_prog (stream_of_fun (mk_lexer ic)) with
   | (Some p, _) -> p
   | (None, _) -> raise (SyntaxError "parse error")
 
@@ -252,16 +252,11 @@ let test_lexer () =
     if t <> TEof then f ()
   in f ()
 
-let test_parser () =
-  let lexer = mk_lexer stdin in
-  let p = prog (stream_of_fun lexer) in
-  pp_prog p
-
 let _ =
   let handle f =
     try f () with
     SyntaxError e -> Printf.eprintf "Syntax error: %s\n" e
   in match try Some Sys.argv.(1) with _ -> None with
   | Some "-tlex" -> handle test_lexer
-  | Some "-tparse" -> handle test_parser
+  | Some "-tparse" -> handle (fun () -> pp_prog (prog stdin))
   | _ -> ()
