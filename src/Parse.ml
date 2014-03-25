@@ -245,24 +245,23 @@ let pp_prog =
 (* tests *)
 
 let test_lexer () =
-  try
-    let tok = mk_lexer stdin in
-    let rec f () =
-      let t = tok () in
-      Printf.printf "%s\n" (string_of_token t);
-      if t <> TEof then f ()
-    in f ()
-  with SyntaxError e -> Printf.eprintf "Syntax error: %s\n" e
+  let tok = mk_lexer stdin in
+  let rec f () =
+    let t = tok () in
+    Printf.printf "%s\n" (string_of_token t);
+    if t <> TEof then f ()
+  in f ()
 
 let test_parser () =
-  try
-    let lexer = mk_lexer stdin in
-    let p = prog (stream_of_fun lexer) in
-    pp_prog p
-  with SyntaxError e -> Printf.eprintf "Syntax error: %s\n" e
+  let lexer = mk_lexer stdin in
+  let p = prog (stream_of_fun lexer) in
+  pp_prog p
 
 let _ =
-  match try Some Sys.argv.(1) with _ -> None with
-  | Some "-tlex" -> test_lexer ()
-  | Some "-tparse" -> test_parser ()
+  let handle f =
+    try f () with
+    SyntaxError e -> Printf.eprintf "Syntax error: %s\n" e
+  in match try Some Sys.argv.(1) with _ -> None with
+  | Some "-tlex" -> handle test_lexer
+  | Some "-tparse" -> handle test_parser
   | _ -> ()
