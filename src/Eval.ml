@@ -1,13 +1,14 @@
 (* evaluation *)
+type action =
+  | CSkip
+  | CSet
+  | CAssert
+  | CWhile1 | CWhile2 | CWhile3
+  | CIf1 | CIf2
+  | CSeq1 | CSeq2
+
 module type METRIC = sig
   type t
-  type action =
-    | CSkip
-    | CSet
-    | CAssert
-    | CWhile1 | CWhile2 | CWhile3
-    | CIf1 | CIf2
-    | CSeq1 | CSeq2
   val cost: action -> t
   val free: t
   val concat: t -> t -> t
@@ -71,13 +72,6 @@ end
 
 module CostFree: METRIC = struct
   type t = int
-  type action =
-    | CSkip
-    | CSet
-    | CAssert
-    | CWhile1 | CWhile2 | CWhile3
-    | CIf1 | CIf2
-    | CSeq1 | CSeq2
   let cost _ = 0
   let free = 0
   let concat _ _ = 0
@@ -85,13 +79,6 @@ end
 
 module AtomicOps: (METRIC with type t = int) = struct
   type t = int
-  type action =
-    | CSkip
-    | CSet
-    | CAssert
-    | CWhile1 | CWhile2 | CWhile3
-    | CIf1 | CIf2
-    | CSeq1 | CSeq2
   let cost = function
     | CSkip | CSet | CAssert -> 1
     | _ -> 0
