@@ -83,14 +83,31 @@ module CostFree: METRIC = struct
   let concat _ _ = 0
 end
 
+module AtomicOps: (METRIC with type t = int) = struct
+  type t = int
+  type action =
+    | CSkip
+    | CSet
+    | CAssert
+    | CWhile1 | CWhile2 | CWhile3
+    | CIf1 | CIf2
+    | CSeq1 | CSeq2
+  let cost = function
+    | CSkip | CSet | CAssert -> 1
+    | _ -> 0
+  let free = 0
+  let concat a b = a + b
+end
+
 
 (* testing *)
 
 let _ =
   match try Some Sys.argv.(1) with _ -> None with
   | Some "-teval" ->
-    let module E = Eval(CostFree) in
+    let module E = Eval(AtomicOps) in
     let p = Parse.prog stdin in
-    let (hfinal, _) = E.eval p E.empty_heap in
-    E.print_heap hfinal
+    let (hfinal, cost) = E.eval p E.empty_heap in
+    E.print_heap hfinal;
+    Printf.printf "evaluation cost: %d\n" cost
   | _ -> ()
