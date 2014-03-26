@@ -71,10 +71,10 @@ end
 (* sample metrics *)
 
 module CostFree: METRIC = struct
-  type t = int
-  let cost _ = 0
-  let free = 0
-  let concat _ _ = 0
+  type t = unit
+  let cost _ = ()
+  let free = ()
+  let concat _ _ = ()
 end
 
 module AtomicOps: (METRIC with type t = int) = struct
