@@ -4,4 +4,8 @@ tw
 *.pdf
 
 src/*.cm[iox]
+src/*.o
+src/._bcdi
+src/._ncdi
+src/._d
 src/app
