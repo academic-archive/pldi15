@@ -55,8 +55,6 @@ module Eval(M: METRIC) = struct
 
   let rec eval = function
     | PSkip -> pay CSkip
-    | PAssert c as p ->
-      guard (test c) (fun () -> pay CAssert) (fun () -> raise (ProgramFailure p))
     | PSeq (p1, p2) -> pay CSeq1 -$ eval p1 -$ pay CSeq2 -$ eval p2
     | PInc (v1, op, v2) -> pay CSet -$ inc v1 op v2
     | PSet (v1, v2) -> pay CSet -$ set v1 v2
@@ -64,6 +62,10 @@ module Eval(M: METRIC) = struct
       guard (test cond)
         (fun () -> pay CWhile1 -$ eval p -$ pay CWhile2 -$ eval ploop)
         (fun () -> pay CWhile3)
+    | PAssert c as p ->
+      guard (test c)
+        (fun () -> pay CAssert)
+        (fun () -> raise (ProgramFailure p))
 
   let empty_heap = Heap.empty
 
