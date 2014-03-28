@@ -103,7 +103,8 @@ let p_tok f s =
   | _ -> (None, s)
 
 
-type var = string
+type id = string
+type var = VId of id | VNum of int
 type op = OPlus | OMinus
 (* Conditions are of the form v1 - v2 < k *)
 type cond = Cond of var * var * int
@@ -111,8 +112,8 @@ type cond = Cond of var * var * int
 type prog =
   | PSkip
   | PSeq of prog * prog
-  | PInc of var * op * var
-  | PSet of var * var
+  | PInc of id * op * var
+  | PSet of id * var
   | PWhile of cond * prog
 
 (* parser for one program *)
@@ -126,17 +127,17 @@ let p_prog: prog pm =
     | TMinus -> Some OMinus
     | _ -> None in
   let var = function
-    | TIdnt id -> Some id
-    | TNum n -> Some ("$" ^ string_of_int n)
+    | TIdnt id -> Some (VId id)
+    | TNum n -> Some (VNum n)
     | _ -> None in
 
   let p_cond = p_or
 
     (* x > k *)
-    [ bnd (p_tok idnt) (fun id ->
+    [ bnd (p_tok var) (fun v ->
       bnd (p_tok (is TGt)) (fun () ->
       bnd (p_tok const) (fun k ->
-        ret (Cond (id, "$0", k))
+        ret (Cond (v, VNum 0, k))
       )))
 
     (* x - y > k *)
@@ -219,9 +220,9 @@ let prog ic =
   | (None, _) -> raise (SyntaxError "parse error")
 
 let pp_prog =
-  let string_of_var s =
-    if s.[0] <> '$' then s else
-    String.sub s 1 (String.length s - 1) in
+  let s = function
+    | VNum n -> string_of_int n
+    | VId id -> id in
   let open Format in
   let rec f prns fmt = function
     | PSkip -> fprintf fmt "()"
@@ -232,13 +233,12 @@ let pp_prog =
       (f true) p1 (f false) p2
     | PInc (id, o, v) ->
       let op = match o with OPlus -> "+" | OMinus -> "-" in
-      fprintf fmt "%s = %s %s %s" id id op (string_of_var v)
+      fprintf fmt "%s = %s %s %s" id id op (s v)
     | PSet (id, v) ->
-      fprintf fmt "%s = %s" id (string_of_var v)
+      fprintf fmt "%s = %s" id (s v)
     | PWhile (Cond (v1, v2, k), p) ->
       fprintf fmt "while %s - %s > %d@.  @[<v>%a@]"
-        (string_of_var v1) (string_of_var v2) k
-        (f true) p
+        (s v1) (s v2) k (f true) p
   in Format.printf "@[<v>%a@]@." (f false)
 
 

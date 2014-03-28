@@ -19,7 +19,7 @@ module Eval(M: METRIC) = struct
   open M
 
   module Heap =
-    Map.Make(struct type t = var  let compare = compare end)
+    Map.Make(struct type t = id  let compare = compare end)
 
   type value = int and heap = value Heap.t
 
@@ -34,19 +34,19 @@ module Eval(M: METRIC) = struct
     if f heap then c1 () heap else c2 () heap
 
   let value v h =
-    if v.[0] = '$'
-      then int_of_string (String.sub v 1 (String.length v - 1))
-      else try Heap.find v h with _ -> 0
+    match v with
+    | VNum n -> n
+    | VId id -> try Heap.find id h with _ -> 0
 
-  let inc v1 op v2 heap =
+  let inc id op v heap =
     let res =
       match op with
-      | OPlus -> value v1 heap + value v2 heap
-      | OMinus -> value v1 heap - value v2 heap
-    in (Heap.add v1 res heap, free)
+      | OPlus -> value (VId id) heap + value v heap
+      | OMinus -> value (VId id) heap - value v heap
+    in (Heap.add id res heap, free)
 
-  let set v1 v2 heap =
-    (Heap.add v1 (value v2 heap) heap, free)
+  let set id v heap =
+    (Heap.add id (value v heap) heap, free)
 
   let test (Cond (v1, v2, k)) heap =
     value v1 heap - value v2 heap > k
