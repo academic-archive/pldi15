@@ -4,7 +4,7 @@ exception SyntaxError of string
 (* lexing *)
 
 type token =
-  | TWhile
+  | TAssert | TWhile
   | TSemi | TPlus | TMinus
   | TLParen | TRParen
   | TLt | TGt | TEq
@@ -44,6 +44,7 @@ let mk_lexer ic =
     | c when isalpha c ->
       let s = getstr (String.make 1 c) in
       if s = "while" then TWhile
+      else if s = "assert" then TAssert
       else TIdnt s
     | ('0' .. '9') as c -> TNum (getnum (digit c))
     | ';' -> TSemi | '+' -> TPlus | '-' -> TMinus
@@ -56,7 +57,7 @@ let mk_lexer ic =
   in f
 
 let string_of_token = function
-  | TWhile -> "WHILE"
+  | TAssert -> "ASSERT" | TWhile -> "WHILE"
   | TIdnt id -> Printf.sprintf "IDNT %S" id
   | TNum n -> Printf.sprintf "NUM %d" n
   | TSemi -> "SEMI"
@@ -111,10 +112,11 @@ type cond = Cond of var * var * int
 
 type prog =
   | PSkip
-  | PSeq of prog * prog
+  | PAssert of cond
   | PInc of id * op * var
   | PSet of id * var
   | PWhile of cond * prog
+  | PSeq of prog * prog
 
 (* parser for one program *)
 let p_prog: prog pm =
@@ -184,6 +186,12 @@ let p_prog: prog pm =
         ret (PWhile (cond, prog))
       )))
 
+    (* Assertion, PAssert *)
+    ; bnd (p_tok (is TAssert)) (fun () ->
+      bnd p_cond (fun cond ->
+        ret (PAssert cond)
+      ))
+
     (* Parenthesized complex statement *)
     ; bnd (p_tok (is TLParen)) (fun () ->
       bnd (p_complex ()) (fun prog ->
@@ -220,12 +228,15 @@ let prog ic =
   | (None, _) -> raise (SyntaxError "parse error")
 
 let pp_prog =
+  let open Format in
   let s = function
     | VNum n -> string_of_int n
     | VId id -> id in
-  let open Format in
+  let pp_cond fmt (Cond (v1, v2, k)) =
+    fprintf fmt "%s - %s > %d" (s v1) (s v2) k in
   let rec f prns fmt = function
     | PSkip -> fprintf fmt "()"
+    | PAssert c -> fprintf fmt "assert %a" pp_cond c
     | PSeq (p1,  p2) ->
       (if prns
         then fprintf fmt "(@[<v 2>@;%a;@;%a@]@;)"
@@ -236,9 +247,9 @@ let pp_prog =
       fprintf fmt "%s = %s %s %s" id id op (s v)
     | PSet (id, v) ->
       fprintf fmt "%s = %s" id (s v)
-    | PWhile (Cond (v1, v2, k), p) ->
-      fprintf fmt "while %s - %s > %d@.  @[<v>%a@]"
-        (s v1) (s v2) k (f true) p
+    | PWhile (c, p) ->
+      fprintf fmt "while %a@.  @[<v>%a@]"
+        pp_cond c (f true) p
   in Format.printf "@[<v>%a@]@." (f false)
 
 

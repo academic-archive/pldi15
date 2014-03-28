@@ -1,8 +1,8 @@
 (* evaluation *)
 type action =
   | CSkip
-  | CSet
   | CAssert
+  | CSet
   | CWhile1 | CWhile2 | CWhile3
   | CIf1 | CIf2
   | CSeq1 | CSeq2
@@ -51,8 +51,12 @@ module Eval(M: METRIC) = struct
   let test (Cond (v1, v2, k)) heap =
     value v1 heap - value v2 heap > k
 
+  exception ProgramFailure of prog
+
   let rec eval = function
     | PSkip -> pay CSkip
+    | PAssert c as p ->
+      guard (test c) (fun () -> pay CAssert) (fun () -> raise (ProgramFailure p))
     | PSeq (p1, p2) -> pay CSeq1 -$ eval p1 -$ pay CSeq2 -$ eval p2
     | PInc (v1, op, v2) -> pay CSet -$ inc v1 op v2
     | PSet (v1, v2) -> pay CSet -$ set v1 v2
@@ -94,7 +98,12 @@ let _ =
   | Some "-teval" ->
     let module E = Eval(AtomicOps) in
     let p = Parse.prog stdin in
-    let (hfinal, cost) = E.eval p E.empty_heap in
-    E.print_heap hfinal;
-    Printf.printf "evaluation cost: %d\n" cost
+    begin try
+      let (hfinal, cost) = E.eval p E.empty_heap in
+      E.print_heap hfinal;
+      Printf.printf "evaluation cost: %d\n" cost
+    with E.ProgramFailure p ->
+      Printf.printf "program failure on: "; Parse.pp_prog p;
+      exit 1
+    end
   | _ -> ()
