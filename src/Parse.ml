@@ -107,7 +107,7 @@ let p_tok f s =
 type id = string
 type var = VId of id | VNum of int
 type op = OPlus | OMinus
-(* Conditions are of the form v1 - v2 < k *)
+(* Conditions are of the form v1 - v2 > k *)
 type cond = Cond of var * var * int
 
 type prog =
