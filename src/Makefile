@@ -2,7 +2,7 @@
 LIBDIRS=/home/qcar/l/lib
 INCDIRS=/home/qcar/l/include
 
-SOURCES = Parse.ml Logic.ml Eval.ml clp_stubs.c Clp.ml
+SOURCES = Parse.ml Logic.ml Eval.ml clp_stubs.c Clp.ml Hood.ml
 RESULT = app
 CLIBS = z bz2 Clp CoinUtils
 CFLAGS = -Wall -O3
