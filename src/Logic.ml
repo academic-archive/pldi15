@@ -60,24 +60,6 @@ let aps_set id v ps =
   add_l1 v (ALt ([], [id], 1)) :: add_l2 v (ALt ([id], [], 1)) ::
     purge ps
 
-let rec aps_loop ps f state =
-  (*
-    A real abstract interpreter would compute a precise
-    fixpoint of the f function starting form ps, in our
-    case we only need a very loose approximation: it is
-    enough to run f once and keep only the unchanged
-    assertions.
-  *)
-  let rec inter ps1 ps2 =
-    match ps1 with
-    | a :: ps1' ->
-      if List.mem a ps2
-        then a :: inter ps1' ps2
-        else inter ps1' ps2
-    | [] -> [] in
-  let state', ps' = f state ps in
-  (state', inter ps ps')
-
 
 (* poor man's decision procedure *)
 
@@ -119,6 +101,25 @@ let aps_is_valid ps =
     | _ -> failwith "Logic: bug in aps_is_valid" in
   List.fold_left (fun b assn -> dec_simple assn && b) true simpl
 
+
+(* applications *)
+
+let aps_add a ps =
+  if not (aps_is_valid (assn_negate a :: ps))
+    then ps (* do not add consequences *)
+    else a :: ps
+
+let rec aps_fix ps f =
+  let x, ps' = f ps in
+  let rec residue trimmed r = function
+    | assn :: assns ->
+      if not (aps_is_valid (assn_negate assn :: ps'))
+        then residue trimmed (assn :: r) assns
+        else residue true r assns
+    | [] -> (trimmed, r) in
+  let trimmed, ps'' = residue false [] ps in
+  if trimmed then aps_fix ps'' f else (x, ps')
+
 let aps_entails ps x op delta u =
   (* check if ps entails x `op` delta \in [x, u] U [u, x] *)
   let delta_l1, delta_l2 =
@@ -135,6 +136,25 @@ let aps_entails ps x op delta u =
     ; delta_l2 (ALt ([], [], 0)) ] in
   (* check entailment by refutation *)
   not (aps_is_valid (disj1 @ ps)) && not (aps_is_valid (disj2 @ ps))
+
+
+(* pretty printing *)
+let pp_aps ps =
+  let rec ppl z sep pp = function
+    | [] -> print_string z
+    | [x] -> pp x
+    | x :: xs -> pp x; print_string sep; ppl z sep pp xs in
+  let ppa (ALt (l1, l2, k)) =
+    ppl "0" " + " print_string l1;
+    print_string " < ";
+    if l2 = [] then print_int k else begin
+      ppl "0" " + " print_string l2;
+      if k < 0 then (print_string " - "; print_int (-k))
+      else if k > 0 then (print_string " + "; print_int k)
+    end in
+  print_string "{ ";
+  ppl "True" " /\\ " ppa ps;
+  print_string " }"
 
 
 (* unit tests *)

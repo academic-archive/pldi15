@@ -25,14 +25,43 @@ let create_logctx =
     | PInc (x, op, v, id) -> addpost m id (aps_incr x op v lpre)
     | PSet (x, v, id) -> addpost m id (aps_set x v lpre)
     | PWhile (c, p, id) ->
-      let itr pre = assn_of_cond c :: pre in
-      let g m pre =
+      let itr pre = aps_add (assn_of_cond c) pre in
+      let g pre =
         let m' = f m (itr pre) p in
         (m', (UidMap.findp p m').lpost) in
-      let m', inv = aps_loop (itr lpre) g m in
+      let m', inv = aps_fix (itr lpre) g in
+      (* Note: we use :: instead of aps_add here *)
       addpost m' id (assn_negate (assn_of_cond c) :: inv)
     | PSeq (p1, p2, id) ->
       let m1 = f m lpre p1 in
       let m2 = f m1 (UidMap.findp p1 m1).lpost p2 in
       addpost m2 id (UidMap.findp p2 m2).lpost
   in f UidMap.empty []
+
+
+let _ =
+  if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tlannot" then
+
+  let p = Parse.pa_prog stdin in
+  let l = create_logctx p in
+  let lastpost = ref None and lastpre = ref None in
+
+  let pre id =
+    let { lpre; lpost } = UidMap.find id l in
+    let lp = !lastpre in
+    lastpre := Some lpre;
+    lastpost := None;
+    match lp with
+    | Some p -> if lpre <> p then Logic.pp_aps lpre
+    | None -> Logic.pp_aps lpre
+
+  and post id =
+    let { lpre; lpost } = UidMap.find id l in
+    let lp = !lastpost in
+    lastpre := None;
+    lastpost := Some lpost;
+    match lp with
+    | Some p -> if lpost <> p then Logic.pp_aps lpost
+    | None -> Logic.pp_aps lpost
+
+  in Parse.pp_prog_hooks pre post p
