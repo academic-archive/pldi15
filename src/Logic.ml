@@ -32,7 +32,7 @@ let add_l2 v (ALt (l1, l2, k)) =
 let assn_of_cond (Cond (v1, v2, k) (* v2 < v1 - k *)) =
   add_l1 v2 (add_l2 v1 (ALt ([], [], -k)))
 
-let negate (ALt (l1, l2, k)) = ALt (l2, l1, 1 - k)
+let assn_negate (ALt (l1, l2, k)) = ALt (l2, l1, 1 - k)
 
 let assn_incr id op delta (ALt (l1, l2, _) as asn) =
   let add1, add2 =
@@ -60,10 +60,10 @@ let aps_set id v ps =
   add_l1 v (ALt ([], [id], 1)) :: add_l2 v (ALt ([id], [], 1)) ::
     purge ps
 
-let rec aps_loop ps_init f =
+let rec aps_loop ps f state =
   (*
     A real abstract interpreter would compute a precise
-    fixpoint of the f function starting form ps_init, in our
+    fixpoint of the f function starting form ps, in our
     case we only need a very loose approximation: it is
     enough to run f once and keep only the unchanged
     assertions.
@@ -74,8 +74,9 @@ let rec aps_loop ps_init f =
       if List.mem a ps2
         then a :: inter ps1' ps2
         else inter ps1' ps2
-    | [] -> []
-  in inter ps_init (f ps_init)
+    | [] -> [] in
+  let state', ps' = f state ps in
+  (state', inter ps ps')
 
 
 (* poor man's decision procedure *)
@@ -164,18 +165,18 @@ let _ =
 
   assert (sem [] [] = true);
   assert (sem [] [assn_of_cond c1] = false);
-  assert (sem [] [negate (assn_of_cond c1)] = true);
+  assert (sem [] [assn_negate (assn_of_cond c1)] = true);
   assert (sem [] [assn_of_cond c2] = false);
-  assert (sem [] [negate (assn_of_cond c2)] = true);
+  assert (sem [] [assn_negate (assn_of_cond c2)] = true);
   assert (sem h1 [assn_of_cond c3] = false);
-  assert (sem h1 [negate (assn_of_cond c3)] = true);
+  assert (sem h1 [assn_negate (assn_of_cond c3)] = true);
   assert (sem h1 [assn_of_cond c4] = false);
-  assert (sem h1 [negate (assn_of_cond c4)] = true);
+  assert (sem h1 [assn_negate (assn_of_cond c4)] = true);
   assert (sem h1 [assn_of_cond c5] = false);
-  assert (sem h1 [negate (assn_of_cond c5)] = true);
+  assert (sem h1 [assn_negate (assn_of_cond c5)] = true);
   assert (sem h1 [assn_of_cond c6] = false);
   assert (sem h1 [assn_of_cond c7] = false);
-  assert (sem h1 [negate (assn_of_cond c7)] = true);
+  assert (sem h1 [assn_negate (assn_of_cond c7)] = true);
 
   prerr_endline "Logic tests passed.";
   ()
