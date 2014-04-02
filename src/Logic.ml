@@ -118,7 +118,7 @@ let rec aps_fix ps f =
         else residue true r assns
     | [] -> (trimmed, r) in
   let trimmed, ps'' = residue false [] ps in
-  if trimmed then aps_fix ps'' f else (x, ps')
+  if trimmed then aps_fix ps'' f else (x, ps)
 
 let aps_entails ps x op delta u =
   (* check if ps entails x `op` delta \in [x, u] U [u, x] *)
