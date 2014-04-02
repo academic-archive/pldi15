@@ -276,7 +276,7 @@ let pp_prog_hooks pre post prog =
       idnt lvl; f lvl prns p;
       if not prns then post (prog_id p)
 
-  in g 0 true prog; printf "\n"
+  in g 0 false prog; printf "\n"
 
 let pp_prog = let f _ = () in pp_prog_hooks f f
 
