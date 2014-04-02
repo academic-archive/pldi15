@@ -39,10 +39,12 @@ let assn_incr id op delta (ALt (l1, l2, _) as asn) =
     match op with
     | OPlus -> add_l1, add_l2
     | OMinus -> add_l2, add_l1 in
-  if List.mem id l1 && List.mem id l2 then
+  let mem1 = List.mem id l1 in
+  let mem2 = List.mem id l2 in
+  if mem1 && mem2 then
     failwith "assertion invariant broken"
-  else if List.mem id l1 then add2 delta asn
-  else if List.mem id l2 then add1 delta asn
+  else if mem1 then add2 delta asn
+  else if mem2 then add1 delta asn
   else asn
 
 let aps_incr id op delta = List.map (assn_incr id op delta)
