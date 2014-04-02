@@ -1,4 +1,4 @@
-(* abstract program states *)
+(* simple abstract program state and logical entailment *)
 
 open Parse
 
@@ -58,14 +58,80 @@ let aps_set id v ps =
   add_l1 v (ALt ([], [id], 1)) :: add_l2 v (ALt ([id], [], 1)) ::
     purge ps
 
-let rec aps_loop ps1 ps2 =
-  (* keep only the unchanged assertions *)
-  match ps1 with
-  | a :: ps1' ->
-    if List.mem a ps2
-      then a :: aps_loop ps1' ps2
-      else aps_loop ps1' ps2
-  | [] -> []
+let rec aps_loop ps_init f =
+  (*
+    A real abstract interpreter would compute a precise
+    fixpoint of the f function starting form ps_init, in our
+    case we only need a very loose approximation: it is
+    enough to run f once and keep only the unchanged
+    assertions.
+  *)
+  let rec inter ps1 ps2 =
+    match ps1 with
+    | a :: ps1' ->
+      if List.mem a ps2
+        then a :: inter ps1' ps2
+        else inter ps1' ps2
+    | [] -> []
+  in inter ps_init (f ps_init)
+
+
+(* poor man's decision procedure *)
+
+module IdSet = Set.Make(struct type t = id  let compare = compare end)
+
+let vars ps =
+  let f = List.fold_left (fun a b -> IdSet.add b a) in
+  let vs =
+    List.fold_left
+      (fun s (ALt (l1, l2, _)) -> (f (f s l2) l1))
+      IdSet.empty
+      ps in
+  IdSet.elements vs
+
+let assn_combine (ALt (l11, l21, k1)) (ALt (l12, l22, k2)) =
+  List.fold_left (fun assn id1 -> add_l1 (VId id1) assn)
+    (List.fold_left (fun assn id2 -> add_l2 (VId id2) assn)
+      (ALt (l11, l21, k1 + k2 - 1)) l22)
+    l12
+
+let elim id ps =
+  let rec part3 lo hi rest  = function
+    | [] -> (lo, hi, rest)
+    | ALt (l1, l2, _) as assn :: ps' ->
+      if List.mem id l1 then part3 (assn :: lo) hi rest ps'
+      else if List.mem id l2 then part3 lo (assn :: hi) rest ps'
+      else part3 lo hi (assn :: rest) ps' in
+  let lo, hi, rest = part3 [] [] [] ps in
+  let prod f l1 l2 =
+    List.fold_left (* product function on lists *)
+      (fun x a -> List.fold_left (fun y b -> f a b :: y) x l2)
+      [] l1 in
+  prod assn_combine lo hi @ rest
+
+let aps_is_valid ps =
+  let simpl = List.fold_left (fun a b -> elim b a) ps (vars ps) in
+  let dec_simple = function
+    | ALt ([], [], k) -> 0 < k
+    | _ -> failwith "Logic: bug in aps_is_valid" in
+  List.fold_left (fun b assn -> dec_simple assn && b) true simpl
+
+let aps_entails ps x op delta u =
+  (* check if ps entails x `op` delta \in [x, u] U [u, x] *)
+  let delta_l1, delta_l2 =
+    match op with
+    | OPlus -> add_l1 delta, add_l2 delta
+    | OMinus -> add_l2 delta, add_l1 delta in
+  (* x `op` delta < x  /\  x `op` delta < u *)
+  let disj1 =
+    [ delta_l1 (ALt ([], [], 0))
+    ; delta_l1 (add_l2 u (ALt ([x], [], 0))) ] in
+  (* u < x `op` delta  /\  x < x `op` delta *)
+  let disj2 =
+    [ delta_l2 (add_l1 u (ALt ([], [x], 0)))
+    ; delta_l2 (ALt ([], [], 0)) ] in
+  (* check entailment by refutation *)
+  not (aps_is_valid (disj1 @ ps)) && not (aps_is_valid (disj2 @ ps))
 
 
 (* unit tests *)
