@@ -1,0 +1,6 @@
+while x > 0
+{ 0 < x }
+  while x - y > 10
+{ y < x - 10 }
+    x = x + y
+{ x < 1 }

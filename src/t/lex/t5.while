@@ -1,0 +1,14 @@
+IDNT "y"
+EQ
+NUM 42
+SEMI
+WHILE
+IDNT "y"
+GT
+NUM 1
+IDNT "y"
+EQ
+IDNT "y"
+MINUS
+NUM 2
+EOF

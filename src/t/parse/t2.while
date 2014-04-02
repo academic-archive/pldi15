@@ -1,0 +1,3 @@
+while x > 0
+  while x - y > 10
+    x = x + y
