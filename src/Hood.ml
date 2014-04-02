@@ -21,7 +21,7 @@ let create_logctx =
     let addpost m id lpost = UidMap.add id { lpre; lpost } m in
     match prog with
     | PSkip id -> addpost m id lpre
-    | PAssert (c, id) -> addpost m id (assn_of_cond c :: lpre)
+    | PAssert (c, id) -> addpost m id (aps_add (assn_of_cond c) lpre)
     | PInc (x, op, v, id) -> addpost m id (aps_incr x op v lpre)
     | PSet (x, v, id) -> addpost m id (aps_set x v lpre)
     | PWhile (c, p, id) ->
@@ -44,24 +44,10 @@ let _ =
 
   let p = Parse.pa_prog stdin in
   let l = create_logctx p in
-  let lastpost = ref None and lastpre = ref None in
-
   let pre id =
     let { lpre; lpost } = UidMap.find id l in
-    let lp = !lastpre in
-    lastpre := Some lpre;
-    lastpost := None;
-    match lp with
-    | Some p -> if lpre <> p then Logic.pp_aps lpre
-    | None -> Logic.pp_aps lpre
-
+    Logic.pp_aps lpre; print_string "\n"
   and post id =
     let { lpre; lpost } = UidMap.find id l in
-    let lp = !lastpost in
-    lastpre := None;
-    lastpost := Some lpost;
-    match lp with
-    | Some p -> if lpost <> p then Logic.pp_aps lpost
-    | None -> Logic.pp_aps lpost
-
+    print_string "\n"; Logic.pp_aps lpost
   in Parse.pp_prog_hooks pre post p

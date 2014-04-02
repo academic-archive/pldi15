@@ -253,7 +253,7 @@ let pp_prog_hooks pre post prog =
   let delta = 2 in
 
   let rec f lvl prns = function
-    | PSkip id -> idnt lvl; printf "()"
+    | PSkip id -> printf "()"
     | PAssert (c, id) -> printf "assert "; cond c
     | PSet (id, v, _) -> printf "%s = %s" id (var v)
     | PInc (id, o, v, _) ->
@@ -263,17 +263,20 @@ let pp_prog_hooks pre post prog =
       let lvl' = if prns then (printf "(\n"; lvl + delta) else lvl in
       g lvl' true p1; printf ";\n";
       g lvl' false p2;
-      if prns then (printf "\n"; idnt lvl; printf ")")
+      if prns then (printf "\n"; idnt lvl; printf ")\n")
     | PWhile (c, p, _) ->
       printf "while "; cond c; printf "\n";
       g (lvl + delta) true p
 
   and g lvl prns p =
-    pre (prog_id p);
-    idnt lvl; f lvl prns p;
-    post (prog_id p)
+    match p with
+    | PSeq (_, _, _) -> f lvl prns p
+    | _ ->
+      if prns then pre (prog_id p);
+      idnt lvl; f lvl prns p;
+      if not prns then post (prog_id p)
 
-  in g 0 false prog; printf "\n"
+  in g 0 true prog; printf "\n"
 
 let pp_prog = let f _ = () in pp_prog_hooks f f
 
