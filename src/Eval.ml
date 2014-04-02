@@ -99,7 +99,7 @@ let _ =
   match try Some Sys.argv.(1) with _ -> None with
   | Some "-teval" ->
     let module E = Eval(AtomicOps) in
-    let p = Parse.prog stdin in
+    let p = Parse.pa_prog stdin in
     begin try
       let (hfinal, cost) = E.eval p E.empty_heap in
       E.print_heap hfinal;

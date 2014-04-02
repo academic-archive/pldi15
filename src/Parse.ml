@@ -225,35 +225,57 @@ let p_prog: prog pm =
     ]
   )
 
-let prog ic =
+let pa_prog ic =
   match p_prog (1, stream_of_fun (mk_lexer ic)) with
   | (Some p, _) -> p
   | (None, _) -> raise (SyntaxError "parse error")
 
-let pp_prog =
-  let open Format in
-  let s = function
+let prog_id = function
+  | PSkip id | PAssert (_, id) | PInc (_, _, _, id) | PSet (_, _, id)
+  | PWhile (_, _, id) | PSeq (_, _, id) -> id
+
+(* pretty printer for one program *)
+let pp_prog_hooks pre post prog =
+  let open Printf in
+
+  let var = function
     | VNum n -> string_of_int n
     | VId id -> id in
-  let pp_cond fmt (Cond (v1, v2, k)) =
-    fprintf fmt "%s - %s > %d" (s v1) (s v2) k in
-  let rec f prns fmt = function
-    | PSkip _ -> fprintf fmt "()"
-    | PAssert (c, _) -> fprintf fmt "assert %a" pp_cond c
-    | PSeq (p1,  p2, _) ->
-      (if prns
-        then fprintf fmt "(@[<v 2>@;%a;@;%a@]@;)"
-        else fprintf fmt "%a;@;%a")
-      (f true) p1 (f false) p2
+
+  let cond = function
+    | Cond (v1, VNum 0, k) -> printf "%s > %d" (var v1) k
+    | Cond (v1, v2, k) -> printf "%s - %s > %d" (var v1) (var v2) k in
+
+  let rec idnt i =
+    if i <> 0 then
+      begin print_string " "; idnt (i - 1) end in
+
+  let delta = 2 in
+
+  let rec f lvl prns = function
+    | PSkip id -> idnt lvl; printf "()"
+    | PAssert (c, id) -> printf "assert "; cond c
+    | PSet (id, v, _) -> printf "%s = %s" id (var v)
     | PInc (id, o, v, _) ->
       let op = match o with OPlus -> "+" | OMinus -> "-" in
-      fprintf fmt "%s = %s %s %s" id id op (s v)
-    | PSet (id, v, _) ->
-      fprintf fmt "%s = %s" id (s v)
+      printf "%s = %s %s %s" id id op (var v)
+    | PSeq (p1,  p2, _) ->
+      let lvl' = if prns then (printf "(\n"; lvl + delta) else lvl in
+      g lvl' true p1; printf ";\n";
+      g lvl' false p2;
+      if prns then (printf "\n"; idnt lvl; printf ")")
     | PWhile (c, p, _) ->
-      fprintf fmt "while %a@.  @[<v>%a@]"
-        pp_cond c (f true) p
-  in Format.printf "@[<v>%a@]@." (f false)
+      printf "while "; cond c; printf "\n";
+      g (lvl + delta) true p
+
+  and g lvl prns p =
+    pre (prog_id p);
+    idnt lvl; f lvl prns p;
+    post (prog_id p)
+
+  in g 0 false prog; printf "\n"
+
+let pp_prog = let f _ = () in pp_prog_hooks f f
 
 
 (* tests *)
@@ -272,5 +294,5 @@ let _ =
     SyntaxError e -> Printf.eprintf "Syntax error: %s\n" e
   in match try Some Sys.argv.(1) with _ -> None with
   | Some "-tlex" -> handle test_lexer
-  | Some "-tparse" -> handle (fun () -> pp_prog (prog stdin))
+  | Some "-tparse" -> handle (fun () -> pp_prog (pa_prog stdin))
   | _ -> ()
