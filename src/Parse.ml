@@ -78,9 +78,12 @@ let rec stream_of_fun f = lazy (
   | tok -> STok (tok, stream_of_fun f)
 )
 
+(* unique identifiers are used to mark each node of the AST *)
+type uid = int
 
-type 'a pm = stream -> 'a option * stream
+type 'a pm = uid * stream -> 'a option * (uid * stream)
 let ret x = fun s -> (Some x, s)
+let reti f = fun (i, s) -> (Some (f i), (i + 1, s))
 let bnd x f s =
   match x s with
   | (None, _) -> (None, s)
@@ -94,14 +97,14 @@ let rec p_or = function
     end
   | [] -> fun s -> (None, s)
 
-let p_tok f s =
+let p_tok f (i, s) =
   match Lazy.force s with
   | STok (tok, s') ->
     begin match f tok with
-    | None -> (None, s)
-    | Some x -> (Some x, s')
+    | None -> (None, (i, s))
+    | Some x -> (Some x, (i, s'))
     end
-  | _ -> (None, s)
+  | _ -> (None, (i, s))
 
 
 type id = string
@@ -111,12 +114,12 @@ type op = OPlus | OMinus
 type cond = Cond of var * var * int
 
 type prog =
-  | PSkip
-  | PAssert of cond
-  | PInc of id * op * var
-  | PSet of id * var
-  | PWhile of cond * prog
-  | PSeq of prog * prog
+  | PSkip of uid
+  | PAssert of cond * uid
+  | PInc of id * op * var * uid
+  | PSet of id * var * uid
+  | PWhile of cond * prog * uid
+  | PSeq of prog * prog * uid
 
 (* parser for one program *)
 let p_prog: prog pm =
@@ -163,33 +166,33 @@ let p_prog: prog pm =
       bnd (p_tok (is (TIdnt id))) (fun () ->
       bnd (p_tok binop) (fun op ->
       bnd (p_tok var) (fun v ->
-        ret (PInc (id, op, v))
+        reti (fun i -> PInc (id, op, v, i))
       )))))
 
     (* Assignment, PSet *)
     ; bnd (p_tok idnt) (fun id ->
       bnd (p_tok (is TEq)) (fun () ->
       bnd (p_tok var) (fun v ->
-        ret (PSet (id, v))
+        reti (fun i -> PSet (id, v, i))
       )))
 
     (* Skip, PSkip *)
     ; bnd (p_tok (is TLParen)) (fun () ->
       bnd (p_tok (is TRParen)) (fun () ->
-        ret PSkip
+        reti (fun i -> PSkip i)
       ))
 
     (* While loop, PWhile *)
     ; bnd (p_tok (is TWhile)) (fun () ->
       bnd p_cond (fun cond ->
       bnd (p_atomic ()) (fun prog ->
-        ret (PWhile (cond, prog))
+        reti (fun i -> PWhile (cond, prog, i))
       )))
 
     (* Assertion, PAssert *)
     ; bnd (p_tok (is TAssert)) (fun () ->
       bnd p_cond (fun cond ->
-        ret (PAssert cond)
+        reti (fun i -> PAssert (cond, i))
       ))
 
     (* Parenthesized complex statement *)
@@ -207,7 +210,7 @@ let p_prog: prog pm =
       p_or
         [ bnd (p_tok (is TSemi)) (fun () ->
           bnd (p_complex ()) (fun prog2 ->
-            ret (PSeq (prog1, prog2))
+            reti (fun i -> PSeq (prog1, prog2, i))
           ))
         ; ret prog1
         ]
@@ -223,7 +226,7 @@ let p_prog: prog pm =
   )
 
 let prog ic =
-  match p_prog (stream_of_fun (mk_lexer ic)) with
+  match p_prog (1, stream_of_fun (mk_lexer ic)) with
   | (Some p, _) -> p
   | (None, _) -> raise (SyntaxError "parse error")
 
@@ -235,19 +238,19 @@ let pp_prog =
   let pp_cond fmt (Cond (v1, v2, k)) =
     fprintf fmt "%s - %s > %d" (s v1) (s v2) k in
   let rec f prns fmt = function
-    | PSkip -> fprintf fmt "()"
-    | PAssert c -> fprintf fmt "assert %a" pp_cond c
-    | PSeq (p1,  p2) ->
+    | PSkip _ -> fprintf fmt "()"
+    | PAssert (c, _) -> fprintf fmt "assert %a" pp_cond c
+    | PSeq (p1,  p2, _) ->
       (if prns
         then fprintf fmt "(@[<v 2>@;%a;@;%a@]@;)"
         else fprintf fmt "%a;@;%a")
       (f true) p1 (f false) p2
-    | PInc (id, o, v) ->
+    | PInc (id, o, v, _) ->
       let op = match o with OPlus -> "+" | OMinus -> "-" in
       fprintf fmt "%s = %s %s %s" id id op (s v)
-    | PSet (id, v) ->
+    | PSet (id, v, _) ->
       fprintf fmt "%s = %s" id (s v)
-    | PWhile (c, p) ->
+    | PWhile (c, p, _) ->
       fprintf fmt "while %a@.  @[<v>%a@]"
         pp_cond c (f true) p
   in Format.printf "@[<v>%a@]@." (f false)

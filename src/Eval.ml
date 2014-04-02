@@ -54,15 +54,15 @@ module Eval(M: METRIC) = struct
   exception ProgramFailure of prog
 
   let rec eval = function
-    | PSkip -> pay CSkip
-    | PSeq (p1, p2) -> pay CSeq1 -$ eval p1 -$ pay CSeq2 -$ eval p2
-    | PInc (v1, op, v2) -> pay CSet -$ inc v1 op v2
-    | PSet (v1, v2) -> pay CSet -$ set v1 v2
-    | PWhile (cond, p) as ploop ->
+    | PSkip _ -> pay CSkip
+    | PSeq (p1, p2, _) -> pay CSeq1 -$ eval p1 -$ pay CSeq2 -$ eval p2
+    | PInc (v1, op, v2, _) -> pay CSet -$ inc v1 op v2
+    | PSet (v1, v2, _) -> pay CSet -$ set v1 v2
+    | PWhile (cond, p, _) as ploop ->
       guard (test cond)
         (fun () -> pay CWhile1 -$ eval p -$ pay CWhile2 -$ eval ploop)
         (fun () -> pay CWhile3)
-    | PAssert c as p ->
+    | PAssert (c, _) as p ->
       guard (test c)
         (fun () -> pay CAssert)
         (fun () -> raise (ProgramFailure p))
