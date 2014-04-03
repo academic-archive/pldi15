@@ -36,7 +36,7 @@ module Eval(M: METRIC) = struct
   let value v h =
     match v with
     | VNum n -> n
-    | VId id -> try Heap.find id h with _ -> 0
+    | VId id -> try Heap.find id h with Not_found -> 0
 
   let inc id op v heap =
     let res =

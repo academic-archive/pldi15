@@ -18,7 +18,7 @@ let mk_lexer ic =
     let mem = ref None in
     (fun () ->
       match !mem with
-      | None -> (try input_char ic with _ -> '\xff')
+      | None -> (try input_char ic with End_of_file -> '\xff')
       | Some c -> (mem := None; c)),
     (fun c -> mem := Some c) in
 
