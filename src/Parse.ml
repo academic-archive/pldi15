@@ -272,7 +272,7 @@ let pp_prog_hooks pre post prog =
       let lvl' = if prns then (printf "(\n"; lvl + delta) else lvl in
       g lvl' true p1; printf ";\n";
       g lvl' false p2;
-      if prns then (printf "\n"; idnt lvl; printf ")\n")
+      if prns then (printf "\n"; idnt lvl; printf ")")
     | PWhile (c, p, _) ->
       printf "while "; cond c; printf "\n";
       g (lvl + delta) true p
