@@ -125,32 +125,41 @@ type prog =
 let p_prog: prog pm =
 
   let is t t' = if t = t' then Some () else None in
-  let const = function TNum n -> Some n | _ -> None in
+  let num = function TNum n -> Some n | _ -> None in
   let idnt = function TIdnt id -> Some id | _ -> None in
   let binop = function
     | TPlus -> Some OPlus
     | TMinus -> Some OMinus
     | _ -> None in
-  let var = function
-    | TIdnt id -> Some (VId id)
-    | TNum n -> Some (VNum n)
-    | _ -> None in
+
+  let p_num = p_or
+    [ bnd (p_tok (is TMinus)) (fun () ->
+      bnd (p_tok num) (fun k ->
+        ret (-k)
+      ))
+    ; p_tok num
+    ] in
+
+  let p_var = p_or
+    [ bnd (p_tok idnt) (fun id -> ret (VId id))
+    ; bnd p_num (fun n -> ret (VNum n))
+    ] in
 
   let p_cond = p_or
 
     (* x > k *)
-    [ bnd (p_tok var) (fun v ->
+    [ bnd p_var (fun v ->
       bnd (p_tok (is TGt)) (fun () ->
-      bnd (p_tok const) (fun k ->
+      bnd p_num (fun k ->
         ret (Cond (v, VNum 0, k))
       )))
 
     (* x - y > k *)
-    ; bnd (p_tok var) (fun v1 ->
+    ; bnd p_var (fun v1 ->
       bnd (p_tok (is TMinus)) (fun () ->
-      bnd (p_tok var) (fun v2 ->
+      bnd p_var (fun v2 ->
       bnd (p_tok (is TGt)) (fun () ->
-      bnd (p_tok const) (fun k ->
+      bnd p_num (fun k ->
         ret (Cond (v1, v2, k))
       )))))
 
@@ -165,14 +174,14 @@ let p_prog: prog pm =
       bnd (p_tok (is TEq)) (fun () ->
       bnd (p_tok (is (TIdnt id))) (fun () ->
       bnd (p_tok binop) (fun op ->
-      bnd (p_tok var) (fun v ->
+      bnd p_var (fun v ->
         reti (fun i -> PInc (id, op, v, i))
       )))))
 
     (* Assignment, PSet *)
     ; bnd (p_tok idnt) (fun id ->
       bnd (p_tok (is TEq)) (fun () ->
-      bnd (p_tok var) (fun v ->
+      bnd p_var (fun v ->
         reti (fun i -> PSet (id, v, i))
       )))
 
