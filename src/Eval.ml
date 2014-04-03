@@ -10,7 +10,7 @@ type action =
 module type METRIC = sig
   type t
   val cost: action -> t
-  val free: t
+  val zero: t
   val concat: t -> t -> t
 end
 
@@ -43,10 +43,10 @@ module Eval(M: METRIC) = struct
       match op with
       | OPlus -> value (VId id) heap + value v heap
       | OMinus -> value (VId id) heap - value v heap
-    in (Heap.add id res heap, free)
+    in (Heap.add id res heap, zero)
 
   let set id v heap =
-    (Heap.add id (value v heap) heap, free)
+    (Heap.add id (value v heap) heap, zero)
 
   let test (Cond (v1, v2, k)) heap =
     value v1 heap - value v2 heap > k
@@ -79,7 +79,7 @@ end
 module CostFree: METRIC = struct
   type t = unit
   let cost _ = ()
-  let free = ()
+  let zero = ()
   let concat _ _ = ()
 end
 
@@ -88,7 +88,7 @@ module AtomicOps: (METRIC with type t = int) = struct
   let cost = function
     | CSkip | CSet | CAssert -> 1
     | _ -> 0
-  let free = 0
+  let zero = 0
   let concat a b = a + b
 end
 
