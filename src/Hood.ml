@@ -39,9 +39,59 @@ let create_logctx =
   in f UidMap.empty []
 
 
+(* second, generate linear programming problem *)
+module Idx : sig
+  type t
+  val const : t
+  val dst : var * var -> t
+  val compare : t -> t -> int
+  val fold : ('a -> t -> 'a) -> 'a -> var list -> 'a
+end = struct
+  type t = Const | Dst of var * var
+  let const = Const
+  let dst (u, v) = if u < v then Dst (u, v) else Dst (v, u)
+  let compare = compare
+  let fold f a vl =
+    let rec pairs a vl =
+      match vl with
+      | v :: vl ->
+        let g a v' = f a (dst (v, v')) in
+        pairs (List.fold_left g a vl) vl
+      | [] -> a
+    in pairs (f a const) vl
+end
+
+module type CLPSTATE = sig
+  val state : Clp.t
+  val next_var : int ref
+end
+
+module Q(C: CLPSTATE) : sig
+  type ctx
+  type ineq = Eq | Le
+  val create : var list -> ctx
+end = struct
+  module M = Map.Make(Idx)
+  type ctx = { cvars : var list; cmap : int M.t }
+  let newv () =
+    let v = !C.next_var in
+    let rows = Clp.number_rows C.state in
+    let cols = Clp.number_columns C.state in
+    Clp.resize C.state rows (cols + 1);
+    incr C.next_var;
+    v
+  let create vl =
+    { cvars = vl
+    ; cmap = Idx.fold
+        (fun m i -> M.add i (newv ()) m)
+        M.empty vl
+    }
+  type ineq = Eq | Le
+end
+
+
 let _ =
   if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tlannot" then
-
   let p = Parse.pa_prog stdin in
   let l = create_logctx p in
   let pre id =
