@@ -269,7 +269,7 @@ let pp_prog_hooks pre post prog =
       let op = match o with OPlus -> "+" | OMinus -> "-" in
       printf "%s = %s %s %s" id id op (var v)
     | PSeq (p1,  p2, _) ->
-      let lvl' = if prns then (printf "(\n"; lvl + delta) else lvl in
+      let lvl' = if prns then (idnt lvl; printf "(\n"; lvl + delta) else lvl in
       g lvl' true p1; printf ";\n";
       g lvl' false p2;
       if prns then (printf "\n"; idnt lvl; printf ")")
