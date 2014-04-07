@@ -383,13 +383,70 @@ The additive shift for natural numbers reflects the identity
 where $q_{k+1} = 0$.  It is used in the effect system if the
 difference $n+1$ between two variables $x,y$ decreases by one.
 
-\begin{lemma}
-  Let $V$ be a set of variables with $x,y \in V$ and let $H$ be a
-  program state. Let $H'(z) = H(z)$ for $z \not\in \{x,y\}$ and let
-  $|H'(x) {-} H'(y)| = |H(x) {-} H(y)| - 1$.
+\begin{lemma} Let $V$ be a set of variables with $x,y \in V$ and let
+  $H$ be a program state. Let $|H'(t) {-} H'(u)| = |H(t) {-} H(u)|$
+  for $\{t,u\} \neq \{x,y\}$ and let $|H'(x) {-} H'(y)| = |H(x) {-}
+  H(y)| - 1$.
   %
   If $Q' = \shift_{\{x,y\}}(Q)$ then $R_Q(H) = R_{Q'}(H')$.
 \end{lemma}
+
+We now study the effect of multiple simultaneous shifts.  Let $Q$ be a
+resource annotation for a variable set $V$ and let $U_1,\ldots,U_n
+\subseteq V$ with $|U_i| = 2$ for all $i$ and $U_i \neq U_j$ for $i
+\neq j$ be pairwise distinct two-element variable sets.  The
+simulations additive shift $\shift_{U_1,\ldots,U_n}(Q)$ of $Q$ with
+respect to $U_1,\ldots,U_n$ is defined by
+$$
+\shift_{U_1,\ldots,U_n}(Q) = \shift_{U_1}( \cdots \shift_{U_n}(Q) \cdots ) \; .
+$$
+%
+\begin{proposition}
+  Let $V$ be a set of variables and let $U_1,\ldots,U_n$ be pairwise
+  distinct two-element variable sets.  Let $|H'(x) {-} H'(y)| = |H(x)
+  {-} H(y)|$ for $\{x,y\} \not\in \{U_1,\ldots,U_n\}$ and let $|H'(x)
+  {-} H'(y)| = |H(x) {-} H(y)| - 1$ for $\{x,y\} \in
+  \{U_1,\ldots,U_n\}$.
+  %
+  If $Q' = \shift_{\{U_1,\ldots,U_n\}}(Q)$ then $R_Q(H) = R_{Q'}(H')$.
+\end{proposition}
+%
+As shown by the following lemma, the order in which the shifts for the
+individual $U_i$ are applied is insignificant.
+%
+\begin{lemma}
+  Let $\sigma : \{1,\ldots,n\} \to \{1,\ldots,n\}$ be a
+  permutation. Then $\shift_{U_1,\ldots,U_n}(Q) =
+  \shift_{U_{\sigma(1)},\ldots,U_{\sigma(n)}}(Q)$.
+\end{lemma}
+%
+For reasons of efficiency in the constraint generation, we give a more
+direct formula for the simultaneous shift.  Let $I \in \ind(V)$ and
+let $U_1,\ldots,U_n$ be pairwise distinct two-element variable sets.
+We define the index $I^{U_1,\ldots,U_n + k}$ as the family $(i'_{\{x,y\}})_{\{x,y\} \subseteq V}$ such that
+$$
+i'_{\{t,u\}} = \left\{
+  \begin{array}{ll}
+    i_{\{t,u\}} + k  & \text{if } \{t,u\} \in \{U_1,\ldots,U_n\} \\
+    i_{\{t,u\}} & \text{otherwise}
+  \end{array}
+\right.  \;.
+$$
+
+%
+\begin{lemma}
+  Let $V$ be a variable set and let $U_1,\ldots,U_n$ be pairwise
+  distinct two-element variable sets.
+  %
+  Let $Q = (q_I)_{I \in \ind(V)}$ be a resource annotation for
+  $V$ and let $ Q' = (q'_I)_{I \in \ind(V)}$ where
+  $$
+  q'_I = \sum_{\{j_1,\ldots,j_m\} \subseteq \{1,\ldots,n\} } q_{I^{U_{j_1},\ldots,U_{j_m}+1}} \; .
+  $$
+  Then $Q' = \shift_{U_1,\ldots,U_n}(Q)$.
+\end{lemma}
+
+
 
 
 %%
