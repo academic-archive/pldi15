@@ -72,6 +72,7 @@ module Q(C: CLPSTATE) : sig
   type ctx
   val create : var list -> ctx
   val set : ctx -> Idx.t -> (Idx.t * int) list -> int -> ctx
+  val eq : ctx -> ctx -> unit
   val solve : ctx -> unit
 end = struct
   module S = Set.Make(struct
@@ -111,6 +112,19 @@ end = struct
     |];
     { cvars = c.cvars; cmap = M.add idx v' c.cmap }
 
+  let eq c1 c2 =
+    assert (S.equal c1.cvars c2.cvars);
+    let eqv i =
+      { Clp.row_lower = 0.; row_upper = 0.
+      ; row_elements =
+        [| (M.find i c1.cmap, -1.)
+         ; (M.find i c2.cmap, 1.) |] } in
+    let rows = Array.of_list begin
+      Idx.fold (fun l i -> eqv i :: l) []
+        (S.elements c1.cvars)
+    end in
+    Clp.add_rows C.state rows
+
   let solve c =
     let obj = Clp.objective_coefficients C.state in
     Idx.fold (fun () i -> obj.(M.find i c.cmap) <- 1.) ()
@@ -142,15 +156,23 @@ let go cost p =
   let open Idx in
   let open Eval in
 
+  let addconst q act = Q.set q const [(const, 1)] (cost act) in
   let rec gen qpost = function
-    | PSkip _ -> Q.set qpost const [(const, 1)] (cost CSkip)
-    | PAssert _ -> Q.set qpost const [(const, 1)] (cost CAssert)
+    | PSkip _ -> addconst qpost CSkip
+    | PAssert _ -> addconst qpost CAssert
     | PSeq (p1, p2, _) ->
       let qpre1 = gen qpost p1 in
-      let qmid = Q.set qpre1 const [(const, 1)] (cost CSeq2) in
+      let qmid = addconst qpre1 CSeq2 in
       let qpre2 = gen qmid p2 in
-      let qpre = Q.set qpre2 const [(const, 1)] (cost CSeq1) in
+      let qpre = addconst qpre2 CSeq1 in
       qpre
+    | PWhile (_, p, _) ->
+      let qinv = addconst qpost CWhile3 in
+      let qpost1 = addconst qinv CWhile2 in
+      let qpre1 = gen qpost1 p in
+      let qinv' = addconst qpre1 CWhile1 in
+      Q.eq qinv qinv';
+      qinv'
     | _ -> failwith "not implemented (gen)" in
 
   let qpre = gen (Q.create (VNum 0 :: pvars p)) p in
