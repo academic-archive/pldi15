@@ -7,16 +7,20 @@ type action =
   | CIf1 | CIf2
   | CSeq1 | CSeq2
 
-module type METRIC = sig
+let atomic_ops = function
+  | CSkip | CSet | CAssert -> 1
+  | _ -> 0
+
+module type QMONOID = sig
   type t
-  val cost: action -> t
+  val lift: int -> t
   val zero: t
   val concat: t -> t -> t
 end
 
-module Eval(M: METRIC) = struct
+module Eval(QMon: QMONOID) = struct
   open Parse
-  open M
+  open QMon
 
   module Heap =
     Map.Make(struct type t = id  let compare = compare end)
@@ -28,7 +32,7 @@ module Eval(M: METRIC) = struct
     let (heap'', cost2) = c2 heap' in
     (heap'', concat cost1 cost2)
 
-  let pay act heap = (heap, cost act)
+  let pay price heap = (heap, lift price)
 
   let guard f c1 c2 heap =
     if f heap then c1 () heap else c2 () heap
@@ -53,19 +57,22 @@ module Eval(M: METRIC) = struct
 
   exception ProgramFailure of prog
 
-  let rec eval = function
-    | PSkip _ -> pay CSkip
-    | PSeq (p1, p2, _) -> pay CSeq1 -$ eval p1 -$ pay CSeq2 -$ eval p2
-    | PInc (v1, op, v2, _) -> pay CSet -$ inc v1 op v2
-    | PSet (v1, v2, _) -> pay CSet -$ set v1 v2
-    | PWhile (cond, p, _) as ploop ->
-      guard (test cond)
-        (fun () -> pay CWhile1 -$ eval p -$ pay CWhile2 -$ eval ploop)
-        (fun () -> pay CWhile3)
-    | PAssert (c, _) as p ->
-      guard (test c)
-        (fun () -> pay CAssert)
-        (fun () -> raise (ProgramFailure p))
+  let eval cost =
+    let pay act = pay (cost act) in
+    let rec eval = function
+      | PSkip _ -> pay CSkip
+      | PSeq (p1, p2, _) -> pay CSeq1 -$ eval p1 -$ pay CSeq2 -$ eval p2
+      | PInc (v1, op, v2, _) -> pay CSet -$ inc v1 op v2
+      | PSet (v1, v2, _) -> pay CSet -$ set v1 v2
+      | PWhile (cond, p, _) as ploop ->
+        guard (test cond)
+          (fun () -> pay CWhile1 -$ eval p -$ pay CWhile2 -$ eval ploop)
+          (fun () -> pay CWhile3)
+      | PAssert (c, _) as p ->
+        guard (test c)
+          (fun () -> pay CAssert)
+          (fun () -> raise (ProgramFailure p))
+    in eval
 
   let empty_heap = Heap.empty
 
@@ -76,18 +83,16 @@ end
 
 (* sample metrics *)
 
-module CostFree: METRIC = struct
+module QMUnit: QMONOID = struct
   type t = unit
-  let cost _ = ()
+  let lift _ = ()
   let zero = ()
   let concat _ _ = ()
 end
 
-module AtomicOps: (METRIC with type t = int) = struct
+module QMInt: (QMONOID with type t = int) = struct
   type t = int
-  let cost = function
-    | CSkip | CSet | CAssert -> 1
-    | _ -> 0
+  let lift x = x
   let zero = 0
   let concat a b = a + b
 end
@@ -98,10 +103,10 @@ end
 let _ =
   match try Some Sys.argv.(1) with _ -> None with
   | Some "-teval" ->
-    let module E = Eval(AtomicOps) in
+    let module E = Eval(QMInt) in
     let p = Parse.pa_prog stdin in
     begin try
-      let (hfinal, cost) = E.eval p E.empty_heap in
+      let (hfinal, cost) = E.eval atomic_ops p E.empty_heap in
       E.print_heap hfinal;
       Printf.printf "evaluation cost: %d\n" cost
     with E.ProgramFailure p ->
