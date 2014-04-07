@@ -298,4 +298,108 @@ $\Phi_H(Q) - \Phi_{H'}(Q') \ge q - q'$.
 \end{itemize}
 \end{proof}
 
+\section{Polynomial Potential}
+
+\paragraph{Index Sets}
+
+Let $V$ be a set of variables.  An \emph{index} $I \in \ind(V)$ is a
+family that maps two-element sets of variables to natural numbers,
+that is,
+$$
+I = (i_{\{x,y\}})_{\{x,y\} \subseteq V} \; .
+$$
+%
+We identify a family $I$ with the set $\{ (\{x,y\},i_{\{x,y\}})
+\mid \{x,y\} \subseteq V\}$.
+
+Let $\ind(V)$ denote the set of all such indices.  We write $\ind$
+instead of $\ind(V)$ if the set of variables $V$ is fixed or obvious
+from the context.
+%
+We assume that allways $0 \in V$ and sometimes write $i_x$ instead of $i_{\{x,0\}}$.
+
+The \emph{degree} $\deg(I)$ of an index $I = (i_{\{x,y\}})_{\{x,y\}
+  \subseteq V}$ is defined as
+$$
+\deg(I) = \sum_{\{x,y\} \in V} i_{\{x,y\}} \;.
+$$
+We define $\ind_k(V) = \{ I \mid I \in \ind(V) \text{ and } \deg(i) \leq k
+\}$ to be the set of indices of degree at most $k$.
+
+\paragraph{Resource Polynomials}
+
+Let $V$ be a set of variables.  An index $I \in \ind(V)$ denotes a
+\emph{base polynomial} $P_I : \states \to \N$ for $V$ that maps a
+program state $H$ to product of binomial coefficients (a natural
+number).  We define
+$$
+P_I(H) = \prod_{{\{x,y\}} \subseteq V} \binom {|H(x){-}H(y)|} {i_{\{x,y\}}} \; .
+$$
+%
+A \emph{resource polynomial} $R$ for the variable set $V$ is a
+non-negative linear combination of the base polynomials for $V$.
+
+\paragraph{Potential Annotations}
+
+A \emph{potential annotation} for the variable set $V$ is a family
+$$Q = (q_I)_{I \in \ind(V)}$$ 
+of non-negative rational numbers.  Such an annotation denotes the
+resource polynomial $R_Q$ that is defined by
+$$
+R_Q(H) = \sum_{I \in \ind(V)} q_I \cdot P_I(H) \; .
+$$
+%
+We say that the potential annotation $Q$ is of degree $k$ if $q_I = 0$
+for $I \in \ind(V)$ with $\deg(I) > k$.
+
+\paragraph{Additive Shifts}
+
+Let $Q$ be a potential annotation for a variable set $V$ and let
+$\{x,y\} \subseteq V$ be a two-element variable set.  The
+\emph{additive shift} with respect to $\{x,y\}$ is a potential
+annotation $\shift_{\{x,y\}}(Q) = (q'_I)_{I \in \ind(V)} $ for $V$
+that is defined through
+$$
+q'_I = q_I + q_{I^{\{x,y\}{+}1}} \; .
+$$
+For an index $I = (i_{\{x,y\}})_{\{x,y\} \subseteq V}$ we use the
+notation $I^{\{x,y\}{+}k}$ to denote the index
+$(i'_{\{x,y\}})_{\{x,y\} \subseteq V}$ such that
+$$
+i'_{\{t,u\}} = \left\{
+  \begin{array}{ll}
+    i_{\{t,u\}} + k  & \text{if } \{t,u\} = \{x,y\} \\
+    i_{\{t,u\}} & \text{otherwise}
+  \end{array}
+\right.
+\;.
+$$
+%
+The additive shift for natural numbers reflects the identity 
+\begin{equation}
+\label{eq:shift}
+\sum_{0 {\leq} i \leq {k}} q_i \binom{n+1}{i} = \sum_{0 {\leq} i \leq {k}} (q_i{+}q_{i+1}) \binom{n}{i}
+\end{equation}
+where $q_{k+1} = 0$.  It is used in the effect system if the
+difference $n+1$ between two variables $x,y$ decreases by one.
+
+\begin{lemma}
+  Let $V$ be a set of variables with $x,y \in V$ and let $H$ be a
+  program state. Let $H'(z) = H(z)$ for $z \not\in \{x,y\}$ and let
+  $|H'(x) {-} H'(y)| = |H(x) {-} H(y)| - 1$.
+  %
+  If $Q' = \shift_{\{x,y\}}(Q)$ then $R_Q(H) = R_{Q'}(H')$.
+\end{lemma}
+
+
+%%
+% Note: Later we need to shift in many directions at once like 
+%   Q' = shift_{x,y} (shift_{x,u} (Q))
+% To do: Give a combined formula for that (concise constraint system).
+%%
+
+
+
+
+
 \end{document}
