@@ -3,6 +3,13 @@
 open Parse
 open Logic
 
+(*
+	0 - no output
+	1 - output final annotation
+	2 - output final annotation and constraints
+*)
+let debug = 0
+
 module UidMap = struct
   module M = Map.Make(struct type t = uid  let compare = compare end)
   include M
@@ -12,6 +19,15 @@ module UidMap = struct
     add key value map
   let findp p = find (prog_id p)
 end
+
+module VSet = struct
+  include Set.Make(struct
+    type t = var
+    let compare = compare
+  end)
+  let of_list = List.fold_left (fun s x -> add x s) empty
+end
+
 
 (* first, compute the logical contexts *)
 type log = { lpre : aps; lpost : aps }
@@ -44,23 +60,32 @@ module Idx : sig
   type t
   val const : t
   val dst : var * var -> t
-  (* val extra : int -> t *)
+  val extra : int -> t
   val compare : t -> t -> int
-  val fold : ('a -> t -> 'a) -> 'a -> var list -> 'a
+  val fold : ('a -> t -> 'a) -> 'a -> VSet.t -> 'a
+  val pp : float -> out_channel -> t -> unit
 end = struct
   type t = Const | Dst of var * var | Extra of int
   let const = Const
   let dst (u, v) = if u < v then Dst (u, v) else Dst (v, u)
   let extra i = Extra i
   let compare = compare
-  let fold f a vl =
+  let fold f a vs =
     let rec pairs a vl =
       match vl with
       | v :: vl ->
         let g a v' = f a (dst (v, v')) in
         pairs (List.fold_left g a vl) vl
       | [] -> a
-    in pairs (f a const) vl
+    in pairs (f a const) (VSet.elements vs)
+  let pp k oc = function
+    | Const ->
+      Printf.fprintf oc "%.2f" k
+    | Dst (v1, v2) ->
+      Printf.fprintf oc "%.2f |%a - %a|" k
+        pp_var v1 pp_var v2
+    | Extra n ->
+      Printf.fprintf oc "%.2f (extra %d)" k n
 end
 
 module type CLPSTATE = sig
@@ -70,17 +95,14 @@ end
 
 module Q(C: CLPSTATE) : sig
   type ctx
-  val create : var list -> ctx
+  val create : VSet.t -> ctx
   val set : ctx -> Idx.t -> (Idx.t * int) list -> int -> ctx
   val eq : ctx -> ctx -> unit
-  val solve : ctx -> unit
+  val fresh : ctx -> int -> (Idx.t list * ctx)
+  val solve : ctx -> ctx -> unit
 end = struct
-  module S = Set.Make(struct
-    type t = var
-    let compare = compare
-  end)
   module M = Map.Make(Idx)
-  type ctx = { cvars : S.t; cmap : int M.t }
+  type ctx = { cvars : VSet.t; cmap : int M.t }
 
   let newv () =
     let rows = Clp.number_rows C.state in
@@ -89,13 +111,10 @@ end = struct
     let v = !C.next_var in
     incr C.next_var; v
 
-  let create vl =
-    let cvars = List.fold_left
-      (fun s v -> S.add v s)
-      S.empty vl in
+  let create cvars =
     let cmap = Idx.fold
       (fun m i -> M.add i (newv ()) m)
-      M.empty (S.elements cvars) in
+      M.empty cvars in
     { cvars; cmap }
 
   let set c idx l const =
@@ -105,6 +124,11 @@ end = struct
         (fun (i, w) -> ((M.find i c.cmap), float_of_int w)) l
     end in
     let k = float_of_int (-const) in
+    if debug > 1 then begin
+      Printf.printf "v%d = %d" v' const;
+      List.iter (fun (i, w) -> Printf.printf " + %d * v%d" w (M.find i c.cmap)) l;
+      print_newline ()
+    end;
     Clp.add_rows C.state [|
       { Clp.row_lower = k
       ; Clp.row_upper = k
@@ -113,40 +137,59 @@ end = struct
     { cvars = c.cvars; cmap = M.add idx v' c.cmap }
 
   let eq c1 c2 =
-    assert (S.equal c1.cvars c2.cvars);
+    assert (VSet.equal c1.cvars c2.cvars);
     let eqv i =
+      if debug > 1 then
+        Printf.printf "v%d = v%d\n" (M.find i c1.cmap) (M.find i c2.cmap);
       { Clp.row_lower = 0.; row_upper = 0.
       ; row_elements =
         [| (M.find i c1.cmap, -1.)
          ; (M.find i c2.cmap, 1.) |] } in
-    let rows = Array.of_list begin
-      Idx.fold (fun l i -> eqv i :: l) []
-        (S.elements c1.cvars)
-    end in
+    let rows = Array.of_list
+      (Idx.fold (fun l i -> eqv i :: l) [] c1.cvars) in
     Clp.add_rows C.state rows
 
-  let solve c =
+  let fresh {cvars; cmap} n =
+    let rec f n =
+      if n = 0 then [] else
+      let v = newv () in
+      (Idx.extra (newv ()), v) :: f (n-1) in
+    let l, cmap =
+      List.fold_left
+        (fun (l, c) (i, v) -> (i::l, M.add i v c))
+        ([], cmap) (f n) in
+    (l, {cvars; cmap})
+
+  let solve cini cfin =
     let obj = Clp.objective_coefficients C.state in
-    Idx.fold (fun () i -> obj.(M.find i c.cmap) <- 1.) ()
-      (S.elements c.cvars);
+    Idx.fold (fun () i -> obj.(M.find i cini.cmap) <- 1.) () cini.cvars;
     Clp.change_objective_coefficients C.state obj;
-    Clp.primal C.state
+    flush stdout;
+    Clp.primal C.state;
+    let sol = Clp.primal_column_solution C.state in
+    let p c =
+      print_string "*************\n";
+      M.iter begin fun idx vnum ->
+        Idx.pp sol.(vnum) stdout idx;
+        print_newline ()
+      end c.cmap in
+    p cini; if debug > 0 then p cfin
 
 end
 
 
 let rec pvars p =
-  (* get all variables used in a program (with duplicates) *)
-  let cvars (Cond (v1, v2, _)) = [v1; v2] in
+  (* get all variables used in a program *)
+  let cvars (Cond (v1, v2, _)) = VSet.of_list [v1; v2] in
   match p with
-  | PSkip _ -> []
+  | PSkip _ -> VSet.empty
   | PAssert (c, _) -> cvars c
-  | PSet (id, v2, _) -> [VId id; v2]
-  | PInc (id, _, v, _) -> [VId id; v]
-  | PSeq (p1, p2, _) -> pvars p1 @ pvars p2
-  | PWhile (c, p, _) -> cvars c @ pvars p
+  | PSet (id, v2, _) -> VSet.of_list [VId id; v2]
+  | PInc (id, _, v, _) -> VSet.of_list [VId id; v]
+  | PSeq (p1, p2, _) -> VSet.union (pvars p1) (pvars p2)
+  | PWhile (c, p, _) -> VSet.union (cvars c) (pvars p)
 
-let go cost p =
+let go lctx cost p =
   (* generate and resolve constraints *)
   let clp_state = Clp.create () in
   let module Q = Q(struct
@@ -155,17 +198,59 @@ let go cost p =
   end) in
   let open Idx in
   let open Eval in
+  let vars = VSet.add (VNum 0) (pvars p) in
 
   let addconst q act = Q.set q const [(const, 1)] (cost act) in
   let rec gen qpost = function
+
     | PSkip _ -> addconst qpost CSkip
+
     | PAssert _ -> addconst qpost CAssert
+
+    | PInc (x, op, delta, pid) ->
+      let {lpre;_} = UidMap.find pid lctx in
+      let vars = VSet.remove (VId x) vars in
+      let us, vs = VSet.partition (Logic.aps_entails lpre x op delta) vars in
+      begin match delta with
+
+      (* first case, delta is a number *)
+      | VNum k ->
+        let pl, q = Q.fresh qpost (VSet.cardinal us) in
+        let rl, q = Q.fresh q (VSet.cardinal us) in
+
+        (* constant potential modification *)
+        let q = Q.set q const
+          ((const, 1) :: List.map (fun i -> (i, -k)) rl) 0 in
+
+        (* q_{xu} = p_{xu} + r_{xu} *)
+        let q = List.fold_left
+          (fun q (u, (p, r)) -> Q.set q (Idx.dst (VId x, u)) [(p, 1); (r, 1)] 0)
+          q (List.combine (VSet.elements us) (List.combine pl rl)) in
+
+        (* modification of delta's potential *)
+        let d0 = Idx.dst (VNum 0, delta) in
+        let q = Q.set q d0
+          ( [ (d0, 1) ]
+          @ List.map (fun p -> (p, -1)) pl
+          @ List.map (fun v -> (Idx.dst (VId x, v), +1)) (VSet.elements vs)
+          ) 0 in
+
+        (* pay for the assignment *)
+        addconst q CSet
+
+      (* second case, delta is a variable *)
+      | VId d ->
+        failwith "not implemented (PInc (_, _, VId _, _))"
+
+      end
+
     | PSeq (p1, p2, _) ->
-      let qpre1 = gen qpost p1 in
-      let qmid = addconst qpre1 CSeq2 in
-      let qpre2 = gen qmid p2 in
-      let qpre = addconst qpre2 CSeq1 in
+      let qpre2 = gen qpost p2 in
+      let qmid = addconst qpre2 CSeq2 in
+      let qpre1 = gen qmid p1 in
+      let qpre = addconst qpre1 CSeq1 in
       qpre
+
     | PWhile (_, p, _) ->
       let qinv = addconst qpost CWhile3 in
       let qpost1 = addconst qinv CWhile2 in
@@ -173,10 +258,12 @@ let go cost p =
       let qinv' = addconst qpre1 CWhile1 in
       Q.eq qinv qinv';
       qinv'
+
     | _ -> failwith "not implemented (gen)" in
 
-  let qpre = gen (Q.create (VNum 0 :: pvars p)) p in
-  Q.solve qpre
+  let qpost = Q.create vars in
+  let qpre = gen qpost p in
+  Q.solve qpre qpost
 
 
 let _ =
@@ -194,5 +281,5 @@ let _ =
 let _ =
   if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tq" then
   let p = Parse.pa_prog stdin in
-  (* let l = create_logctx p in *)
-  go (function x -> Eval.atomic_ops x) p
+  let l = create_logctx p in
+  go l (function x -> Eval.atomic_ops x) p
