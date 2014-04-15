@@ -243,17 +243,20 @@ let prog_id = function
   | PSkip id | PAssert (_, id) | PInc (_, _, _, id) | PSet (_, _, id)
   | PWhile (_, _, id) | PSeq (_, _, id) -> id
 
-(* pretty printer for one program *)
+
+(* pretty printing *)
+
+let pp_var oc = function
+  | VNum n -> Printf.fprintf oc "%d" n
+  | VId x -> Printf.fprintf oc "%s" x
+
+
 let pp_prog_hooks pre post prog =
   let open Printf in
 
-  let var = function
-    | VNum n -> string_of_int n
-    | VId id -> id in
-
   let cond = function
-    | Cond (v1, VNum 0, k) -> printf "%s > %d" (var v1) k
-    | Cond (v1, v2, k) -> printf "%s - %s > %d" (var v1) (var v2) k in
+    | Cond (v1, VNum 0, k) -> printf "%a > %d" pp_var v1 k
+    | Cond (v1, v2, k) -> printf "%a - %a > %d" pp_var v1 pp_var v2 k in
 
   let rec idnt i =
     if i <> 0 then
@@ -264,10 +267,10 @@ let pp_prog_hooks pre post prog =
   let rec f lvl prns = function
     | PSkip id -> printf "()"
     | PAssert (c, id) -> printf "assert "; cond c
-    | PSet (id, v, _) -> printf "%s = %s" id (var v)
+    | PSet (id, v, _) -> printf "%s = %a" id pp_var v
     | PInc (id, o, v, _) ->
       let op = match o with OPlus -> "+" | OMinus -> "-" in
-      printf "%s = %s %s %s" id id op (var v)
+      printf "%s = %s %s %a" id id op pp_var v
     | PSeq (p1,  p2, _) ->
       let lvl' = if prns then (idnt lvl; printf "(\n"; lvl + delta) else lvl in
       g lvl' true p1; printf ";\n";
