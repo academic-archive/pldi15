@@ -63,7 +63,7 @@ module Idx : sig
   val extra : int -> t
   val compare : t -> t -> int
   val fold : ('a -> t -> 'a) -> 'a -> VSet.t -> 'a
-  val pp : float -> out_channel -> t -> unit
+  val printk : float -> t -> unit
 end = struct
   type t = Const | Dst of var * var | Extra of int
   let const = Const
@@ -78,14 +78,15 @@ end = struct
         pairs (List.fold_left g a vl) vl
       | [] -> a
     in pairs (f a const) (VSet.elements vs)
-  let pp k oc = function
+  let printk k = function
     | Const ->
-      Printf.fprintf oc "%.2f" k
+      Printf.printf "%.2f\n" k
+    | Dst (v, VNum 0) | Dst (VNum 0, v) ->
+      Printf.printf "%.2f |%a|\n" k pp_var v
     | Dst (v1, v2) ->
-      Printf.fprintf oc "%.2f |%a - %a|" k
+      Printf.printf "%.2f |%a - %a|\n" k
         pp_var v1 pp_var v2
-    | Extra n ->
-      Printf.fprintf oc "%.2f (extra %d)" k n
+    | Extra _ -> ()
 end
 
 module type CLPSTATE = sig
@@ -97,7 +98,8 @@ module Q(C: CLPSTATE) : sig
   type ctx
   val create : VSet.t -> ctx
   val set : ctx -> Idx.t -> (Idx.t * int) list -> int -> ctx
-  val eq : ctx -> ctx -> unit
+  val eq : ctx -> Idx.t -> (Idx.t * int) list -> int -> ctx
+  val eqc : ctx -> ctx -> unit
   val fresh : ctx -> int -> (Idx.t list * ctx)
   val solve : ctx -> ctx -> unit
 end = struct
@@ -117,8 +119,7 @@ end = struct
       M.empty cvars in
     { cvars; cmap }
 
-  let set c idx l const =
-    let v' = newv () in
+  let equal c v' idx l const =
     let row_elements = Array.of_list begin
       (v', -1.) :: List.map
         (fun (i, w) -> ((M.find i c.cmap), float_of_int w)) l
@@ -136,7 +137,13 @@ end = struct
     |];
     { cvars = c.cvars; cmap = M.add idx v' c.cmap }
 
-  let eq c1 c2 =
+  let set c idx l const =
+    equal c (newv ()) idx l const
+
+  let eq c idx l const =
+    equal c (M.find idx c.cmap) idx l const
+
+  let eqc c1 c2 =
     assert (VSet.equal c1.cvars c2.cvars);
     let eqv i =
       if debug > 1 then
@@ -169,10 +176,7 @@ end = struct
     let sol = Clp.primal_column_solution C.state in
     let p c =
       print_string "*************\n";
-      M.iter begin fun idx vnum ->
-        Idx.pp sol.(vnum) stdout idx;
-        print_newline ()
-      end c.cmap in
+      M.iter (fun i v -> Idx.printk sol.(v) i) c.cmap in 
     p cini; if debug > 0 then p cfin
 
 end
@@ -210,30 +214,36 @@ let go lctx cost p =
     | PInc (x, op, delta, pid) ->
       let {lpre;_} = UidMap.find pid lctx in
       let vars = VSet.remove (VId x) vars in
-      let us, vs = VSet.partition (Logic.aps_entails lpre x op delta) vars in
+      let varl = VSet.elements vars in
+      let us = VSet.filter (Logic.aps_entails lpre x op delta) vars in
       begin match delta with
 
       (* first case, delta is a number *)
       | VNum k ->
-        let pl, q = Q.fresh qpost (VSet.cardinal us) in
-        let rl, q = Q.fresh q (VSet.cardinal us) in
+
+        let maps f l =
+          (* variables in "us" get -1 as sign, others get +1 *)
+          let rec g = function
+            | (a, y) :: tl when VSet.mem y us -> f a (-1) :: g tl
+            | (a, _) :: tl -> f a (+1) :: g tl
+            | [] -> [] in
+          g (List.combine l varl) in
+
+        let pl, q = Q.fresh qpost (VSet.cardinal vars) in
+        let rl, q = Q.fresh q (VSet.cardinal vars) in
 
         (* constant potential modification *)
         let q = Q.set q const
-          ((const, 1) :: List.map (fun i -> (i, -k)) rl) 0 in
-
-        (* q_{xu} = p_{xu} + r_{xu} *)
-        let q = List.fold_left
-          (fun q (u, (p, r)) -> Q.set q (Idx.dst (VId x, u)) [(p, 1); (r, 1)] 0)
-          q (List.combine (VSet.elements us) (List.combine pl rl)) in
+          ((const, 1) :: maps (fun i s -> (i, s * k)) rl) 0 in
 
         (* modification of delta's potential *)
         let d0 = Idx.dst (VNum 0, delta) in
-        let q = Q.set q d0
-          ( [ (d0, 1) ]
-          @ List.map (fun p -> (p, -1)) pl
-          @ List.map (fun v -> (Idx.dst (VId x, v), +1)) (VSet.elements vs)
-          ) 0 in
+        let q = Q.set q d0 ((d0, 1) :: maps (fun p s -> (p, s)) pl) 0 in
+
+        (* q_{xz} = p_{xz} + r_{xz} *)
+        let q = List.fold_left
+          (fun q (u, (p, r)) -> Q.eq q (Idx.dst (VId x, u)) [(p, 1); (r, 1)] 0)
+          q (List.combine varl (List.combine pl rl)) in
 
         (* pay for the assignment *)
         addconst q CSet
@@ -256,7 +266,7 @@ let go lctx cost p =
       let qpost1 = addconst qinv CWhile2 in
       let qpre1 = gen qpost1 p in
       let qinv' = addconst qpre1 CWhile1 in
-      Q.eq qinv qinv';
+      Q.eqc qinv qinv';
       qinv'
 
     | _ -> failwith "not implemented (gen)" in
