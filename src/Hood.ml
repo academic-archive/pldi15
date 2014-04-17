@@ -78,7 +78,8 @@ end = struct
         pairs (List.fold_left g a vl) vl
       | [] -> a
     in pairs (f a const) (VSet.elements vs)
-  let printk k = function
+  let printk k =
+    if k = 0. then fun _ -> () else function
     | Const ->
       Printf.printf "%.2f\n" k
     | Dst (v, VNum 0) | Dst (VNum 0, v) ->
@@ -89,29 +90,28 @@ end = struct
     | Extra _ -> ()
 end
 
-module type CLPSTATE = sig
-  val state : Clp.t
-  val next_var : int ref
-end
+module type CLPSTATE = sig val state : Clp.t end
 
 module Q(C: CLPSTATE) : sig
   type ctx
   val create : VSet.t -> ctx
   val set : ctx -> Idx.t -> (Idx.t * int) list -> int -> ctx
-  val eq : ctx -> Idx.t -> (Idx.t * int) list -> int -> ctx
   val eqc : ctx -> ctx -> unit
-  val fresh : ctx -> int -> (Idx.t list * ctx)
+  val relax : ?kpairs:(int * int) list -> ctx -> ctx
   val solve : ctx -> ctx -> unit
 end = struct
   module M = Map.Make(Idx)
   type ctx = { cvars : VSet.t; cmap : int M.t }
 
-  let newv () =
-    let rows = Clp.number_rows C.state in
-    let cols = Clp.number_columns C.state in
-    Clp.resize C.state rows (cols + 1);
-    let v = !C.next_var in
-    incr C.next_var; v
+  let newv ?(neg=false) () =
+    let c = [|
+      { Clp.column_obj = 0.
+      ; Clp.column_lower = if neg then -. max_float else 0.
+      ; Clp.column_upper = max_float
+      ; Clp.column_elements = [| |]
+      } |] in
+    Clp.add_columns C.state c;
+    Clp.number_columns C.state - 1
 
   let create cvars =
     let cmap = Idx.fold
@@ -119,29 +119,28 @@ end = struct
       M.empty cvars in
     { cvars; cmap }
 
-  let equal c v' idx l const =
+  let equal v' l const =
     let row_elements = Array.of_list begin
       (v', -1.) :: List.map
-        (fun (i, w) -> ((M.find i c.cmap), float_of_int w)) l
+        (fun (i, w) -> (i, float_of_int w)) l
     end in
     let k = float_of_int (-const) in
     if debug > 1 then begin
       Printf.printf "v%d = %d" v' const;
-      List.iter (fun (i, w) -> Printf.printf " + %d * v%d" w (M.find i c.cmap)) l;
+      List.iter (fun (i, w) -> Printf.printf " + %d * v%d" w i) l;
       print_newline ()
     end;
     Clp.add_rows C.state [|
       { Clp.row_lower = k
       ; Clp.row_upper = k
       ; row_elements }
-    |];
-    { cvars = c.cvars; cmap = M.add idx v' c.cmap }
+    |]
 
   let set c idx l const =
-    equal c (newv ()) idx l const
-
-  let eq c idx l const =
-    equal c (M.find idx c.cmap) idx l const
+    let v' = newv () in
+    let l = List.map (fun (i, k) -> M.find i c.cmap, k) l in
+    equal v' l const;
+    { c with cmap = M.add idx v' c.cmap }
 
   let eqc c1 c2 =
     assert (VSet.equal c1.cvars c2.cvars);
@@ -156,16 +155,33 @@ end = struct
       (Idx.fold (fun l i -> eqv i :: l) [] c1.cvars) in
     Clp.add_rows C.state rows
 
-  let fresh {cvars; cmap} n =
-    let rec f n =
-      if n = 0 then [] else
-      let v = newv () in
-      (Idx.extra (newv ()), v) :: f (n-1) in
-    let l, cmap =
-      List.fold_left
-        (fun (l, c) (i, v) -> (i::l, M.add i v c))
-        ([], cmap) (f n) in
-    (l, {cvars; cmap})
+  let relax ?kpairs c =
+    let allpairs c =
+      let ks = VSet.filter
+        (function VNum _ -> true | _ -> false) c.cvars in
+      let getk = function VNum k -> k | _ -> assert false in
+      let rec f = function
+        | n :: l -> List.map (fun x -> (n, x)) l @ f l
+        | [] -> [] in
+      f (List.map getk (VSet.elements ks)) in
+    let kpairs =
+      match kpairs with
+      | Some l -> l
+      | None -> allpairs c in
+    let l = List.map
+      (fun (n1, n2) ->
+        ( Idx.dst (VNum n1, VNum n2)
+        , (newv ~neg:true (), abs (n1-n2))))
+      kpairs in
+    let c = List.fold_left
+      begin fun c (i, (ip, _)) ->
+        let v' = newv () in
+        equal v' [(M.find i c.cmap, 1); (ip, -1)] 0;
+        { c with cmap = M.add i v' c.cmap }
+      end c l in
+    let v' = newv () and ic = Idx.const in
+    equal v' ((M.find ic c.cmap, 1) :: List.map snd l) 0;
+    { c with cmap = M.add ic v' c.cmap }
 
   let solve cini cfin =
     let obj = Clp.objective_coefficients C.state in
@@ -176,7 +192,7 @@ end = struct
     let sol = Clp.primal_column_solution C.state in
     let p c =
       print_string "*************\n";
-      M.iter (fun i v -> Idx.printk sol.(v) i) c.cmap in 
+      M.iter (fun i v -> Idx.printk sol.(v) i) c.cmap in
     p cini; if debug > 0 then p cfin
 
 end
@@ -212,47 +228,22 @@ let go lctx cost p =
     | PAssert _ -> addconst qpost CAssert
 
     | PInc (x, op, delta, pid) ->
-      let {lpre;_} = UidMap.find pid lctx in
       let vars = VSet.remove (VId x) vars in
-      let varl = VSet.elements vars in
+      let {lpre;_} = UidMap.find pid lctx in
       let us = VSet.filter (Logic.aps_entails lpre x op delta) vars in
-      begin match delta with
-
-      (* first case, delta is a number *)
-      | VNum k ->
-
-        let maps f l =
-          (* variables in "us" get -1 as sign, others get +1 *)
-          let rec g = function
-            | (a, y) :: tl when VSet.mem y us -> f a (-1) :: g tl
-            | (a, _) :: tl -> f a (+1) :: g tl
-            | [] -> [] in
-          g (List.combine l varl) in
-
-        let pl, q = Q.fresh qpost (VSet.cardinal vars) in
-        let rl, q = Q.fresh q (VSet.cardinal vars) in
-
-        (* constant potential modification *)
-        let q = Q.set q const
-          ((const, 1) :: maps (fun i s -> (i, s * k)) rl) 0 in
-
-        (* modification of delta's potential *)
-        let d0 = Idx.dst (VNum 0, delta) in
-        let q = Q.set q d0 ((d0, 1) :: maps (fun p s -> (p, s)) pl) 0 in
-
-        (* q_{xz} = p_{xz} + r_{xz} *)
-        let q = List.fold_left
-          (fun q (u, (p, r)) -> Q.eq q (Idx.dst (VId x, u)) [(p, 1); (r, 1)] 0)
-          q (List.combine varl (List.combine pl rl)) in
-
-        (* pay for the assignment *)
-        addconst q CSet
-
-      (* second case, delta is a variable *)
-      | VId d ->
-        failwith "not implemented (PInc (_, _, VId _, _))"
-
-      end
+      (* relax constant differences *)
+      let q = Q.relax qpost in
+      (* modify delta's potential *)
+      let d0 = Idx.dst (delta, VNum 0) in
+      let sum = List.map
+        begin fun v ->
+          if VSet.mem v us
+            then (Idx.dst (VId x, v), -1)
+            else (Idx.dst (VId x, v), 1)
+        end (VSet.elements vars) in
+      let q = Q.set q d0 ((d0, 1) :: sum) 0 in
+      (* pay for the assignment *)
+      addconst q CSet
 
     | PSeq (p1, p2, _) ->
       let qpre2 = gen qpost p2 in
