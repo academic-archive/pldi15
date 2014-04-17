@@ -7,6 +7,7 @@ RESULT = app
 CLIBS = z bz2 Clp CoinUtils
 CFLAGS = -Wall -O3
 
+all: debug-code
 
 # It is inlined below
 # -include OCamlMakefile
