@@ -9,3 +9,4 @@ src/._bcdi
 src/._ncdi
 src/._d
 src/app
+src/config.mk

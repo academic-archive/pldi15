@@ -1,6 +1,7 @@
-# Customize these two to your needs
-LIBDIRS=/home/qcar/l/lib
-INCDIRS=/home/qcar/l/include
+# The config.mk file must contain cruft
+# to build against Clp
+# (set LIBDIRS and INCDIRS)
+include config.mk
 
 SOURCES = Parse.ml Logic.ml Eval.ml clp_stubs.c Clp.ml Hood.ml
 RESULT = app
