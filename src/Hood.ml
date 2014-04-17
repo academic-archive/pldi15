@@ -62,6 +62,7 @@ module Idx : sig
   val dst : var * var -> t
   val extra : int -> t
   val compare : t -> t -> int
+  val obj : t -> int
   val fold : ('a -> t -> 'a) -> 'a -> VSet.t -> 'a
   val printk : float -> t -> unit
 end = struct
@@ -70,6 +71,10 @@ end = struct
   let dst (u, v) = if u < v then Dst (u, v) else Dst (v, u)
   let extra i = Extra i
   let compare = compare
+  let obj = function
+    | Dst (VNum a, VNum b) -> abs (a-b) + 10
+    | Dst _ -> 10_000
+    | _ -> 1
   let fold f a vs =
     let rec pairs a vl =
       match vl with
@@ -185,7 +190,10 @@ end = struct
 
   let solve cini cfin =
     let obj = Clp.objective_coefficients C.state in
-    Idx.fold (fun () i -> obj.(M.find i cini.cmap) <- 1.) () cini.cvars;
+    Idx.fold begin fun () i ->
+      let o = float_of_int (Idx.obj i) in
+      obj.(M.find i cini.cmap) <- o
+    end () cini.cvars;
     Clp.change_objective_coefficients C.state obj;
     flush stdout;
     Clp.primal C.state;
