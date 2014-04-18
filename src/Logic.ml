@@ -62,7 +62,7 @@ let assn_combine (c1, A (m1, k1)) (c2, A (m2, k2)) =
   let f _ a b =
     let o = c2 * h a + c1 * h b in
     if o = 0 then None else Some o in
-  A (M.merge f m1 m2, k1 + k2)
+  A (M.merge f m1 m2, c2 * k1 + c1 * k2)
 
 let elim id ps =
   let rec part3 p n rest  = function
