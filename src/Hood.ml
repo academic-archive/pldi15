@@ -11,7 +11,7 @@ open Logic
 let debug = 0
 
 module UidMap = struct
-  module M = Map.Make(struct type t = uid  let compare = compare end)
+  module M = Map.Make(struct type t = uid let compare = compare end)
   include M
   exception Overwrite
   let add key value map =
@@ -21,32 +21,29 @@ module UidMap = struct
 end
 
 module VSet = struct
-  include Set.Make(struct
-    type t = var
-    let compare = compare
-  end)
+  include Set.Make(struct type t = var let compare = compare end)
   let of_list = List.fold_left (fun s x -> add x s) empty
 end
 
 
 (* first, compute the logical contexts *)
-type log = { lpre : aps; lpost : aps }
+type log = { lpre : ineq list; lpost : ineq list }
 
 let create_logctx =
   let rec f m lpre prog =
     let addpost m id lpost = UidMap.add id { lpre; lpost } m in
     match prog with
     | PSkip id -> addpost m id lpre
-    | PAssert (c, id) -> addpost m id (aps_add (assn_of_cond c) lpre)
-    | PInc (x, op, v, id) -> addpost m id (aps_incr x op v lpre)
-    | PSet (x, v, id) -> addpost m id (aps_set x v lpre)
+    | PAssert (c, id) -> addpost m id (Logic.add (assn_of_cond c) lpre)
+    | PInc (x, op, v, id) -> addpost m id (Logic.incr x op v lpre)
+    | PSet (x, v, id) -> addpost m id (Logic.set x v lpre)
     | PWhile (c, p, id) ->
-      let itr pre = aps_add (assn_of_cond c) pre in
+      let itr pre = Logic.add (assn_of_cond c) pre in
       let g pre =
         let m' = f m (itr pre) p in
         (m', (UidMap.findp p m').lpost) in
-      let m', inv = aps_fix (itr lpre) g in
-      (* Note: we use :: instead of aps_add here *)
+      let m', inv = Logic.fix (itr lpre) g in
+      (* Note: we use :: instead of Logic.add here *)
       addpost m' id (assn_negate (assn_of_cond c) :: inv)
     | PSeq (p1, p2, id) ->
       let m1 = f m lpre p1 in
@@ -238,7 +235,7 @@ let go lctx cost p =
     | PInc (x, op, delta, pid) ->
       let vars = VSet.remove (VId x) vars in
       let {lpre;_} = UidMap.find pid lctx in
-      let us = VSet.filter (Logic.aps_entails lpre x op delta) vars in
+      let us = VSet.filter (Logic.entails lpre x op delta) vars in
       (* relax constant differences *)
       let q = Q.relax qpost in
       (* modify delta's potential *)
@@ -281,10 +278,10 @@ let _ =
   let l = create_logctx p in
   let pre id =
     let { lpre; lpost } = UidMap.find id l in
-    Logic.pp_aps lpre; print_string "\n"
+    Logic.pp lpre; print_string "\n"
   and post id =
     let { lpre; lpost } = UidMap.find id l in
-    print_string "\n"; Logic.pp_aps lpost
+    print_string "\n"; Logic.pp lpost
   in Parse.pp_prog_hooks pre post p
 
 let _ =

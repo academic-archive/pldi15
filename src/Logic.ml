@@ -1,194 +1,203 @@
 (* simple abstract program state and logical entailment *)
 
+let show_progress = false
+
 open Parse
 
-module Id = struct type t = id  let compare = compare end
+module Id = struct type t = id let compare = compare end
 module S = Set.Make(Id)
-module M = struct
+
+module L = struct
+  (* linear sums *)
   include Map.Make(Id)
-  let coeff id m =
+  type sum = {m : int t; k : int}
+
+  let const k = {m = empty; k}
+
+  let coeff id {m;_} =
     try find id m with Not_found -> 0
-  let set = add
-  let add id n m =
+
+  let set x c {m;k}= {m = add x c m; k}
+
+  let addl id n m =
     let c = coeff id m in
     set id (c+n) m
-  let vars vs m =
-    fold (fun k c vs -> S.add k vs) m vs
+
+  let addk k' {m; k} = {m; k = k + k'}
+
+  let mult c {m; k} =
+    {m = map (fun n -> c * n) m; k = c * k}
+
+  let vars vs s =
+    fold (fun k c vs -> S.add k vs) s.m vs
+
+  let plus c {m = m1; k = k1} {m = m2; k = k2} =
+    let h = function Some n -> n | None -> 0 in
+    let f _ a b =
+      let o = c * h a + h b in
+      if o = 0 then None else Some o in
+    {m = merge f m1 m2; k = c * k1 + k2}
+
+  let pp {m; k} =
+    let open Printf in
+    let psign first c =
+      if first then
+        (if c < 0 then printf "-")
+      else
+        if c < 0 then printf " - "
+        else printf " + " in
+    let pterm x c =
+      if abs c <> 1 then
+        printf "%d " (abs c);
+      printf "%s" x in
+    let rec p first = function
+      | (x, c) :: tl ->
+        psign first c; pterm x c; p false tl
+      | [] -> () in
+    let bdgs =
+      List.filter (fun (_, c) -> c <> 0)
+        (bindings m) in
+    p true bdgs;
+    if k <> 0 then
+      (psign (bdgs = []) k; printf "%d" (abs k))
 end
 
-type assn = A of int M.t * int
-type aps = assn list
+type ineq = L.sum (* sum <= 0 *)
 
-let add c v (A (m, k) as assn) =
-  if c = 0 then assn else
+let plusv c v l =
+  if c = 0 then l else
   match v with
-  | VNum n -> A (m, k - c * n)
-  | VId x -> A (M.add x c m, k)
+  | VNum n -> L.addk (n * c) l
+  | VId x -> L.addl x c l
 
-let assn_of_cond (Cond (v1, v2, k) (* v2 - v1 <= - k - 1 *)) =
-  add 1 v2 (add (-1) v1(A (M.empty, -k - 1)))
+let assn_of_cond (Cond (v1, v2, k) (* v2 - v1 + k + 1 <= 0 *)) =
+  plusv 1 v2 (plusv (-1) v1 (L.const (k + 1)))
 
-let assn_negate (A (m, k)) =
-  A (M.map (fun n -> -n) m, -k - 1)
+let assn_negate m = L.addk 1 (L.mult (-1) m)
 
-let assn_incr id op delta (A (m, _) as assn) =
+let ineq_incr id op delta l =
   let s = match op with OPlus -> -1 | OMinus -> +1 in
-  add (s * M.coeff id m) delta assn
+  plusv (s * L.coeff id l) delta l
 
-let aps_incr id op delta = List.map (assn_incr id op delta)
+let incr id op delta = List.map (ineq_incr id op delta)
 
-let aps_set id v ps =
+let set id v ps =
   (* forget everything concerning the assigned variable *)
-  add 1 v (add (-1) (VId id) (A (M.empty, 0))) ::
-  add (-1) v (add 1 (VId id) (A (M.empty, 0))) ::
-  List.filter (fun (A (m, _)) -> M.coeff id m = 0) ps
+  plusv 1 v (plusv (-1) (VId id) (L.const 0)) ::
+  plusv (-1) v (plusv 1 (VId id) (L.const 0)) ::
+  List.filter (fun i -> L.coeff id i = 0) ps
 
 
 (* poor man's decision procedure *)
 
-let rec vars = function
-  | A (m, _) :: assns -> M.vars (vars assns) m
-  | [] -> S.empty
+type div = { k : int; s : L.sum } (* k | s *)
 
-let rec gcd a b =
-  if a = 0 || b = 0 then a + b else
-  if a < b
-    then gcd a (b mod a)
-    else gcd (a mod b) b
+let lcm a b =
+  let rec gcd a b =
+    if a = 0 || b = 0 then a + b else
+    if a < b
+      then gcd a (b mod a)
+      else gcd (a mod b) b in
+  let a = abs a and b = abs b in
+  assert (a * b <> 0); (a * b) / gcd a b
 
-let assn_combine (c1, A (m1, k1)) (c2, A (m2, k2)) =
-  let c1, c2 = let g = gcd c1 c2 in (c1/g, c2/g) in
-  let h = function Some n -> n | None -> 0 in
-  let f _ a b =
-    let o = c2 * h a + c1 * h b in
-    if o = 0 then None else Some o in
-  A (M.merge f m1 m2, c2 * k1 + c1 * k2)
+let normi id ps =
+  (* make sure id has the same coefficient everywhere *)
+  let l = List.fold_left (fun l i -> lcm l (L.coeff id i)) 1 ps in
+  let f m = L.mult (l / abs (L.coeff id m)) m in
+  (List.map f ps, l)
 
-let elim id ps =
-  let rec part3 p n rest  = function
-    | [] -> (p, n, rest)
-    | A (m, _) as assn :: ps' ->
-      let c = M.coeff id m in
-      if c > 0 then part3 ((c, assn) :: p) n rest ps'
-      else if c < 0 then part3 p ((-c, assn) :: n) rest ps'
-      else part3 p n (assn :: rest) ps' in
-  let p, n, rest = part3 [] [] [] ps in
-  let prod f l1 l2 =
-    List.fold_left (* product function on lists *)
-      (fun x a -> List.fold_left (fun y b -> f a b :: y) x l2)
-      [] l1 in
-  let comb = prod assn_combine p n in
-  assert (List.for_all (fun (A (m, _)) -> M.coeff id m = 0) comb); (* XXX *)
-  comb @ rest
+let dbg x =
+  (if show_progress then Printf.fprintf else Printf.ifprintf) stdout x
+let uid = ref 0
 
-let aps_is_valid ps =
-  let simpl = S.fold elim (vars ps) ps in
-  let dec_simple (A (m, k)) =
-    assert (M.for_all (fun _ c -> c = 0) m); (* XXX *)
-    0 <= k in
-  List.fold_left (fun b assn -> dec_simple assn && b) true simpl
+let rec elim x (ps, ds) vars =
+  let c = L.coeff x in
+  let ps, irest = List.partition (fun i -> c i <> 0) ps in
+  let ps, l = normi x ps in
+  let ubs, lbs = List.partition (fun i -> c i > 0) ps in
+  let ds, drest = List.partition (fun d -> c d.s <> 0) ds in
+  let w = List.fold_left (fun w d -> lcm w d.k) 1 ds in
+  List.exists begin fun glb ->
+    let lbs' =  List.map (L.plus (-1) glb) lbs in
+    let rec loop i =
+      if i < 0 then false else
+      let xeq = L.addk i glb in
+      let ubs' = List.map (L.plus 1 xeq) ubs in
+      let ds' =
+        let trd {k; s} =
+          { k = k * l
+          ; s = L.plus 1 (L.mult (c s) xeq) (L.mult l s)
+          } in
+        let s = L.set x 0 xeq in
+        {k = l; s} :: List.map trd ds in
+      assert (List.for_all (fun i -> L.coeff x i = 0) (lbs' @ ubs')); (* XXX *)
+      assert (List.for_all (fun d -> L.coeff x d.s = 0) ds');
+      let id = !uid in uid := !uid + 1;
+      dbg ">> (%d) attempt with i=%d\n" id i;
+      let sb = sat (lbs' @ ubs' @ irest, ds' @ drest) vars in
+      dbg "<< (%d) end of attempt with i=%d\n" id i;
+      sb || loop (i-1)
+    in loop (l * w - 1)
+  end (
+    if lbs = []
+        (* this is not complete, but sound *)
+      then [L.set x (-l) (L.const (-10_000))]
+      else lbs
+  )
+
+and sat (ps, divs) = function
+  | id :: vars -> elim id (ps, divs) vars
+  | [] ->
+    let zero {L.m;_} = assert (L.for_all (fun _ c -> c = 0) m) in (* XXX *)
+    let deci s = zero s; dbg "  %d <= 0\n" s.L.k; s.L.k <= 0 in
+    let decd {k; s} = zero s; dbg "  %d | %d\n" k s.L.k; s.L.k mod k = 0 in
+    List.for_all deci ps && List.for_all decd divs
+
+let sat (ps, divs) vars =
+  uid := 0; sat (ps, divs) vars
+
+let sat ps =
+  let vars = List.fold_left L.vars S.empty ps
+  in sat (ps, []) (S.elements vars)
 
 
 (* applications *)
 
-let aps_add a ps =
+let add a ps =
   (* do not add consequences *)
-  if not (aps_is_valid (assn_negate a :: ps)) then ps else a :: ps
+  if not (sat (assn_negate a :: ps)) then ps else a :: ps
 
-let rec aps_fix ps f =
+let rec fix ps f =
   let x, ps' = f ps in
   let rec residue trimmed r = function
     | assn :: assns ->
-      if not (aps_is_valid (assn_negate assn :: ps'))
+      if not (sat (assn_negate assn :: ps'))
         then residue trimmed (assn :: r) assns
         else residue true r assns
     | [] -> (trimmed, r) in
   let trimmed, ps'' = residue false [] ps in
-  if trimmed then aps_fix ps'' f else (x, ps)
+  if trimmed then fix ps'' f else (x, ps)
 
-let aps_entails ps x op delta u =
+let entails ps x op delta u =
   (* check if ps entails x `op` delta \in [x, u] U [u, x] *)
   let s = match op with OPlus -> +1 | OMinus -> -1 in
-  (* x `op` delta <= x - 1  /\  x `op` delta <= u - 1 *)
+  (* x `op` delta - x + 1 <= 0  /\  x `op` delta - u + 1 <= 0 *)
   let disj1 =
-    [ add s delta (A (M.empty, -1))
-    ; add s delta (add (-1) u (add 1 (VId x) (A (M.empty, -1)))) ] in
-  (* u <= x `op` delta - 1  /\  x <= x `op` delta - 1 *)
+    [ plusv s delta (L.const 1)
+    ; plusv s delta (plusv (-1) u (plusv 1 (VId x) (L.const 1))) ] in
+  (* u - x `neg op` delta + 1 <= 0  /\  x - x `neg op` delta + 1 <= 0 *)
   let disj2 =
-    [ add (-s) delta (add 1 u (add (-1) (VId x) (A (M.empty, -1))))
-    ; add (-s) delta (A (M.empty, -1)) ] in
+    [ plusv (-s) delta (plusv 1 u (plusv (-1) (VId x) (L.const 1)))
+    ; plusv (-s) delta (L.const 1) ] in
   (* check entailment by refutation *)
-  not (aps_is_valid (disj1 @ ps)) && not (aps_is_valid (disj2 @ ps))
+  not (sat (disj1 @ ps)) && not (sat (disj2 @ ps))
 
 
 (* pretty printing *)
-let pp_aps ps =
-  let rec ppl z sep pp = function
-    | [] -> print_string z
-    | [x] -> pp x
-    | x :: ((y :: _) as xs) ->
-      pp x; print_string (sep y);
-      ppl z sep pp xs in
-  let ppa (A (m, k)) =
-    let sep (_, c) =
-      if c < 0 then " - "
-      else if c > 0 then " + "
-      else "" in
-    let p (k, c) =
-      let c = abs c in
-      if c <> 1 then (print_int c; print_string " ");
-      print_string k in
-    let bdgs = M.bindings m in
-    (try if snd (List.hd bdgs) < 0 then print_string "-"
-    with Failure _ -> ());
-    ppl "0" sep p bdgs;
-    print_string " <= ";
-    print_int k in
-  print_string "{ ";
-  ppl "True" (fun _ -> " /\\ ") ppa ps;
-  print_string " }"
-
-
-(* unit tests *)
-let _ =
-  if Array.length Sys.argv < 2 || Sys.argv.(1) <> "-tlogic" then () else
-
-  (* semantics of assertions *)
-  let get h v = List.assoc v h in
-  let rec sum h = function
-    | (id, c) :: ids -> c * get h id + sum h ids
-    | [] -> 0 in
-  let assn_sem h (A (m, k)) =
-    sum h (M.bindings m) <= k in
-  let rec sem h = function
-    | a :: al -> assn_sem h a && sem h al
-    | [] -> true in
-
-  (* tests *)
-  let c1 = Cond (VNum 0, VNum 1, 0)
-  and c2 = Cond (VNum 1, VNum 0, 1)
-  and c3 = Cond (VId "x", VNum 0, 1)
-  and c4 = Cond (VId "x", VNum 0, 2)
-  and c5 = Cond (VNum 1, VId "y", 2)
-  and c6 = Cond (VNum 1, VId "x", 0)
-  and c7 = Cond (VId "y", VId "x", 0)
-  and h1 = [("x", 1); ("y", 0)]
-  in
-
-  assert (sem [] [] = true);
-  assert (sem [] [assn_of_cond c1] = false);
-  assert (sem [] [assn_negate (assn_of_cond c1)] = true);
-  assert (sem [] [assn_of_cond c2] = false);
-  assert (sem [] [assn_negate (assn_of_cond c2)] = true);
-  assert (sem h1 [assn_of_cond c3] = false);
-  assert (sem h1 [assn_negate (assn_of_cond c3)] = true);
-  assert (sem h1 [assn_of_cond c4] = false);
-  assert (sem h1 [assn_negate (assn_of_cond c4)] = true);
-  assert (sem h1 [assn_of_cond c5] = false);
-  assert (sem h1 [assn_negate (assn_of_cond c5)] = true);
-  assert (sem h1 [assn_of_cond c6] = false);
-  assert (sem h1 [assn_of_cond c7] = false);
-  assert (sem h1 [assn_negate (assn_of_cond c7)] = true);
-
-  prerr_endline "Logic tests passed.";
-  ()
+let pp ps =
+  let rec p = function
+    | [] -> print_string "T"
+    | [a] -> L.pp a; print_string " ≤ 0"
+    | a :: tl -> L.pp a; print_string " ≤ 0 /\\ "; p tl in
+  print_string "{ "; p ps; print_string " }"
