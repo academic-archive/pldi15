@@ -164,15 +164,21 @@ let sat ps =
 
 (* applications *)
 
-let add a ps =
-  (* do not add consequences *)
-  if not (sat (assn_negate a :: ps)) then ps else a :: ps
+let imp ps a = not (sat (assn_negate a :: ps))
+
+let add a ps = if imp ps a then ps else a :: ps
+
+let merge ps1 ps2 =
+  let ps = ps1 @ ps2 in
+  let ps = List.filter (imp ps1)  ps in
+  let ps = List.filter (imp ps2)  ps in
+  ps
 
 let rec fix ps f =
   let x, ps' = f ps in
   let rec residue trimmed r = function
     | assn :: assns ->
-      if not (sat (assn_negate assn :: ps'))
+      if imp ps' assn
         then residue trimmed (assn :: r) assns
         else residue true r assns
     | [] -> (trimmed, r) in

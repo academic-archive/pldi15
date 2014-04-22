@@ -4,7 +4,7 @@ exception SyntaxError of string
 (* lexing *)
 
 type token =
-  | TAssert | TWhile
+  | TAssert | TWhile | TIf | TElse
   | TSemi | TPlus | TMinus
   | TLParen | TRParen
   | TLt | TGt | TEq
@@ -45,6 +45,8 @@ let mk_lexer ic =
       let s = getstr (String.make 1 c) in
       if s = "while" then TWhile
       else if s = "assert" then TAssert
+      else if s = "if" then TIf
+      else if s = "else" then TElse
       else TIdnt s
     | ('0' .. '9') as c -> TNum (getnum (digit c))
     | ';' -> TSemi | '+' -> TPlus | '-' -> TMinus
@@ -58,6 +60,7 @@ let mk_lexer ic =
 
 let string_of_token = function
   | TAssert -> "ASSERT" | TWhile -> "WHILE"
+  | TIf -> "IF" | TElse -> "ELSE"
   | TIdnt id -> Printf.sprintf "IDNT %S" id
   | TNum n -> Printf.sprintf "NUM %d" n
   | TSemi -> "SEMI"
@@ -119,6 +122,7 @@ type prog =
   | PInc of id * op * var * uid
   | PSet of id * var * uid
   | PWhile of cond * prog * uid
+  | PIf of cond * prog * prog * uid
   | PSeq of prog * prog * uid
 
 (* parser for one program *)
@@ -204,6 +208,23 @@ let p_prog: prog pm =
         reti (fun i -> PAssert (cond, i))
       ))
 
+    (* Conditional, PIf *)
+    ; bnd (p_tok (is TIf)) (fun () ->
+      bnd p_cond (fun cond ->
+      bnd (p_atomic ()) (fun p1 ->
+        p_or
+        (* Conditional with else part *)
+        [ bnd (p_tok (is TElse)) (fun () ->
+          bnd (p_atomic ()) (fun p2 ->
+            reti (fun i -> PIf (cond, p1, p2, i))
+          ))
+        (* No else part, implicit skip *)
+        ; bnd (reti (fun i -> PSkip i)) (fun p2 ->
+            reti (fun i -> PIf (cond, p1, p2, i))
+          )
+        ]
+      )))
+
     (* Parenthesized complex statement *)
     ; bnd (p_tok (is TLParen)) (fun () ->
       bnd (p_complex ()) (fun prog ->
@@ -241,7 +262,7 @@ let pa_prog ic =
 
 let prog_id = function
   | PSkip id | PAssert (_, id) | PInc (_, _, _, id) | PSet (_, _, id)
-  | PWhile (_, _, id) | PSeq (_, _, id) -> id
+  | PWhile (_, _, id) | PIf (_, _, _, id) | PSeq (_, _, id) -> id
 
 
 (* pretty printing *)
@@ -276,6 +297,15 @@ let pp_prog_hooks pre post prog =
       g lvl' true p1; printf ";\n";
       g lvl' false p2;
       if prns then (printf "\n"; idnt lvl; printf ")")
+    | PIf (c, p1, p2, _) ->
+      printf "if "; cond c; printf "\n";
+      g (lvl + delta) true p1;
+      begin match p2 with
+      | PSkip _ -> ()
+      | _ ->
+        printf "\n"; idnt lvl; printf "else\n";
+        g (lvl + delta) true p2
+      end
     | PWhile (c, p, _) ->
       printf "while "; cond c; printf "\n";
       g (lvl + delta) true p

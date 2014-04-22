@@ -23,6 +23,7 @@ end
 module VSet = struct
   include Set.Make(struct type t = var let compare = compare end)
   let of_list = List.fold_left (fun s x -> add x s) empty
+  let union = List.fold_left union empty
 end
 
 
@@ -45,6 +46,13 @@ let create_logctx =
       let m', inv = Logic.fix (itr lpre) g in
       (* Note: we use :: instead of Logic.add here *)
       addpost m' id (assn_negate (assn_of_cond c) :: inv)
+    | PIf (c, p1, p2, id) ->
+      let a = assn_of_cond c in
+      let m = f m (Logic.add a lpre) p1 in
+      let m = f m (Logic.add (assn_negate a) lpre) p2 in
+      let post1 = (UidMap.findp p1 m).lpost
+      and post2 = (UidMap.findp p2 m).lpost
+      in addpost m id (Logic.merge post1 post2)
     | PSeq (p1, p2, id) ->
       let m1 = f m lpre p1 in
       let m2 = f m1 (UidMap.findp p1 m1).lpost p2 in
@@ -238,8 +246,9 @@ let rec pvars p =
   | PAssert (c, _) -> cvars c
   | PSet (id, v2, _) -> VSet.of_list [VId id; v2]
   | PInc (id, _, v, _) -> VSet.of_list [VId id; v]
-  | PSeq (p1, p2, _) -> VSet.union (pvars p1) (pvars p2)
-  | PWhile (c, p, _) -> VSet.union (cvars c) (pvars p)
+  | PSeq (p1, p2, _) -> VSet.union [pvars p1; pvars p2]
+  | PWhile (c, p, _) -> VSet.union [cvars c; pvars p]
+  | PIf (c, p1, p2, _) -> VSet.union [cvars c; pvars p1; pvars p2]
 
 let go lctx cost p =
   (* generate and resolve constraints *)
@@ -291,6 +300,11 @@ let go lctx cost p =
       let qinv' = addconst qpre1 CWhile1 in
       Q.eqc qinv qinv';
       qinv'
+
+    | PIf (_, p1, p2, _) ->
+      let qpre1 = gen qpost p1 in
+      let qpre2 = gen qpost p2 in
+      Q.merge [qpre1; qpre2]
 
     | _ -> failwith "not implemented (gen)" in
 

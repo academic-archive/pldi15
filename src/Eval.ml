@@ -72,6 +72,10 @@ module Eval(QMon: QMONOID) = struct
         guard (test c)
           (fun () -> pay CAssert)
           (fun () -> raise (ProgramFailure p))
+      | PIf (c, p1, p2, _) ->
+        guard (test c)
+          (fun () -> eval p1)
+          (fun () -> eval p2)
     in eval
 
   let empty_heap = Heap.empty
