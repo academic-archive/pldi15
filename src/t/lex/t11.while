@@ -1,0 +1,24 @@
+WHILE
+IDNT "n"
+MINUS
+IDNT "x"
+GT
+NUM 0
+IF
+IDNT "m"
+MINUS
+IDNT "y"
+GT
+NUM 0
+IDNT "y"
+EQ
+IDNT "y"
+PLUS
+NUM 1
+ELSE
+IDNT "x"
+EQ
+IDNT "x"
+PLUS
+NUM 1
+EOF

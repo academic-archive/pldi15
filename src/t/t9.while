@@ -1,0 +1,6 @@
+assert x>0;
+if z>42
+  x=x+4
+else if 1-x>0
+  x=x-1000;
+x=x-1
