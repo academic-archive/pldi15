@@ -8,7 +8,7 @@ open Logic
 	1 - output final annotation
 	2 - output final annotation and constraints
 *)
-let debug = 0
+let debug = 2
 
 module UidMap = struct
   module M = Map.Make(struct type t = uid let compare = compare end)
@@ -80,8 +80,9 @@ end = struct
         pairs (List.fold_left g a vl) vl
       | [] -> a
     in pairs (f a const) (VSet.elements vs)
-  let printk k =
-    if k = 0. then fun _ -> () else function
+  let printk k i =
+    if abs_float k < 1e-8 then () else
+    match i with
     | Const ->
       Printf.printf "%.2f\n" k
     | Dst (v, VNum 0) | Dst (VNum 0, v) ->
@@ -100,6 +101,7 @@ module Q(C: CLPSTATE) : sig
   val set : ctx -> Idx.t -> (Idx.t * int) list -> int -> ctx
   val eqc : ctx -> ctx -> unit
   val relax : ?kpairs:(int * int) list -> ctx -> ctx
+  val merge : ctx list -> ctx
   val solve : ctx -> ctx -> unit
 end = struct
   module M = Map.Make(Idx)
@@ -185,6 +187,31 @@ end = struct
     equal v' ((M.find ic c.cmap, 1) :: List.map snd l) 0;
     { c with cmap = M.add ic v' c.cmap }
 
+  let merge cl =
+    assert (List.for_all
+      (fun {cvars;_} -> VSet.equal cvars (List.hd cl).cvars) cl
+    );
+    let m (cmap', rows) i =
+      let v' = newv () in
+      if debug > 1 then
+        List.iter (fun {cmap;_} ->
+          Printf.printf "v%d >= v%d\n" v' (M.find i cmap)
+        ) cl;
+      let rec row accu = function
+        | {cmap;_} :: cl ->
+          let r =
+            { Clp.row_lower = -. max_float
+            ; Clp.row_upper = 0.
+            ; Clp.row_elements = [|(M.find i cmap, 1.); (v', -1.)|]
+            }
+          in row (r :: accu) cl
+        | [] -> accu in
+      (M.add i v' cmap', row rows cl) in
+    let cvars = (List.hd cl).cvars in
+    let cmap, rows = Idx.fold m (M.empty, []) cvars in
+    Clp.add_rows C.state (Array.of_list rows);
+    {cvars; cmap}
+
   let solve cini cfin =
     let obj = Clp.objective_coefficients C.state in
     Idx.fold begin fun () i ->
@@ -253,7 +280,7 @@ let go lctx cost p =
     | PSeq (p1, p2, _) ->
       let qpre2 = gen qpost p2 in
       let qmid = addconst qpre2 CSeq2 in
-      let qpre1 = gen qmid p1 in
+      let qpre1 = gen (Q.merge [qmid]) p1 in
       let qpre = addconst qpre1 CSeq1 in
       qpre
 
