@@ -1,6 +1,6 @@
 APP="./app"
 TDIR="t"
-TESTS="lex parse lannot eval"
+TESTS="lex parse lannot eval q"
 
 if [ -f "$TDIR/$1.while" ]; then
 	echo "generating test outputs for $TDIR/$1.while"

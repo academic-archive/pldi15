@@ -33,6 +33,6 @@ NUM 0
 IDNT "y"
 EQ
 IDNT "y"
-MINUS
+PLUS
 NUM 1
 EOF
