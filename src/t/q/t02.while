@@ -1,23 +1,32 @@
-v4 = 0 + v0
-v5 = 0 + v4
-v6 = 0 + v5
-v7 = 0 + v6
+v7 = 0 + v0
 v8 = 0 + v7
-v9 = 0 + v3 + v1 + v2
-v10 = 1 + v8
-v11 = 0 + v10
-v6 = v11
+v9 = 0 + v8
+v10 = 0 + v9
+v12 = 0 + v6 + -1 * v11
+v13 = 0 + v10 + 10 * v11
+v14 = 0 + v4 + v1 + v2 + v3
+v15 = 1 + v13
+v16 = 0 + v15
+v9 = v16
 v1 = v1
 v2 = v2
-v3 = v9
-v12 = 0 + v11
-v4 = v12
+v3 = v3
+v4 = v14
+v5 = v5
+v6 = v12
+v17 = 0 + v16
+v7 = v17
 v1 = v1
 v2 = v2
-v3 = v9
+v3 = v3
+v4 = v14
+v5 = v5
+v6 = v12
 *************
+1.00
 *************
-Clp0026I Matrix will be packed to eliminate 4 duplicate elements
-Clp0006I 0  Obj 0 Primal inf 0.9999999 (1) Dual inf 1e+10 (1)
-Clp0006I 6  Obj 0 Primal inf 0.9999999 (1)
-Clp0001I Primal infeasible - objective value 0
+1.00
+Clp0026I Matrix will be packed to eliminate 8 duplicate elements
+Clp0006I 0  Obj 0 Primal inf 0.74989411 (1) Dual inf 7.4989421e+09 (1)
+Clp0006I 10  Obj 1 Primal inf 0.13335204 (1)
+Clp0001I Primal infeasible - objective value 1

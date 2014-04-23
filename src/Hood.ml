@@ -110,6 +110,7 @@ module Q(C: CLPSTATE) : sig
   val eqc : ctx -> ctx -> unit
   val relax : ?kpairs:(int * int) list -> ctx -> ctx
   val merge : ctx list -> ctx
+  val free : ctx -> Idx.t -> ctx
   val solve : ctx -> ctx -> unit
 end = struct
   module M = Map.Make(Idx)
@@ -138,8 +139,12 @@ end = struct
     end in
     let k = float_of_int (-const) in
     if debug > 1 then begin
-      Printf.printf "v%d = %d" v' const;
-      List.iter (fun (i, w) -> Printf.printf " + %d * v%d" w i) l;
+      let open Printf in
+      let c = function
+        | (v, w) when w = 1 -> sprintf "v%d" v
+        | (v, w) -> sprintf "%d * v%d" w v in
+      printf "v%d = %d" v' const;
+      List.iter (fun x -> printf " + %s" (c x)) l;
       print_newline ()
     end;
     Clp.add_rows C.state [|
@@ -220,6 +225,10 @@ end = struct
     Clp.add_rows C.state (Array.of_list rows);
     {cvars; cmap}
 
+  let free c idx =
+    let v' = newv () in
+    { c with cmap = M.add idx v' c.cmap }
+
   let solve cini cfin =
     let obj = Clp.objective_coefficients C.state in
     Idx.fold begin fun () i ->
@@ -240,7 +249,7 @@ end
 
 let rec pvars p =
   (* get all variables used in a program *)
-  let cvars (Cond (v1, v2, _)) = VSet.of_list [v1; v2] in
+  let cvars (Cond (v1, v2, k)) = VSet.of_list [v1; v2; VNum k] in
   match p with
   | PSkip _ -> VSet.empty
   | PAssert (c, _) -> cvars c
@@ -285,6 +294,25 @@ let go lctx cost p =
       let q = Q.set q d0 ((d0, 1) :: sum) 0 in
       (* pay for the assignment *)
       addconst q CSet
+
+    | PSet (x, v, _) ->
+      let vars = VSet.remove (VId x) vars in
+      let q = qpost in
+      (* split potential of |v - u| for all u *)
+      let q = VSet.fold begin fun u q ->
+          let q =
+            if u = v then q else
+            Q.set q (Idx.dst (v, u))
+              [ (Idx.dst (VId x, u), 1)
+              ; (Idx.dst (v, u), 1) ] 0 in
+          let q =
+            Q.free q (Idx.dst (VId x, u)) in
+          q
+        end vars q in
+      (* pay for the assignment *)
+      let q = addconst q CSet in
+      (* relax constant differences *)
+      Q.relax q
 
     | PSeq (p1, p2, _) ->
       let qpre2 = gen qpost p2 in
