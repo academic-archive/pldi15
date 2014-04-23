@@ -7,7 +7,7 @@ type token =
   | TAssert | TWhile | TIf | TElse
   | TSemi | TPlus | TMinus
   | TLParen | TRParen
-  | TLt | TGt | TEq
+  | TLt | TGt | TLe | TGe | TEq
   | TIdnt of string
   | TNum of int
   | TEof
@@ -51,7 +51,9 @@ let mk_lexer ic =
     | ('0' .. '9') as c -> TNum (getnum (digit c))
     | ';' -> TSemi | '+' -> TPlus | '-' -> TMinus
     | '(' -> TLParen | ')' -> TRParen
-    | '<' -> TLt | '>' -> TGt | '=' -> TEq
+    | '<' -> (match next () with '=' -> TLe | c -> back c; TLt)
+    | '>' -> (match next () with '=' -> TGe | c -> back c; TGt)
+    | '=' -> TEq
     | '\xff' -> TEof
     | ' ' | '\t' | '\r' | '\n' -> f ()
     | _ -> raise (SyntaxError "lexing")
@@ -66,7 +68,9 @@ let string_of_token = function
   | TSemi -> "SEMI"
   | TPlus -> "PLUS" | TMinus -> "MINUS"
   | TLParen -> "LPAREN" | TRParen -> "RPAREN"
-  | TLt -> "LT" | TGt -> "GT" | TEq -> "EQ"
+  | TLt -> "LT" | TGt -> "GT"
+  | TLe -> "LE" | TGe -> "GE"
+  | TEq -> "EQ"
   | TEof -> "EOF"
 
 
