@@ -169,10 +169,9 @@ let imp ps a = not (sat (assn_negate a :: ps))
 let add a ps = if imp ps a then ps else a :: ps
 
 let merge ps1 ps2 =
-  let ps = ps1 @ ps2 in
-  let ps = List.filter (imp ps1)  ps in
-  let ps = List.filter (imp ps2)  ps in
-  ps
+  let ps2' = List.filter (imp ps1)  ps2 in
+  let ps1' = List.filter (imp ps2)  ps1 in
+  List.fold_left (fun a b -> add b a) ps1' ps2'
 
 let rec fix ps f =
   let x, ps' = f ps in

@@ -44,8 +44,9 @@ let create_logctx =
         let m' = f m (itr pre) p in
         (m', (UidMap.findp p m').lpost) in
       let m', inv = Logic.fix (itr lpre) g in
-      (* Note: we use :: instead of Logic.add here *)
-      addpost m' id (assn_negate (assn_of_cond c) :: inv)
+      addpost m' id
+        (Logic.add (assn_negate (assn_of_cond c))
+          (Logic.merge inv lpre))
     | PIf (c, p1, p2, id) ->
       let a = assn_of_cond c in
       let m = f m (Logic.add a lpre) p1 in
@@ -228,8 +229,7 @@ end = struct
     {cvars; cmap}
 
   let free c idx =
-    let v' = newv () in
-    { c with cmap = M.add idx v' c.cmap }
+    { c with cmap = M.add idx (newv ()) c.cmap }
 
   let solve cini cfin =
     let obj = Clp.objective_coefficients C.state in
