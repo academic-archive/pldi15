@@ -1,17 +1,2 @@
-v4 = 0 + v1 + v3
-v7 = 1 + v0
-v9 = 0 + v4 + -1 * v8
-v10 = 0 + v7 + 10 * v8
-v11 = 0 + v10
-v12 >= v11
-v13 >= v5
-v14 >= v6
-v15 >= v9
-v16 = 1 + v12
-v17 = 0 + v16
-*************
+*******
 2.00
-*************
-Clp0006I 0  Obj 0 Primal inf 1.749894 (2) Dual inf 2e+10 (2)
-Clp0006I 9  Obj 2
-Clp0000I Optimal - objective value 2

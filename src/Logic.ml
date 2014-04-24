@@ -191,10 +191,10 @@ let entails ps x op delta u =
   (* x `op` delta - x + 1 <= 0  /\  x `op` delta - u + 1 <= 0 *)
   let disj1 =
     [ plusv s delta (L.const 1)
-    ; plusv s delta (plusv (-1) u (plusv 1 (VId x) (L.const 1))) ] in
+    ; plusv s delta (plusv (-1) u (plusv 1 x (L.const 1))) ] in
   (* u - x `neg op` delta + 1 <= 0  /\  x - x `neg op` delta + 1 <= 0 *)
   let disj2 =
-    [ plusv (-s) delta (plusv 1 u (plusv (-1) (VId x) (L.const 1)))
+    [ plusv (-s) delta (plusv 1 u (plusv (-1) x (L.const 1)))
     ; plusv (-s) delta (L.const 1) ] in
   (* check entailment by refutation *)
   not (sat (disj1 @ ps)) && not (sat (disj2 @ ps))

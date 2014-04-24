@@ -8,7 +8,7 @@ open Logic
 	1 - output final annotation
 	2 - output final annotation and constraints
 *)
-let debug = 2
+let debug = 0
 
 module UidMap = struct
   module M = Map.Make(struct type t = uid let compare = compare end)
@@ -108,7 +108,7 @@ module Q(C: CLPSTATE) : sig
   val create : VSet.t -> ctx
   val set : ctx -> Idx.t -> (Idx.t * int) list -> int -> ctx
   val eqc : ctx -> ctx -> unit
-  val relax : ?kpairs:(int * int) list -> ctx -> ctx
+  val relax : ?kpairs:(int * int) list -> ?xs:id list -> ctx -> ctx
   val merge : ctx list -> ctx
   val free : ctx -> Idx.t -> ctx
   val solve : ctx -> ctx -> unit
@@ -132,31 +132,30 @@ end = struct
       M.empty cvars in
     { cvars; cmap }
 
-  let equal v' l const =
+  let mkrow ?(lo=0.) ?(up=0.) v' l k =
     let row_elements = Array.of_list begin
-      (v', -1.) :: List.map
-        (fun (i, w) -> (i, float_of_int w)) l
+      (v', 1.) :: List.map
+        (fun (i, w) -> (i, float_of_int (-w))) l
     end in
-    let k = float_of_int (-const) in
     if debug > 1 then begin
       let open Printf in
       let c = function
         | (v, w) when w = 1 -> sprintf "v%d" v
         | (v, w) -> sprintf "%d * v%d" w v in
-      printf "v%d = %d" v' const;
+      printf "v%d = %d" v' k;
       List.iter (fun x -> printf " + %s" (c x)) l;
       print_newline ()
     end;
     Clp.add_rows C.state [|
-      { Clp.row_lower = k
-      ; Clp.row_upper = k
-      ; row_elements }
-    |]
+      { Clp.row_lower = float_of_int k +. lo
+      ; Clp.row_upper = float_of_int k +. up
+      ; row_elements
+      } |]
 
   let set c idx l const =
     let v' = newv () in
     let l = List.map (fun (i, k) -> M.find i c.cmap, k) l in
-    equal v' l const;
+    mkrow v' l const;
     { c with cmap = M.add idx v' c.cmap }
 
   let eqc c1 c2 =
@@ -172,7 +171,7 @@ end = struct
       (Idx.fold (fun l i -> eqv i :: l) [] c1.cvars) in
     Clp.add_rows C.state rows
 
-  let relax ?kpairs c =
+  let relax ?kpairs ?(xs=[]) c =
     let allpairs c =
       let ks = VSet.filter
         (function VNum _ -> true | _ -> false) c.cvars in
@@ -185,19 +184,22 @@ end = struct
       match kpairs with
       | Some l -> l
       | None -> allpairs c in
-    let l = List.map
-      (fun (n1, n2) ->
-        ( Idx.dst (VNum n1, VNum n2)
-        , (newv ~neg:true (), abs (n1-n2))))
-      kpairs in
+    let l =
+      List.map
+        (fun x -> (Idx.dst (VId x, VNum 0), (newv (), -1))) xs @
+      List.map
+        (fun (n1, n2) ->
+          ( Idx.dst (VNum n1, VNum n2)
+          , (newv ~neg:true (), - abs (n1-n2))))
+        kpairs in
     let c = List.fold_left
       begin fun c (i, (ip, _)) ->
         let v' = newv () in
-        equal v' [(M.find i c.cmap, 1); (ip, -1)] 0;
+        mkrow v' [(M.find i c.cmap, 1); (ip, 1)] 0;
         { c with cmap = M.add i v' c.cmap }
       end c l in
     let v' = newv () and ic = Idx.const in
-    equal v' ((M.find ic c.cmap, 1) :: List.map snd l) 0;
+    mkrow v' ((M.find ic c.cmap, 1) :: List.map snd l) 0;
     { c with cmap = M.add ic v' c.cmap }
 
   let merge cl =
@@ -237,15 +239,15 @@ end = struct
     end () cini.cvars;
     Clp.change_objective_coefficients C.state obj;
     flush stdout;
-    Clp.set_log_level C.state 1; (* use 0 to turn CLP output off *)
+    Clp.set_log_level C.state 0; (* use 0 to turn CLP output off *)
     Clp.initial_solve C.state;   (* initial_solve is good because it uses presolve *)
-    print_string "*************\n";
+    let sep () =  print_string "*******\n"; in
     match Clp.status C.state with
     | 0 ->
       let sol = Clp.primal_column_solution C.state in
-      let p c = M.iter (fun i v -> Idx.printk sol.(v) i) c.cmap in
+      let p c = sep (); M.iter (fun i v -> Idx.printk sol.(v) i) c.cmap in
       p cini; if debug > 0 then p cfin
-    | _ -> print_string "LP is INFEASABLE\n"
+    | _ -> sep(); print_string "LP is INFEASABLE\n"
 
 end
 
@@ -280,9 +282,15 @@ let go lctx cost p =
     | PInc (x, op, delta, pid) ->
       let vars = VSet.remove (VId x) vars in
       let {lpre;_} = UidMap.find pid lctx in
-      let us = VSet.filter (Logic.entails lpre x op delta) vars in
+      let us = VSet.filter (Logic.entails lpre (VId x) op delta) vars in
       (* relax constant differences *)
-      let q = Q.relax qpost in
+      let xs =
+        match delta with
+        | VNum _ -> []
+        | VId y as v ->
+          if Logic.entails lpre (VNum 0) OPlus (VNum 1) v
+          then [y] else [] in
+      let q = Q.relax ~xs qpost in
       (* modify delta's potential *)
       let d0 = Idx.dst (delta, VNum 0) in
       let sum = List.map
@@ -334,7 +342,7 @@ let go lctx cost p =
       let qpre2 = gen qpost p2 in
       Q.merge [qpre1; qpre2]
 
-    | _ -> failwith "not implemented (gen)" in
+    in
 
   let qpost = Q.create vars in
   let qpre = gen qpost p in
