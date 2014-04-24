@@ -266,8 +266,7 @@ let rec pvars p =
 
 let go lctx cost p =
   (* generate and resolve constraints *)
-  let clp_state = Clp.create () in
-  let module Q = Q(struct let state = clp_state end) in
+  let module Q = Q(struct let state = Clp.create () end) in
   let open Idx in
   let open Eval in
   let vars = VSet.add (VNum 0) (pvars p) in
@@ -330,7 +329,7 @@ let go lctx cost p =
       qpre
 
     | PWhile (_, p, _) ->
-      let qinv = addconst qpost CWhile3 in
+      let qinv = Q.merge [addconst qpost CWhile3] in
       let qpost1 = addconst qinv CWhile2 in
       let qpre1 = gen qpost1 p in
       let qinv' = addconst qpre1 CWhile1 in
