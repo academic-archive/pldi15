@@ -241,12 +241,11 @@ end = struct
     Clp.initial_solve C.state;   (* initial_solve is good because it uses presolve *)
     print_string "*************\n";
     match Clp.status C.state with
-      | 0 ->
-	let sol = Clp.primal_column_solution C.state in
-	let p c =
-	  M.iter (fun i v -> Idx.printk sol.(v) i) c.cmap in
-	p cini; if debug > 0 then p cfin
-      | _ -> print_string "LP is INFEASABLE\n"
+    | 0 ->
+      let sol = Clp.primal_column_solution C.state in
+      let p c = M.iter (fun i v -> Idx.printk sol.(v) i) c.cmap in
+      p cini; if debug > 0 then p cfin
+    | _ -> print_string "LP is INFEASABLE\n"
 
 end
 
