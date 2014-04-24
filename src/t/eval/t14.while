@@ -1,1 +1,4 @@
-program failure on: assert y > 0
+x -> 1
+y -> 1
+z -> 1
+evaluation cost: 200
