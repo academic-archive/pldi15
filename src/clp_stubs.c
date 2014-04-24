@@ -699,3 +699,30 @@ CAMLprim value clp_dual_column_solution(value model)
 
     CAMLreturn (solution);
 }
+
+/*
+ * val status : t -> int;;
+ */
+CAMLprim value clp_status(value model)
+{
+    CAMLparam1 (model);
+
+    Clp_Simplex* c_model = Model_val(model);
+    int c_status = Clp_status(c_model);
+
+    CAMLreturn (Val_int(c_status));    
+}
+
+
+/*
+ * val initial_solve : t -> unit;;
+ */
+CAMLprim value clp_initial_solve(value model)
+{
+    CAMLparam1 (model);
+
+    Clp_Simplex* c_model = Model_val(model);
+    Clp_initialSolve(c_model);
+
+    CAMLreturn (Val_unit);
+}

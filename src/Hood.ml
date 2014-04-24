@@ -237,12 +237,16 @@ end = struct
     end () cini.cvars;
     Clp.change_objective_coefficients C.state obj;
     flush stdout;
-    Clp.primal C.state;
-    let sol = Clp.primal_column_solution C.state in
-    let p c =
-      print_string "*************\n";
-      M.iter (fun i v -> Idx.printk sol.(v) i) c.cmap in
-    p cini; if debug > 0 then p cfin
+    Clp.set_log_level C.state 1; (* use 0 to turn CLP output off *)
+    Clp.initial_solve C.state;   (* initial_solve is good because it uses presolve *)
+    print_string "*************\n";
+    match Clp.status C.state with
+      | 0 ->
+	let sol = Clp.primal_column_solution C.state in
+	let p c =
+	  M.iter (fun i v -> Idx.printk sol.(v) i) c.cmap in
+	p cini; if debug > 0 then p cfin
+      | _ -> print_string "LP is INFEASABLE\n"
 
 end
 

@@ -50,9 +50,13 @@ external set_log_level : t -> int -> unit = "clp_set_log_level";;
 external primal : t -> unit = "clp_primal";;
 external dual : t -> unit = "clp_dual";;
 
+external initial_solve : t -> unit = "clp_initial_solve"
+
 (* Retrieving solutions *)
 external objective_value : t -> float = "clp_objective_value";;
 external primal_row_solution : t -> float array = "clp_primal_row_solution";;
 external primal_column_solution : t -> float array = "clp_primal_column_solution";;
 external dual_row_solution : t -> float array = "clp_dual_row_solution";;
 external dual_column_solution : t -> float array = "clp_dual_column_solution";;
+
+external status : t -> int = "clp_status"
