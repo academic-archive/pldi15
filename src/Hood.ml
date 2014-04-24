@@ -266,10 +266,7 @@ let rec pvars p =
 let go lctx cost p =
   (* generate and resolve constraints *)
   let clp_state = Clp.create () in
-  let module Q = Q(struct
-    let state = clp_state
-    let next_var = ref 0
-  end) in
+  let module Q = Q(struct let state = clp_state end) in
   let open Idx in
   let open Eval in
   let vars = VSet.add (VNum 0) (pvars p) in
