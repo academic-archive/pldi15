@@ -185,31 +185,34 @@ let p_prog: prog pm =
 
     ]
 
-  and p_sub () =
+  and p_sum () =
     bnd (p_term ()) (fun lhs -> p_or
 
       (* addition *)
       [ bnd (p_tok (is TPlus)) (fun () ->
-        bnd (p_lsum ()) (fun rhs ->
-          ret [LAdd (lhs, rhs)]
+        bnd (p_sum ()) (fun rhs ->
+          ret ((lhs, true) :: rhs)
         ))
 
-      (* substraction (trick for left associativity) *)
+      (* substraction *)
       ; bnd (p_tok (is TMinus)) (fun () ->
-        bnd (p_sub ()) (fun rhs ->
-          ret (lhs :: rhs)
+        bnd (p_sum ()) (fun rhs ->
+          ret ((lhs, false) :: rhs)
         ))
 
       (* simple term *)
-      ; ret [lhs]
+      ; ret [(lhs, true)]
 
       ]
     )
 
   and p_lsum () =
-    bnd (p_sub ()) (fun s ->
-      let hd, tl = List.hd s, List.tl s in
-      ret (List.fold_left (fun a b -> LSub (a, b)) hd tl)
+    bnd (p_sum ()) (fun s ->
+      let f (l, toadd) (l', toadd') =
+        if toadd
+          then (LAdd (l, l'), toadd')
+          else (LSub (l, l'), toadd') in
+      ret (fst (List.fold_left f (List.hd s) (List.tl s)))
     ) in
 
   let p_cond () =
