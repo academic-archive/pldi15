@@ -5,7 +5,7 @@ exception SyntaxError of string
 
 type token =
   | TAssert | TWhile | TIf | TElse
-  | TSemi | TPlus | TMinus
+  | TSemi | TPlus | TMinus | TStar
   | TLParen | TRParen
   | TLt | TGt | TLe | TGe | TEq
   | TIdnt of string
@@ -49,7 +49,7 @@ let mk_lexer ic =
       else if s = "else" then TElse
       else TIdnt s
     | ('0' .. '9') as c -> TNum (getnum (digit c))
-    | ';' -> TSemi | '+' -> TPlus | '-' -> TMinus
+    | ';' -> TSemi | '+' -> TPlus | '-' -> TMinus | '*' -> TStar
     | '(' -> TLParen | ')' -> TRParen
     | '<' -> (match next () with '=' -> TLe | c -> back c; TLt)
     | '>' -> (match next () with '=' -> TGe | c -> back c; TGt)
@@ -65,7 +65,7 @@ let string_of_token = function
   | TIf -> "IF" | TElse -> "ELSE"
   | TIdnt id -> Printf.sprintf "IDNT %S" id
   | TNum n -> Printf.sprintf "NUM %d" n
-  | TSemi -> "SEMI"
+  | TSemi -> "SEMI" | TStar -> "STAR"
   | TPlus -> "PLUS" | TMinus -> "MINUS"
   | TLParen -> "LPAREN" | TRParen -> "RPAREN"
   | TLt -> "LT" | TGt -> "GT"
@@ -117,8 +117,14 @@ let p_tok f (i, s) =
 type id = string
 type var = VId of id | VNum of int
 type op = OPlus | OMinus
-(* Conditions are of the form v1 - v2 > k *)
-type cond = Cond of var * var * int
+
+type comp = CLe | CGe | CLt | CGt
+type lsum =
+  | LAdd of lsum * lsum
+  | LSub of lsum * lsum
+  | LMult of int * lsum
+  | LVar of var
+type cond = C of lsum * comp * lsum
 
 type prog =
   | PSkip of uid
@@ -153,27 +159,71 @@ let p_prog: prog pm =
     ; bnd p_num (fun n -> ret (VNum n))
     ] in
 
-  let p_cond = p_or
+  let rec p_term () = p_or
 
-    (* x > k *)
-    [ bnd p_var (fun v ->
-      bnd (p_tok (is TGt)) (fun () ->
-      bnd p_num (fun k ->
-        ret (Cond (v, VNum 0, k))
+    (* variable *)
+    [ bnd (p_tok idnt) (fun id ->
+        ret (LVar (VId id))
+      )
+
+    (* constant or multiplication *)
+    ; bnd p_num (fun k -> p_or
+        [ bnd (p_tok (is TStar)) (fun () ->
+          bnd (p_term ()) (fun l ->
+            ret (LMult (k, l))
+          ))
+        ; ret (LVar (VNum k))
+        ]
+      )
+
+    (* parenthesized expressions *)
+    ; bnd (p_tok (is TLParen)) (fun () ->
+      bnd (p_lsum ()) (fun l ->
+      bnd (p_tok (is TRParen)) (fun () ->
+        ret l
       )))
 
-    (* x - y > k *)
-    ; bnd p_var (fun v1 ->
-      bnd (p_tok (is TMinus)) (fun () ->
-      bnd p_var (fun v2 ->
-      bnd (p_tok (is TGt)) (fun () ->
-      bnd p_num (fun k ->
-        ret (Cond (v1, v2, k))
-      )))))
+    ]
 
-    (* anything else is invalid *)
-    ; fun _ -> raise (SyntaxError "unsupported condition")
-    ] in
+  and p_sub () =
+    bnd (p_term ()) (fun lhs -> p_or
+
+      (* addition *)
+      [ bnd (p_tok (is TPlus)) (fun () ->
+        bnd (p_lsum ()) (fun rhs ->
+          ret [LAdd (lhs, rhs)]
+        ))
+
+      (* substraction (trick for left associativity) *)
+      ; bnd (p_tok (is TMinus)) (fun () ->
+        bnd (p_sub ()) (fun rhs ->
+          ret (lhs :: rhs)
+        ))
+
+      (* simple term *)
+      ; ret [lhs]
+
+      ]
+    )
+
+  and p_lsum () =
+    bnd (p_sub ()) (fun s ->
+      let hd, tl = List.hd s, List.tl s in
+      ret (List.fold_left (fun a b -> LSub (a, b)) hd tl)
+    ) in
+
+  let p_cond () =
+    let comp = function
+      | TLe -> Some CLe
+      | TGe -> Some CGe
+      | TLt -> Some CLt
+      | TGt -> Some CGt
+      | _ -> None in
+    bnd (p_lsum ()) (fun left ->
+    bnd (p_tok comp) (fun c ->
+    bnd (p_lsum ()) (fun right ->
+      ret (C (left, c, right))
+    ))) in
 
   let rec p_atomic () = p_or
 
@@ -201,20 +251,20 @@ let p_prog: prog pm =
 
     (* While loop, PWhile *)
     ; bnd (p_tok (is TWhile)) (fun () ->
-      bnd p_cond (fun cond ->
+      bnd (p_cond ()) (fun cond ->
       bnd (p_atomic ()) (fun prog ->
         reti (fun i -> PWhile (cond, prog, i))
       )))
 
     (* Assertion, PAssert *)
     ; bnd (p_tok (is TAssert)) (fun () ->
-      bnd p_cond (fun cond ->
+      bnd (p_cond ()) (fun cond ->
         reti (fun i -> PAssert (cond, i))
       ))
 
     (* Conditional, PIf *)
     ; bnd (p_tok (is TIf)) (fun () ->
-      bnd p_cond (fun cond ->
+      bnd (p_cond ()) (fun cond ->
       bnd (p_atomic ()) (fun p1 ->
         p_or
         (* Conditional with else part *)
@@ -279,9 +329,32 @@ let pp_var oc = function
 let pp_prog_hooks pre post prog =
   let open Printf in
 
+  let rec lsum prns = function
+    | LAdd (l1, l2) ->
+      if prns then printf "(";
+      lsum false l1; printf " + "; lsum false l2;
+      if prns then printf ")"
+    | LSub (l1, l2) ->
+      if prns then printf "(";
+      lsum false l1; printf " - "; lsum true l2;
+      if prns then printf ")"
+    | LMult (k, l) ->
+      printf "%d * " k;
+      lsum true l
+    | LVar v ->
+      printf "%a" pp_var v in
+
   let cond = function
-    | Cond (v1, VNum 0, k) -> printf "%a > %d" pp_var v1 k
-    | Cond (v1, v2, k) -> printf "%a - %a > %d" pp_var v1 pp_var v2 k in
+    | C (l1, cmp, l2) ->
+      lsum false l1;
+      printf " %s " (
+        match cmp with
+        | CLe -> "<="
+        | CGe -> ">="
+        | CLt -> "<"
+        | CGt -> ">"
+      );
+      lsum false l2 in
 
   let rec idnt i =
     if i <> 0 then
@@ -297,7 +370,9 @@ let pp_prog_hooks pre post prog =
       let op = match o with OPlus -> "+" | OMinus -> "-" in
       printf "%s = %s %s %a" id id op pp_var v
     | PSeq (p1,  p2, _) ->
-      let lvl' = if prns then (idnt lvl; printf "(\n"; lvl + delta) else lvl in
+      let lvl' = if prns
+        then (idnt lvl; printf "(\n"; lvl + delta)
+        else lvl in
       g lvl' true p1; printf ";\n";
       g lvl' false p2;
       if prns then (printf "\n"; idnt lvl; printf ")")

@@ -70,8 +70,19 @@ let plusv c v l =
   | VNum n -> L.addk (n * c) l
   | VId x -> L.addl x c l
 
-let assn_of_cond (Cond (v1, v2, k) (* v2 - v1 + k + 1 <= 0 *)) =
-  plusv 1 v2 (plusv (-1) v1 (L.const (k + 1)))
+let assn_of_cond (C (l1, cmp, l2)) =
+  let rec addl k s = function
+    | LAdd (l1, l2) -> addl k (addl k s l1) l2
+    | LSub (l1, l2) -> addl (-k) (addl k s l1) l2
+    | LMult (k', l) -> addl (k * k') s l
+    | LVar v -> plusv k v s in
+  let a1, a2, b =
+    match cmp with
+    | CLe -> 1, -1, 0
+    | CGe -> -1, 1, 0
+    | CLt -> 1, -1, 1
+    | CGt -> -1, 1, 1
+  in addl a1 (addl a2 (L.const b) l2) l1
 
 let assn_negate m = L.addk 1 (L.mult (-1) m)
 

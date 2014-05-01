@@ -254,7 +254,11 @@ end
 
 let rec pvars p =
   (* get all variables used in a program *)
-  let cvars (Cond (v1, v2, k)) = VSet.of_list [v1; v2; VNum k] in
+  let rec lvars = function
+    | LAdd (l1, l2) | LSub (l1, l2) -> VSet.union [lvars l1; lvars l2]
+    | LMult (_, l) -> lvars l
+    | LVar v -> VSet.of_list [v] in
+  let cvars (C (l1, _, l2)) = VSet.union [lvars l1; lvars l2] in
   match p with
   | PSkip _ -> VSet.empty
   | PAssert (c, _) -> cvars c

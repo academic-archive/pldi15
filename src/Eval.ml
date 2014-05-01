@@ -52,8 +52,16 @@ module Eval(QMon: QMONOID) = struct
   let set id v heap =
     (Heap.add id (value v heap) heap, zero)
 
-  let test (Cond (v1, v2, k)) heap =
-    value v1 heap - value v2 heap > k
+  let test (C (l1, cmp, l2)) heap =
+    let rec lsum heap = function
+      | LAdd (l1, l2) -> lsum heap l1 + lsum heap l2
+      | LSub (l1, l2) -> lsum heap l1 - lsum heap l2
+      | LMult (k, l) -> k * lsum heap l
+      | LVar v -> value v heap in
+    begin match cmp with
+    | CLe -> ( <= ) | CGe -> ( >= )
+    | CLt -> ( < ) | CGt -> ( > )
+    end (lsum heap l1) (lsum heap l2)
 
   exception ProgramFailure of prog
 
