@@ -1,8 +1,10 @@
 *~
-tw
-*.aux
-*.log
-*.pdf
+paper/tw
+paper/*.aux
+paper/*.log
+paper/*.bbl
+paper/*.blg
+paper/*.pdf
 
 src/*.cm[iox]
 src/*.o
