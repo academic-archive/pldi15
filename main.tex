@@ -36,7 +36,6 @@
 %----------------------------------------------------
 
 \usepackage{amsthm}
-\theoremstyle{newstyle}
 \newtheorem{lemma}{Lemma}
 \newtheorem{corollary}{Corollary}
 \newtheorem{theorem}{Theorem}
@@ -54,158 +53,409 @@
 \begin{document}
 \maketitle
 
-\section{Decreasing to zero}
+\section{Introduction}
 
-We start with a programming language with loops counting
-downwards to 0.  Statements and expressions are defined
-below.  Assignments of complex expressions can be simulated
-by sequencing assignments of simple expressions.
+After functional correctness, quantitative properties are the
+second thing one wants to know when writing a program.
+For example, an asymptotic runtime bound on a
+sorting algorithm tells us what efficiency we can expect
+of it when running on very large arrays.  But, what if we
+always run it on arrays of size between 5 and 10? In that
+case, the asymptotic is not relevant and we need a more
+precise bound on the runtime.  It is then a good
+software engineering practice to profile the algorithm on
+some examples.
+
+In between asymptotic bounds and profiling there are
+precise bounds, for instance, one can prove that Knuth's Quicksort might
+take at most $20N^2$ operations of a MIX machine when
+called on an array of size $N$.  If you have this information,
+no profiling is needed to compare the algorithms and you
+have a formal guarantee on the behavior of the program. But what if you do not
+have a MIX machine, or you tweaked Knuth's algorithm
+a bit?  Then you are good for another long an tedious
+proof.  We advocate that, it is possible to design a practical
+system that is able to infer precise worst case bounds
+without any user interaction.
+
+This work presents a resource oblivious system to get
+linear resource bounds on imperative programs with
+integers.  Despite its apparent simplicity it is able to
+reproduce multiple results from the literature which
+were obtained using methods based on abstract
+interpretation.  In stark contrast with abstract-interpretation
+based methods, our tool does not require any
+fixpoint computations on an abstract domain to obtain
+loop invariants.  The mechanism we designed, which
+is based on amortized analysis, is able to leverage a local
+information to obtain global invariants.  Additionally, the
+approach we advocate is able to scale to full blown
+imperative languages including constructs like functions
+calls, \code{break} and \code{return}.
+
+The analysis is proved sound with respect to
+the operational semantics instrumented to track resource
+consumption.  It is implemented as a prototype
+in OCaml and available on demand.  We test it on multiple
+algorithms from the literature and on custom tests, it
+is also planned to extend it to handle the full C programming
+language.
+
+\section{Overview and Examples}
+
+\subsection{Amortized Analysis}
+The idea that drives the design of our system is amortized
+analysis.  Say that a program $p$ evaluates on a heap $H$
+by consuming $n$ resource units, we note that $(p, H) \Downarrow_n$.
+The basic idea of amortized analysis is to define a potential function
+$\Phi$ from heaps to natural numbers, such that $\Phi(H) \ge n$.
+
+Since imperative programs can be composed we must enrich
+the judgement $(\_, \_) \Downarrow_{\_}$ to talk about the heap
+resulting from the program execution $H'$.  So we now write
+$(p, H) \Downarrow_n H'$ to say that $H'$ results from $p$'s
+execution.  We now use two potential functions, one
+that applies before the execution, and one that applies
+after.  The two functions must respect the natural relation
+$\Phi(H) \ge n + \Phi'(H')$.  Intuitively speaking, $\Phi$ must
+give enough \emph{potential} to, both, finish the computation
+and pay for $\Phi'$ on the resulting heap. That way, if $(H, p_1) \Downarrow_n H'$
+and $(H', p_2) \Downarrow_m H''$, we get $\Phi(H) \ge
+n + \Phi'(H')$ and $\Phi'(H') \ge m + \Phi''(H'')$, which
+can be composed to give $\Phi(H) \ge (n + m) + \Phi''(H'')$.
+What we have observed is that, if we define $\Phi \vdash p \dashv \Phi'$
+to be
+$$
+\forall H\,n\,H',~(H, p)\Downarrow_n H' \implies \Phi(H) \ge
+n + \Phi'(H'),
+$$
+then we get the following familiar looking rule:
+$$
+\RuleNolabel
+{\Phi \vdash p_1 \dashv \Phi' \\ \Phi' \vdash p_2 \dashv \Phi''}
+{\Phi \vdash p_1; p_2 \dashv \Phi''}
+.
+$$
+Similarly, other language constructs contrain the potential
+functions to respect more rules that look very similar to
+Hoare logic or effect systems rules.  By fixing the shape of
+a potential function $\Phi$, it becomes possible to leverage
+existing tools to help finding a pair of potential functions
+for an arbitrary program.  This is explained in further details
+in the following sections.
+
+We say that the analysis is amortized because the use of a
+potential function $\Phi$ gives the flexibility to amortize some
+operations.  For example, if heaps are simple mappings from
+$\{\code x, \code y\}$ to natural numbers, we have the following
+judgement (provided that $H~\code x \ge H~\code y \ge 0$ initially)
+$$
+(\Phi := \lambda H.~2\cdot(H~\code x) + 10)
+\vdash \code x = \code x - \code y \dashv
+(\Phi' := \lambda H'.~2\cdot(H'~\code x) + 2\cdot(H'~\code y) + 10).
+$$
+This must be understood as a motion of potential from $\code x$
+to $\code y$. If some resource is consumed $\code y$ times afterwards, we
+can now use $\code y$'s potential to pay for it. But interestingly, the
+initial potential function $\Phi$ only talks about~$\code x$: the potential
+function allowed us to impart the cost of the subsequent resource
+consumptions on the variable~$\code x$.
+This flexibility combined with intelligent decisions on potential
+motions allow our tool to discover linear invariants for surprisingly
+convoluted programs.
+
+\subsection{Motivating Examples}
+
+We now present a representative set of examples that can be
+handled by our tool.  The bounds that are given are for the number
+of ``base statements'' executed by the program, that is, the number
+of assertions, skip and assignment statements executed.  The
+bounds are given as literal expressions where a variable name {\tt x}
+represents the initial value of this variable.
+
+\paragraph{Simple loops.} The simplest loop scheme that is in
+use in typical imperative programs is counting upwards or
+downwards to a given bound N.  The two example programs
+are given below, on their right is the bound inferred by our analysis.
+\begin{center}
+\begin{tabular}{p{0.7\textwidth} | p{0.2\textwidth} }
+\lstinline|while x > N ( x = x - 1 )| & $|{\tt N} -  {\tt x}|$ \\
+\lstinline|while x < N ( x = x + 1 )| & $|{\tt N} -  {\tt x}|$ \\
+\end{tabular}
+\end{center}
+
+It is also frequent to iterate every $n$ elements in an array, also
+in this simple case our analysis works without any problem.  Note
+however that if we increment using a variable, it might very well be
+possible that the program diverges!  In this situation no worst
+case bound can be given and the analysis correctly fails.
+\begin{center}
+\begin{tabular}{p{0.7\textwidth} | p{0.2\textwidth} }
+\lstinline|while x <= -2 ( x = x + 2 )| & $| {\tt x} | / 2$ \\
+\lstinline|while x <= z - y ( x = x + y )| & Infeasible \\
+\lstinline|assert y > 0; while x <= z - y ( x = x + y )| & $1 + |{\tt x} - {\tt z}|$
+\end{tabular}
+\end{center}
+In the last example, the constant 1 is added to the loop bound
+to account for the initial \texttt{assert} that consumes one
+step.  Also, since the bound is for the worst case, it is tight
+only when {\tt y} is 1.
+
+\paragraph{In the literature.}
+The two examples below are taken from Gulwani's paper~\cite{Gulwani-speed}.
+They are both handled by the Speed tool but require inference of a so-called
+disjunctive invariant.  In the abstract interpretation community, these
+invariants are known to be notoriously difficult to handle.
+
+\begin{minipage}{0.45\textwidth}
+\begin{lstlisting}
+while x < n
+  if y < m    y = y + 1
+  else        x = x + 1
+\end{lstlisting}
+$$
+|{\tt m} - {\tt y}| + |{\tt n} - {\tt x}|
+$$
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+\begin{lstlisting}
+while x < n
+  if z > x    x = x + 1
+  else        z = z + 1
+\end{lstlisting}
+$$
+|{\tt n} - {\tt x}| + |{\tt n} - {\tt z}|
+$$
+\end{minipage}
+
+\hspace{1ex}
+
+While the first
+example is simple to understand, the second one is much more
+tricky and trying to understand how it actually works is quite challenging.
+However, with the amortized analysis in mind, using the potential transfer
+reasonning, it is almost trivial to prove the termination.  While the Speed
+tool has to find a fairly involved invariant for the loop, our tool is simply
+reasoning locally and works without any special trick.
+%
+Our analysis handles without problems all the other examples
+in~\cite{Gulwani-speed} that have a linear bound.  Here is
+a quick review of some of them together with the bounds we
+inferred.
+
+\begin{minipage}[b]{0.30\textwidth}
+\begin{lstlisting}
+while x < n
+  while x < n
+    x = x + 1
+\end{lstlisting}
+$$
+|{\tt x} - {\tt n}|
+$$
+\end{minipage}
+\begin{minipage}[b]{0.30\textwidth}
+\begin{lstlisting}
+while x < n (x = x + 1);
+while x < n (x = x + 1)
+\end{lstlisting}
+$$
+|{\tt x} - {\tt n}|
+$$
+\end{minipage}
+\begin{minipage}[b]{0.30\textwidth}
+\begin{lstlisting}
+while x < n
+  ( while y < m (y = y+1)
+  ; x = x + 1 )
+\end{lstlisting}
+$$
+|{\tt x} - {\tt n}|
++|{\tt y} - {\tt m}|
+$$
+\end{minipage}
+
+\paragraph{Amortized reasonning.}
+The two examples below show the power of amortized reasoning.
+Because they essentially rely on an amortized reasonning we believe
+that our tool is the only one able to deal with them.
+
+\begin{minipage}[b]{0.45\textwidth}
+\begin{lstlisting}
+assert y >= 1;
+while x + y <= N
+  ( x = x + y
+  ; z = y; z = z + 4
+  ; while z > 0 ( z = z - 1 ) )
+\end{lstlisting}
+$$
+1 + 8\,|{\tt N} - {\tt x}|
+$$
+\end{minipage}
+\begin{minipage}[b]{0.45\textwidth}
+\begin{lstlisting}
+while x > 0
+  ( x = x - 1
+  ; if ?
+      while s > 0 ( s = s - 1 )
+    else s = s + 1 )
+\end{lstlisting}
+$$
+3\,|{\tt x}| + |{\tt s}|
+$$
+\end{minipage}
+
+\hspace{1ex}
+
+Maybe surprisingly, the two examples have linear bounds.  In the first one, the
+worst case is when {\tt y} is 1, in this situation the inner loop will perform 5 times
+$|{\tt N} - {\tt x}|$ iterations. Indeed, for each decrement of {\tt x}, {\tt z} is set
+to 5 and iterated over.  The second example is classic in the amortized analysis
+community, it is the original example from Tarjan's paper~\cite{Tarjan-amort} that
+non deterministically pushes one element on a stack or pops many elements from
+that stack.  In the example source code, the stack depth is represented by the
+variable {\tt s} and the number of iterations is ruled by the initial value of {\tt x}.
+
+\section{Syntax}
+
+Let us now start the formal part of this work.  We begin by defining
+a proper syntax for the language we will be using later on.  This is
+a more algebraic version of the surface syntax used in the previous
+examples.
 %
 \begin{mathpar}
 
 S := \code{skip}
-\mid \code{assert}(\Gamma)
+\mid \code{assert}(C)
 \mid x \gets E
-\mid \code{while}(0 < x)~S
-\mid \code{if}(?)~S~\code{else}~S
+\mid \code{while}(C)~S
+\mid \code{if}(C)~S~\code{else}~S
 \mid S;S
 
 \and
 
-E := x + y \mid x - y % \mid y
-\end{mathpar}
-%
-We define a deductive system to derive judgements of the
-form $\Gamma; Q \vdash S \dashv Q'; \Gamma'$.  The semantics
-of this judgement are defined below in the soundness section.
-
-\begin{mathpar}
-
-\Rule{Skip}
-{}
-{ \Gamma; Q + M_s \vdash \code{skip} \dashv Q; \Gamma }
-
-\and \Rule{Assert}
-{}
-{ \Gamma; Q + M_a \vdash \code{assert}(\Delta) \dashv Q; \Gamma, \Delta }
-
-% \\ \Rule{AssignP}
-% { \Gamma \models \Gamma'[x/x+y] }
-% {\Gamma; Q + M_s + y\cdot q_x \vdash x \gets x + y \dashv Q; \Gamma'}
-
-% \and\Rule{AssignM}
-% {  \Gamma \models \Gamma'[x/x-y]
-% \\ \Gamma \models c \le y \le x
-% }
-% { \Gamma; Q + M_s \vdash x \gets x - y \dashv c \cdot q_x + V; \Gamma' }
-
-\\ \Rule{While}
-{ \Gamma, 0 < x ; Q - M_w^1 \vdash S \dashv M_w^2 + Q; \Gamma }
-{ \Gamma; Q \vdash \code{while}(0 < x)~S \dashv Q - M_w^3; \Gamma, x \le 0 }
-
-\and\Rule{Seq}
-{  \Gamma; Q - M_s^1 \vdash S_1 \dashv Q'; \Gamma'
-\\ \Gamma'; Q' - M_s^2 \vdash S_2 \dashv Q''; \Gamma''
-}
-{ \Gamma; Q \vdash S_1;S_2 \dashv Q''; \Gamma'' }
-
+E := x \mid x \pm y
 \end{mathpar}
 
-\section{Decreasing differences}
-The second iteration is a system more symmetric where the potentials
-are linear functions in differences of variables.  From now on $k$
-denotes a non-negative constant.
+Note that expressions are kept extremely simple, this will help
+greatly when designing the analysis.  Moreover, programs
+containing fancier expressions can easily be compiled to this
+restricted form.  For example $a \gets b + c - d$ is semantically
+equivalent to $a \gets b; a \gets a + c; a \gets a - d$ which
+fits in the above syntax.
+
+The syntax of conditions, noted $C$, is left unspecified
+for the moment.  We will describe it later when the practical
+implementation details are provided.  The only semantic tool
+we need to deal with this unknown is an evaluation
+function $\llbracket \_ \rrbracket_{\_}$ such that, for any
+condition $C$ and any heap $H$ we have $\llbracket
+C \rrbracket_H \in \{ \top, \bot \}$.
+
+Another peculiarity is that there are no integer constants in the
+syntax.  Once again this is for the sake of simplicity.  In practice
+the concrete syntax recognizes ``variables'' like {\tt -4} or
+{\tt 60} as read only variables.  Any heap used later in the
+operational semantics will map these variables to their natural
+value.
+
+\section{Cost Semantics}
+
+The semantics for the syntax defined above needs to account
+for resource consumption.  To account for all kinds of resources
+we leave it as a parameter of the semantics to be specified
+by the user.  This parameter, called a metric, is a tuple of rational
+numbers with the following form
 $$
-S := \code{while}(k < x - y)~S \mid \dots
+(
+M_k, M_s, M_a,
+M_w^1, M_w^2, M_w^3,
+M_c^1, M_c^2,
+M_s^1, M_s^2
+).
 $$
-%
-In the rules below we take as convention that $q_{x}$ for a variable
-$x$ is in fact $q_{x0}$ where 0 is a special variable fixed to zero
-in all contraint contexts.
+Each of these rational numbers indicates the amount of resource
+consumed by an operation.  If one of these numbers is negative,
+it means that some resource is released by the program.
 
-\begin{mathpar}
+The general form of an evaluation judgement is
+$(H, S) \Downarrow_{(q,q')} X$.  It is similar to the judgement
+presented in the overview section appart  from the fact that
+two resource numbers are tracked instead of one.  Intuitively
+$(q, q')$ means that $q$ resources units are necessary to execute
+the program and that $q'$ units are available after its execution.
+For example, $\code{alloc}(3)$ consumes 3 heap cells, so
+the pair resulting from its evaluation would be $(3, 0)$; for
+$\code{free}(3)$, the pair would be $(0, 3)$.  When these
+statements are sequenced with \code{alloc} first, then \code{free},
+the evaluation yields $(3, 3)$.  These resource pairs can
+be composed with the following operation
+$$
+(q_1, q'_1) \cdot (q_2, q'_2) =
+\left\{
+\begin{array}{ll}
+(q_1, q'_2 + q'_1 - q_2) & \mbox{if } q'_1 \ge q_2 \\
+(q_1 + q_2 - q'_1, q'_2) & \mbox{if } q'_1 < q_2
+\end{array}
+\right.
+.
+$$
+This operation can be seen as the sequential composition of
+two resource consumptions, note that it is not a commutative
+operation, the same way resource freeing and allocation do not
+commute.
+With $(0, 0)$ as a neutral element, the above composition defines
+a monoid structure on $\mathbb Q_0^+ \times \mathbb Q_0^+$.
+It is possible to inject $q \in \mathbb Q$ in this monoid with by taking
+$(q, 0)$ if $q \ge 0$ and $(0, -q)$ otherwise.  This injection
+is used implicitely in the semantics.
 
-\Rule{AssignOpK}
-{  \Gamma \models \Gamma'[x/x \pm y]
-\\ \Gamma \models |y| = k
-\\ \mathcal U = \left\{ u \mid \Gamma \models x \pm y \in \inter x u \right\}
-\\ \textstyle q'_y = q_y
-      + \sum_{u \in \mathcal U} p_{xu}
-      - \sum_{v \not\in \mathcal U} q_{xv}
-\\ q_{xu} = p_{xu} + r_{xu}
-}
-{ \textstyle
-  \Gamma; Q + M_s
-  \vdash x \gets x \pm y \dashv
-  \sum_u k \cdot r_{xu} + Q'; \Gamma'
-  % q_x is not omitted, v_{x} is in fact a shorthand for
-  % v_{x0} where 0 is a variable equal to 0.
-}
-
-\and \Rule{AssignOp}
-{  \Gamma \models \Gamma'[x/x \pm y]
-\\ \mathcal U = \left\{ u \mid \Gamma \models x \pm y \in \inter x u \right\}
-\\ \textstyle q'_y = q_y
-      + \sum_{u \in \mathcal U} q_{xu}
-      - \sum_{v \not\in \mathcal U} q_{xv}
-}
-{ \textstyle
-  \Gamma; Q + M_s \vdash x \gets x \pm y \dashv Q'; \Gamma'
-}
-
-\\ \mbox{(The other rules are unchanged)}
-
-\end{mathpar}
-
-\section{Cost aware semantics}
-
-This big step semantics is parameterized by a metric that sets
-the cost of each program operation.  Non-deterministically,
-the rule {\sc S:Abort} can be called to interrupt a computation.
-It has the same effect as raising an exception.  We symbolize a
-frozen computation with the notation $\circ$.  In the rules, $X$
-stands for either $\circ$ or $H$.
-
+\begin{figure}[ht!]
 \begin{mathpar}
 
 \Rule{S:Abort}
 { }
-{ (H, S) \Downarrow_0 \circ }
+{ (H, S) \Downarrow_{(0,0)} \circ }
 
 \and \Rule{S:Skip}
 { }
-{ (H, \code{skip}) \Downarrow_{M_s} H }
+{ (H, \code{skip}) \Downarrow_{M_k} H }
 
 \and \Rule{S:Assign}
 { }
 { (H, x \gets e) \Downarrow_{M_s} H[x \mapsto \llbracket e \rrbracket_H] }
 
 \and \Rule{S:Assert}
-{ H \models \Gamma }
-{ (H, \code{assert}(\Gamma)) \Downarrow_{M_a} H }
+{ H \models C }
+{ (H, \code{assert}(C)) \Downarrow_{M_a} H }
 
 \and \Rule{S:WhileStop}
-{ \neg (k < \llbracket x - y \rrbracket_H) }
-{ (H, \code{while}(k < x - y)~S) \Downarrow_{M_w^3} H }
+{ \llbracket C \rrbracket_H = \bot }
+{ (H, \code{while}(C)~S) \Downarrow_{M_w^3} H }
 
-\and \Rule{S:WhileStep}
-{  k < \llbracket x - y \rrbracket_H
-\\ (H, S) \Downarrow_{(q_1, q'_1)} H'
-\\ (H', \code{while}(k < x - y)~S) \Downarrow_{(q_2, q'_2)} X
-}
-{ (H, \code{while}(k < x - y)~S) \Downarrow_{M_w^1 \cdot (q_1, q'_1) \cdot M_w^2 \cdot (q_2, q'_2)} X }
-
-\and \Rule{S:WhileStepAbort}
+\and \Rule{S:WhileAbort}
 {  k < \llbracket x - y \rrbracket_H
 \\ (H, S) \Downarrow_{(q_1, q'_1)} \circ
 }
 { (H, \code{while}(k < x - y)~S) \Downarrow_{M_w^1 \cdot (q_1, q'_1) } \circ }
 
-\and \Rule{S:If}
-{  (H, S_i) \Downarrow_{(q, q')} X
-\\ i \in \{1, 2\}
+\and \Rule{S:WhileStep}
+{  \llbracket C \rrbracket_H = \top
+\\ (H, S) \Downarrow_{(q_1, q'_1)} H'
+\\ (H', \code{while}(C)~S) \Downarrow_{(q_2, q'_2)} X
 }
-{ (H, \code{if}(?)~S_1~\code{else}~S_2) \Downarrow_{M_c^i \cdot (q, q')} X }
+{ (H, \code{while}(C)~S) \Downarrow_{M_w^1 \cdot (q_1, q'_1) \cdot M_w^2 \cdot (q_2, q'_2)} X }
+
+\and \Rule{S:IfThen}
+{  (H, S_1) \Downarrow_{(q, q')} X
+\\ \llbracket C \rrbracket_H = \top
+}
+{ (H, \code{if}(C)~S_1~\code{else}~S_2) \Downarrow_{M_c^1 \cdot (q, q')} X }
+
+\and \Rule{S:IfElse}
+{  (H, S_2) \Downarrow_{(q, q')} X
+\\ \llbracket C \rrbracket_H = \bot
+}
+{ (H, \code{if}(C)~S_1~\code{else}~S_2) \Downarrow_{M_c^2 \cdot (q, q')} X }
 
 \and \Rule{S:Seq}
 {  (H, S_1) \Downarrow_{(q_1, q'_1)} H'
@@ -218,8 +468,274 @@ stands for either $\circ$ or $H$.
 { (H, S_1; S_2) \Downarrow_{(q,q')} \circ }
 
 \end{mathpar}
+\caption{Operational semantics of statements}
+\label{fig:opsem}
+\end{figure}
 
-\section{Soundness theorem}
+Heaps manipulated by the operational semantics judgements are
+simple maps from variable names to integers.  We designate by
+$H[x \mapsto v]$ the heap $H$ updated to map the variable name
+$x$ to the number $v$.
+%
+The evaluation of expressions is trivial using heaps.
+\begin{mathpar}
+\llbracket x \rrbracket_H = H(x)
+\and
+\llbracket x \pm y \rrbracket_H = H(x) \pm H(y)
+\end{mathpar}
+
+In the evaluation judgement $(H, S) \Downarrow_{(q, q')} X$, the result $X$ can
+be either a new heap, which means the execution terminated successfully
+or it can be the \emph{busy} result $\circ$.  This indicates an early
+termination, it can be triggered at any point using the rule {\sc S:Abort}
+and bubbles up through the execution context.
+Sometimes there is no other choice than to use this latter rule, for
+example when an assertion fails.  In that case the side condition of
+{\sc S:Assert} is not met and the only rule that can possibly be applied
+is {\sc S:Abort}.
+
+The busy result is also useful to handle diverging programs with big-step
+judgements.  In case a program does not terminate, there is no heap $H'$
+such that $(H, S)\Downarrow_{(q, q')} H'$.  The only possible way to
+conclude a big-step judgement is to use the {\sc S:Abort} rule at some
+point in the computation.  One alternative to this technique is to use
+coinductive semantics~\cite{Leroy-coind}, however, using the busy
+result is precise enough in our setting of quantitative resource analysis and
+allows to have only one soundness proof for both unsafe and
+non-terminating programs.  Indeed, stating a result for
+$(H, S) \Downarrow_{(q,q')} \circ$ covers unsafe programs, diverging
+programs, and partial computations at the same time.
+
+
+\section{Proof System}
+
+We define in this section an abstract version of the proof system that
+we will use to derive bounds in our practical implementation.
+
+\subsection{Linear Potential Functions}
+
+To get a practical and automated implementation of amortized analysis
+as presented in the overview section we need the fix the shape of
+potential functions.  The general form of a potential function is as follows
+$$
+\Phi(H) = q_0 + \sum_{a \prec b} q_{ab}\,|H(a) - H(b)|.
+$$
+Where $a$ and $b$ range over the set of all program variables $V$ and
+$(q_{ab})$ and $q_0$ are non-negative rational numbers.  The relation
+$\prec$ is an arbitrary complete order on $V$ that is used only to
+avoid considering the two equal quantities $|H(a) - H(b)|$ and
+$|H(b) - H(a)|$ in the above sum.
+
+To simplify the references to the $q$ coefficients later we introduce
+an \emph{index set} $I$.  This set is defined to be $\{0\} \cup
+\{(a, b) \mid a \prec b\}$.  Each index $i$ corresponds to a \emph{base
+function} $f_i$ in the potential function: $0$ corresponds to the constant
+function $\_ \mapsto 1$, and $(a,b)$ corresponds to $H \mapsto
+|H(a) - H(b)|$.  Using these notations we can rewrite the above
+equality as
+$$
+\Phi(H) = \sum_{i \in I} q_i f_i(H).
+$$
+From now on, we will write $ab$ to denote the index $(a,b)$.
+
+\subsection{Proof Rules}
+
+\begin{figure}[ht!]
+\begin{mathpar}
+
+\Rule{Q:Skip}
+{}
+{ \Gamma; Q + M_k \vdash \code{skip} \dashv Q; \Gamma }
+
+\and \Rule{Q:Assert}
+{}
+{ \Gamma; Q + M_a \vdash \code{assert}(C) \dashv Q; \Gamma, C }
+
+\and \Rule{Q:While}
+{ \Gamma, C ; Q - M_w^1 \vdash S \dashv M_w^2 + Q; \Gamma }
+{ \Gamma; Q \vdash \code{while}(C)~S \dashv Q - M_w^3; \Gamma, \neg C }
+
+\and \Rule{Q:Set}
+{ \forall u,~q_{yu} = q'_{xu} + q'_{yu}
+\\ q'_{xy} \in \mathbb Q_0^+
+}
+{ \Gamma[x/y]; Q + M_s \vdash x \gets y \dashv Q'; \Gamma }
+
+\and \Rule{Q:Incr}
+{ \mathcal U = \left\{ u \mid \Gamma \models x \pm y \in \inter x u \right\}
+\\ \textstyle q'_y = q_y
+      + \sum_{u \in \mathcal U} q_{xu}
+      - \sum_{v \not\in \mathcal U} q_{xv}
+}
+{ \textstyle
+  \Gamma[x/x \pm y]; Q + M_s \vdash x \gets x \pm y \dashv Q'; \Gamma
+}
+
+\and \Rule{Q:If}
+{ \Gamma, C; Q - M_c^1 \vdash S_1 \dashv Q'; \Gamma'
+\\ \Gamma, \neg C; Q - M_c^2 \vdash S_2 \dashv Q'; \Gamma'
+}
+{ \Gamma; Q \vdash \code{if} (C)~S_1~\code{else}~S_2 \dashv Q'; \Gamma' }
+
+\and\Rule{Q:Seq}
+{  \Gamma; Q - M_s^1 \vdash S_1 \dashv Q'; \Gamma'
+\\ \Gamma'; Q' - M_s^2 \vdash S_2 \dashv Q''; \Gamma''
+}
+{ \Gamma; Q \vdash S_1;S_2 \dashv Q''; \Gamma'' }
+
+\and \Rule{Q:Weak}
+{ \Gamma_1 \models \Gamma_2
+\\ Q_1 \succeq_\Gamma Q_2
+\\ \Gamma_2; Q_2 \vdash S \dashv Q'_2; \Gamma'_2
+\\ Q'_2 \succeq_\Gamma Q'_1
+\\ \Gamma'_2 \models \Gamma'_1
+}
+{ \Gamma_1; Q_1 \vdash S \dashv Q'_1; \Gamma'_1 }
+
+\and \Rule{Relax}
+{ \mathcal L = \{ xy \mid \exists l_{xy},~\Gamma \models l_{xy} \le |x - y| \}
+\\ \mathcal U = \{ xy \mid \exists u_{xy},~\Gamma \models |x - y| \le u_{xy} \}
+%\\ q'_0 = q_0 + \sum_{i \in \mathcal U} u_i p_i - \sum_{i \in \mathcal L} l_i p_i
+\\ \forall i \in \mathcal U,~ q'_i \ge q_i - p_i
+\\ \forall i \in \mathcal L,~ q'_i \ge q_i + p_i
+\\ \forall i \not\in \mathcal U \cup \mathcal L,~ q'_i \ge q_i
+}
+{ Q' + \sum_{i \in \mathcal U} u_i p_i - \sum_{i \in \mathcal L} l_i p_i  \succeq_\Gamma Q }
+
+\end{mathpar}
+\caption{Abstract proof rules of the quantitative analysis}
+\label{fig:proof}
+\end{figure}
+
+The deductive system defined in~\pref{fig:proof} derives
+judgements of the form $\Gamma; Q \vdash S \dashv Q'; \Gamma'$.
+Its semantics are formally described in the soundness section but we
+will give an intuition of its meaning here.
+
+\paragraph{Quantitative part.}
+The judgement is really two parts, one logical part, and one quantitative
+part.  The quantitative part is, as shown in the overview section, a
+representation of two potential functions $\Phi$ and $\Phi'$ using
+two maps from indices to non-negative rational numbers
+$Q, Q' : I \rightarrow \mathbb Q_0^+$, these maps are called
+\emph{quantitative contexts}.
+We note $q_i$ for $Q(i)$.  Since $Q$ specifies a value for each
+index in $I$ it is clear that it defines a unique linear potential function
+as described in the previous section. We define $H \mapsto \Phi_H(Q)$
+to be the linear potential function canonically associated to $Q$.
+
+The rules of~\pref{fig:proof} are designed to enforce a semantic
+soundness similar to the one exposed in the overview section.  To
+do this, the rules impose contraints on $Q$ and $Q'$.  To make the
+presentation lighter, we use the following  set of conventions.
+First, the context $Q'$ noted $Q \pm n$ is defined by $q'_0 = q_0 \pm n$
+and $\forall i \neq 0,~q'_i = q_i$.  Second, for any index $i$ such that
+the relation between $q_i$ and $q'_i$ is not specified as a side condition
+of a rule, we assume that $q_i = q'_i$.  Third, we implicitely assume
+all the side conditions enforcing that the coefficients $(q_i)_{i \in I}$ are
+non-negative numbers. Finally, when we write $q_x$ for $q_{x0}$ where
+0 is a program variable symbolizing the constant 0.
+
+\paragraph{Logical part.}
+The second part of judgements maintains an abstract program state.
+This should be seen as a very weak Hoare logic.  It has to be weak because
+we want to automate it trivially and it can be weak because we only use
+it to get very local and simple knowledge.  The specifics of logical assertions
+in $\Gamma$ are left to the implementation section.
+%
+The purpose of this logical state is to help the rules
+make some sound decisions when relating coefficients of quantitative
+contexts.
+
+Syntactically $\Gamma$ is a list of program conditions.  Because of the
+rules {\sc Q:While} and {\sc Q:If}, we require the program conditions
+to be closed by negation.  Semantically we define the validity
+$H \models \Gamma$ of $\Gamma = C_1, \dots, C_n$ on a given
+heap $H$ to be $\bigwedge_i \llbracket C_i \rrbracket_H = \top$.
+%
+The logical state
+is maintained using regular Hoare style rules.
+The semantic entailment on logical states is noted $\Gamma \models \Delta$,
+its meaning is that $\forall H,~ H\models\Gamma \implies H\models\Delta$.
+
+%\paragraph{Explanation of selected rules.}
+
+\section{Soundness Theorems}
+
+The soundness of a judgement relates the cost semantics with the potential
+functions derived using our proof system.  Depending on the outcome of
+the semantics, we give different soundness statements.
+But, before tackling the issue of soundness let us remind and define some
+convenient notations.
+\begin{itemize}
+\item $H \mapsto \Phi_H(Q)$ for $Q$ a quantitative context, is the
+unique linear potential function that has $Q(i)$ as a coefficient for the
+base function $f_i$.
+\item $H \models \Gamma$ is true if and only if all the assertions in
+$\Gamma$ are true on the heap $H$.
+\end{itemize}
+
+Ideally we would
+like our judgements to be meaningful even in the case of a program
+crash.  More precisely, we want the first potential function to be enough
+to pay for the execution of the program up to the crash point.  This is
+formally stated in the following theorem.
+
+\begin{theorem}[Busy case]
+For any $S$, $H$, $q$, $q'$, $\Gamma$, $\Gamma'$, $Q$ and $Q'$
+such that $H \models \Gamma$, $\Gamma; Q \vdash S \dashv Q'; \Gamma'$,
+  and $(H, S) \Downarrow_{(q,q')} \circ$,
+we have $q \le \Phi_H(Q)$.
+\end{theorem}
+\begin{proof}
+Simple application of the terminating case proved afterwards.
+\end{proof}
+
+In order to prove the harder case for terminating programs, need to first
+focus on the only structural rule of the proof system: {\sc Q:Weak}.  This
+rule can be applied anywhere in the derivation, it is not syntax directed.
+To prove the soundness of this rule, we need a lemma that gives a
+semantic explanation of the $\succeq_\Gamma$ relation.
+
+\begin{lemma}[Relax]
+If $Q' \succeq_\Gamma Q$, for any heap $H$ such that $H \models \Gamma$,
+we have $\Phi_H(Q') \ge \Phi_H(Q)$.
+\end{lemma}
+\begin{proof}
+We observe the following inequations.
+\begin{align*}
+\Phi_H(Q') &= \sum_i q'_i f_i(H) \\
+&\ge q_0 + \sum_{i\in\mathcal U} u_i p_i - \sum_{i\in\mathcal L} l_i p_i
+  + \sum_{i\in\mathcal U} (q_i - p_i) f_i(H) + \sum_{i\in\mathcal L} (q_i + p_i) f_i(H)
+  + \sum_{i\not\in \mathcal U \cup \mathcal L} q_i \\
+ &\ge \Phi_H(Q)
+  + \sum_{i\in\mathcal U} (u_i - f_i(H)) p_i
+  + \sum_{i\in\mathcal L} (f_i(H) - l_i) p_i \\
+ &\ge \Phi_H(Q).
+\end{align*}
+Since $H \models \Gamma$, using the transitivity of $\models$ and
+the definition of $\mathcal U$ and $\mathcal L$ we get
+$\forall i\in\mathcal L,~ l_i \le f_i(H)$ and
+$\forall i\in\mathcal U,~ f_i(H)\le u_i$.
+These two inequalities justify the last step.
+\end{proof}
+
+Using this lemma, we can tackle the hardest theorem of soundness.  This theorem
+needs a strong statement to make the proof by induction go through and defines
+the complete meaning of a judgement $\Gamma; Q \vdash S \dashv Q'; \Gamma'$.
+In a similar fashion than the busy case, the initial quantitative context is enough
+to perform the whole computation: $q \le \Phi_H(Q)$.  But additionally, the
+two quantitative contexts are also related to the resource consumption $q - q'$
+of the piece of program executed.  This second requirement exactly matches
+the semantic condition described in the overview section: it says that the
+initial potential $\Phi_H(Q)$ is enough to both pay for the resource
+consumption of the program $q - q'$ and pay for the potential of the resulting
+heap $\Phi_{H'}(Q')$.
+
+The proof of this result if very technical but basically goes through by induction
+on the big-step evaluation.  Only a representative subset of all the cases
+is present in the following proof.
+
 
 \begin{theorem}[Terminating case]
 For any $S$, $H$, $H'$, $q$, $q'$, $\Gamma$, $\Gamma'$, $Q$ and $Q'$ such
@@ -230,23 +746,24 @@ $q \le \Phi_H(Q)$ and
 $\Phi_H(Q) - \Phi_{H'}(Q') \ge q - q'$.
 \end{theorem}
 
-\begin{proof} By induction on the big step semantics.
+\begin{proof} By nested induction on the big step semantics and on the
+judgement derivation (to account for the structural rule {\sc Q:Weak}).
 
 \begin{itemize}
 
 \item Case {\sc S:Skip}.
-  We have $(H, \code{skip}) \Downarrow_{M_s} H$.
+  We have $(H, \code{skip}) \Downarrow_{M_k} H$.
   By assumption, $H \models \Gamma$. \\
-  Since $\Phi_H(Q + M_s) = \Phi_H(Q) + M_s$,
+  Since $\Phi_H(Q + M_k) = \Phi_H(Q) + M_k$,
   \begin{itemize}[topsep=0pt]
   \item
-    if $M_s \ge 0$ we have,
-      $M_s \le \Phi_H(Q + M_s)$ and
-      $\Phi_H(Q + M_s) - \Phi_H(Q) \ge M_s - 0$;
+    if $M_k \ge 0$ we have,
+      $M_k \le \Phi_H(Q + M_k)$ and
+      $\Phi_H(Q + M_k) - \Phi_H(Q) \ge M_k - 0$;
   \item
-    if $M_s < 0$ we have,
-      $0 \le \Phi_H(Q + M_s)$ and
-      $\Phi_H(Q + M_s) - \Phi_H(Q) \ge 0 - (-M_s)$.
+    if $M_k < 0$ we have,
+      $0 \le \Phi_H(Q + M_k)$ and
+      $\Phi_H(Q + M_k) - \Phi_H(Q) \ge 0 - (-M_k)$.
   \end{itemize}
 
 \item Case {\sc S:Seq}.
@@ -297,6 +814,138 @@ $\Phi_H(Q) - \Phi_{H'}(Q') \ge q - q'$.
 
 \end{itemize}
 \end{proof}
+
+\section{Implementation}
+
+\subsection{Logical Annotations Generation}
+
+\paragraph{Program conditions.}
+The first pass in our OCaml implementation generates the
+logical annotations $\Gamma$ around all program statements.
+These annotations are used later on by the quantitative
+analysis to generate contraints.
+%
+The first design choice we had to make is to give a fixed form
+to program conditions.  Because of their generality and because
+they are closed under negation, we decided to consider
+inequalities over linear combinations as program conditions.
+\begin{mathpar}
+C := L < L \mid L > L \mid L \le L \mid L \ge L
+\and
+L := x \mid k \mid k * L \mid L + L \mid L - L
+\end{mathpar}
+A Condition is represented internally as a pair of one constant
+$k \in \mathbb N$ and one map $m : V \rightarrow \mathbb N$.
+Its intended semantics is
+$$
+\llbracket m \rrbracket(H) = k + \sum_v m_v \cdot H(v) \le 0.
+$$
+Note that conditions of this shape are closed by negation, as showed
+by the following equivalence
+$$
+\neg (k + \sum_v m_v \cdot H(v) \le 0)
+\Leftrightarrow (1-k) + \sum_v -m_v \cdot H(v) \le 0
+$$
+We can also note that all the ``questions'' asked to the logic
+assertions during a proof derivation can be described using
+linear combinations.  Conveniently enough, this language of
+assertions is exactly Presburger's arithmetic.  This means that
+we have a sound and complete decision procedure to answer
+all the questions asked during the analysis.
+
+\paragraph{Logical contexts.}
+The second problem related to the logic is how to figure out
+the logical contexts $\Gamma$ for each program statement.
+This is a question that is answered by abstract interpretation
+but, to show that our work really does not need the full power
+of abstract interpretation, we designed and implemented a very
+simple top-down approach: starting from a statement $S$ and
+a pre-condition $\Gamma$ (given as a list of inequalities), we
+generate $\mathcal P(S, \Gamma)$ a postcondition for $S$ using the
+following equations:
+
+\begin{align*}
+\mathcal P(\code{skip}, \Gamma) &:= \Gamma \\
+\mathcal P(x \gets y, \Gamma) &:= \{ e \le 0 \mid (e \le 0) \in \Gamma \land \{x\} \# e \} \\
+\mathcal P(x \gets x + y, \Gamma) &:= \Gamma[x / x - y] \\
+\mathcal P(x \gets x - y, \Gamma) &:= \Gamma[x / x + y] \\
+\mathcal P(\code{assert}(C), \Gamma) &:= \Gamma,C \\
+\mathcal P(S_1; S_2, \Gamma) &:= \mathcal P(S_2, \mathcal P(S_1, \Gamma)) \\
+\mathcal P(\code{if} (C)~S_1~\code{else}~S_2) &:=
+  \mathcal P(S_1, \Gamma,C) \lor \mathcal P(S_2, \Gamma,\neg C) \\
+\mathcal P(\code{while}(C)~S, \Gamma) &:=
+  \Gamma \lor (\neg C, \mathcal P(S, (C, \{ e \le 0 \mid (e \le 0) \in \Gamma \land {\rm set}(S) \# e \})))
+\end{align*}
+We used the notation ${\rm set}(S)$ to designate the set of variables
+assigned to in the statement $S$ and $s\#e$ to mean that variables
+in $s$ do not appear in the linear combination $e$.  Because contexts
+are simply conjunction of conditions we must define $\Gamma \lor \Delta$
+as a function on contexts:
+$$
+\Gamma \lor \Delta := \{ e \le 0 \mid (e \le 0) \in \Gamma \cup \Delta \land \Gamma \models (e \le 0) \land \Delta \models (e \le 0) \}.
+$$
+It is important to note that the $\mathcal P$ function defined above
+is not performing any fixpoint computation.  Despite this flagrant
+lack of sophistication our complete analysis is still able to figure out some
+tricky invariants as exemplified earlier.
+Finally, to generate annotations for the whole program $S$,
+we run $\mathcal P(S,\bullet)$ (where $\bullet$ is the empty context)
+and memorize all the intermediate results.  In practice, these results are stored in
+a table that can be referenced at any time during the analysis to get the
+pre and post-condition of any statement in the program.
+
+\paragraph{Decision procedure.}
+To decide logical entailment $\Gamma \models \Delta$ we use
+Presburger's decision procedure.  But what this procedure gives us
+is in fact only an answer the the question: Is there any heap $H$
+such that $H \models \Gamma$.  While this sentence is existential
+the question $\Gamma \models \Delta$ is universal.  To use the
+decision procedure, we use the well known trick of double negation.
+\begin{align*}
+\Gamma \models C
+&\Leftrightarrow \neg\neg (\Gamma \models C) \\
+&\Leftrightarrow \neg\neg (\forall H, H\models\Gamma \implies H\models C) \\
+&\Leftrightarrow \neg \exists H, H\models\Gamma \land \neg H\models C \\
+&\Leftrightarrow \neg \exists H, H\models\Gamma \land H\models \neg C \\
+&\Leftrightarrow \neg \exists H, H\models (\Gamma, \neg C)
+\end{align*}
+Thus, to know if $\Gamma \models C$ we ask the decision
+procedure if $\Gamma, \neg C$ is satisfiable and negate the result.
+When we want to know about $\Gamma \models \Delta$ we simply ask
+one question for each of the conjuncts of $\Delta$.
+
+\subsection{Linear Contraints Generation}
+
+\paragraph{Generating a linear program.}
+Because figuring out the coefficents that are in $Q$ right away is a hard
+problem, we separate the search of a derivation in two steps.  As a first
+step we go through the whole program and apply inductively the rules
+given in the proof system section.  During this process our tool uses
+symbolic names for the coefficients $(q_i)$.  Every time a side condition
+must be satisfied by these coefficients, it is recorded using the symbolic
+names in a global list.  When
+the list of all constraints that must be satisfied by the coefficients is
+collected, we feed it to an off the shelf LP-solver.  If the solver successfully
+finds a solution to the given problem, we know that a derivation
+exists for the considered program.  We can even ask the solver
+for the initial $Q$ and get a resource bound for the program.
+If the LP-solver fails to find a solution, an error is reported to the
+user.
+
+\paragraph{Making the proof system algorithmic.}
+One problem with the proof system as described is that it is not
+fully syntax directed.  The rule {\sc Q:Weak} can be applied at
+all times.  However, if we apply this weakening rule at every step
+of the derivation, the number of generated constraints and
+the number of queries to the logic system explode.  This blowup
+causes efficiency problems.  To avoid these performance problems
+our implementation only applies the weakening rules at some
+strategic points in the derivation.  More specifically, at sequence
+points, at the beginning of while loops and around conditional
+statements.  So far, this selection of weakening spots has been
+driven by practice but it might be possible to prove that these
+program points are the only ones where weakening is needed.
+
 
 \section{Polynomial Potential}
 
@@ -458,5 +1107,7 @@ $$
 
 
 
-
+\bibliographystyle{abbrvnat}
+\bibliography{lit}
+\addcontentsline{toc}{section}{Bibliography}
 \end{document}
