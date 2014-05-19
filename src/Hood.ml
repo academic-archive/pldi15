@@ -79,6 +79,8 @@ end = struct
   let compare = compare
   let obj = function
     | Dst (VNum a, VNum b) -> abs (a-b) + 10
+    | Dst (VNum n, _)
+    | Dst (_, VNum n) -> 10_000 + abs n
     | Dst _ -> 10_000
     | _ -> 1
   let fold f a vs =
@@ -110,9 +112,7 @@ end = struct
         pp_var v1 pp_var v2
 end
 
-module type CLPSTATE = sig val state : Clp.t end
-
-module Q(C: CLPSTATE) : sig
+module Q(C: sig val state : Clp.t end) : sig
   type ctx
   val create : VSet.t -> ctx
   val set : ctx -> Idx.t -> (Idx.t * int) list -> int -> ctx
