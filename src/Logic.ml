@@ -209,6 +209,10 @@ let entails ps x op delta u =
   (* check entailment by refutation *)
   not (sat (disj1 @ ps)) && not (sat (disj2 @ ps))
 
+let is_const ps = function
+  | VNum n -> Some n
+  | _ -> None
+
 
 (* pretty printing *)
 let pp ps =

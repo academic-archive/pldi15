@@ -28,7 +28,8 @@ end
 
 
 (* first, compute the logical contexts *)
-type log = { lpre : ineq list; lpost : ineq list }
+type pstate = ineq list
+type log = { lpre : pstate; lpost : pstate }
 
 let create_logctx =
   let rec f m lpre prog =
@@ -66,16 +67,15 @@ module Idx : sig
   type t
   val const : t
   val dst : var * var -> t
-  val extra : int -> t
   val compare : t -> t -> int
   val obj : t -> int
   val fold : ('a -> t -> 'a) -> 'a -> VSet.t -> 'a
+  val is_const : pstate -> t -> int option
   val printk : float -> t -> unit
 end = struct
-  type t = Const | Dst of var * var | Extra of int
+  type t = Const | Dst of var * var
   let const = Const
   let dst (u, v) = if u < v then Dst (u, v) else Dst (v, u)
-  let extra i = Extra i
   let compare = compare
   let obj = function
     | Dst (VNum a, VNum b) -> abs (a-b) + 10
@@ -89,6 +89,15 @@ end = struct
         pairs (List.fold_left g a vl) vl
       | [] -> a
     in pairs (f a const) (VSet.elements vs)
+  let is_const l = function
+    | Dst (x1, x2) ->
+      begin match
+        Logic.is_const l x1, Logic.is_const l x2
+      with
+      | Some k1, Some k2 -> Some (abs (k1 - k2))
+      | _, _ -> None
+      end
+    | _ -> None
   let printk k i =
     if abs_float k < 1e-8 then () else
     match i with
@@ -99,7 +108,6 @@ end = struct
     | Dst (v1, v2) ->
       Printf.printf "%.2f |%a - %a|\n" k
         pp_var v1 pp_var v2
-    | Extra _ -> ()
 end
 
 module type CLPSTATE = sig val state : Clp.t end
@@ -109,7 +117,7 @@ module Q(C: CLPSTATE) : sig
   val create : VSet.t -> ctx
   val set : ctx -> Idx.t -> (Idx.t * int) list -> int -> ctx
   val eqc : ctx -> ctx -> unit
-  val relax : ?kpairs:(int * int) list -> ?xs:id list -> ctx -> ctx
+  val relax : pstate -> ?xs:id list -> ctx -> ctx
   val merge : ctx list -> ctx
   val free : ctx -> Idx.t -> ctx
   val solve : ctx -> ctx -> unit
@@ -172,27 +180,18 @@ end = struct
       (Idx.fold (fun l i -> eqv i :: l) [] c1.cvars) in
     Clp.add_rows C.state rows
 
-  let relax ?kpairs ?(xs=[]) c =
-    let allpairs c =
-      let ks = VSet.filter
-        (function VNum _ -> true | _ -> false) c.cvars in
-      let getk = function VNum k -> k | _ -> assert false in
-      let rec f = function
-        | n :: l -> List.map (fun x -> (n, x)) l @ f l
-        | [] -> [] in
-      f (List.map getk (VSet.elements ks)) in
-    let kpairs =
-      match kpairs with
-      | Some l -> l
-      | None -> allpairs c in
+  let relax ps ?(xs=[]) c =
+    let ks =
+      Idx.fold begin fun a i ->
+        match Idx.is_const ps i with
+        | Some k -> (i, k) :: a
+        | None -> a
+      end [] c.cvars in
     let l =
       List.map
         (fun x -> (Idx.dst (VId x, VNum 0), (newv (), -1))) xs @
       List.map
-        (fun (n1, n2) ->
-          ( Idx.dst (VNum n1, VNum n2)
-          , (newv ~neg:true (), - abs (n1-n2))))
-        kpairs in
+        (fun (i, k) -> (i, (newv ~neg:true (), - k))) ks in
     let c = List.fold_left
       begin fun c (i, (ip, _)) ->
         let v' = newv () in
@@ -284,7 +283,7 @@ let go lctx cost p =
 
     | PInc (x, op, delta, pid) ->
       let vars = VSet.remove (VId x) vars in
-      let {lpre;_} = UidMap.find pid lctx in
+      let {lpre; lpost} = UidMap.find pid lctx in
       let us = VSet.filter (Logic.entails lpre (VId x) op delta) vars in
       (* relax constant differences *)
       let xs =
@@ -293,7 +292,7 @@ let go lctx cost p =
         | VId y as v ->
           if Logic.entails lpre (VNum 0) OPlus (VNum 1) v
           then [y] else [] in
-      let q = Q.relax ~xs qpost in
+      let q = Q.relax lpost ~xs qpost in
       (* modify delta's potential *)
       let d0 = Idx.dst (delta, VNum 0) in
       let sum = List.map
@@ -306,7 +305,7 @@ let go lctx cost p =
       (* pay for the assignment *)
       addconst q CSet
 
-    | PSet (x, v, _) ->
+    | PSet (x, v, pid) ->
       let vars = VSet.remove (VId x) vars in
       let q = qpost in
       (* split potential of |v - u| for all u *)
@@ -323,7 +322,7 @@ let go lctx cost p =
       (* pay for the assignment *)
       let q = addconst q CSet in
       (* relax constant differences *)
-      Q.relax q
+      Q.relax (UidMap.find pid lctx).lpre q
 
     | PSeq (p1, p2, _) ->
       let qpre2 = gen qpost p2 in
