@@ -211,7 +211,20 @@ let entails ps x op delta u =
 
 let is_const ps = function
   | VNum n -> Some n
-  | _ -> None
+  | VId v ->
+    let ubs, lbs = List.fold_left
+      begin fun (ubs, lbs) a ->
+        let c = L.coeff v a in
+        if c = 0 || not (L.for_all (fun v' n -> v = v' || n = 0) a.L.m)
+          then (lbs, ubs) else
+          if c < 0
+            then (ubs, a.L.k / -c :: lbs)
+            else (-a.L.k / c :: ubs, lbs)
+      end ([], []) ps in
+    let rec inter us = function
+      | l :: ls -> if List.mem l us then Some l else inter us ls
+      | [] -> None in
+    inter ubs lbs
 
 
 (* pretty printing *)
