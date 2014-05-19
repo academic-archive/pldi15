@@ -75,28 +75,28 @@ module Idx : sig
 end = struct
   type t = Const | Dst of var * var
   let const = Const
-  let dst (u, v) = if u < v then Dst (u, v) else Dst (v, u)
+  let dst (u, v) = Dst (u, v)
   let compare = compare
   let obj = function
-    | Dst (VNum a, VNum b) -> abs (a-b) + 10
+    | Dst (VNum a, VNum b) -> max (b-a) 0 + 10
     | Dst (VNum n, _)
     | Dst (_, VNum n) -> 10_000 + abs n
     | Dst _ -> 10_000
     | _ -> 1
   let fold f a vs =
-    let rec pairs a vl =
-      match vl with
-      | v :: vl ->
-        let g a v' = f a (dst (v, v')) in
-        pairs (List.fold_left g a vl) vl
+    let vl = VSet.elements vs in
+    let rec pairs a = function
+      | v :: tl ->
+        let g a v' = if v = v' then a else f a (dst (v, v')) in
+        pairs (List.fold_left g a vl) tl
       | [] -> a
-    in pairs (f a const) (VSet.elements vs)
+    in pairs (f a const) vl
   let is_const l = function
     | Dst (x1, x2) ->
       begin match
         Logic.is_const l x1, Logic.is_const l x2
       with
-      | Some k1, Some k2 -> Some (abs (k1 - k2))
+      | Some k1, Some k2 -> Some (max (k2 - k1) 0)
       | _, _ -> None
       end
     | _ -> None
@@ -105,11 +105,13 @@ end = struct
     match i with
     | Const ->
       Printf.printf "%.2f\n" k
-    | Dst (v, VNum 0) | Dst (VNum 0, v) ->
-      Printf.printf "%.2f |%a|\n" k pp_var v
+    | Dst (v, VNum 0) ->
+      Printf.printf "%.2f max(-%a, 0)\n" k pp_var v
+    | Dst (VNum 0, v) ->
+      Printf.printf "%.2f max(%a, 0)\n" k pp_var v
     | Dst (v1, v2) ->
-      Printf.printf "%.2f |%a - %a|\n" k
-        pp_var v1 pp_var v2
+      Printf.printf "%.2f max(%a - %a, 0)\n" k
+        pp_var v2 pp_var v1
 end
 
 module Q(C: sig val state : Clp.t end) : sig
@@ -284,40 +286,54 @@ let go lctx cost p =
     | PInc (x, op, delta, pid) ->
       let vars = VSet.remove (VId x) vars in
       let {lpre; lpost} = UidMap.find pid lctx in
-      let us = VSet.filter (Logic.entails lpre (VId x) op delta) vars in
-      (* relax constant differences *)
-      let xs =
-        match delta with
-        | VNum _ -> []
-        | VId y as v ->
-          if Logic.entails lpre (VNum 0) OPlus (VNum 1) v
-          then [y] else [] in
-      let q = Q.relax lpost ~xs qpost in
-      (* modify delta's potential *)
-      let d0 = Idx.dst (delta, VNum 0) in
-      let sum = List.map
-        begin fun v ->
-          if VSet.mem v us
-            then (Idx.dst (VId x, v), -1)
-            else (Idx.dst (VId x, v), 1)
-        end (VSet.elements vars) in
-      let q = Q.set q d0 ((d0, 1) :: sum) 0 in
+      let q =
+        let idz = Idx.dst (delta, VNum 0) in
+        let izd = Idx.dst (VNum 0, delta) in
+        let sum invx inxv=
+          VSet.fold (fun v sum ->
+               (Idx.dst (v, VId x), if invx v then -1 else 1) ::
+               (Idx.dst (VId x, v), if inxv v then -1 else 1) ::
+               sum
+             ) vars [] in
+        match Logic.sign lpre op delta with
+        | Zero -> Q.free (Q.free qpost izd) idz
+        | Unk ->
+          let f _ = false in
+          let q = Q.relax lpost qpost in (* TODO, relax? *)
+          let q = Q.set q idz ((idz, 1) :: sum f f) 0 in
+          let q = Q.set q izd ((izd, 1) :: sum f f) 0 in
+          q
+        | (Pos | Neg) as sgn ->
+          let ip, iz =
+            match (sgn = Pos), (op = OPlus) with
+            | true, true | false, false -> izd, idz
+            | true, false | false, true -> idz, izd in
+          let invx, inxv =
+            if sgn = Pos
+              then (fun _ -> false), (Logic.is_le lpre x op delta)
+              else (Logic.is_ge lpre x op delta), (fun _ -> false) in
+          let q = Q.relax lpost qpost in (* TODO, relax? *)
+          let q = Q.free q iz in
+          let q = Q.set q ip ((ip, 1) :: sum invx inxv) 0 in
+          q
       (* pay for the assignment *)
-      addconst q CSet
+      in addconst q CSet
 
     | PSet (x, v, pid) ->
       let vars = VSet.remove (VId x) vars in
       let q = qpost in
-      (* split potential of |v - u| for all u *)
+      (* split potential of [v, u] and [u, v] for all u *)
       let q = VSet.fold begin fun u q ->
           let q =
             if u = v then q else
-            Q.set q (Idx.dst (v, u))
-              [ (Idx.dst (VId x, u), 1)
-              ; (Idx.dst (v, u), 1) ] 0 in
-          let q =
-            Q.free q (Idx.dst (VId x, u)) in
-          q
+            let q = Q.set q (Idx.dst (v, u))
+                [ (Idx.dst (VId x, u), 1)
+                ; (Idx.dst (v, u), 1) ] 0 in
+            let q = Q.set q (Idx.dst (u, v))
+                [ (Idx.dst (u, VId x), 1)
+                ; (Idx.dst (u, v), 1) ] 0 in
+            q in
+          Q.free (Q.free q (Idx.dst (u, VId x))) (Idx.dst (VId x, u))
         end vars q in
       (* pay for the assignment *)
       let q = addconst q CSet in
