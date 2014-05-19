@@ -291,9 +291,9 @@ let go lctx cost p =
         let izd = Idx.dst (VNum 0, delta) in
         let sum invx inxv=
           VSet.fold (fun v sum ->
-               (Idx.dst (v, VId x), if invx v then -1 else 1) ::
-               (Idx.dst (VId x, v), if inxv v then -1 else 1) ::
-               sum
+               if invx v then (Idx.dst (v, VId x), -1) :: sum
+               else if inxv v then (Idx.dst (VId x, v), -1) :: sum
+               else (Idx.dst (v, VId x), 1) :: (Idx.dst (VId x, v), 1) :: sum
              ) vars [] in
         match Logic.sign lpre op delta with
         | Zero -> Q.free (Q.free qpost izd) idz
