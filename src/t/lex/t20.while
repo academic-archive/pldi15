@@ -1,0 +1,20 @@
+WHILE
+IDNT "x"
+LT
+IDNT "y"
+IDNT "x"
+EQ
+IDNT "x"
+PLUS
+NUM 1
+SEMI
+WHILE
+IDNT "y"
+LT
+IDNT "x"
+IDNT "y"
+EQ
+IDNT "y"
+PLUS
+NUM 1
+EOF
