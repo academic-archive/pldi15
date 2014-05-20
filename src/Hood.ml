@@ -119,7 +119,7 @@ module Q(C: sig val state : Clp.t end) : sig
   val create : VSet.t -> ctx
   val set : ctx -> Idx.t -> (Idx.t * int) list -> int -> ctx
   val eqc : ctx -> ctx -> unit
-  val relax : pstate -> ?xs:id list -> ctx -> ctx
+  val relax : pstate -> ?il:Idx.t list -> ctx -> ctx
   val merge : ctx list -> ctx
   val free : ctx -> Idx.t -> ctx
   val solve : ctx -> ctx -> unit
@@ -182,7 +182,7 @@ end = struct
       (Idx.fold (fun l i -> eqv i :: l) [] c1.cvars) in
     Clp.add_rows C.state rows
 
-  let relax ps ?(xs=[]) c =
+  let relax ps ?(il=[]) c =
     let ks =
       Idx.fold begin fun a i ->
         match Idx.is_const ps i with
@@ -191,7 +191,7 @@ end = struct
       end [] c.cvars in
     let l =
       List.map
-        (fun x -> (Idx.dst (VId x, VNum 0), (newv (), -1))) xs @
+        (fun i -> (i, (newv (), -1))) il @
       List.map
         (fun (i, k) -> (i, (newv ~neg:true (), - k))) ks in
     let c = List.fold_left
@@ -283,41 +283,54 @@ let go lctx cost p =
 
     | PAssert _ -> addconst qpost CAssert
 
-    | PInc (x, op, delta, pid) ->
+    | PInc (x, op, y, pid) ->
       let vars = VSet.remove (VId x) vars in
       let {lpre; lpost} = UidMap.find pid lctx in
-      let q =
-        let idz = Idx.dst (delta, VNum 0) in
-        let izd = Idx.dst (VNum 0, delta) in
+      let z = LVar (VNum 0) in
+      let idxl, sum, rlx =
+        let opy, iopyz, izopy =
+          let iyz = Idx.dst (y, VNum 0) in
+          let izy = Idx.dst (VNum 0, y) in
+          match op with
+          | OPlus -> LVar y, iyz, izy
+          | OMinus -> LMult (-1, LVar y), izy, iyz in
+        let xopy = LAdd (LVar (VId x), opy) in
         let sum invx inxv=
           VSet.fold (fun v sum ->
-               if invx v then (Idx.dst (v, VId x), -1) :: sum
-               else if inxv v then (Idx.dst (VId x, v), -1) :: sum
-               else (Idx.dst (v, VId x), 1) :: (Idx.dst (VId x, v), 1) :: sum
+               if invx v then (Idx.dst (v, VId x), -1) :: sum else
+               if inxv v then (Idx.dst (VId x, v), -1) :: sum else
+               (Idx.dst (v, VId x), 1) :: (Idx.dst (VId x, v), 1) :: sum
              ) vars [] in
-        match Logic.sign lpre op delta with
-        | Zero -> Q.free (Q.free qpost izd) idz
-        | Unk ->
-          let f _ = false in
-          let q = Q.relax lpost qpost in (* TODO, relax? *)
-          let q = Q.set q idz ((idz, 1) :: sum f f) 0 in
-          let q = Q.set q izd ((izd, 1) :: sum f f) 0 in
-          q
-        | (Pos | Neg) as sgn ->
-          let ip, iz =
-            match (sgn = Pos), (op = OPlus) with
-            | true, true | false, false -> izd, idz
-            | true, false | false, true -> idz, izd in
-          let invx, inxv =
-            if sgn = Pos
-              then (fun _ -> false), (Logic.is_le lpre x op delta)
-              else (Logic.is_ge lpre x op delta), (fun _ -> false) in
-          let q = Q.relax lpost qpost in (* TODO, relax? *)
-          let q = Q.free q iz in
-          let q = Q.set q ip ((ip, 1) :: sum invx inxv) 0 in
-          q
+        match
+          Logic.entails lpre opy CLe z,
+          Logic.entails lpre opy CGe z
+        with
+        | true, true -> [], [], false
+        | false, false ->
+          let f _ = false
+          in [iopyz; izopy], sum f f, false
+        | true, false -> (* op y <= 0 *)
+          let rlx = Logic.entails lpre opy CLt z in
+          (* if rlx then print_string "relaxing\n"; *)
+          let sum = sum
+            (fun v -> Logic.entails lpre xopy CGe (LVar v))
+            (fun _ -> false)
+          in [iopyz], sum, rlx
+        | false, true -> (* op y >= 0 *)
+          let rlx = Logic.entails lpre opy CGt z in
+          let sum = sum
+            (fun _ -> false)
+            (fun v -> Logic.entails lpre xopy CLe (LVar v))
+          in [izopy], sum, rlx
+      in
+      if idxl = [] && Logic.entails lpre z CLt z then qpost else
+      (* relax constant indices and y if necessary *)
+      let q = if rlx then Q.relax lpost ~il:idxl qpost else qpost in
+      (* transfer potential to +y or -y *)
+      let q = List.fold_left
+        (fun q i -> Q.set q i ((i, 1) :: sum) 0) q idxl in
       (* pay for the assignment *)
-      in addconst q CSet
+      addconst q CSet
 
     | PSet (x, v, pid) ->
       let vars = VSet.remove (VId x) vars in

@@ -195,26 +195,7 @@ let rec fix ps f =
   let trimmed, ps'' = residue false [] ps in
   if trimmed then fix ps'' f else (x, ps)
 
-let is_le ps x op y u =
-  (* check if ps entails x `op`u <= u *)
-  let s = match op with OPlus -> +1 | OMinus -> -1 in
-  imp ps (plusv 1 (VId x) (plusv s y (plusv (-1) u (L.const 0))))
-let is_ge ps x op y u =
-  (* check if ps entails x `op`u >= u *)
-  let s = match op with OPlus -> +1 | OMinus -> -1 in
-  imp ps (plusv (-1) (VId x) (plusv (-s) y (plusv 1 u (L.const 0))))
-
-type sign = Unk | Pos | Neg | Zero
-
-let sign ps op y =
-  match
-    (* y <= 0 *) imp ps (plusv (+1) y (L.const 0)),
-    (* y >= 0 *) imp ps (plusv (-1) y (L.const 0))
-  with
-  | true, true -> Zero
-  | true, false -> if op = OPlus then Neg else Pos
-  | false, true -> if op = OPlus then Pos else Neg
-  | false, false -> Unk
+let entails ps l1 c l2 = imp ps (assn_of_cond (C (l1, c, l2)))
 
 let is_const ps = function
   | VNum n -> Some n
