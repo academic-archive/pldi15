@@ -36,6 +36,7 @@ let create_logctx =
     let addpost m id lpost = UidMap.add id { lpre; lpost } m in
     match prog with
     | PSkip id -> addpost m id lpre
+    | PBreak id -> addpost m id [assn_false]
     | PAssert (c, id) -> addpost m id (Logic.add (assn_of_cond c) lpre)
     | PInc (x, op, v, id) -> addpost m id (Logic.incr x op v lpre)
     | PSet (x, v, id) -> addpost m id (Logic.set x v lpre)
@@ -261,7 +262,7 @@ let rec pvars p =
     | LVar v -> VSet.of_list [v] in
   let cvars (C (l1, _, l2)) = VSet.union [lvars l1; lvars l2] in
   match p with
-  | PSkip _ -> VSet.empty
+  | PSkip _ | PBreak _ -> VSet.empty
   | PAssert (c, _) -> cvars c
   | PSet (id, v2, _) -> VSet.of_list [VId id; v2]
   | PInc (id, _, v, _) -> VSet.of_list [VId id; v]
@@ -277,11 +278,14 @@ let go lctx cost p =
   let vars = VSet.add (VNum 0) (pvars p) in
 
   let addconst q act = Q.set q const [(const, 1)] (cost act) in
-  let rec gen qpost = function
+  let rec gen_ qbrk qseq =
+    let gen = gen_ qbrk in function
 
-    | PSkip _ -> addconst qpost CSkip
+    | PSkip _ -> addconst qseq CSkip
 
-    | PAssert _ -> addconst qpost CAssert
+    | PAssert _ -> addconst qseq CAssert
+
+    | PBreak _ -> addconst (Q.merge [qbrk]) CBreak
 
     | PInc (x, op, y, pid) ->
       let vars = VSet.remove (VId x) vars in
@@ -323,9 +327,9 @@ let go lctx cost p =
             (fun v -> Logic.entails lpre xopy CLe (LVar v))
           in [izopy], sum, rlx
       in
-      if idxl = [] && Logic.entails lpre z CLt z then qpost else
+      if idxl = [] && Logic.entails lpre z CLt z then qseq else
       (* relax constant indices and y if necessary *)
-      let q = if rlx then Q.relax lpost ~il:idxl qpost else qpost in
+      let q = if rlx then Q.relax lpost ~il:idxl qseq else qseq in
       (* transfer potential to +y or -y *)
       let q = List.fold_left
         (fun q i -> Q.set q i ((i, 1) :: sum) 0) q idxl in
@@ -334,7 +338,7 @@ let go lctx cost p =
 
     | PSet (x, v, pid) ->
       let vars = VSet.remove (VId x) vars in
-      let q = qpost in
+      let q = qseq in
       (* split potential of [v, u] and [u, v] for all u *)
       let q = VSet.fold begin fun u q ->
           let q =
@@ -354,30 +358,30 @@ let go lctx cost p =
       Q.relax (UidMap.find pid lctx).lpre q
 
     | PSeq (p1, p2, _) ->
-      let qpre2 = gen qpost p2 in
+      let qpre2 = gen qseq p2 in
       let qmid = addconst qpre2 CSeq2 in
       let qpre1 = gen (Q.merge [qmid]) p1 in
       let qpre = addconst qpre1 CSeq1 in
       qpre
 
     | PWhile (_, p, _) ->
-      let qinv = Q.merge [addconst qpost CWhile3] in
-      let qpost1 = addconst qinv CWhile2 in
-      let qpre1 = gen qpost1 p in
+      let qinv = Q.merge [addconst qseq CWhile3] in
+      let qseq1 = addconst qinv CWhile2 in
+      let qpre1 = gen_ qseq qseq1 p in
       let qinv' = addconst qpre1 CWhile1 in
       Q.eqc qinv qinv';
       qinv'
 
     | PIf (_, p1, p2, _) ->
-      let qpre1 = gen qpost p1 in
-      let qpre2 = gen qpost p2 in
+      let qpre1 = addconst (gen qseq p1) CIf1 in
+      let qpre2 = addconst (gen qseq p2) CIf2 in
       Q.merge [qpre1; qpre2]
 
     in
 
-  let qpost = Q.create vars in
-  let qpre = gen qpost p in
-  Q.solve qpre qpost
+  let q = Q.create vars in
+  let qpre = gen_ q q p in
+  Q.solve qpre q
 
 
 let _ =

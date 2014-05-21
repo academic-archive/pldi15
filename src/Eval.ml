@@ -1,6 +1,7 @@
 (* evaluation *)
 type action =
   | CSkip
+  | CBreak
   | CAssert
   | CSet
   | CWhile1 | CWhile2 | CWhile3
@@ -26,16 +27,26 @@ module Eval(QMon: QMONOID) = struct
     Map.Make(struct type t = id  let compare = compare end)
 
   type value = int and heap = value Heap.t
+  type result = OSeq of heap | OBreak of heap
 
   let (-$) c1 c2 heap =
-    let (heap', cost1) = c1 heap in
-    let (heap'', cost2) = c2 heap' in
-    (heap'', concat cost1 cost2)
+    match c1 heap with
+    | (OSeq heap1, cost1) ->
+      let (res2, cost2) = c2 heap1 in
+      (res2, concat cost1 cost2)
+    | (OBreak _, _) as x -> x
 
-  let pay price heap = (heap, lift price)
+  let pay price heap = (OSeq heap, lift price)
 
   let guard f c1 c2 heap =
     if f heap then c1 () heap else c2 () heap
+
+  let break heap = (OBreak heap, zero)
+
+  let catch c heap =
+    match c heap with
+    | (OBreak heap, cost) -> (OSeq heap, cost)
+    | (OSeq _, _) as x -> x
 
   let value v h =
     match v with
@@ -47,10 +58,10 @@ module Eval(QMon: QMONOID) = struct
       match op with
       | OPlus -> value (VId id) heap + value v heap
       | OMinus -> value (VId id) heap - value v heap
-    in (Heap.add id res heap, zero)
+    in (OSeq (Heap.add id res heap), zero)
 
   let set id v heap =
-    (Heap.add id (value v heap) heap, zero)
+    (OSeq (Heap.add id (value v heap) heap), zero)
 
   let test (C (l1, cmp, l2)) heap =
     let rec lsum heap = function
@@ -69,21 +80,24 @@ module Eval(QMon: QMONOID) = struct
     let pay act = pay (cost act) in
     let rec eval = function
       | PSkip _ -> pay CSkip
+      | PBreak _ -> pay CBreak -$ break
       | PSeq (p1, p2, _) -> pay CSeq1 -$ eval p1 -$ pay CSeq2 -$ eval p2
       | PInc (v1, op, v2, _) -> pay CSet -$ inc v1 op v2
       | PSet (v1, v2, _) -> pay CSet -$ set v1 v2
       | PWhile (cond, p, _) as ploop ->
-        guard (test cond)
-          (fun () -> pay CWhile1 -$ eval p -$ pay CWhile2 -$ eval ploop)
-          (fun () -> pay CWhile3)
+	catch begin
+          guard (test cond)
+            (fun () -> pay CWhile1 -$ eval p -$ pay CWhile2 -$ eval ploop)
+            (fun () -> pay CWhile3)
+	end
       | PAssert (c, _) as p ->
         guard (test c)
           (fun () -> pay CAssert)
           (fun () -> raise (ProgramFailure p))
       | PIf (c, p1, p2, _) ->
         guard (test c)
-          (fun () -> eval p1)
-          (fun () -> eval p2)
+          (fun () -> pay CIf1 -$ eval p1)
+          (fun () -> pay CIf2 -$ eval p2)
     in eval
 
   let empty_heap = Heap.empty
@@ -118,7 +132,8 @@ let _ =
     let module E = Eval(QMInt) in
     let p = Parse.pa_prog stdin in
     begin try
-      let (hfinal, cost) = E.eval atomic_ops p E.empty_heap in
+      let (res, cost) = E.eval atomic_ops p E.empty_heap in
+      let hfinal = match res with E.OSeq h | E.OBreak h -> h in
       E.print_heap hfinal;
       Printf.printf "evaluation cost: %d\n" cost
     with E.ProgramFailure p ->

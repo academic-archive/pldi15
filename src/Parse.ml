@@ -4,7 +4,7 @@ exception SyntaxError of string
 (* lexing *)
 
 type token =
-  | TAssert | TWhile | TIf | TElse
+  | TAssert | TWhile | TIf | TElse | TBreak
   | TSemi | TPlus | TMinus | TStar
   | TLParen | TRParen
   | TLt | TGt | TLe | TGe | TEq
@@ -47,6 +47,7 @@ let mk_lexer ic =
       else if s = "assert" then TAssert
       else if s = "if" then TIf
       else if s = "else" then TElse
+      else if s = "break" then TBreak
       else TIdnt s
     | ('0' .. '9') as c -> TNum (getnum (digit c))
     | ';' -> TSemi | '+' -> TPlus | '-' -> TMinus | '*' -> TStar
@@ -61,7 +62,8 @@ let mk_lexer ic =
   in f
 
 let string_of_token = function
-  | TAssert -> "ASSERT" | TWhile -> "WHILE"
+  | TAssert -> "ASSERT"
+  | TWhile -> "WHILE" | TBreak -> "BREAK"
   | TIf -> "IF" | TElse -> "ELSE"
   | TIdnt id -> Printf.sprintf "IDNT %S" id
   | TNum n -> Printf.sprintf "NUM %d" n
@@ -128,6 +130,7 @@ type cond = C of lsum * comp * lsum
 
 type prog =
   | PSkip of uid
+  | PBreak of uid
   | PAssert of cond * uid
   | PInc of id * op * var * uid
   | PSet of id * var * uid
@@ -252,6 +255,11 @@ let p_prog: prog pm =
         reti (fun i -> PSkip i)
       ))
 
+    (* Break, PBreak *)
+    ; bnd (p_tok (is TBreak)) (fun () ->
+	reti (fun i -> PBreak i)
+      )
+
     (* While loop, PWhile *)
     ; bnd (p_tok (is TWhile)) (fun () ->
       bnd (p_cond ()) (fun cond ->
@@ -318,8 +326,9 @@ let pa_prog ic =
   | (None, _) -> raise (SyntaxError "parse error")
 
 let prog_id = function
-  | PSkip id | PAssert (_, id) | PInc (_, _, _, id) | PSet (_, _, id)
-  | PWhile (_, _, id) | PIf (_, _, _, id) | PSeq (_, _, id) -> id
+  | PSkip id | PBreak id | PAssert (_, id) | PInc (_, _, _, id)
+  | PSet (_, _, id) | PWhile (_, _, id) | PIf (_, _, _, id)
+  | PSeq (_, _, id) -> id
 
 
 (* pretty printing *)
@@ -366,8 +375,9 @@ let pp_prog_hooks pre post prog =
   let delta = 2 in
 
   let rec f lvl prns = function
-    | PSkip id -> printf "()"
-    | PAssert (c, id) -> printf "assert "; cond c
+    | PSkip _ -> printf "()"
+    | PBreak _ -> printf "break"
+    | PAssert (c, _) -> printf "assert "; cond c
     | PSet (id, v, _) -> printf "%s = %a" id pp_var v
     | PInc (id, o, v, _) ->
       let op = match o with OPlus -> "+" | OMinus -> "-" in

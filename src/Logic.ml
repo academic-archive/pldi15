@@ -86,6 +86,8 @@ let assn_of_cond (C (l1, cmp, l2)) =
 
 let assn_negate m = L.addk 1 (L.mult (-1) m)
 
+let assn_false = L.const 1
+
 let ineq_incr id op delta l =
   let s = match op with OPlus -> -1 | OMinus -> +1 in
   plusv (s * L.coeff id l) delta l
