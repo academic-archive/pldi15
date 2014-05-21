@@ -53,6 +53,46 @@
 \begin{document}
 \maketitle
 
+\section{NOTES}
+
+\subsection{Things to say in the intro}
+
+\paragraph{Quote of Knuth}
+
+\begin{quotation}
+  There's even a fundamental gap in the foundations of my main
+  mathematical specialty, the analysis of algorithms. Consider, for
+  example, a computer program that sorts a list of numbers into
+  order. Thanks to the work of Floyd, Hoare, and others, we have
+  formal definitions of semantics, and tools by which we can verify
+  that sorting is indeed always achieved. My job is to go beyond
+  correctness, to an analysis of such things as the program's running
+  time: I write down a recurrence, say, which is supposed to represent
+  the average number of comparisons made by that program on random
+  input data. I'm 100\% sure that my recurrence correctly describes
+  the program's performance, and all of my colleagues agree with me
+  that the recurrence is "obviously" valid. Yet I have no formal tools
+  by which I can prove that my recurrence is right. I don't really
+  understand my reasoning processes at all! My student Lyle Ramshaw
+  began to create suitable foundations in his thesis (1979), but the
+  problem seems inherently difficult. Nevertheless, I don't lose any
+  sleep over this situation.
+\end{quotation}
+http://www.informit.com/articles/article.aspx?p=2213858
+
+\paragraph{Advanteges over previous work}
+
+\begin{itemize}
+\item have formal soundness proof with respect to cost semantics
+\item can deal with resources that \emph{become available} (e.g, freeing memory) in an execution
+\item derive global bounds for the program as a function of the inputs (as opposed to local loop bounds)
+\item can handle advance control flow such as break, return, mutual recursive functions
+\item do not rely on abstract-interpretation based invariant generation
+\item show that constant factors are very precise with respect to the cost semantics
+\item demonstrate that the analysis is applicable in the formal verification of system code
+\end{itemize}
+
+
 \section{Introduction}
 
 After functional correctness, quantitative properties are the
