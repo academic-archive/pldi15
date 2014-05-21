@@ -299,12 +299,14 @@ let go lctx cost p =
           | OPlus -> LVar y, iyz, izy
           | OMinus -> LMult (-1, LVar y), izy, iyz in
         let xopy = LAdd (LVar (VId x), opy) in
-        let sum invx inxv=
-          VSet.fold (fun v sum ->
-               if invx v then (Idx.dst (v, VId x), -1) :: sum else
-               if inxv v then (Idx.dst (VId x, v), -1) :: sum else
-               (Idx.dst (v, VId x), 1) :: (Idx.dst (VId x, v), 1) :: sum
-             ) vars [] in
+        let sum opy invx inxv = VSet.fold
+	  begin fun v sum ->
+            if invx v then (Idx.dst (v, VId x), -1) :: sum else
+            if inxv v then (Idx.dst (VId x, v), -1) :: sum else
+            if opy > 0 then (Idx.dst (v, VId x), 1) :: sum else
+            if opy < 0 then (Idx.dst (VId x, v), 1) :: sum else
+            (Idx.dst (v, VId x), 1) :: (Idx.dst (VId x, v), 1) :: sum
+          end vars [] in
         match
           Logic.entails lpre opy CLe z,
           Logic.entails lpre opy CGe z
@@ -312,17 +314,17 @@ let go lctx cost p =
         | true, true -> [], [], false
         | false, false ->
           let f _ = false
-          in [iopyz; izopy], sum f f, false
+          in [iopyz; izopy], sum 0 f f, false
         | true, false -> (* op y <= 0 *)
           let rlx = Logic.entails lpre opy CLt z in
           (* if rlx then print_string "relaxing\n"; *)
-          let sum = sum
+          let sum = sum (-1)
             (fun v -> Logic.entails lpre xopy CGe (LVar v))
             (fun _ -> false)
           in [iopyz], sum, rlx
         | false, true -> (* op y >= 0 *)
           let rlx = Logic.entails lpre opy CGt z in
-          let sum = sum
+          let sum = sum (+1)
             (fun _ -> false)
             (fun v -> Logic.entails lpre xopy CLe (LVar v))
           in [izopy], sum, rlx
