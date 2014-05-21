@@ -1,0 +1,5 @@
+x=0; y=0;
+while b>0 
+  if x<N      (x=x+1; y=y+1)
+  else if y<M (x=x+1; y=y+1)
+  else break
