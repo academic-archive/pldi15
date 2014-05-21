@@ -249,7 +249,7 @@ end = struct
       let sol = Clp.primal_column_solution C.state in
       let p c = sep (); M.iter (fun i v -> Idx.printk sol.(v) i) c.cmap in
       p cini; if debug > 0 then p cfin
-    | _ -> sep(); print_string "LP is INFEASABLE\n"
+    | _ -> sep(); print_string "Sorry, I could not find a bound.\n"
 
 end
 
