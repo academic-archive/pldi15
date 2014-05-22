@@ -246,14 +246,18 @@ end = struct
       let o = float_of_int (Idx.obj i) in
       obj.(M.find i cini.cmap) <- o
     end () cini.cvars;
+    obj.(M.find Idx.const cfin.cmap) <- -1.;
     Clp.change_objective_coefficients C.state obj;
     flush stdout;
     Clp.set_log_level C.state 0; (* use 0 to turn CLP output off *)
-    Clp.initial_solve C.state;   (* initial_solve is good because it uses presolve *)
+    Clp.initial_solve C.state;
     let sep () =  print_string "*******\n"; in
     match Clp.status C.state with
     | 0 ->
       let sol = Clp.primal_column_solution C.state in
+      let () =
+        let i = M.find Idx.const cini.cmap in
+        sol.(i) <- sol.(i) -. sol.(M.find Idx.const cfin.cmap) in
       let p c = sep (); M.iter (fun i v -> Idx.printk sol.(v) i) c.cmap in
       p cini; if debug > 0 then p cfin
     | _ -> sep(); print_string "Sorry, I could not find a bound.\n"
