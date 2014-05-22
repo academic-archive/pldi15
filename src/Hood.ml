@@ -118,6 +118,7 @@ end
 module Q(C: sig val state : Clp.t end) : sig
   type ctx
   val create : VSet.t -> ctx
+  val setl : ctx -> (Idx.t * (Idx.t * int) list * int) list -> ctx
   val set : ctx -> Idx.t -> (Idx.t * int) list -> int -> ctx
   val eqc : ctx -> ctx -> unit
   val relax : pstate -> ?il:Idx.t list -> ctx -> ctx
@@ -164,11 +165,17 @@ end = struct
       ; row_elements
       } |]
 
-  let set c idx l const =
-    let v' = newv () in
-    let l = List.map (fun (i, k) -> M.find i c.cmap, k) l in
-    mkrow v' l const;
-    { c with cmap = M.add idx v' c.cmap }
+  let setl ({cmap=m;_} as c) eqs =
+    let bdgs = List.map
+      begin fun (id, l, k) ->
+        let v = newv () in
+        mkrow v (List.map (fun (i, k) -> M.find i m, k) l) k;
+        (id, v)
+      end eqs in
+    { c with cmap =
+      List.fold_left (fun m (i, v) -> M.add i v m) m bdgs }
+
+  let set c id l k = setl c [id, l, k]
 
   let eqc c1 c2 =
     assert (VSet.equal c1.cvars c2.cvars);
@@ -291,7 +298,7 @@ let go lctx cost p =
       let vars = VSet.remove (VId x) vars in
       let {lpre; lpost} = UidMap.find pid lctx in
       let z = LVar (VNum 0) in
-      let idxl, sum, rlx =
+      let eqs, rlx =
         let opy, iopyz, izopy =
           let iyz = Idx.dst (y, VNum 0) in
           let izy = Idx.dst (VNum 0, y) in
@@ -300,41 +307,39 @@ let go lctx cost p =
           | OMinus -> LMult (-1, LVar y), izy, iyz in
         let xopy = LAdd (LVar (VId x), opy) in
         let sum opy invx inxv = VSet.fold
-	  begin fun v sum ->
+          begin fun v sum ->
             if invx v then (Idx.dst (v, VId x), -1) :: sum else
             if inxv v then (Idx.dst (VId x, v), -1) :: sum else
             if opy > 0 then (Idx.dst (v, VId x), 1) :: sum else
             if opy < 0 then (Idx.dst (VId x, v), 1) :: sum else
-            (Idx.dst (v, VId x), 1) :: (Idx.dst (VId x, v), 1) :: sum
+            failwith "bug in increment rule"
           end vars [] in
         match
           Logic.entails lpre opy CLe z,
           Logic.entails lpre opy CGe z
         with
-        | true, true -> [], [], false
+        | true, true -> [], []
         | false, false ->
           let f _ = false
-          in [iopyz; izopy], sum 0 f f, false
+          in [iopyz, sum (-1) f f; izopy, sum (+1) f f], []
         | true, false -> (* op y <= 0 *)
-          let rlx = Logic.entails lpre opy CLt z in
-          (* if rlx then print_string "relaxing\n"; *)
+          let r = Logic.entails lpre opy CLt z in
           let sum = sum (-1)
             (fun v -> Logic.entails lpre xopy CGe (LVar v))
             (fun _ -> false)
-          in [iopyz], sum, rlx
+          in [iopyz, sum], if r then [iopyz] else []
         | false, true -> (* op y >= 0 *)
-          let rlx = Logic.entails lpre opy CGt z in
+          let r = Logic.entails lpre opy CGt z in
           let sum = sum (+1)
             (fun _ -> false)
             (fun v -> Logic.entails lpre xopy CLe (LVar v))
-          in [izopy], sum, rlx
+          in [izopy, sum], if r then [izopy] else []
       in
-      if idxl = [] && Logic.entails lpre z CLt z then qseq else
+      if eqs = [] && Logic.entails lpre z CLt z then qseq else
       (* relax constant indices and y if necessary *)
-      let q = if rlx then Q.relax lpost ~il:idxl qseq else qseq in
+      let q = Q.relax lpost ~il:rlx qseq in
       (* transfer potential to +y or -y *)
-      let q = List.fold_left
-        (fun q i -> Q.set q i ((i, 1) :: sum) 0) q idxl in
+      let q = Q.setl q (List.map (fun (i,s) -> i,(i,1)::s,0) eqs) in
       (* pay for the assignment *)
       addconst q CSet
 

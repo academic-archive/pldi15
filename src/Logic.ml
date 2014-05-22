@@ -92,13 +92,16 @@ let ineq_incr id op delta l =
   let s = match op with OPlus -> -1 | OMinus -> +1 in
   plusv (s * L.coeff id l) delta l
 
-let incr id op delta = List.map (ineq_incr id op delta)
-
 let set id v ps =
   (* forget everything concerning the assigned variable *)
   plusv 1 v (plusv (-1) (VId id) (L.const 0)) ::
   plusv (-1) v (plusv 1 (VId id) (L.const 0)) ::
   List.filter (fun i -> L.coeff id i = 0) ps
+
+let incr id op delta =
+  if delta = VId id
+    then List.filter (fun i -> L.coeff id i = 0)
+    else List.map (ineq_incr id op delta)
 
 
 (* poor man's decision procedure *)
