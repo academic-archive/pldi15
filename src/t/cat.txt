@@ -15,6 +15,9 @@ t08 - Increase a variable to some value and decrease it to 0.
 t10 - Decrease an interval by non-deterministically increasing
       the lower bound or decreasing the upper bound.
 t13 - Maybe push one, always pop many.
+t27 - Two nested loops decreasing two related variables.
+t28 - Shift the interval [y,x] to the right while looping on x
+      then increase y up to 0. 
 
 -- Tests stressing amortization with two nested loops.
 
