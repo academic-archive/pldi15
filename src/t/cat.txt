@@ -50,6 +50,7 @@ t20 - Test of the mirroring in the increment rule.
       This example is only possible with proper handling
       of 'max' potentials.
 t21 - The essence of Knuth-Morris-Pratt.
+t29 - A GCD computation algorithm.
 
 -- From the literature.
 
