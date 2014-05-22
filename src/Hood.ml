@@ -32,35 +32,37 @@ type pstate = ineq list
 type log = { lpre : pstate; lpost : pstate }
 
 let create_logctx =
-  let rec f m lpre prog =
+  let rec f m brk lpre prog =
     let addpost m id lpost = UidMap.add id { lpre; lpost } m in
     match prog with
     | PSkip id -> addpost m id lpre
-    | PBreak id -> addpost m id [assn_false]
+    | PBreak id -> brk := lpre :: !brk; addpost m id [assn_false]
     | PAssert (c, id) -> addpost m id (Logic.add (assn_of_cond c) lpre)
     | PInc (x, op, v, id) -> addpost m id (Logic.incr x op v lpre)
     | PSet (x, v, id) -> addpost m id (Logic.set x v lpre)
     | PWhile (c, p, id) ->
-      let itr pre = Logic.add (assn_of_cond c) pre in
+      let cnd = assn_of_cond c in
+      let itr pre = Logic.add cnd pre in
+      let out pre = Logic.add (assn_negate cnd) pre in
       let g pre =
-        let m' = f m (itr pre) p in
-        (m', (UidMap.findp p m').lpost) in
-      let m', inv = Logic.fix (itr lpre) g in
-      addpost m' id
-        (Logic.add (assn_negate (assn_of_cond c))
-          (Logic.merge inv lpre))
+        let brk = ref [] in
+        let m' = f m brk (itr pre) p in
+	let post = (UidMap.findp p m').lpost in
+	((m', out post :: !brk), post) in
+      let (m', brk), inv = Logic.fix (itr lpre) g in
+      addpost m' id (List.fold_left Logic.merge (out lpre) brk)
     | PIf (c, p1, p2, id) ->
       let a = assn_of_cond c in
-      let m = f m (Logic.add a lpre) p1 in
-      let m = f m (Logic.add (assn_negate a) lpre) p2 in
+      let m = f m brk (Logic.add a lpre) p1 in
+      let m = f m brk (Logic.add (assn_negate a) lpre) p2 in
       let post1 = (UidMap.findp p1 m).lpost
       and post2 = (UidMap.findp p2 m).lpost
       in addpost m id (Logic.merge post1 post2)
     | PSeq (p1, p2, id) ->
-      let m1 = f m lpre p1 in
-      let m2 = f m1 (UidMap.findp p1 m1).lpost p2 in
+      let m1 = f m brk lpre p1 in
+      let m2 = f m1 brk (UidMap.findp p1 m1).lpost p2 in
       addpost m2 id (UidMap.findp p2 m2).lpost
-  in f UidMap.empty []
+  in f UidMap.empty (ref []) []
 
 
 (* second, generate linear programming problem *)
