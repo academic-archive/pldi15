@@ -80,10 +80,23 @@
 \end{quotation}
 http://www.informit.com/articles/article.aspx?p=2213858
 
+\paragraph{to do}
+
+\begin{itemize}
+\item describe schedulability analysis for two schedulers
+\item include program logic from the stack paper for arbitrary resources
+\item what operational semantics to use? 
+\item verify automatic tool with program logic
+\item derive some crazy bounds (polynomial? logarithmic?) with the logic
+\item logic can also be used by automation: put linear constraints in the precondition
+\end{itemize}
+
 \paragraph{Advanteges over previous work}
 
 \begin{itemize}
+\item integrates well with hand-derived bounds in a program logic
 \item have formal soundness proof with respect to cost semantics
+\item can attach certificate to the code (proof-carrying code)
 \item can deal with resources that \emph{become available} (e.g, freeing memory) in an execution
 \item derive global bounds for the program as a function of the inputs (as opposed to local loop bounds)
 \item can handle advance control flow such as break, return, mutual recursive functions
