@@ -8,9 +8,10 @@ type action =
   | CIf1 | CIf2
   | CSeq1 | CSeq2
 
-let atomic_ops = function
-  | CTick 0 | CSet | CAssert -> 1
-  | _ -> 0
+let atomic_metric = function
+  | CTick 0 | CSet | CAssert -> 1 | _ -> 0
+let tick_metric = function
+  | CTick n -> n | _ -> 0
 
 module type QMONOID = sig
   type t
@@ -136,7 +137,7 @@ let _ =
     let module E = Eval(QMInt) in
     let p = Parse.pa_prog stdin in
     begin try
-      let (res, cost) = E.eval atomic_ops p E.empty_heap in
+      let (res, cost) = E.eval atomic_metric p E.empty_heap in
       let hfinal = match res with E.OSeq h | E.OBreak h -> h in
       E.print_heap hfinal;
       Printf.printf "evaluation cost: %d\n" cost

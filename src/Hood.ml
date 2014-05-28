@@ -287,7 +287,7 @@ let rec pvars p =
   | PWhile (c, p, _) -> VSet.union [cvars c; pvars p]
   | PIf (c, p1, p2, _) -> VSet.union [cvars c; pvars p1; pvars p2]
 
-let go lctx cost p =
+let analyze lctx cost p =
   (* generate and resolve constraints *)
   let module Q = Q(struct let state = Clp.create () end) in
   let open Idx in
@@ -427,4 +427,4 @@ let _ =
   if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tq" then
   let p = Parse.pa_prog stdin in
   let l = create_logctx p in
-  go l (function x -> Eval.atomic_ops x) p
+  analyze l (function x -> Eval.atomic_metric x) p
