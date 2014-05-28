@@ -129,7 +129,7 @@ type lsum =
 type cond = C of lsum * comp * lsum
 
 type prog =
-  | PSkip of uid
+  | PTick of int * uid
   | PBreak of uid
   | PAssert of cond * uid
   | PInc of id * op * var * uid
@@ -249,11 +249,12 @@ let p_prog: prog pm =
         reti (fun i -> PSet (id, v, i))
       )))
 
-    (* Skip, PSkip *)
+    (* Tick, PTick *)
     ; bnd (p_tok (is TLParen)) (fun () ->
+      bnd (p_or [p_num; ret 0]) (fun n ->
       bnd (p_tok (is TRParen)) (fun () ->
-        reti (fun i -> PSkip i)
-      ))
+        reti (fun i -> PTick (n, i))
+      )))
 
     (* Break, PBreak *)
     ; bnd (p_tok (is TBreak)) (fun () ->
@@ -283,8 +284,8 @@ let p_prog: prog pm =
           bnd (p_atomic ()) (fun p2 ->
             reti (fun i -> PIf (cond, p1, p2, i))
           ))
-        (* No else part, implicit skip *)
-        ; bnd (reti (fun i -> PSkip i)) (fun p2 ->
+        (* No else part, implicit tick 0 *)
+        ; bnd (reti (fun i -> PTick (0, i))) (fun p2 ->
             reti (fun i -> PIf (cond, p1, p2, i))
           )
         ]
@@ -326,7 +327,7 @@ let pa_prog ic =
   | (None, _) -> raise (SyntaxError "parse error")
 
 let prog_id = function
-  | PSkip id | PBreak id | PAssert (_, id) | PInc (_, _, _, id)
+  | PTick (_, id) | PBreak id | PAssert (_, id) | PInc (_, _, _, id)
   | PSet (_, _, id) | PWhile (_, _, id) | PIf (_, _, _, id)
   | PSeq (_, _, id) -> id
 
@@ -375,7 +376,8 @@ let pp_prog_hooks pre post prog =
   let delta = 2 in
 
   let rec f lvl prns = function
-    | PSkip _ -> printf "()"
+    | PTick (0, _) -> printf "()"
+    | PTick (n, _) -> printf "(%d)" n
     | PBreak _ -> printf "break"
     | PAssert (c, _) -> printf "assert "; cond c
     | PSet (id, v, _) -> printf "%s = %a" id pp_var v
@@ -393,7 +395,7 @@ let pp_prog_hooks pre post prog =
       printf "if "; cond c; printf "\n";
       g (lvl + delta) true p1;
       begin match p2 with
-      | PSkip _ -> ()
+      | PTick (0, _) -> ()
       | _ ->
         printf "\n"; idnt lvl; printf "else\n";
         g (lvl + delta) true p2

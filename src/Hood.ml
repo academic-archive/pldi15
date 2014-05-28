@@ -35,7 +35,7 @@ let create_logctx =
   let rec f m brk lpre prog =
     let addpost m id lpost = UidMap.add id { lpre; lpost } m in
     match prog with
-    | PSkip id -> addpost m id lpre
+    | PTick (_, id) -> addpost m id lpre
     | PBreak id -> brk := lpre :: !brk; addpost m id [assn_false]
     | PAssert (c, id) -> addpost m id (Logic.add (assn_of_cond c) lpre)
     | PInc (x, op, v, id) -> addpost m id (Logic.incr x op v lpre)
@@ -275,7 +275,7 @@ let rec pvars p =
     | LVar v -> VSet.of_list [v] in
   let cvars (C (l1, _, l2)) = VSet.union [lvars l1; lvars l2] in
   match p with
-  | PSkip _ | PBreak _ -> VSet.empty
+  | PTick _ | PBreak _ -> VSet.empty
   | PAssert (c, _) -> cvars c
   | PSet (id, v2, _) -> VSet.of_list [VId id; v2]
   | PInc (id, _, v, _) -> VSet.of_list [VId id; v]
@@ -294,7 +294,7 @@ let go lctx cost p =
   let rec gen_ qbrk qseq =
     let gen = gen_ qbrk in function
 
-    | PSkip _ -> addconst qseq CSkip
+    | PTick (n, _) -> addconst qseq (CTick n)
 
     | PAssert _ -> addconst qseq CAssert
 

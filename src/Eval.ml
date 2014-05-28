@@ -1,6 +1,6 @@
 (* evaluation *)
 type action =
-  | CSkip
+  | CTick of int
   | CBreak
   | CAssert
   | CSet
@@ -9,7 +9,7 @@ type action =
   | CSeq1 | CSeq2
 
 let atomic_ops = function
-  | CSkip | CSet | CAssert -> 1
+  | CTick 0 | CSet | CAssert -> 1
   | _ -> 0
 
 module type QMONOID = sig
@@ -79,7 +79,7 @@ module Eval(QMon: QMONOID) = struct
   let eval cost =
     let pay act = pay (cost act) in
     let rec eval = function
-      | PSkip _ -> pay CSkip
+      | PTick (n, _) -> pay (CTick n)
       | PBreak _ -> pay CBreak -$ break
       | PSeq (p1, p2, _) -> pay CSeq1 -$ eval p1 -$ pay CSeq2 -$ eval p2
       | PInc (v1, op, v2, _) -> pay CSet -$ inc v1 op v2
