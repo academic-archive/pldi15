@@ -36,14 +36,13 @@ let create_logctx =
     let addpost m id lpost = UidMap.add id { lpre; lpost } m in
     match prog with
     | PTick (_, id) -> addpost m id lpre
-    | PBreak id -> brk := lpre :: !brk; addpost m id [assn_false]
-    | PAssert (c, id) -> addpost m id (Logic.add (assn_of_cond c) lpre)
+    | PBreak id -> brk := lpre :: !brk; addpost m id bottom
+    | PAssert (c, id) -> addpost m id (Logic.conj (of_cond c) lpre)
     | PInc (x, op, v, id) -> addpost m id (Logic.incr x op v lpre)
-    | PSet (x, v, id) -> addpost m id (Logic.set x v lpre)
+    | PSet (x, vo, id) -> addpost m id (Logic.set x vo lpre)
     | PWhile (c, p, id) ->
-      let cnd = assn_of_cond c in
-      let itr pre = Logic.add cnd pre in
-      let out pre = Logic.add (assn_negate cnd) pre in
+      let itr pre = Logic.conj (of_cond c) pre in
+      let out pre = Logic.conj (of_cond (cond_neg c)) pre in
       let g pre =
         let brk = ref [] in
         let m' = f m brk (itr pre) p in
@@ -52,9 +51,8 @@ let create_logctx =
       let (m', brk), inv = Logic.fix (itr lpre) g in
       addpost m' id (List.fold_left Logic.merge (out lpre) brk)
     | PIf (c, p1, p2, id) ->
-      let a = assn_of_cond c in
-      let m = f m brk (Logic.add a lpre) p1 in
-      let m = f m brk (Logic.add (assn_negate a) lpre) p2 in
+      let m = f m brk (Logic.conj (of_cond c) lpre) p1 in
+      let m = f m brk (Logic.conj (of_cond (cond_neg c)) lpre) p2 in
       let post1 = (UidMap.findp p1 m).lpost
       and post2 = (UidMap.findp p2 m).lpost
       in addpost m id (Logic.merge post1 post2)
@@ -122,6 +120,7 @@ module Q(C: sig val state : Clp.t end) : sig
   val create : VSet.t -> ctx
   val setl : ctx -> (Idx.t * (Idx.t * int) list * int) list -> ctx
   val set : ctx -> Idx.t -> (Idx.t * int) list -> int -> ctx
+  val zero : ctx -> Idx.t -> ctx
   val eqc : ctx -> ctx -> unit
   val relax : pstate -> ?il:Idx.t list -> ctx -> ctx
   val merge : ctx list -> ctx
@@ -178,6 +177,8 @@ end = struct
       List.fold_left (fun m (i, v) -> M.add i v m) m bdgs }
 
   let set c id l k = setl c [id, l, k]
+
+  let zero c id = mkrow (M.find id c.cmap) [] 0; c
 
   let eqc c1 c2 =
     assert (VSet.equal c1.cvars c2.cvars);
@@ -273,11 +274,14 @@ let rec pvars p =
     | LAdd (l1, l2) | LSub (l1, l2) -> VSet.union [lvars l1; lvars l2]
     | LMult (_, l) -> lvars l
     | LVar v -> VSet.of_list [v] in
-  let cvars (C (l1, _, l2)) = VSet.union [lvars l1; lvars l2] in
+  let cvars = function
+    | CTest (l1, _, l2) -> VSet.union [lvars l1; lvars l2]
+    | CNonDet -> VSet.empty in
   match p with
   | PTick _ | PBreak _ -> VSet.empty
   | PAssert (c, _) -> cvars c
-  | PSet (id, v2, _) -> VSet.of_list [VId id; v2]
+  | PSet (id, Some v, _) -> VSet.of_list [VId id; v]
+  | PSet (id, None, _) -> VSet.of_list [VId id]
   | PInc (id, _, v, _) -> VSet.of_list [VId id; v]
   | PSeq (p1, p2, _) -> VSet.union [pvars p1; pvars p2]
   | PWhile (c, p, _) -> VSet.union [cvars c; pvars p]
@@ -349,7 +353,7 @@ let go lctx cost p =
       (* pay for the assignment *)
       addconst q CSet
 
-    | PSet (x, v, pid) ->
+    | PSet (x, Some v, pid) ->
       let vars = VSet.remove (VId x) vars in
       let q = qseq in
       (* split potential of [v, u] and [u, v] for all u *)
@@ -369,6 +373,16 @@ let go lctx cost p =
       let q = addconst q CSet in
       (* relax constant differences *)
       Q.relax (UidMap.find pid lctx).lpre q
+
+    | PSet (x, None, _) ->
+      let vars = VSet.remove (VId x) vars in
+      let q = VSet.fold begin fun u q ->
+          let q = Q.zero q (Idx.dst (VId x, u)) in
+          let q = Q.zero q (Idx.dst (u, VId x)) in
+          Q.free (Q.free q (Idx.dst (u, VId x))) (Idx.dst (VId x, u))
+        end vars qseq in
+      (* pay for the assignment *)
+      addconst q CSet
 
     | PSeq (p1, p2, _) ->
       let qpre2 = gen qseq p2 in

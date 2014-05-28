@@ -70,33 +70,35 @@ let plusv c v l =
   | VNum n -> L.addk (n * c) l
   | VId x -> L.addl x c l
 
-let assn_of_cond (C (l1, cmp, l2)) =
-  let rec addl k s = function
-    | LAdd (l1, l2) -> addl k (addl k s l1) l2
-    | LSub (l1, l2) -> addl (-k) (addl k s l1) l2
-    | LMult (k', l) -> addl (k * k') s l
-    | LVar v -> plusv k v s in
-  let a1, a2, b =
-    match cmp with
-    | CLe -> 1, -1, 0
-    | CGe -> -1, 1, 0
-    | CLt -> 1, -1, 1
-    | CGt -> -1, 1, 1
-  in addl a1 (addl a2 (L.const b) l2) l1
+let of_cond = function
+  | CTest (l1, cmp, l2) ->
+    let rec addl k s = function
+      | LAdd (l1, l2) -> addl k (addl k s l1) l2
+      | LSub (l1, l2) -> addl (-k) (addl k s l1) l2
+      | LMult (k', l) -> addl (k * k') s l
+      | LVar v -> plusv k v s in
+    let a1, a2, b =
+      match cmp with
+      | CLe -> 1, -1, 0
+      | CGe -> -1, 1, 0
+      | CLt -> 1, -1, 1
+      | CGt -> -1, 1, 1
+    in [addl a1 (addl a2 (L.const b) l2) l1]
+  | CNonDet -> []
 
-let assn_negate m = L.addk 1 (L.mult (-1) m)
-
-let assn_false = L.const 1
+let bottom = [L.const 1]
 
 let ineq_incr id op delta l =
   let s = match op with OPlus -> -1 | OMinus -> +1 in
   plusv (s * L.coeff id l) delta l
 
-let set id v ps =
+let set id vo ps =
   (* forget everything concerning the assigned variable *)
-  plusv 1 v (plusv (-1) (VId id) (L.const 0)) ::
-  plusv (-1) v (plusv 1 (VId id) (L.const 0)) ::
-  List.filter (fun i -> L.coeff id i = 0) ps
+  let ps' = List.filter (fun i -> L.coeff id i = 0) ps in
+  match vo with None -> ps'
+  | Some v ->
+    plusv 1 v (plusv (-1) (VId id) (L.const 0)) ::
+    plusv (-1) v (plusv 1 (VId id) (L.const 0)) :: ps'
 
 let incr id op delta =
   if delta = VId id
@@ -180,14 +182,18 @@ let sat ps =
 
 (* applications *)
 
-let imp ps a = not (sat (assn_negate a :: ps))
+let imp ps a =
+  let nega = L.addk 1 (L.mult (-1) a) in
+  not (sat (nega :: ps))
 
-let add a ps = if imp ps a then ps else a :: ps
+let conj ps1 ps2 = List.fold_left
+    (fun ps a -> if imp ps a then ps else a :: ps)
+    ps2 ps1
 
 let merge ps1 ps2 =
   let ps2' = List.filter (imp ps1)  ps2 in
   let ps1' = List.filter (imp ps2)  ps1 in
-  List.fold_left (fun a b -> add b a) ps1' ps2'
+  conj ps2' ps1'
 
 let rec fix ps f =
   let x, ps' = f ps in
@@ -200,7 +206,10 @@ let rec fix ps f =
   let trimmed, ps'' = residue false [] ps in
   if trimmed then fix ps'' f else (x, ps)
 
-let entails ps l1 c l2 = imp ps (assn_of_cond (C (l1, c, l2)))
+let entails ps l1 c l2 =
+  match of_cond (CTest (l1, c, l2)) with
+  | [a] -> imp ps a
+  | _ -> failwith "Logic.ml: bug in entails"
 
 let is_const ps = function
   | VNum n -> Some n

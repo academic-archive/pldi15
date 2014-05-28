@@ -126,14 +126,22 @@ type lsum =
   | LSub of lsum * lsum
   | LMult of int * lsum
   | LVar of var
-type cond = C of lsum * comp * lsum
+
+type cond = CTest of lsum * comp * lsum | CNonDet
+
+let cond_neg = function
+  | CTest (a, CLe, b) -> CTest (a, CGt, b)
+  | CTest (a, CGe, b) -> CTest (a, CLt, b)
+  | CTest (a, CLt, b) -> CTest (a, CGe, b)
+  | CTest (a, CGt, b) -> CTest (a, CLe, b)
+  | CNonDet -> CNonDet
 
 type prog =
   | PTick of int * uid
   | PBreak of uid
   | PAssert of cond * uid
   | PInc of id * op * var * uid
-  | PSet of id * var * uid
+  | PSet of id * var option * uid
   | PWhile of cond * prog * uid
   | PIf of cond * prog * prog * uid
   | PSeq of prog * prog * uid
@@ -218,18 +226,22 @@ let p_prog: prog pm =
       ret (fst (List.fold_left f (List.hd s) (List.tl s)))
     ) in
 
-  let p_cond () =
-    let comp = function
-      | TLe -> Some CLe
-      | TGe -> Some CGe
-      | TLt -> Some CLt
-      | TGt -> Some CGt
-      | _ -> None in
-    bnd (p_lsum ()) (fun left ->
-    bnd (p_tok comp) (fun c ->
-    bnd (p_lsum ()) (fun right ->
-      ret (C (left, c, right))
-    ))) in
+  let p_cond () = p_or
+    [ bnd (p_tok (is TStar)) (fun () ->
+        ret CNonDet
+      )
+    ; let comp = function
+        | TLe -> Some CLe
+        | TGe -> Some CGe
+        | TLt -> Some CLt
+        | TGt -> Some CGt
+        | _ -> None in
+      bnd (p_lsum ()) (fun left ->
+      bnd (p_tok comp) (fun c ->
+      bnd (p_lsum ()) (fun right ->
+        ret (CTest (left, c, right))
+      )))
+    ] in
 
   let rec p_atomic () = p_or
 
@@ -245,8 +257,12 @@ let p_prog: prog pm =
     (* Assignment, PSet *)
     ; bnd (p_tok idnt) (fun id ->
       bnd (p_tok (is TEq)) (fun () ->
-      bnd p_var (fun v ->
-        reti (fun i -> PSet (id, v, i))
+      bnd (p_or
+        [ bnd p_var (fun v -> ret (Some v))
+        ; bnd (p_tok (is TStar)) (fun () -> ret None)
+        ]
+      ) (fun vo ->
+        reti (fun i -> PSet (id, vo, i))
       )))
 
     (* Tick, PTick *)
@@ -358,7 +374,7 @@ let pp_prog_hooks pre post prog =
       printf "%a" pp_var v in
 
   let cond = function
-    | C (l1, cmp, l2) ->
+    | CTest (l1, cmp, l2) ->
       lsum false l1;
       printf " %s " (
         match cmp with
@@ -367,7 +383,8 @@ let pp_prog_hooks pre post prog =
         | CLt -> "<"
         | CGt -> ">"
       );
-      lsum false l2 in
+      lsum false l2
+    | CNonDet -> printf "*" in
 
   let rec idnt i =
     if i <> 0 then
@@ -380,7 +397,8 @@ let pp_prog_hooks pre post prog =
     | PTick (n, _) -> printf "(%d)" n
     | PBreak _ -> printf "break"
     | PAssert (c, _) -> printf "assert "; cond c
-    | PSet (id, v, _) -> printf "%s = %a" id pp_var v
+    | PSet (id, Some v, _) -> printf "%s = %a" id pp_var v
+    | PSet (id, None, _) -> printf "%s = *" id
     | PInc (id, o, v, _) ->
       let op = match o with OPlus -> "+" | OMinus -> "-" in
       printf "%s = %s %s %a" id id op pp_var v

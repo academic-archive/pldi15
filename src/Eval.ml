@@ -60,19 +60,23 @@ module Eval(QMon: QMONOID) = struct
       | OMinus -> value (VId id) heap - value v heap
     in (OSeq (Heap.add id res heap), zero)
 
-  let set id v heap =
-    (OSeq (Heap.add id (value v heap) heap), zero)
+  let set id vo heap =
+    let n = match vo with Some v -> value v heap | None -> 42 in
+    (OSeq (Heap.add id n heap), zero)
 
-  let test (C (l1, cmp, l2)) heap =
-    let rec lsum heap = function
-      | LAdd (l1, l2) -> lsum heap l1 + lsum heap l2
-      | LSub (l1, l2) -> lsum heap l1 - lsum heap l2
-      | LMult (k, l) -> k * lsum heap l
-      | LVar v -> value v heap in
-    begin match cmp with
-    | CLe -> ( <= ) | CGe -> ( >= )
-    | CLt -> ( < ) | CGt -> ( > )
-    end (lsum heap l1) (lsum heap l2)
+  let test cond heap =
+    match cond with
+    | CTest (l1, cmp, l2) ->
+      let rec lsum heap = function
+        | LAdd (l1, l2) -> lsum heap l1 + lsum heap l2
+        | LSub (l1, l2) -> lsum heap l1 - lsum heap l2
+        | LMult (k, l) -> k * lsum heap l
+        | LVar v -> value v heap in
+      begin match cmp with
+      | CLe -> ( <= ) | CGe -> ( >= )
+      | CLt -> ( < ) | CGt -> ( > )
+      end (lsum heap l1) (lsum heap l2)
+    | CNonDet -> true
 
   exception ProgramFailure of prog
 
@@ -82,8 +86,8 @@ module Eval(QMon: QMONOID) = struct
       | PTick (n, _) -> pay (CTick n)
       | PBreak _ -> pay CBreak -$ break
       | PSeq (p1, p2, _) -> pay CSeq1 -$ eval p1 -$ pay CSeq2 -$ eval p2
-      | PInc (v1, op, v2, _) -> pay CSet -$ inc v1 op v2
-      | PSet (v1, v2, _) -> pay CSet -$ set v1 v2
+      | PInc (id, op, v, _) -> pay CSet -$ inc id op v
+      | PSet (id, vo, _) -> pay CSet -$ set id vo
       | PWhile (cond, p, _) as ploop ->
 	catch begin
           guard (test cond)
