@@ -8,68 +8,85 @@ module E = Errormsg
 let is_tracked v =
   v.vglob = false && isIntegralType v.vtype
 
+exception Unsupported
+
+let rec transl_sum = function
+  | Const (CInt64 (i, _, _)) ->
+    LVar (VNum (Int64.to_int i))
+  | Const (CChr c) ->
+    transl_sum (Const (charConstToInt c))
+  | Lval (Var vi, NoOffset) when is_tracked vi ->
+    LVar (VId (vi.vname))
+  | UnOp (Neg, e, _) ->
+    LMult (-1, transl_sum e)
+  | BinOp (PlusA, e1, e2, _) ->
+    LAdd (transl_sum e1, transl_sum e2)
+  | BinOp (MinusA, e1, e2, _) ->
+    LSub (transl_sum e1, transl_sum e2)
+  | BinOp (Mult, e, Const (CInt64 (i, _, _)), _)
+  | BinOp (Mult, Const (CInt64 (i, _, _)), e, _) ->
+    LMult (Int64.to_int i, transl_sum e)
+  | _ -> raise Unsupported
+
 (* simplify assignments *)
 let transl_set gid v exp =
-
-  let module Fail = struct exception E end in
 
   let swtch = function
     | OPlus -> OMinus
     | OMinus -> OPlus in
 
+  let combine (v1, l1) (v2, l2) =
+    begin match v1, v2 with
+    | Some e, None
+    | None, Some e ->
+      (None, e :: l1 @ l2)
+    | Some e1, Some e2 ->
+      (Some e1, e2 :: l1 @ l2)
+    | None, None ->
+      failwith "non linear assignment"
+    end in
+
   let rec f o = function
-    | Const (CInt64 (i, _, _)) ->
-      (Some (o, VNum (Int64.to_int i)), [])
-
-    | Const (CChr c) ->
-      f o (Const (charConstToInt c))
-
-    | Lval (Var vi, NoOffset)
-    when is_tracked vi ->
-      if vi.vname = v
+    | LVar (VNum n) -> (Some (o, VNum n), [])
+    | LVar (VId v') ->
+      if v' = v
         then (assert (o = OPlus); (None, []))
-        else (Some (o, VId vi.vname), [])
-
-    | UnOp (Neg, e, _) -> f (swtch o) e
-
-    | BinOp ((PlusA | MinusA) as op, e1, e2, _) ->
-      let v1, l1 = f o e1 in
-      let o' = if op = PlusA then o else swtch o in
-      let v2, l2 = f o' e2 in
-      begin match v1, v2 with
-      | Some e, None
-      | None, Some e ->
-        (None, e :: l1 @ l2)
-      | Some e1, Some e2 ->
-        (Some e1, e2 :: l1 @ l2)
-      | None, None ->
-        failwith "non linear assignment"
-      end
-
-    | BinOp (Mult, e, Const (CInt64 (i, _, _)), _)
-    | BinOp (Mult, Const (CInt64 (i, _, _)), e, _) ->
+        else (Some (o, VId v'), [])
+    | LAdd (e1, e2) -> combine (f o e1) (f o e2)
+    | LSub (e1, e2) -> combine (f o e1) (f (swtch o) e2)
+    | LMult (-1, e) -> f (swtch o) e
+    | LMult (k, e) ->
       failwith "multiplication by constants not implemented"
 
-    | _ -> raise Fail.E
-
   in try
-    let init, l = f OPlus exp in
+    let init, l = f OPlus (transl_sum exp) in
 
     let p = List.fold_right
       (fun (op, v') a ->
         PSeq (PInc (v, op, v', gid ()), a, gid ()))
-      l (PSkip (gid ())) in
+      l (PTick (0, gid ())) in
 
     match init with
     | Some (OPlus, v') ->
-      PSeq (PSet (v, v', gid ()), p, gid ())
+      PSeq (PSet (v, Some v', gid ()), p, gid ())
     | Some (OMinus, v') ->
-      PSeq (PSet (v, VNum 0, gid ()),
+      PSeq (PSet (v, Some (VNum 0), gid ()),
       PSeq (PInc (v, OMinus, v', gid ()),
         p, gid ()), gid ())
     | None -> p
 
-  with Fail.E -> PSkip (gid ()) (* XXX use 'x = *' *)
+  with Unsupported -> PSet (v, None, gid ())
+
+let transl_cond = function
+  | BinOp ((Ge | Le | Gt | Lt) as bop, e1, e2, _) ->
+    let cop =
+      match bop with
+      | Ge -> CGe | Le -> CLe
+      | Gt -> CGt  | Lt -> CLt
+      | _ -> assert false in
+    (try CTest (transl_sum e1, cop, transl_sum e2)
+    with Unsupported -> CNonDet)
+  | _ -> CNonDet
 
 
 (*
@@ -102,33 +119,44 @@ let slice cost {fileName; globals; _} =
       )
   in
 
-  let rec slice_list: 'a. ('a -> prog) -> 'a list -> prog =
-  fun f l ->
-    let rec seq a b =
-      match a with
-      | PSeq (a1, a2, id) ->
-        PSeq (a1, (seq a2 b), id)
-      | PSkip _ -> b
-      | _ -> PSeq (a, b, gid ()) in
-    List.fold_right
-      (fun a b -> seq (f a) b) l
-      (PSkip (gid ()))
+  let rec seq a b =
+    match a with
+    | PSeq (a1, a2, id) ->
+      seq a1 (seq a2 b)
+    | PTick (n1, _) ->
+      begin match b with
+      | PTick (n2, id) -> PTick (n1 + n2, id)
+      | PSeq (PTick (n2, id), b', id') ->
+        PSeq (PTick (n1 + n2, id), b', id')
+      | _ -> if n1 = 0 then b else PSeq (a, b, gid ())
+      end
+    | _ -> PSeq (a, b, gid ())
+  in
 
-  and slice_block b =
-    slice_list slice_stmt b.bstmts
+  let rec slice_list
+  : 'a. ('a -> prog) -> 'a list -> prog = fun f l ->
+    List.fold_right
+      (fun a b -> seq (f a) b) l (PTick (0, gid ()))
+
+  and slice_block b = slice_list slice_stmt b.bstmts
 
   and slice_stmt s =
+    let pay c p = PSeq (PTick (c, gid ()), p, gid ()) in
     match s.skind with
 
     | Instr il ->
       let slice_instr = function
         | Set (lv, exp, loc) ->
+          let pay = pay (cost OpSet + cost (OpExp exp)) in
           begin match
             check_lvalue loc lv
           with
-          | Some v -> transl_set gid v exp
-          | None -> PSkip (gid ())
+          | Some v -> pay (transl_set gid v exp)
+          | None -> pay (PTick (0, gid ()))
           end
+        | Call (None, Lval (Var fassert, NoOffset), [exp], _)
+        when fassert.vname = "assert" ->
+          PAssert (transl_cond exp, gid ())
         | Call (_, _, _, loc)
         | Asm (_, _, _, _, _, loc) -> E.s (
             E.error "%s:%d unsupported instruction"
@@ -136,7 +164,8 @@ let slice cost {fileName; globals; _} =
           )
       in slice_list slice_instr il
 
-    | Return (expo, loc) -> PBreak (gid ()) (* XXX *)
+    | Return (expo, loc) ->
+      pay (cost OpReturn) (PBreak (gid ())) (* XXX *)
 
     | Goto (_, loc)
     | ComputedGoto (_, loc) -> E.s (
@@ -144,21 +173,36 @@ let slice cost {fileName; globals; _} =
           loc.file loc.line
       )
 
-    | Break _ -> PBreak (gid ())
+    | Break _ ->
+      pay (cost OpBreak) (PBreak (gid ()))
 
     | Continue loc -> E.s (
         E.error "%s:%d unsupported continue"
           loc.file loc.line
       )
 
-    | If (exp, b1, b2, loc) -> failwith "if not implemented"
+    | If (exp, b1, b2, loc) ->
+      PIf
+        ( transl_cond exp
+        , slice_block b1
+        , slice_block b2
+        , gid ()
+        )
 
     | Switch (_, _, _, loc) -> E.s (
         E.error "%s:%d unsupported switch"
           loc.file loc.line
       )
 
-    | Loop (b, _, _, _) -> failwith "loop not implemented"
+    | Loop (b, _, _, _) ->
+      let true_cond =
+        let z = LVar (VNum 0) in
+        CTest (z, CLe, z) in
+      PWhile
+        ( true_cond
+        , pay (cost OpLoop) (slice_block b)
+        , gid ()
+        )
 
     | Block b -> slice_block b
 
@@ -186,4 +230,9 @@ let slice cost {fileName; globals; _} =
 let _ =
   (* if Array.length Sys.argv > 2 && Sys.argv.(1) = "-tcee" then *)
   let file = Frontc.parse Sys.argv.(1) () in
-  pp_prog (slice (fun _ -> 0) file)
+  let prog = slice (fun _ -> 1) file in
+  print_string "Sliced program:\n*******\n";
+  pp_prog prog;
+  let l = Hood.create_logctx prog in
+  print_string "\nAnalysis:\n";
+  Hood.analyze l Eval.tick_metric prog
