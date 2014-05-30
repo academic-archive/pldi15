@@ -46,8 +46,8 @@ let create_logctx =
       let g pre =
         let brk = ref [] in
         let m' = f m brk (itr pre) p in
-	let post = (UidMap.findp p m').lpost in
-	((m', out post :: !brk), post) in
+        let post = (UidMap.findp p m').lpost in
+        ((m', out post :: !brk), post) in
       let (m', brk), inv = Logic.fix (itr lpre) g in
       addpost m' id (List.fold_left Logic.merge (out lpre) brk)
     | PIf (c, p1, p2, id) ->
