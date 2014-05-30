@@ -28,52 +28,65 @@ let rec transl_sum = function
     LMult (Int64.to_int i, transl_sum e)
   | _ -> raise Unsupported
 
+let linearize =
+  let rec add (x,n) = function
+    | [] -> [(x, n)]
+    | (y, m) :: tl when y = x ->
+      (x, m+n) :: tl
+    | p :: tl -> p :: add (x,n) tl
+  in
+  let rec f (m,k) mult = function
+    | LVar (VNum n) -> (m, k+n*mult)
+    | LVar (VId x) -> (add (x,mult) m, k)
+    | LMult (n, l) -> f (m,k) (mult*n) l
+    | LAdd (l1, l2) ->
+      let m1,k1 = f (m,k) mult l1 in
+      let m2,k2 = f (m1,k1) mult l2 in
+      m2,k2
+    | LSub (l1, l2) ->
+      let m1,k1 = f (m,k) mult l1 in
+      let m2,k2 = f (m1,k1) (-mult) l2 in
+      m2,k2
+  in f ([], 0) 1
+
 (* simplify assignments *)
 let transl_set gid v exp =
+  try
+    let m,k = linearize (transl_sum exp) in
+    let cv = if List.mem_assoc v m then List.assoc v m else 0 in
 
-  let swtch = function
-    | OPlus -> OMinus
-    | OMinus -> OPlus in
+    let rec repeat x n k =
+      if n = 0 then k else
+      PSeq (x (gid ()), repeat x (n-1) k, gid ()) in
 
-  let combine (v1, l1) (v2, l2) =
-    begin match v1, v2 with
-    | Some e, None
-    | None, Some e ->
-      (None, e :: l1 @ l2)
-    | Some e1, Some e2 ->
-      (Some e1, e2 :: l1 @ l2)
-    | None, None ->
-      failwith "non linear assignment"
-    end in
-
-  let rec f o = function
-    | LVar (VNum n) -> (Some (o, VNum n), [])
-    | LVar (VId v') ->
-      if v' = v
-        then (assert (o = OPlus); (None, []))
-        else (Some (o, VId v'), [])
-    | LAdd (e1, e2) -> combine (f o e1) (f o e2)
-    | LSub (e1, e2) -> combine (f o e1) (f (swtch o) e2)
-    | LMult (-1, e) -> f (swtch o) e
-    | LMult (k, e) ->
-      failwith "multiplication by constants not implemented"
-
-  in try
-    let init, l = f OPlus (transl_sum exp) in
-
-    let p = List.fold_right
-      (fun (op, v') a ->
-        PSeq (PInc (v, op, v', gid ()), a, gid ()))
-      l (PTick (0, gid ())) in
-
-    match init with
-    | Some (OPlus, v') ->
-      PSeq (PSet (v, Some v', gid ()), p, gid ())
-    | Some (OMinus, v') ->
-      PSeq (PSet (v, Some (VNum 0), gid ()),
-      PSeq (PInc (v, OMinus, v', gid ()),
-        p, gid ()), gid ())
-    | None -> p
+    let deltas = List.fold_left
+      (fun ds (x,n) ->
+        let n = if x = v && n > 0 then n-1 else n in
+        let x = if x = v then "%tmp" else x in
+        if n >= 0
+          then repeat (fun i -> PInc (v, OPlus, VId x, i)) n ds
+          else repeat (fun i -> PInc (v, OMinus, VId x, i)) (-n) ds
+      )
+      (if k <> 0
+        then PInc (v, OPlus, VNum k, gid ())
+        else PTick (0, gid ())
+      ) m
+    in
+    let p =
+      if cv = 0 then
+        match deltas with
+        | PSeq (PInc (_, OPlus, v', id1), p, id2) ->
+          PSeq (PSet (v, Some v', id1), p, id2)
+        | PInc (v, OPlus, VNum n, id) ->
+          PSet (v, Some (VNum n), id)
+        | _ ->
+          PSeq (PSet (v, Some (VNum 0), gid ()), deltas, gid ())
+      else if cv < 0 then
+        PSeq (PSet (v, Some (VNum 0), gid ()), deltas, gid ())
+      else
+        deltas in
+    if cv = 1 || cv = 0 then p else
+    PSeq (PSet ("%tmp", Some (VId v), gid ()), p, gid ())
 
   with Unsupported -> PSet (v, None, gid ())
 
