@@ -356,6 +356,7 @@ let analyze lctx cost p =
     | PSet (x, Some v, pid) ->
       let vars = VSet.remove (VId x) vars in
       let q = qseq in
+      if v = VId x then addconst q CSet else
       (* split potential of [v, u] and [u, v] for all u *)
       let q = VSet.fold begin fun u q ->
           let q =
