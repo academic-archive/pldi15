@@ -130,7 +130,11 @@ let slice cost {fileName; globals; _} =
         PSeq (PTick (n1 + n2, id), b', id')
       | _ -> if n1 = 0 then b else PSeq (a, b, gid ())
       end
-    | _ -> PSeq (a, b, gid ())
+    | _ ->
+      begin match b with
+      | PTick (0, _) -> a
+      | _ -> PSeq (a, b, gid ())
+      end
   in
 
   let rec slice_list
