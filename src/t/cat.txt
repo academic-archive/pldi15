@@ -51,6 +51,7 @@ t20 - Test of the mirroring in the increment rule.
       of 'max' potentials.
 t21 - The essence of Knuth-Morris-Pratt.
 t29 - A GCD computation algorithm.
+t30 - A loop on two variables disguised as a loop on one.
 
 -- From the literature.
 
