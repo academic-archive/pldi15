@@ -5,9 +5,10 @@ exception SyntaxError of string
 
 type token =
   | TAssert | TWhile | TIf | TElse | TBreak
-  | TSemi | TPlus | TMinus | TStar
+  | TSemi | TComma | TPlus | TMinus | TStar
   | TLParen | TRParen
   | TLt | TGt | TLe | TGe | TEq
+  | TFunc | TLocal
   | TIdnt of string
   | TNum of int
   | TEof
@@ -48,9 +49,12 @@ let mk_lexer ic =
       else if s = "if" then TIf
       else if s = "else" then TElse
       else if s = "break" then TBreak
+      else if s = "func" then TFunc
+      else if s = "local" then TLocal
       else TIdnt s
     | ('0' .. '9') as c -> TNum (getnum (digit c))
-    | ';' -> TSemi | '+' -> TPlus | '-' -> TMinus | '*' -> TStar
+    | ';' -> TSemi | ',' -> TComma
+    | '+' -> TPlus | '-' -> TMinus | '*' -> TStar
     | '(' -> TLParen | ')' -> TRParen
     | '<' -> (match next () with '=' -> TLe | c -> back c; TLt)
     | '>' -> (match next () with '=' -> TGe | c -> back c; TGt)
@@ -67,12 +71,13 @@ let string_of_token = function
   | TIf -> "IF" | TElse -> "ELSE"
   | TIdnt id -> Printf.sprintf "IDNT %S" id
   | TNum n -> Printf.sprintf "NUM %d" n
-  | TSemi -> "SEMI" | TStar -> "STAR"
-  | TPlus -> "PLUS" | TMinus -> "MINUS"
+  | TSemi -> "SEMI" | TComma -> "COMMA"
+  | TStar -> "STAR" | TPlus -> "PLUS" | TMinus -> "MINUS"
   | TLParen -> "LPAREN" | TRParen -> "RPAREN"
   | TLt -> "LT" | TGt -> "GT"
   | TLe -> "LE" | TGe -> "GE"
   | TEq -> "EQ"
+  | TFunc -> "FUNC" | TLocal -> "LOCAL"
   | TEof -> "EOF"
 
 
@@ -146,8 +151,15 @@ type prog =
   | PIf of cond * prog * prog * uid
   | PSeq of prog * prog * uid
 
-(* parser for one program *)
-let p_prog: prog pm =
+type func =
+  { fname: id
+  ; fargs: id list
+  ; flocs: id list
+  ; fbody: prog
+  }
+
+(* parser for one file *)
+let p_file: (func list * prog) pm =
 
   let is t t' = if t = t' then Some () else None in
   let num = function TNum n -> Some n | _ -> None in
@@ -170,6 +182,13 @@ let p_prog: prog pm =
     ; bnd p_num (fun n -> ret (VNum n))
     ] in
 
+  let p_parens p =
+    bnd (p_tok (is TLParen)) (fun () ->
+    bnd p (fun x ->
+    bnd (p_tok (is TRParen)) (fun () ->
+      ret x
+    ))) in
+
   let rec p_term () = p_or
 
     (* variable *)
@@ -188,12 +207,7 @@ let p_prog: prog pm =
       )
 
     (* parenthesized expressions *)
-    ; bnd (p_tok (is TLParen)) (fun () ->
-      bnd (p_lsum ()) (fun l ->
-      bnd (p_tok (is TRParen)) (fun () ->
-        ret l
-      )))
-
+    ; p_parens (fun x -> p_lsum () x)
     ]
 
   and p_sum () =
@@ -213,7 +227,6 @@ let p_prog: prog pm =
 
       (* simple term *)
       ; ret [(lhs, true)]
-
       ]
     )
 
@@ -266,15 +279,13 @@ let p_prog: prog pm =
       )))
 
     (* Tick, PTick *)
-    ; bnd (p_tok (is TLParen)) (fun () ->
-      bnd (p_or [p_num; ret 0]) (fun n ->
-      bnd (p_tok (is TRParen)) (fun () ->
+    ; bnd (p_parens (p_or [p_num; ret 0])) (fun n ->
         reti (fun i -> PTick (n, i))
-      )))
+      )
 
     (* Break, PBreak *)
     ; bnd (p_tok (is TBreak)) (fun () ->
-	reti (fun i -> PBreak i)
+        reti (fun i -> PBreak i)
       )
 
     (* While loop, PWhile *)
@@ -308,11 +319,7 @@ let p_prog: prog pm =
       )))
 
     (* Parenthesized complex statement *)
-    ; bnd (p_tok (is TLParen)) (fun () ->
-      bnd (p_complex ()) (fun prog ->
-      bnd (p_tok (is TRParen)) (fun () ->
-        ret prog
-      )))
+    ; p_parens (fun x -> p_complex () x)
     ]
 
   and p_complex () = p_or
@@ -329,18 +336,49 @@ let p_prog: prog pm =
       )
     ] in
 
+  (* List of function definitions *)
+  let rec p_funcs () =
+    let rec p_ids () = p_or
+      [ bnd (p_tok idnt) (fun id ->
+        bnd (p_tok (is TComma)) (fun () ->
+        bnd (p_ids ()) (fun ids ->
+          ret (id :: ids)
+        )))
+      ; bnd (p_tok idnt) (fun id -> ret [id])
+      ; ret []
+      ] in
+    p_or
+      [ bnd (p_tok (is TFunc)) (fun () ->
+        bnd (p_tok idnt) (fun fname ->
+        bnd (p_parens (p_ids ())) (fun fargs ->
+        let locs = p_or
+          [ bnd (p_tok (is TLocal)) (fun () ->
+              p_parens (p_ids ())
+            )
+          ; ret []
+          ] in
+        bnd locs (fun flocs ->
+        bnd (p_atomic ()) (fun fbody ->
+        bnd (p_funcs ()) (fun funcs ->
+          ret ({fname; fargs; flocs; fbody} :: funcs)
+        ))))))
+      ; ret []
+      ] in
+
+  bnd (p_funcs ()) (fun funcs ->
   bnd (p_complex ()) (fun prog ->
   p_or
     [ bnd (p_tok (fun x -> Some (string_of_token x)))
       (fun t -> raise (SyntaxError ("unexpected token " ^ t)))
-    ; ret prog
+    ; ret (funcs, prog)
     ]
-  )
+  ))
 
-let pa_prog ic =
-  match p_prog (1, stream_of_fun (mk_lexer ic)) with
-  | (Some p, _) -> p
+let pa_file ic =
+  match p_file (1, stream_of_fun (mk_lexer ic)) with
+  | (Some f, _) -> f
   | (None, _) -> raise (SyntaxError "parse error")
+let pa_prog ic = snd (pa_file ic)
 
 let prog_id = function
   | PTick (_, id) | PBreak id | PAssert (_, id) | PInc (_, _, _, id)
