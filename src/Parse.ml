@@ -8,7 +8,7 @@ type token =
   | TSemi | TComma | TPlus | TMinus | TStar
   | TLParen | TRParen
   | TLt | TGt | TLe | TGe | TEq
-  | TFunc | TLocal
+  | TFunc | TLocal | TReturn
   | TIdnt of string
   | TNum of int
   | TEof
@@ -51,6 +51,7 @@ let mk_lexer ic =
       else if s = "break" then TBreak
       else if s = "func" then TFunc
       else if s = "local" then TLocal
+      else if s = "return" then TReturn
       else TIdnt s
     | ('0' .. '9') as c -> TNum (getnum (digit c))
     | ';' -> TSemi | ',' -> TComma
@@ -78,6 +79,7 @@ let string_of_token = function
   | TLe -> "LE" | TGe -> "GE"
   | TEq -> "EQ"
   | TFunc -> "FUNC" | TLocal -> "LOCAL"
+  | TReturn -> "RETURN"
   | TEof -> "EOF"
 
 
@@ -144,9 +146,11 @@ let cond_neg = function
 type prog =
   | PTick of int * uid
   | PBreak of uid
+  | PReturn of var * uid
   | PAssert of cond * uid
   | PInc of id * op * var * uid
   | PSet of id * var option * uid
+  | PCall of id option * id * var list * uid
   | PWhile of cond * prog * uid
   | PIf of cond * prog * prog * uid
   | PSeq of prog * prog * uid
@@ -256,6 +260,16 @@ let p_file: (func list * prog) pm =
       )))
     ] in
 
+  let rec p_list p = p_or
+    [ bnd p (fun id ->
+      bnd (p_tok (is TComma)) (fun () ->
+      bnd (p_list p) (fun ids ->
+        ret (id :: ids)
+      )))
+    ; bnd p (fun id -> ret [id])
+    ; ret []
+    ] in
+
   let rec p_atomic () = p_or
 
     (* Increment/Decrement, PInc *)
@@ -266,6 +280,20 @@ let p_file: (func list * prog) pm =
       bnd p_var (fun v ->
         reti (fun i -> PInc (id, op, v, i))
       )))))
+
+    (* Function call, PCall *)
+    ; bnd (p_or
+        [ bnd (p_tok idnt) (fun r ->
+          bnd (p_tok (is TEq)) (fun () ->
+            ret (Some r)
+          ))
+        ; ret None
+        ]
+      ) (fun ro ->
+      bnd (p_tok idnt) (fun fname ->
+      bnd (p_parens (p_list p_var)) (fun args ->
+        reti (fun i -> PCall (ro, fname, args, i))
+      )))
 
     (* Assignment, PSet *)
     ; bnd (p_tok idnt) (fun id ->
@@ -287,6 +315,12 @@ let p_file: (func list * prog) pm =
     ; bnd (p_tok (is TBreak)) (fun () ->
         reti (fun i -> PBreak i)
       )
+
+    (* Return, PReturn *)
+    ; bnd (p_tok (is TReturn)) (fun () ->
+      bnd p_var (fun v ->
+        reti (fun i -> PReturn (v, i))
+      ))
 
     (* While loop, PWhile *)
     ; bnd (p_tok (is TWhile)) (fun () ->
@@ -338,22 +372,14 @@ let p_file: (func list * prog) pm =
 
   (* List of function definitions *)
   let rec p_funcs () =
-    let rec p_ids () = p_or
-      [ bnd (p_tok idnt) (fun id ->
-        bnd (p_tok (is TComma)) (fun () ->
-        bnd (p_ids ()) (fun ids ->
-          ret (id :: ids)
-        )))
-      ; bnd (p_tok idnt) (fun id -> ret [id])
-      ; ret []
-      ] in
+
     p_or
       [ bnd (p_tok (is TFunc)) (fun () ->
         bnd (p_tok idnt) (fun fname ->
-        bnd (p_parens (p_ids ())) (fun fargs ->
+        bnd (p_parens (p_list (p_tok idnt))) (fun fargs ->
         let locs = p_or
           [ bnd (p_tok (is TLocal)) (fun () ->
-              p_parens (p_ids ())
+              p_parens (p_list (p_tok idnt))
             )
           ; ret []
           ] in
@@ -383,6 +409,7 @@ let pa_prog ic = snd (pa_file ic)
 let prog_id = function
   | PTick (_, id) | PBreak id | PAssert (_, id) | PInc (_, _, _, id)
   | PSet (_, _, id) | PWhile (_, _, id) | PIf (_, _, _, id)
+  | PReturn (_, id) | PCall (_, _, _, id)
   | PSeq (_, _, id) -> id
 
 
@@ -393,8 +420,13 @@ let pp_var oc = function
   | VId x -> Printf.fprintf oc "%s" x
 
 
-let pp_prog_hooks pre post prog =
+let pp_file_hooks pre post (fl, prog) =
   let open Printf in
+
+  let rec pp_list p oc = function
+    | [x] -> fprintf oc "%a" p x
+    | x :: xs -> fprintf oc "%a, %a" p x (pp_list p) xs
+    | [] -> () in
 
   let rec lsum prns = function
     | LAdd (l1, l2) ->
@@ -435,6 +467,12 @@ let pp_prog_hooks pre post prog =
     | PTick (n, _) -> printf "(%d)" n
     | PBreak _ -> printf "break"
     | PAssert (c, _) -> printf "assert "; cond c
+    | PReturn (v, _) -> printf "return %a" pp_var v
+    | PCall (xo, f, args, _) ->
+      begin match xo with
+      | Some x -> printf "%s = " x
+      | _ -> ()
+      end; printf "%s(%a)" f (pp_list pp_var) args
     | PSet (id, Some v, _) -> printf "%s = %a" id pp_var v
     | PSet (id, None, _) -> printf "%s = *" id
     | PInc (id, o, v, _) ->
@@ -460,6 +498,7 @@ let pp_prog_hooks pre post prog =
       printf "while "; cond c; printf "\n";
       g (lvl + delta) true p
 
+
   and g lvl prns p =
     match p with
     | PSeq (_, _, _) -> f lvl prns p
@@ -467,10 +506,28 @@ let pp_prog_hooks pre post prog =
       if prns then pre (prog_id p);
       idnt lvl; f lvl prns p;
       if not prns then post (prog_id p)
+  in
 
-  in g 0 false prog; printf "\n"
+  let pf {fname; fargs; flocs; fbody} =
+    printf "func %s(%a)" fname (pp_list output_string) fargs;
+    if flocs <> [] then
+      printf " locals (%a)\n" (pp_list output_string) flocs
+    else
+      printf "\n";
+    g delta true fbody;
+    printf "\n"
+  in
 
-let pp_prog = let f _ = () in pp_prog_hooks f f
+  begin
+    List.iter pf fl;
+    if fl <> [] then printf "\n";
+    g 0 false prog;
+    printf "\n";
+  end
+
+let pp_prog_hooks pre post p = pp_file_hooks pre post ([], p)
+let pp_prog p = let f _ = () in pp_file_hooks f f ([], p)
+let pp_file = let f _ = () in pp_file_hooks f f
 
 
 (* tests *)
