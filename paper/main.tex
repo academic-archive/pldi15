@@ -2,10 +2,7 @@
 %  1) Use Appel's SHA-256 implementation as an example
 %
 
-
-
-\documentclass[10pt]{article}
-\usepackage{fullpage}
+\documentclass[nocopyrightspace,preprint]{sigplanconf}
 
 \usepackage[numbers]{natbib}
 
@@ -45,15 +42,203 @@
 
 \input{definitions}
 
-% \title{Automatic Amortized Analysis for Imperative Code}
-\title{Compositional Quantitative Resource Analysis for C Programs}
-% Compositional Resource-Bound Certification for C Programs
-\date{}
-\author{}
-
-
 \begin{document}
+
+\conferenceinfo{POPL} {January XX-XX, 2014, CITY, STATE, India.}
+\copyrightyear{2014}
+\copyrightdata{XXX-X-XXXX-XXXX-X/XX/XX}
+
+%----------------------------------------------------
+
+
+\titlebanner{Draft -- Do not distribute}        % These are ignored unless
+\preprintfooter{Draft}   % 'preprint' option specified.
+
+% \title{Automatic Amortized Analysis for Imperative Code}
+\title{Compositional Quantitative Resource Analysis of C Programs}
+% Compositional Resource-Bound Certification for C Programs
+
+\authorinfo
+{Quentin Carbonneaux \and Jan Hoffmann \and Zhong Shao}
+{Yale University}
+
+
 \maketitle
+
+
+\begin{abstract}
+
+\end{abstract}
+
+\category{D.2.4}{Software Engineering}
+{Software/Program Verification}
+\category{F.3.1}{Logics and Meanings of Programs}
+{Specifying and Verifying and Reasoning about Programs}
+
+\terms Verification, Reliability
+
+
+\keywords Formal Verification, Compiler Construction, Program Logics,
+Stack-Space Bounds, Quantitative Verification
+
+\section{Introduction}
+\label{sec:intro}
+
+In software engineering and software verification, we often would like
+to have static information about the quantitative behavior of
+programs.  For example, stack and heap-space bounds are important to
+ensure the reliability of safety-critical systems [XXX (see PLDI)].
+% Clock-cycle bounds are needed to guarantee the safety of real-time
+% systems [XXX wilhelm].  
+Static energy usage information is critical for autonomous systems and
+has applications in cloud computing [XXX?  (cite this guy form the
+us))].  Worst-case resource bounds can be used to prevent side-channel
+attacks through resource padding [XXX?].  Loop and
+recursion-depth bounds are used to ensure the accuracy of programs
+that are executed on unreliable hardware [XXX oopsla] and complexity
+bounds are needed to verify security protocols [XXX].
+% XXX Mention differential privacy here?
+%
+In general, quantitative performance information at design time can
+provide useful feedback for developers.
+
+Static analysis of quantitative properties of imperative programs is
+an active research area and recent years have seen many innovations.
+Notable tools that have been developed include Speed [XXX], KoAT
+[XXX], Pubs [XXX], RANK [XXX], and LOOPUS [XXX].
+%
+While the these tools can derive impressive results for
+realistic software, there still exist several shortcomings that seem
+to hamper the application of the existing techniques in practice.
+\begin{enumerate}
+\item Analysis tools are black boxes that either deliver a result or fail
+  without enabling \emph{user interaction} to manually or
+  semi-automatically derive bounds for challenging parts of the
+  program.
+\item The computed bounds are often \emph{non-compositional} local
+  bounds (for a single (nested) loop) that are difficult to combine to
+  global whole program bounds.
+\item Existing techniques often rely on complex external tools such as
+  abstract interpretation based invariant generation [XXX speed] or
+  translation of the program into a term-rewriting system [costa,
+  tacas] without providing \emph{verifiable certificates} for the
+  correctness of the derived bound.
+\end{enumerate}
+%
+While there has been progress there is still truth in the following
+quote of Don Knuth from a recent interview [xxx].
+
+\begin{quotation}
+  % Consider, for example, a computer program that sorts a list of
+  % numbers into order. 
+  Thanks to the work of Floyd, Hoare, and others,
+  we have formal definitions of semantics, and tools by which we can
+  verify that sorting is indeed always achieved. My job is to go
+  beyond correctness, to an analysis of such things as the program's
+  running time $[\cdots]$. I'm 100\% sure that my recurrence correctly
+  describes the program's performance, and all of my colleagues agree
+  with me that the recurrence is "obviously" valid. Yet I have no
+  formal tools by which I can prove that my recurrence is right. I
+  don't really understand my reasoning processes at all!
+\end{quotation}
+%
+%
+In this paper, we present a novel cost analysis system for C programs
+that works automatically, efficiently and precisely for many examples,
+can be used interactively if the automation fails, and produces
+verifiable certificates for the bounds.  Our contributions are as
+follows.
+%
+\begin{itemize}
+\item We define a operational cost semantics for C programs that
+  accounts a constant cost for each statement that is parametric in a
+  cost metric.  The semantics models cost of terminating and
+  non-terminating executions.  A specific \emph{tick} function can be
+  inserted in the source code to further customize the cost
+  model.
+\item We describe an automatic static analysis technique for deriving
+  bounds for the cost that is defined by the operational semantics.
+  It is based on amortized resource analysis for functional programs
+  [XXX] and derives bounds that are non-negative linear combinations
+  of sizes $|[x,y]|$ of intervals between program variables $x,y$.
+\item We show with a publically available prototype implementation and
+  an experimental evaluation that the our novel amortized resource
+  analysis works efficiently for realistic programs and that the
+  derived constant factors in the bounds are close to or identical
+  with the optimal ones.
+\item We define a quantitative Hoare logic for interactively deriving
+  cost bounds for C programs.  The logic is implemented and proved
+  sound in the Coq Proof Assistant with respect to CompCert C
+  light.  We show that our automatic analysis readily produces
+  derivations in the quantitative Hoare logic.
+% \item We prove the completeness of the program logic
+%   with respect to the operational cost semantics.
+\end{itemize}
+%
+Our approach complements existing works since it provides a semantic
+foundation for the computation of bounds while still providing support
+for automation that sometimes goes beyond the capabilities of existing
+techniques.  The quantitative Hoare logic and the automatic amortized
+analysis enable semi-automatic interactive resource bound development
+in which an automatically derived bound can be used in the
+quantitative logic and a hand derived bound can be used by the
+automatic analysis.  Both the automatic amortized analysis and the
+quantitative logic are naturally compositional and describe the
+resource behavior of code fragments without referring to the source
+code.  As a result, we naturally derive global bounds that are
+functions of the input parameters.  To the best of our knowledge, our
+system is the only one that can deal with resource like memory that
+may become available during the execution.
+
+The main innovation that makes this work practical is our new
+automatic amortized analysis for C code.  It targets programs that
+seem to be common in system software, that is, programs whose resource
+consumption can be described as a function of sizes $|[x,y]|$ of
+intervals of integer variables.  A typical bound would be $B(x,y,z) =
+10{\cdot}|[x,y]| + 1{\cdot}|[z,0]|$ and we have for example
+$B(100,200,43) = 1043$.  
+%
+Despite the apparent simplicity of the new analysis system, it is able
+to reproduce multiple results from the literature which were obtained
+using methods based on abstract interpretation.  In contrast with
+abstract interpretation--based methods, our technique does not require
+any fixpoint computations on an abstract domain to obtain loop
+invariants.  The mechanism we designed is able to leverage local
+assertions such as $x < y$ that we collect along the branching points
+to obtain global invariants.  We achieve this by generating a linear
+constraint system that reflects resource cost and size changes of
+integer variables in the program.  A solution of the linear program is
+a resource usage bound for the C program.  We can naturally, handle
+advanced control flow such as break, return, mutually-recursive functions.
+
+Following the development steps for automatic amortized analysis for
+functional programs [XXX], we deliberately restrict our self to linear
+bounds in the automatic analysis (there a no restrictions for the
+manually-derived though).  More specifically, bounds have the form
+$\sum_{a,b} q_{(a,b)} |[a,b]|$ where $a$ and $b$ are integer variables
+or constants.  The reason is mainly clarity of presentation, since
+an extension to multivariate resource polynomials [XXX] would make the
+inference rules considerably more complected and should better be
+described separately.  However, we developed the linear inference
+system so that the extension to polynomial bounds should work
+smoothly.
+
+We have evaluated the quantitative logic and the automatic analysis
+with system code and examples from the literature. XXX
+
+With the intention, of making the material easily accessible we first
+informally describe the new automatic amortized analysis
+(\pref{sec:inform}).  We then formalize the intuition with the
+operational cost semantics an the inference rules for the amortized
+analysis (\pref{sec:aa}).  In \pref{sec:logic} we describe the
+quantitative Hoare logic and its soundness proof that is formalized in
+Coq.  In \pref{sec:inter} we prove the soundness of the automatic
+amortized analysis by showing that derivation using the inference
+rules can be seen as derivations in the quantitative logic.  We also
+show how to integrate hand-derived bounds with automatically-derived
+bounds.  \pref{sec:exper} contains the results of the experimental
+evaluation and \pref{sec:related} describes related research.
+
 
 \section{NOTES}
 
