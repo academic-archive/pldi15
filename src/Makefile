@@ -3,7 +3,7 @@
 # (set LIBDIRS and INCDIRS)
 include config.mk
 
-SOURCES = Parse.ml Logic.ml Eval.ml clp_stubs.c Clp.ml Hood.ml
+SOURCES = Parse.ml Tools.ml Logic.ml Eval.ml clp_stubs.c Clp.ml Hood.ml
 RESULT = app
 CLIBS = z bz2 Clp CoinUtils
 CFLAGS = -Wall -O3
