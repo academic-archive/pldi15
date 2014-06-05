@@ -240,112 +240,12 @@ bounds.  \pref{sec:exper} contains the results of the experimental
 evaluation and \pref{sec:related} describes related research.
 
 
-\section{NOTES}
-
-\subsection{Things to say in the intro}
-
-\paragraph{Quote of Knuth}
-
-\begin{quotation}
-  There's even a fundamental gap in the foundations of my main
-  mathematical specialty, the analysis of algorithms. Consider, for
-  example, a computer program that sorts a list of numbers into
-  order. Thanks to the work of Floyd, Hoare, and others, we have
-  formal definitions of semantics, and tools by which we can verify
-  that sorting is indeed always achieved. My job is to go beyond
-  correctness, to an analysis of such things as the program's running
-  time: I write down a recurrence, say, which is supposed to represent
-  the average number of comparisons made by that program on random
-  input data. I'm 100\% sure that my recurrence correctly describes
-  the program's performance, and all of my colleagues agree with me
-  that the recurrence is "obviously" valid. Yet I have no formal tools
-  by which I can prove that my recurrence is right. I don't really
-  understand my reasoning processes at all! My student Lyle Ramshaw
-  began to create suitable foundations in his thesis (1979), but the
-  problem seems inherently difficult. Nevertheless, I don't lose any
-  sleep over this situation.
-\end{quotation}
-http://www.informit.com/articles/article.aspx?p=2213858
-
-\paragraph{to do}
-
-\begin{itemize}
-\item describe schedulability analysis for two schedulers
-\item include program logic from the stack paper for arbitrary resources
-\item what operational semantics to use? 
-\item verify automatic tool with program logic
-\item derive some crazy bounds (polynomial? logarithmic?) with the logic
-\item logic can also be used by automation: put linear constraints in the precondition
-\end{itemize}
-
-\paragraph{Advanteges over previous work}
-
-\begin{itemize}
-\item integrates well with hand-derived bounds in a program logic
-\item have formal soundness proof with respect to cost semantics
-\item can attach certificate to the code (proof-carrying code)
-\item can deal with resources that \emph{become available} (e.g, freeing memory) in an execution
-\item derive global bounds for the program as a function of the inputs (as opposed to local loop bounds)
-\item can handle advance control flow such as break, return, mutual recursive functions
-\item do not rely on abstract-interpretation based invariant generation
-\item show that constant factors are very precise with respect to the cost semantics
-\item demonstrate that the analysis is applicable in the formal verification of system code
-\end{itemize}
-
-
-\section{Introduction}
-
-After functional correctness, quantitative properties are the
-second thing one wants to know when writing a program.
-For example, an asymptotic runtime bound on a
-sorting algorithm tells us what efficiency we can expect
-of it when running on very large arrays.  But, what if we
-always run it on arrays of size between 5 and 10? In that
-case, the asymptotic is not relevant and we need a more
-precise bound on the runtime.  It is then a good
-software engineering practice to profile the algorithm on
-some examples.
-
-In between asymptotic bounds and profiling there are
-precise bounds, for instance, one can prove that Knuth's Quicksort might
-take at most $20N^2$ operations of a MIX machine when
-called on an array of size $N$.  If you have this information,
-no profiling is needed to compare the algorithms and you
-have a formal guarantee on the behavior of the program. But what if you do not
-have a MIX machine, or you tweaked Knuth's algorithm
-a bit?  Then you are good for another long an tedious
-proof.  We advocate that, it is possible to design a practical
-system that is able to infer precise worst case bounds
-without any user interaction.
-
-This work presents a resource oblivious system to get
-linear resource bounds on imperative programs with
-integers.  Despite its apparent simplicity it is able to
-reproduce multiple results from the literature which
-were obtained using methods based on abstract
-interpretation.  In stark contrast with abstract-interpretation
-based methods, our tool does not require any
-fixpoint computations on an abstract domain to obtain
-loop invariants.  The mechanism we designed, which
-is based on amortized analysis, is able to leverage a local
-information to obtain global invariants.  Additionally, the
-approach we advocate is able to scale to full blown
-imperative languages including constructs like functions
-calls, \code{break} and \code{return}.
-
-The analysis is proved sound with respect to
-the operational semantics instrumented to track resource
-consumption.  It is implemented as a prototype
-in OCaml and available on demand.  We test it on multiple
-algorithms from the literature and on custom tests, it
-is also planned to extend it to handle the full C programming
-language.
-
-\section{Overview and Examples}
+\section{Amortized Analysis for C Programs}
+\label{sec:inform}
 
 \subsection{Amortized Analysis}
 The idea that drives the design of our system is amortized
-analysis.  Say that a program $p$ evaluates on a heap $H$
+analysis [XXX].  Say that a program $p$ evaluates on a heap $H$
 by consuming $n$ resource units, we note that $(p, H) \Downarrow_n$.
 The basic idea of amortized analysis is to define a potential function
 $\Phi$ from heaps to natural numbers, such that $\Phi(H) \ge n$.
@@ -1343,6 +1243,59 @@ $$
 %   Q' = shift_{x,y} (shift_{x,u} (Q))
 % To do: Give a combined formula for that (concise constraint system).
 %%
+
+
+\section{NOTES}
+
+\subsection{Things to say in the intro}
+
+\paragraph{Quote of Knuth}
+
+\begin{quotation}
+  There's even a fundamental gap in the foundations of my main
+  mathematical specialty, the analysis of algorithms. Consider, for
+  example, a computer program that sorts a list of numbers into
+  order. Thanks to the work of Floyd, Hoare, and others, we have
+  formal definitions of semantics, and tools by which we can verify
+  that sorting is indeed always achieved. My job is to go beyond
+  correctness, to an analysis of such things as the program's running
+  time: I write down a recurrence, say, which is supposed to represent
+  the average number of comparisons made by that program on random
+  input data. I'm 100\% sure that my recurrence correctly describes
+  the program's performance, and all of my colleagues agree with me
+  that the recurrence is "obviously" valid. Yet I have no formal tools
+  by which I can prove that my recurrence is right. I don't really
+  understand my reasoning processes at all! My student Lyle Ramshaw
+  began to create suitable foundations in his thesis (1979), but the
+  problem seems inherently difficult. Nevertheless, I don't lose any
+  sleep over this situation.
+\end{quotation}
+http://www.informit.com/articles/article.aspx?p=2213858
+
+\paragraph{to do}
+
+\begin{itemize}
+\item describe schedulability analysis for two schedulers
+\item include program logic from the stack paper for arbitrary resources
+\item what operational semantics to use? 
+\item verify automatic tool with program logic
+\item derive some crazy bounds (polynomial? logarithmic?) with the logic
+\item logic can also be used by automation: put linear constraints in the precondition
+\end{itemize}
+
+\paragraph{Advanteges over previous work}
+
+\begin{itemize}
+\item integrates well with hand-derived bounds in a program logic
+\item have formal soundness proof with respect to cost semantics
+\item can attach certificate to the code (proof-carrying code)
+\item can deal with resources that \emph{become available} (e.g, freeing memory) in an execution
+\item derive global bounds for the program as a function of the inputs (as opposed to local loop bounds)
+\item can handle advance control flow such as break, return, mutual recursive functions
+\item do not rely on abstract-interpretation based invariant generation
+\item show that constant factors are very precise with respect to the cost semantics
+\item demonstrate that the analysis is applicable in the formal verification of system code
+\end{itemize}
 
 
 
