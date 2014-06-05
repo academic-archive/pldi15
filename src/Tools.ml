@@ -34,11 +34,11 @@ let func_globals {fbody; flocs; fargs} =
   VSet.diff (prog_vars fbody)
     (VSet.of_list (List.map (fun i -> VId i) (flocs @ fargs)))
 
-let file_globals (fl, p) =
+let file_globals (fdefs, p) =
   let s = prog_vars p in
   List.fold_left
     (fun s f -> VSet.union [s; func_globals f])
-    s fl
+    s fdefs
 
 
 (* alpha conversion, give each variable a unique name *)
@@ -90,18 +90,18 @@ let alpha_func e f =
   let flocs, fargs = List.rev flocs, List.rev fargs in
   ({f with fbody = alpha_prog e f.fbody; flocs; fargs}, e)
 
-let alpha_file ((fl, p) as f) =
+let alpha_file ((fdefs, p) as f) =
   let gvars = VSet.fold (fun v g ->
       match v with
       | VId id -> id :: g
       | _  -> g
     ) (file_globals f) [] in
   let e = List.combine gvars gvars in
-  let g (fl, e) f =
+  let g (fdefs, e) f =
     let (f, e) = alpha_func e f in
-    (f::fl, e) in
-  let fl, _ = List.fold_left g ([], e) fl in
-  (List.rev fl, p)
+    (f::fdefs, e) in
+  let fdefs, _ = List.fold_left g ([], e) fdefs in
+  (List.rev fdefs, p)
 
 
 (* sanity checks *)
@@ -109,14 +109,14 @@ exception InvalidProgram of string
 
 let invalid s = raise (InvalidProgram s)
 
-let check_funcs (fl, p) =
+let check_funcs (fdefs, p) =
   let arity =
     List.fold_left (fun a {fname; fargs; _} ->
       if List.mem_assoc fname a then
         invalid ("function " ^ fname ^ " is defined twice")
       else
         (fname, List.length fargs) :: a
-    ) [] fl in
+    ) [] fdefs in
   let rec ckprog = function
     | PTick _ | PBreak _ | PAssert _ | PReturn _
     | PSet _ | PInc _ -> ()
@@ -130,9 +130,9 @@ let check_funcs (fl, p) =
     | PWhile (_, p, _) -> ckprog p
     | PSeq (p1, p2, _) | PIf (_, p1, p2, _) ->
       ckprog p1; ckprog p2 in
-  List.iter (fun f -> ckprog f.fbody) fl; ckprog p
+  List.iter (fun f -> ckprog f.fbody) fdefs; ckprog p
 
-let check_control (fl, p) =
+let check_control (fdefs, p) =
   let rec ckprog = function
     | PTick _ | PAssert _ | PSet _ | PInc _ | PCall _
     | PReturn _ -> ()
@@ -140,7 +140,7 @@ let check_control (fl, p) =
     | PWhile (_, p, _) -> ()
     | PSeq (p1, p2, _) | PIf (_, p1, p2, _) ->
       ckprog p1; ckprog p2 in
-  List.iter (fun f -> ckprog f.fbody) fl; ckprog p
+  List.iter (fun f -> ckprog f.fbody) fdefs; ckprog p
 
 (* all the above tests *)
 let check f =
@@ -150,12 +150,13 @@ let check f =
   end
 
 
-(* make sure a file is sane *)
+(* sanitize a file *)
 let clean_file f =
   let () = check f in
   alpha_file f
 
+
+(* tests *)
 let _ =
   if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tclean" then
-  let open Parse in
   pp_file (clean_file (pa_file stdin))

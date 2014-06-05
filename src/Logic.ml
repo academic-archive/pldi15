@@ -211,7 +211,7 @@ let entails ps l1 c l2 =
   | [a] -> imp ps a
   | _ -> failwith "Logic.ml: bug in entails"
 
-let is_const ps = function
+let value ps = function
   | VNum n -> Some n
   | VId v ->
     let ubs, lbs = List.fold_left
