@@ -341,7 +341,7 @@ let analyze lctx cost (fdefs, p) =
     | PTick (n, _) -> addconst qseq (CTick n)
     | PAssert _ -> addconst qseq CAssert
     | PBreak _ -> addconst (Q.merge [qbrk]) CBreak
-    | PReturn (v, _) -> Q.lift (Q.merge [qret v]) qseq
+    | PReturn (v, _) -> Q.merge [qret qseq v]
 
     | PCall (ret, fname, args, _) ->
       begin match
@@ -355,8 +355,8 @@ let analyze lctx cost (fdefs, p) =
         let qcall = Q.addv Q.empty (VSet.union [fargs; Q.vars qseq]) in
         let qret =
           match ret with
-          | Some x -> fun v -> Q.subst qseq [x] [v]
-          | None -> fun _ -> qseq in
+          | Some x -> fun q v -> Q.subst (Q.lift qseq q) [x] [v]
+          | None -> fun q _ -> Q.lift qseq q in
         let qfun = Q.addv qseq (VSet.union [fargs; flocs]) in
         let qcall' = gen_
           ((fname, (qcall, qseq)) :: qfuncs)
@@ -478,7 +478,7 @@ let analyze lctx cost (fdefs, p) =
 
   let q = Q.addv Q.empty
     (VSet.add (VNum 0) (file_globals (fdefs, p))) in
-  let qpre = gen_ [] (fun _ -> q) Q.empty q p in
+  let qpre = gen_ [] (fun _ _ -> q) Q.empty q p in
   Q.solve qpre q
 
 
@@ -496,5 +496,5 @@ let _ =
 
 let _ =
   if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tq" then
-  let f = Parse.pa_file stdin in
+  let f = Tools.clean_file (Parse.pa_file stdin) in
   analyze (create_logctx f) Eval.atomic_metric f
