@@ -277,7 +277,7 @@ end = struct
     { c with cmap = M.add idx (newv ()) c.cmap }
 
   let lift q q' =
-    assert (VSet.subset (vars q) (vars q'));
+    (* assert (VSet.subset (vars q) (vars q')); *)
     addv q (VSet.diff (vars q') (vars q))
 
   let subst {cvars; cmap} xl vl =
@@ -294,8 +294,7 @@ end = struct
         | Some i' ->
           if i' = i then m else
           let v' = newv () in
-          let vi' = M.find i' m in
-          mkrow v' [(vi', 1); (M.find i m, 1)] 0;
+          mkrow v' [(M.find i' m, 1); (M.find i m, 1)] 0;
           M.add i (newv ()) (M.add i' v' m)
         | None -> M.add i (newv ()) m)
       cmap cvars in
@@ -340,34 +339,35 @@ let analyze lctx cost (fdefs, p) =
 
     | PTick (n, _) -> addconst qseq (CTick n)
     | PAssert _ -> addconst qseq CAssert
-    | PBreak _ -> addconst (Q.merge [qbrk]) CBreak
-    | PReturn (v, _) -> Q.merge [qret qseq v]
+    | PBreak _ -> addconst qbrk CBreak
+    | PReturn (v, _) ->
+      let q = Q.lift qret qseq in
+      Q.delv (Q.subst q ["%ret"] [v])
+        ~zero:false (VSet.singleton (VId "%ret"))
 
     | PCall (ret, fname, args, _) ->
+      let f = List.find (fun x -> x.fname = fname) fdefs in
+      let fargs = VSet.of_list (List.map (fun x -> VId x) f.fargs) in
+      let flocs = VSet.of_list (List.map (fun x -> VId x) f.flocs) in
       begin match
         try Some (List.assoc fname qfuncs)
         with Not_found -> None
       with
       | None ->
-        let f = List.find (fun x -> x.fname = fname) fdefs in
-        let fargs = VSet.of_list (List.map (fun x -> VId x) f.fargs) in
-        let flocs = VSet.of_list (List.map (fun x -> VId x) f.flocs) in
-        let qcall = Q.addv Q.empty (VSet.union [fargs; Q.vars qseq]) in
-        let qret =
+        let qret = Q.addv qseq (VSet.singleton (VId "%ret")) in
+        let qret' =
           match ret with
-          | Some x -> fun q v -> Q.subst (Q.lift qseq q) [x] [v]
-          | None -> fun q _ -> Q.lift qseq q in
-        let qfun = Q.addv qseq (VSet.union [fargs; flocs]) in
-        let qcall' = gen_
-          ((fname, (qcall, qseq)) :: qfuncs)
-          qret Q.empty qfun f.fbody in
-        let qcall' = Q.delv qcall' flocs in
-        Q.eqc qcall' qcall;
+          | Some x -> Q.subst qret [x] [VId "%ret"]
+          | None -> qret in
+        let qfun = Q.delv qret' ~zero:false (VSet.singleton (VId "%ret")) in
+        let qfun = Q.addv qfun (VSet.union [fargs; flocs]) in
+        let qbdy = gen_
+          ((fname, (Q.empty, Q.empty)) :: qfuncs)
+          qret' Q.empty qfun f.fbody in
+        let qcall = Q.delv qbdy flocs in
         let q = Q.subst qcall f.fargs args in
         Q.delv q ~zero:false fargs
-      | Some (qcall, qretn) ->
-        (* *)
-        failwith "call2"
+      | Some (qcall, qret) -> failwith "call2"
       end
 
     | PInc (x, op, y, pid) ->
@@ -478,7 +478,8 @@ let analyze lctx cost (fdefs, p) =
 
   let q = Q.addv Q.empty
     (VSet.add (VNum 0) (file_globals (fdefs, p))) in
-  let qpre = gen_ [] (fun _ _ -> q) Q.empty q p in
+  let qret = Q.addv q (VSet.singleton (VId "%ret")) in
+  let qpre = gen_ [] qret Q.empty q p in
   Q.solve qpre q
 
 
