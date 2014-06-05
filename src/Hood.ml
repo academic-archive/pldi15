@@ -385,8 +385,7 @@ let analyze lctx cost (fdefs, p) =
         let qret = Q.addv qret vdiff in
         Q.eqc qseq qret;
         let _ = Q.delv qret vdiff in
-        let q = Q.subst qcall f.fargs args in
-        Q.lift q qseq
+        Q.subst (Q.lift qcall qseq) f.fargs args
       end
 
     | PInc (x, op, y, pid) ->
