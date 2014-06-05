@@ -77,7 +77,7 @@ end = struct
   type t = Const | Dst of var * var
   let compare = compare
   let const = Const
-  let dst (u, v) = Dst (u, v)
+  let dst (u, v) = assert (u <> v); Dst (u, v)
   let map f = function
     | Const -> Some Const
     | Dst (a, b) ->
@@ -281,23 +281,29 @@ end = struct
     addv q (VSet.diff (vars q') (vars q))
 
   let subst {cvars; cmap} xl vl =
-    let h = Hashtbl.create 11 in
-    let () = List.iter2
-      (fun x v -> Hashtbl.add h x v) xl vl in
-    let f = function
+    let rename =
+      let h = Hashtbl.create 11 in
+      List.iter2 (Hashtbl.add h) xl vl;
+      function
       | VId id as v ->
         (try Hashtbl.find h id with Not_found -> v)
       | VNum _ as v -> v in
-    let cmap = Idx.fold
-      (fun m i ->
-        match Idx.map f i with
-        | Some i' ->
-          if i' = i then m else
-          let v' = newv () in
-          mkrow v' [(M.find i' m, 1); (M.find i m, 1)] 0;
-          M.add i (newv ()) (M.add i' v' m)
-        | None -> M.add i (newv ()) m)
-      cmap cvars in
+    let h = Hashtbl.create 257 in
+    let fresh = ref [] in
+    Idx.fold (fun () i ->
+      match Idx.map rename i with
+      | Some i' -> Hashtbl.add h i' i
+      | None -> ()
+    ) () cvars;
+    let cmap = Idx.fold (fun m i ->
+        match Hashtbl.find_all h i with
+        | [] -> M.add i (newv ()) m
+        | [i'] -> M.add i (M.find i' cmap) m
+        | payfor ->
+          let v = newv () in
+          mkrow v (List.map (fun i -> (M.find i cmap,1)) payfor) 0;
+          M.add i v m
+      ) M.empty cvars in
     {cvars; cmap}
 
   let solve cini cfin =
@@ -354,6 +360,7 @@ let analyze lctx cost (fdefs, p) =
         with Not_found -> None
       with
       | None ->
+        let qcall = Q.addv Q.empty (VSet.union [fargs; Q.vars qseq]) in
         let qret = Q.addv qseq (VSet.singleton (VId "%ret")) in
         let qret' =
           match ret with
@@ -362,12 +369,24 @@ let analyze lctx cost (fdefs, p) =
         let qfun = Q.delv qret' ~zero:false (VSet.singleton (VId "%ret")) in
         let qfun = Q.addv qfun (VSet.union [fargs; flocs]) in
         let qbdy = gen_
-          ((fname, (Q.empty, Q.empty)) :: qfuncs)
+          ((fname, (qcall, qret)) :: qfuncs)
           qret' Q.empty qfun f.fbody in
-        let qcall = Q.delv qbdy flocs in
+        let qcall' = Q.delv qbdy flocs in
+        Q.eqc qcall qcall';
         let q = Q.subst qcall f.fargs args in
         Q.delv q ~zero:false fargs
-      | Some (qcall, qret) -> failwith "call2"
+      | Some (qcall, qret) ->
+        let qret =
+          match ret with
+          | Some x -> Q.subst qret [x] [VId "%ret"]
+          | None -> qret in
+        let qret = Q.delv qret ~zero:false (VSet.singleton (VId "%ret")) in
+        let vdiff = VSet.diff (Q.vars qseq) (Q.vars qret) in
+        let qret = Q.addv qret vdiff in
+        Q.eqc qseq qret;
+        let _ = Q.delv qret vdiff in
+        let q = Q.subst qcall f.fargs args in
+        Q.lift q qseq
       end
 
     | PInc (x, op, y, pid) ->
