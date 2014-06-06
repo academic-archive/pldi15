@@ -5,9 +5,9 @@ func add (x,y) local (a,b)
   if a > 0 (
     a = a-1;
     b = b+1;
-    add(a,b)
-  ) else
-    return b
+    b = add(a,b)
+  );
+  return b
 )
 
 x = add(y,z);

@@ -1,0 +1,41 @@
+func iter(y) local (t)
+  (
+{ T }
+    t = y;
+{ -t + y ≤ 0 /\ t - y ≤ 0 }
+    while t > 0
+{ -t + 1 ≤ 0 /\ t - y ≤ 0 }
+      t = t - 1;
+    return t
+{ 1 ≤ 0 }
+  )
+func amort(x) local (y)
+  (
+{ T }
+    y = 0;
+{ -y ≤ 0 /\ y ≤ 0 }
+    while x > 0
+      (
+{ -x + 1 ≤ 0 }
+        x = x - 1;
+{ -x ≤ 0 }
+        y = y + 1;
+        if *
+          (
+{ -x ≤ 0 }
+            y = iter(y);
+            y = iter(y)
+{ T }
+          )
+{ T }
+      );
+    return y
+{ 1 ≤ 0 }
+  )
+
+{ T }
+y = amort(x);
+while y > 0
+{ -y + 1 ≤ 0 }
+  y = y - 1
+{ y ≤ 0 }

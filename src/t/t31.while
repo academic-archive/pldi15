@@ -5,7 +5,7 @@ func id (x) local (y) (
 )
 
 func const (x) local (y) (
-  y = 8128;
+  y = -8128;
   return y
 )
 

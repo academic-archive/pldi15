@@ -1,0 +1,5 @@
+x = add(y, z);
+x = add(x, 100);
+x = add(x, x);
+while x > 0
+  x = x - 1

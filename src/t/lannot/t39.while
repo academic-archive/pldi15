@@ -1,0 +1,29 @@
+func count_down(x, y) local (a)
+  (
+{ T }
+    a = x;
+    if a > y
+      (
+{ -a + y + 1 ≤ 0 /\ -a + x ≤ 0 /\ a - x ≤ 0 }
+        a = a - 1;
+        count_up(a, y)
+{ T }
+      )
+{ T }
+  )
+func count_up(x, y) local (a)
+  (
+{ T }
+    a = y;
+    if a + 1 < x
+      (
+{ a - x + 2 ≤ 0 /\ -a + y ≤ 0 /\ a - y ≤ 0 }
+        a = a + 2;
+        count_down(x, a)
+{ T }
+      )
+{ T }
+  )
+
+count_down(y, z)
+{ T }

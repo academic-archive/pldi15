@@ -1,0 +1,5 @@
+while x < 0
+  x = x + 1;
+swap();
+while x > 0
+  x = x - 1
