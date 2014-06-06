@@ -1,0 +1,17 @@
+
+func add (x,y) local (a,b)
+( a = x;
+  b = y;
+  if a > 0 (
+    a = a-1;
+    b = b+1;
+    add(a,b)
+  ) else
+    return b
+)
+
+x = add(y,z);
+
+while x > 0
+  x = x-1
+
