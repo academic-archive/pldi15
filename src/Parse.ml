@@ -511,7 +511,7 @@ let pp_file_hooks pre post (fl, prog) =
   let pf {fname; fargs; flocs; fbody} =
     printf "func %s(%a)" fname (pp_list output_string) fargs;
     if flocs <> [] then
-      printf " locals (%a)\n" (pp_list output_string) flocs
+      printf " local (%a)\n" (pp_list output_string) flocs
     else
       printf "\n";
     g delta true fbody;
