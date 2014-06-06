@@ -1,0 +1,3 @@
+x = count_down(y, z);
+while x > t
+  x = x - 1

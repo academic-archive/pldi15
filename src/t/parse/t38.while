@@ -1,0 +1,4 @@
+y = copy(x, x);
+count_down(y, z);
+a = copy(b, b);
+count_down(c, b)

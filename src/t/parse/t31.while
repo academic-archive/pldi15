@@ -1,0 +1,9 @@
+x = id(x);
+x = id(x);
+x = abs(x);
+while x > 0
+  x = x - 1;
+x = const(x);
+x = abs(x);
+while x > 0
+  x = x - 1

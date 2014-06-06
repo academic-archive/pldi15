@@ -1,0 +1,2 @@
+y = copy(x, y);
+count_down(y)
