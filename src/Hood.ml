@@ -289,7 +289,6 @@ end = struct
         (try Hashtbl.find h id with Not_found -> v)
       | VNum _ as v -> v in
     let h = Hashtbl.create 257 in
-    let fresh = ref [] in
     Idx.fold (fun () i ->
       match Idx.map rename i with
       | Some i' -> Hashtbl.add h i' i
@@ -355,37 +354,37 @@ let analyze lctx cost (fdefs, p) =
       let f = List.find (fun x -> x.fname = fname) fdefs in
       let fargs = VSet.of_list (List.map (fun x -> VId x) f.fargs) in
       let flocs = VSet.of_list (List.map (fun x -> VId x) f.flocs) in
+
+      let qret = Q.addv qseq (VSet.singleton (VId "%ret")) in
+      let qret =
+        match ret with
+        | Some x -> Q.subst qret [x] [VId "%ret"]
+        | None -> qret in
+
       begin match
         try Some (List.assoc fname qfuncs)
         with Not_found -> None
       with
-      | None ->
+
+      | None -> (* unfold case *)
         let qcall = Q.addv Q.empty (VSet.union [fargs; Q.vars qseq]) in
-        let qret = Q.addv qseq (VSet.singleton (VId "%ret")) in
-        let qret' =
-          match ret with
-          | Some x -> Q.subst qret [x] [VId "%ret"]
-          | None -> qret in
-        let qfun = Q.delv qret' ~zero:false (VSet.singleton (VId "%ret")) in
+        let qfun = Q.delv qret ~zero:false (VSet.singleton (VId "%ret")) in
         let qfun = Q.addv qfun (VSet.union [fargs; flocs]) in
         let qbdy = gen_
           ((fname, (qcall, qret)) :: qfuncs)
-          qret' Q.empty qfun f.fbody in
+          qret Q.empty qfun f.fbody in
         let qcall' = Q.delv qbdy flocs in
         Q.eqc qcall qcall';
         let q = Q.subst qcall f.fargs args in
         Q.delv q ~zero:false fargs
-      | Some (qcall, qret) ->
-        let qret =
-          match ret with
-          | Some x -> Q.subst qret [x] [VId "%ret"]
-          | None -> qret in
-        let qret = Q.delv qret ~zero:false (VSet.singleton (VId "%ret")) in
-        let vdiff = VSet.diff (Q.vars qseq) (Q.vars qret) in
-        let qret = Q.addv qret vdiff in
-        Q.eqc qseq qret;
-        let _ = Q.delv qret vdiff in
-        Q.subst (Q.lift qcall qseq) f.fargs args
+
+      | Some (qcallf, qretf) -> (* recursive case *)
+        let vdiff = VSet.diff (Q.vars qseq) (Q.vars qretf) in
+        let qretf = Q.addv qretf vdiff in
+        let _ = Q.delv qretf vdiff in
+        Q.eqc qret qretf;
+        Q.subst (Q.lift qcallf qseq) f.fargs args
+
       end
 
     | PInc (x, op, y, pid) ->
