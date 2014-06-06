@@ -35,15 +35,14 @@ let func_globals {fbody; flocs; fargs} =
     (VSet.of_list (List.map (fun i -> VId i) (flocs @ fargs)))
 
 let file_globals (fdefs, p) =
-  let s = prog_vars p in
   List.fold_left
     (fun s f -> VSet.union [s; func_globals f])
-    s fdefs
+    (prog_vars p) fdefs
 
 
 (* alpha conversion, give each variable a unique name *)
 let alpha_prog =
-  let assoc e x = List.assoc x e in
+  let assoc e x = try List.assoc x e with Not_found -> x in
   let trvar e = function
     | VId x -> VId (assoc e x)
     | VNum _ as v -> v in
@@ -79,16 +78,17 @@ let alpha_prog =
       PSeq (trprog e p1, trprog e p2, id)
   in trprog
 
-let alpha_func e f =
+let alpha_func olde f =
   let g (l, e) v =
-    if not (List.mem_assoc v e)
-    then (v::l, (v,v)::e) else
-    let v' = List.assoc v e ^ "'" in
-    (v'::l, (v,v')::e) in
-  let fargs, e = List.fold_left g ([], e) f.fargs in
+    try
+      let v' = List.assoc v (e @ olde) ^ "'" in
+      (v'::l, (v,v')::e)
+    with Not_found -> (v::l, (v,v)::e) in
+  let fargs, e = List.fold_left g ([], []) f.fargs in
   let flocs, e = List.fold_left g ([], e) f.flocs in
   let flocs, fargs = List.rev flocs, List.rev fargs in
-  ({f with fbody = alpha_prog e f.fbody; flocs; fargs}, e)
+  let fbody = alpha_prog e f.fbody in
+  ({f with fbody; flocs; fargs}, e @ olde)
 
 let alpha_file ((fdefs, p) as f) =
   let gvars = VSet.fold (fun v g ->
