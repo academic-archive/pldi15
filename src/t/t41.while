@@ -1,0 +1,16 @@
+
+func mult_rec (x,y) local (a)
+( assert y > -1;
+  a = x;
+  if a > 1 (
+    a = a-1;
+    if a > y (
+      a = a - y;
+      mult_rec(y,y);
+      mult_rec(a,y)
+    )
+  )
+)
+
+mult_rec (x,y)
+
