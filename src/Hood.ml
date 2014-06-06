@@ -137,7 +137,8 @@ module Q(C: sig val state: Clp.t end): sig
   val free: ctx -> Idx.t -> ctx
   val lift: ctx -> ctx -> ctx
   val subst: ctx -> id list -> var list -> ctx
-  val solve: ctx -> ctx -> unit
+  val frame: ctx -> ctx -> ctx * ctx
+  val solve: ctx * ctx -> unit
 end = struct
   module M = Map.Make(Idx)
   type ctx = { cvars: VSet.t; cmap: int M.t }
@@ -305,13 +306,21 @@ end = struct
       ) M.empty cvars in
     {cvars; cmap}
 
-  let solve cini cfin =
+  let frame c1 c2 =
+    let vx = newv ~neg:true () in
+    let v1 = newv () and v2 = newv () in
+    mkrow v1 [(M.find Idx.const c1.cmap, 1); (vx, 1)] 0;
+    mkrow v2 [(M.find Idx.const c2.cmap, 1); (vx, 1)] 0;
+    ( {c1 with cmap = M.add Idx.const v1 c1.cmap}
+    , {c2 with cmap = M.add Idx.const v2 c2.cmap }
+    )
+
+  let solve (cini, cfin) =
     let obj = Clp.objective_coefficients C.state in
     Idx.fold begin fun () i ->
       let o = float_of_int (Idx.obj i) in
       obj.(M.find i cini.cmap) <- o
     end () cini.cvars;
-    obj.(M.find Idx.const cfin.cmap) <- -1.;
     Clp.change_objective_coefficients C.state obj;
     flush stdout;
     Clp.set_log_level C.state 0; (* use 0 to turn CLP output off *)
@@ -320,9 +329,6 @@ end = struct
     match Clp.status C.state with
     | 0 ->
       let sol = Clp.primal_column_solution C.state in
-      let () =
-        let i = M.find Idx.const cini.cmap in
-        sol.(i) <- sol.(i) -. sol.(M.find Idx.const cfin.cmap) in
       let p c = sep ();
         Idx.fold (fun () i -> Idx.printk sol.(M.find i c.cmap) i)
           () (vars c) in
@@ -379,6 +385,7 @@ let analyze lctx cost (fdefs, p) =
         Q.delv q ~zero:false fargs
 
       | Some (qcallf, qretf) -> (* recursive case *)
+        let qcallf, qretf = Q.frame qcallf qretf in
         let vdiff = VSet.diff (Q.vars qseq) (Q.vars qretf) in
         let qretf = Q.addv qretf vdiff in
         let _ = Q.delv qretf vdiff in
@@ -440,27 +447,6 @@ let analyze lctx cost (fdefs, p) =
       (* relax constant differences *)
       Q.relax (UidMap.find pid lctx).lpre q
 
-      (*
-      let vars = VSet.remove (VId x) (Q.vars qseq) in
-      let q = qseq in
-      if v = VId x then addconst q CSet else
-      (* split potential of [v, u] and [u, v] for all u *)
-      let q = VSet.fold begin fun u q ->
-          let q =
-            if u = v then q else
-            let q = Q.set q (dst (v, u))
-              [(dst (VId x, u), 1); (dst (v, u), 1)] 0 in
-            let q = Q.set q (dst (u, v))
-              [(dst (u, VId x), 1); (dst (u, v), 1)] 0 in
-            q in
-          Q.free (Q.free q (dst (u, VId x))) (dst (VId x, u))
-        end vars q in
-      (* pay for the assignment *)
-      let q = addconst q CSet in
-      (* relax constant differences *)
-      Q.relax (UidMap.find pid lctx).lpre q
-      *)
-
     | PSet (x, None, _) ->
       let vars = VSet.remove (VId x) (Q.vars qseq) in
       let q = VSet.fold begin fun u q ->
@@ -497,7 +483,7 @@ let analyze lctx cost (fdefs, p) =
     (VSet.add (VNum 0) (file_globals (fdefs, p))) in
   let qret = Q.addv q (VSet.singleton (VId "%ret")) in
   let qpre = gen_ [] qret Q.empty q p in
-  Q.solve qpre q
+  Q.solve (Q.frame qpre q)
 
 
 let _ =
