@@ -107,9 +107,9 @@ an active research area and recent years have seen many innovations.
 Notable tools that have been developed include Speed [XXX], KoAT
 [XXX], Pubs [XXX], RANK [XXX], and LOOPUS [XXX].
 %
-While the these tools can derive impressive results for
-realistic software, there still exist several shortcomings that seem
-to hamper the application of the existing techniques in practice.
+While the these tools can derive impressive results for realistic
+software, there still exist shortcomings that hamper the application
+of the existing techniques in practice.
 \begin{enumerate}
 \item Analysis tools are black boxes that either deliver a result or fail
   without enabling \emph{user interaction} to manually or
@@ -125,10 +125,12 @@ to hamper the application of the existing techniques in practice.
   correctness of the derived bound.
 \end{enumerate}
 %
-While there has been progress there is still truth in the following
-quote of Don Knuth from a recent interview [xxx].
-
-\begin{quotation}
+While there has been lot of progress in static quantitative analysis,
+Don Knuth correctly points out in a recent interview [XXX] that the
+state-of-the-art in formal quantitative methods still falls short
+in comparison with semantic techniques [xxx].
+%
+\begin{quote}
   % Consider, for example, a computer program that sorts a list of
   % numbers into order. 
   Thanks to the work of Floyd, Hoare, and others,
@@ -140,7 +142,11 @@ quote of Don Knuth from a recent interview [xxx].
   with me that the recurrence is "obviously" valid. Yet I have no
   formal tools by which I can prove that my recurrence is right. I
   don't really understand my reasoning processes at all!
-\end{quotation}
+  \vspace{-3ex}
+  \begin{flushright}
+    -- Donald Knuth, 2014
+  \end{flushright}
+\end{quote}
 %
 %
 In this paper, we present a novel cost analysis system for C programs
@@ -151,7 +157,7 @@ follows.
 %
 \begin{itemize}
 \item We define a operational cost semantics for C programs that
-  accounts a constant cost for each statement that is parametric in a
+  accounts a constant cost for each statement which is parametric in a
   cost metric.  The semantics models cost of terminating and
   non-terminating executions.  A specific \emph{tick} function can be
   inserted in the source code to further customize the cost
@@ -186,17 +192,17 @@ automatic analysis.  Both the automatic amortized analysis and the
 quantitative logic are naturally compositional and describe the
 resource behavior of code fragments without referring to the source
 code.  As a result, we naturally derive global bounds that are
-functions of the input parameters.  To the best of our knowledge, our
-system is the only one that can deal with resource like memory that
-may become available during the execution.
+functions of the input parameters of the program.  To the best of our
+knowledge, our system is the only one that can deal with resource like
+memory that may become available during the execution.
 
 The main innovation that makes this work practical is our new
-automatic amortized analysis for C code.  It targets programs that
-seem to be common in system software, that is, programs whose resource
+automatic amortized analysis for C code.  It targets programs that are
+common in system software, that is, programs whose resource
 consumption can be described as a function of sizes $|[x,y]|$ of
 intervals of integer variables.  A typical bound would be $B(x,y,z) =
 10{\cdot}|[x,y]| + 1{\cdot}|[z,0]|$ and we have for example
-$B(100,200,43) = 1043$.  
+$B(100,200,43) = 1043$.
 %
 Despite the apparent simplicity of the new analysis system, it is able
 to reproduce multiple results from the literature which were obtained
@@ -209,19 +215,39 @@ to obtain global invariants.  We achieve this by generating a linear
 constraint system that reflects resource cost and size changes of
 integer variables in the program.  A solution of the linear program is
 a resource usage bound for the C program.  We can naturally, handle
-advanced control flow such as break, return, mutually-recursive functions.
+advanced control flow such as break, return, iteration over negative
+counter variables, and mutually-recursive functions.
 
-Following the development steps for automatic amortized analysis for
+Following the development steps of automatic amortized analysis for
 functional programs [XXX], we deliberately restrict our self to linear
 bounds in the automatic analysis (there a no restrictions for the
-manually-derived though).  More specifically, bounds have the form
-$\sum_{a,b} q_{(a,b)} |[a,b]|$ where $a$ and $b$ are integer variables
-or constants.  The reason is mainly clarity of presentation, since
-an extension to multivariate resource polynomials [XXX] would make the
-inference rules considerably more complected and should better be
-described separately.  However, we developed the linear inference
-system so that the extension to polynomial bounds should work
-smoothly.
+manually-derived bounds in the logic).  More specifically, bounds have
+the form $\sum_{a,b} q_{(a,b)} |[a,b]|$ where $a$ and $b$ are integer
+variables or constants.  The reason is mainly clarity of presentation,
+since an extension to multivariate resource polynomials [XXX] would
+make the inference rules considerably more complected and should
+better be described separately.  However, we developed the linear
+inference system so that the extension to polynomial bounds shall
+work smoothly.  
+
+We implemented our analysis for CompCert Clight, a subset of C in
+which loops can only be exited with a \code{break} statement and
+expressions are free of side effects.  C programs can for instance be
+compiled to Clight programs using the verified CompCert C compiler.
+
+Our new quantitative Hoare logic for CompCert Clight is a
+generalization of a program logic that we recently developed to
+formally very stack-space bounds in Coq [PLDI].  In a nutshell, we
+replace the boolean predicates (pre and post conditions) of Hoare
+logic with numeric predicates that map a program state to a
+non-negative number or infinity.  The intuitive meaning of a
+quantitative Hoare triple $\htriple{P}{C}{Q}$ that $C$ consumes $P(S)$
+resources when executed in starting state $S$, and that $Q(S')$
+resources are left if $C$ terminates in state $S'$.  Infinity
+corresponds to \emph{false} in classic Hoare logic.  Our quantitative
+logic is proved sound with respect to a cost semantic for Clight that
+accounts a constant cost for each evaluation step.  This constant cost
+is parametric in a resource metric that can be defined by the user.
 
 We have evaluated the quantitative logic and the automatic analysis
 with system code and examples from the literature. XXX
@@ -244,11 +270,12 @@ evaluation and \pref{sec:related} describes related research.
 \label{sec:inform}
 
 \subsection{Amortized Analysis}
-The idea that drives the design of our system is amortized
-analysis [XXX].  Say that a program $p$ evaluates on a heap $H$
-by consuming $n$ resource units, we note that $(p, H) \Downarrow_n$.
-The basic idea of amortized analysis is to define a potential function
-$\Phi$ from heaps to natural numbers, such that $\Phi(H) \ge n$.
+The idea that drives the design of our system is amortized analysis
+[XXX].  Say that a program $p$ evaluates on a program state $H$ by
+consuming $n$ resource units, we note that $(p, H) \Downarrow_n$.  The
+basic idea of amortized analysis is to define a potential function
+$\Phi$ that maps program states to non-negative numbers, such that
+$\Phi(H) \ge n$.
 
 Since imperative programs can be composed we must enrich
 the judgement $(\_, \_) \Downarrow_{\_}$ to talk about the heap
@@ -1298,9 +1325,236 @@ http://www.informit.com/articles/article.aspx?p=2213858
 \end{itemize}
 
 
+% \acks
+
+% This research is based on work supported in part by NSF grants 1319671
+% and 1065451, and DARPA grants FA8750-10-2-0254 and FA8750-12-2-0293.
+% Any opinions, findings, and conclusions contained in this document are
+% those of the authors and do not reflect the views of these agencies.
+
+\appendix
+
+\section{Catalog of Automatically Analyzed Programs}
+
+In this appendix we provide a non-exhaustive catalog of classes of
+programs that can be automatically analyzed by our system.  For
+simplicity, we use cost metric that counts cost $1$ for comparisons
+and assignments and cost $0$ for all other operations.  Of course, the
+examples can also be analyzed with any other cost metric.
+
+We assume that the variables in the code snippets are the inputs to
+the program. Some of the examples contain constants on which the
+computed bound depends.  These constants are randomly chosen to
+present an example but the analysis works for other constants as well.
+Note however that it is sometimes crucial that constants are positive
+(or negative) and that the same constant at different places.
+
+\begin{figure*}[t!]
+\newlength{\progwidth}
+\setlength{\progwidth}{.19\linewidth}
+  \centering
+
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+  while (x>0) {
+    x=x-1;
+    y=y+2;
+  }
+  while (y>0) {
+    y=y-1;
+  }
+  while (y>0) {
+    y=y+1;
+  }
+   \end{lstlisting}
+
+$4|[0,x]| + [|0,y|]$
+\\[.7\baselineskip]
+      {\bf t07}
+    \end{center}
+  \end{minipage}%
+%
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+  while (z-y>0) {
+    y = y+1;
+  }
+  while (y>9) {
+    y=y-10;
+  }
+   \end{lstlisting}
+
+$1.1|[y,z]| + 0.1[|0,y|]$
+\\[.7\baselineskip] 
+      {\bf t08}
+    \end{center}
+  \end{minipage}
+%
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+  while (x-y>0) {
+    if (*)
+      y=y+1;
+    else
+      x=x-1;
+  }
+   \end{lstlisting}
+
+$|[y,x]|$
+\\[.7\baselineskip]
+      {\bf t10}
+    \end{center}
+  \end{minipage}
+%
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+  while (x>0) {
+    x=x-1;
+    if (*) 
+      y=y+1;
+    else {
+      while (y>0)
+	y=y-1;
+    }
+  }
+   \end{lstlisting}
+
+$3|[0,x]| + |[0,y]|$
+\\[.7\baselineskip]
+      {\bf t13}
+    \end{center}
+  \end{minipage}
+%
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+while (n<0) {
+  n=n+1;
+  y=y+1000;
+  while (y>=100){
+    y=y-100;
+  }
+}
+   \end{lstlisting}
+
+$12|[n,0]| + 0.1|[0,y]|$
+\\[.7\baselineskip]
+      {\bf t27}
+    \end{center}
+  \end{minipage}
+%
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+  while (x>y) {
+    x=x-1;
+    x=x+1000;
+    y=y+1000;
+  }
+  while (y>0) {
+    y=y-1;
+  }
+  while (x<0) {
+    x=x+1;
+  }
+   \end{lstlisting}
+
+$1004|[y,x]|+|[x,0]|+|[0,y]|$
+\\[.7\baselineskip]
+      {\bf t28}
+    \end{center}
+  \end{minipage}
+
+
+   \caption{Amortization and Compositionality}
+  \label{fig:cat1}
+\end{figure*}
+
+\paragraph{Amortization and Compositionality}
+
+\pref{fig:cat1} shows code snippets that need amortization are
+compositionality to obtain a whole program bound.  
+
+Example \emph{t07} demonstrates two different features of the
+analysis.  For one thing it shows that we can precisely track size
+changes inside loops.  In the first loop, we increment $y$ by $2$ in
+each of the $|[0,x]|$ iterations.  For another thing it shows that we
+automatically recognize dead code if we find conflicting assertions on
+a branching path: After the second loop we know $y \leq 0$ and as a
+result can assign arbitrary potential inside the third loop where we
+know that $y>0$.  As a result, we obtain a tight bound.
+
+Example \emph{t08} shows the ability of the analysis to handle
+negative and non-negative numbers.  Note that there are no
+restrictions on the signs of $z$ and $y$.  We also see again that we
+accurately track the size change of $y$ in the first loop.
+Furthermore, \emph{t08} shows that we do not handle the constants $1$
+or $0$ in any special way.  In all examples you could replace $0$ and
+$1$ with other constants like we did in the second loop and still
+derive a tight bound.  The only information, that the analyzer needs
+is $y \geq c$ before assigning $y = y - c$.
+
+In example \emph{t10} we also do not restrict the inputs $x$ and $y$.
+They can be negative, positive, or zero.  The star {\tt *} in the
+conditional, stands for an arbitrary assertion.  In each branch of the
+conditional we can obtain a constant potential $1$ since the interval
+size $|[y,x]|$ is decreasing.
+
+Example \emph{t13} shows how amortization can be used to handle tricky
+nested loops.  The outer loop is iterated $[|0,x|]$ times.  In the
+conditional, we either (the branching condition is again arbitrary)
+increment the variable $y$ or we execute an inner loop in which $y$ is
+counted back to $0$.  Then analysis computes a tight linear bound for
+this program.  Again, the constants $0$ and $1$ in the inner loop can
+as well be replace by something more interesting, say $9$ and $10$
+like in example \emph{t08}.  Then we still obtain a tight linear
+bound.
+
+Example \emph{t27} is similar to example \emph{t13}.  Instead of
+decrements the variable $x$ in the outer loop we this time increment
+the variable $n$ till $n = 0$.  In each of the $|[n,0]|$ iterations,
+we increment the variable $y$ by $1000$.  We then execute an inner
+loop that increments $y$ by $100$ until $y=0$.  The analysis can
+derive that only the first execution of the inner loop depends on the
+initial value of $y$.  We again derive a tight bound.
+
+Example \emph{t28} is particularly interesting.  In the first loop we
+decrement the size $|[y,x]|$.  However, we also shift the interval
+$[y,x]$ to the interval $[y+1000,x+1000]$.  The analysis can derive
+that this does not change the size of the interval and computes the
+tight loop bound $3|[y,x]|$.  The additional to loops are in the
+program to show that the size tracking in the first loop works
+accurately.  The second loop is executed $|[0,y]| + 1000|[y,x]|$ times
+in the worst case.  The third loop is executed $|[x,0]| + |[y,x]|$ in
+the worst case (if $x$ and $y$ are negative).
+
+
+
+
+
+
+
+
 
 
 \bibliographystyle{abbrvnat}
 \bibliography{lit}
-\addcontentsline{toc}{section}{Bibliography}
+
+
+
+
 \end{document}
