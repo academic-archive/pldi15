@@ -1477,6 +1477,50 @@ $1004|[y,x]|+|[x,0]|+|[0,y]|$
 \\[.7\baselineskip]
       {\bf t28}
     \end{center}
+  \end{minipage}%
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+  assert (y>=0);
+  while (x-y>0) {
+    x=x-1;
+    x=x-y;
+    z=y;
+    while (z>0) {
+      z=z-1;
+    }
+  }
+   \end{lstlisting}
+
+$1+3|[0,x]|$
+\\[.7\baselineskip]
+      {\bf t15}
+    \end{center}
+  \end{minipage}
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+  assert (y>=0);
+  while (x-y>0) {
+    x=x-1;
+    x=x-y;
+    z=y;
+    z=z+y;
+    z=z+100;
+    while (z>0) {
+      z=z-1;
+    }
+  }
+   \end{lstlisting}
+
+$1+2|[0,x]|+103|[y,x]|$
+\\[.7\baselineskip]
+      {\bf t16}
+    \end{center}
   \end{minipage}
 
 
@@ -1542,7 +1586,18 @@ accurately.  The second loop is executed $|[0,y]| + 1000|[y,x]|$ times
 in the worst case.  The third loop is executed $|[x,0]| + |[y,x]|$ in
 the worst case (if $x$ and $y$ are negative).
 
-
+Sometimes we need some assumptions on the inputs in order to derive a
+bound.  Example \emph{t15} is such a case.  We assume here that the
+input variable $y$ is non-negative and write \code{assert(y>=0)}.  The
+semantic of \code{assert} is that it has no effect if the assertion is
+true and that the program is terminated without further cost
+otherwise.  The cost of an assert is $1$ resource unit in our cost
+metric.  If we enter the loop then we know that $x>0$ and we can
+obtain constant potential from the assignment $x=x-1$.  After the
+assignment we know that $x\geq y$ and $y\geq 0$.  As a consequence, we
+can share the potential $3[0,x]$ before the assignment $x=x-y$ between
+$3|[0,x]|$ and $3|0,y|$ after the assignment.  In this way, we derive
+a tight linear bound.
 
 
 
