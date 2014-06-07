@@ -1,0 +1,33 @@
+
+func f(x) local (t) (
+  t = x;
+  t = t+1;
+  t = t+1
+)
+
+while x > z (
+  x = x-1;
+  k = 0;
+  f(x)
+);
+
+while y>z (
+  if y-z>4 (
+    y=y-5;
+    t=y;
+    t=t-1;
+    f(t);
+    t=t-1;
+    f(t);
+    t=t-1;
+    f(t);
+    t=t-1;
+    f(t);
+    t=t-1;
+    f(t)
+  ) else (
+    y=y-1;
+    k=0;
+    f(y)
+  )
+)
