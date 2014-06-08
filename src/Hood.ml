@@ -112,13 +112,9 @@ end = struct
     match i with
     | Const ->
       Printf.printf "%.2f\n" k
-    | Dst (v, VNum 0) ->
-      Printf.printf "%.2f max(-%a, 0)\n" k pp_var v
-    | Dst (VNum 0, v) ->
-      Printf.printf "%.2f max(%a, 0)\n" k pp_var v
     | Dst (v1, v2) ->
-      Printf.printf "%.2f max(%a - %a, 0)\n" k
-        pp_var v2 pp_var v1
+      Printf.printf "%.2f |[%a, %a]|\n" k
+        pp_var v1 pp_var v2
 end
 
 (* quantitative contexts and their operations *)
