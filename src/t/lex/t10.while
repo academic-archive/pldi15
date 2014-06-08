@@ -5,9 +5,7 @@ IDNT "y"
 GT
 NUM 0
 IF
-IDNT "z"
-GT
-NUM 0
+STAR
 IDNT "y"
 EQ
 IDNT "y"
