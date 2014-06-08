@@ -1349,34 +1349,12 @@ present an example but the analysis works for other constants as well.
 Note however that it is sometimes crucial that constants are positive
 (or negative) and that the same constant at different places.
 
-\begin{figure*}[t!]
 \newlength{\progwidth}
-\setlength{\progwidth}{.19\linewidth}
+
+\begin{figure*}[t!]
+\setlength{\progwidth}{.24\linewidth}
   \centering
 
-  \begin{minipage}[b]{\progwidth}
-    \begin{center}
-   \begin{lstlisting}
-  while (x>0) {
-    x=x-1;
-    y=y+2;
-  }
-  while (y>0) {
-    y=y-1;
-  }
-  while (y>0) {
-    y=y+1;
-  }
-   \end{lstlisting}
-
-$4|[0,x]| + [|0,y|]$
-\\[.7\baselineskip]
-      {\bf t07}
-    \end{center}
-  \end{minipage}%
-%
-%
-%
   \begin{minipage}[b]{\progwidth}
     \begin{center}
    \begin{lstlisting}
@@ -1454,6 +1432,35 @@ $12|[n,0]| + 0.1|[0,y]|$
       {\bf t27}
     \end{center}
   \end{minipage}
+   \caption{Amortization and Compositionality (a)}
+  \label{fig:cat1a}
+\end{figure*}
+
+
+\begin{figure*}[t!]
+ \setlength{\progwidth}{.24\linewidth}
+  \centering
+
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+  while (x>0) {
+    x=x-1;
+    y=y+2;
+  }
+  while (y>0) {
+    y=y-1;
+  }
+  while (y>0) {
+    y=y+1;
+  }
+   \end{lstlisting}
+
+$4|[0,x]| + [|0,y|]$
+\\[.7\baselineskip]
+      {\bf t07}
+    \end{center}
+  \end{minipage}%
 %
 %
 %
@@ -1524,8 +1531,8 @@ $1+2|[0,x]|+103|[y,x]|$
   \end{minipage}
 
 
-   \caption{Amortization and Compositionality}
-  \label{fig:cat1}
+   \caption{Amortization and Compositionality (b)}
+  \label{fig:cat1b}
 \end{figure*}
 
 \paragraph{Amortization and Compositionality}
@@ -1599,7 +1606,21 @@ can share the potential $3[0,x]$ before the assignment $x=x-y$ between
 $3|[0,x]|$ and $3|0,y|$ after the assignment.  In this way, we derive
 a tight linear bound.
 
-
+Example \emph{t16} is an extension of example \emph{t15}. We again
+assume that $y$ is non-negative and use the same mechanism to iterate
+the outer loop as in \emph{t15}.  In the inner loop, we also count the
+variable $z$ down to zero and perform $|[0,z]|$ interations.  However,
+insead of assigning $z=y$, we assign $z=2y+100$.  The analysis
+computes the tight linear bound $1+2|[0,x]|+103|[y,x]|$.  The
+assignment of potential to the size interval $|[y,x]|$ in instead of
+$|[0,x]|$ is a random choice of the LP solver.  Other optimal
+solutions of the linear program that the analyzer gernerates for
+\emph{t15} would result in bounds such as $1+105|[0,x]|$ or
+$1+6|[0,x]|+99|[y,x]|$.  In fact, the $105$ potential units can be
+shared arbitrarily between the interval sizes $|[y,x]|$ and $|[0,x]|$
+as long as more than $1$ unit is assigned to $|[0,x]|$.  Since we know
+that $y\geq 0$ the choice of the LP solver is optimal but this seems
+to be a coincidence.
 
 
 
