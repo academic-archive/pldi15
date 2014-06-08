@@ -8,6 +8,18 @@ IDNT "i"
 MINUS
 NUM 1
 SEMI
+IDNT "i"
+EQ
+IDNT "i"
+PLUS
+IDNT "k"
+SEMI
+IDNT "i"
+EQ
+IDNT "i"
+PLUS
+NUM 50
+SEMI
 WHILE
 IDNT "i"
 GE

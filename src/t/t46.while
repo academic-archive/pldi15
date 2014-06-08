@@ -1,0 +1,4 @@
+func produce() while x>0 ((-1); x=x-1; y=y+1)
+func consume() while y>0 (y=y-1; x=x+1; (1))
+
+consume(); produce(); consume()           
