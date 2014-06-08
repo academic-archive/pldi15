@@ -307,8 +307,7 @@ end = struct
     {cvars; cmap}
 
   let frame c1 c2 =
-    let vx = newv ~neg:true () in
-    let v1 = newv () and v2 = newv () in
+    let vx = newv () and v1 = newv () and v2 = newv () in
     mkrow v1 [(M.find Idx.const c1.cmap, 1); (vx, 1)] 0;
     mkrow v2 [(M.find Idx.const c2.cmap, 1); (vx, 1)] 0;
     ( {c1 with cmap = M.add Idx.const v1 c1.cmap}
