@@ -137,7 +137,7 @@ module Q(C: sig val state: Clp.t end): sig
   val free: ctx -> Idx.t -> ctx
   val lift: ctx -> ctx -> ctx
   val subst: ctx -> id list -> var list -> ctx
-  val frame: ctx -> ctx -> ctx * ctx
+  val frame: bool -> ctx -> ctx -> ctx * ctx
   val solve: ctx * ctx -> unit
 end = struct
   module M = Map.Make(Idx)
@@ -306,8 +306,8 @@ end = struct
       ) M.empty cvars in
     {cvars; cmap}
 
-  let frame c1 c2 =
-    let vx = newv () and v1 = newv () and v2 = newv () in
+  let frame neg c1 c2 =
+    let vx = newv ~neg () and v1 = newv () and v2 = newv () in
     mkrow v1 [(M.find Idx.const c1.cmap, 1); (vx, 1)] 0;
     mkrow v2 [(M.find Idx.const c2.cmap, 1); (vx, 1)] 0;
     ( {c1 with cmap = M.add Idx.const v1 c1.cmap}
@@ -337,7 +337,7 @@ end = struct
 end
 
 
-let analyze lctx cost (fdefs, p) =
+let analyze forcost lctx cost (fdefs, p) =
   (* generate and resolve constraints *)
   let module Q = Q(struct let state = Clp.create () end) in
   let open Idx in
@@ -384,7 +384,7 @@ let analyze lctx cost (fdefs, p) =
         Q.delv q ~zero:false fargs
 
       | Some (qcallf, qretf) -> (* recursive case *)
-        let qcallf, qretf = Q.frame qcallf qretf in
+        let qcallf, qretf = Q.frame forcost qcallf qretf in
         let vdiff = VSet.diff (Q.vars qseq) (Q.vars qretf) in
         let qretf = Q.addv qretf vdiff in
         let _ = Q.delv qretf vdiff in
@@ -482,7 +482,7 @@ let analyze lctx cost (fdefs, p) =
     (VSet.add (VNum 0) (file_globals (fdefs, p))) in
   let qret = Q.addv q (VSet.singleton (VId "%ret")) in
   let qpre = gen_ [] qret Q.empty q p in
-  Q.solve (Q.frame qpre q)
+  Q.solve (Q.frame forcost qpre q)
 
 
 let _ =
@@ -500,4 +500,4 @@ let _ =
 let _ =
   if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tq" then
   let f = Tools.clean_file (Parse.pa_file stdin) in
-  analyze (create_logctx f) Eval.atomic_metric f
+  analyze true (create_logctx f) Eval.atomic_metric f
