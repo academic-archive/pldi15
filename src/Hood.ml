@@ -337,7 +337,7 @@ end = struct
 end
 
 
-let analyze forcost lctx cost (fdefs, p) =
+let analyze negfrm lctx cost (fdefs, p) =
   (* generate and resolve constraints *)
   let module Q = Q(struct let state = Clp.create () end) in
   let open Idx in
@@ -384,7 +384,7 @@ let analyze forcost lctx cost (fdefs, p) =
         Q.delv q ~zero:false fargs
 
       | Some (qcallf, qretf) -> (* recursive case *)
-        let qcallf, qretf = Q.frame forcost qcallf qretf in
+        let qcallf, qretf = Q.frame negfrm qcallf qretf in
         let vdiff = VSet.diff (Q.vars qseq) (Q.vars qretf) in
         let qretf = Q.addv qretf vdiff in
         let _ = Q.delv qretf vdiff in
@@ -482,7 +482,7 @@ let analyze forcost lctx cost (fdefs, p) =
     (VSet.add (VNum 0) (file_globals (fdefs, p))) in
   let qret = Q.addv q (VSet.singleton (VId "%ret")) in
   let qpre = gen_ [] qret Q.empty q p in
-  Q.solve (Q.frame forcost qpre q)
+  Q.solve (Q.frame negfrm qpre q)
 
 
 let _ =
@@ -498,6 +498,11 @@ let _ =
   in Parse.pp_file_hooks pre post f
 
 let _ =
-  if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tq" then
+  if Array.length Sys.argv > 1
+  && (Sys.argv.(1) = "-tq" || Sys.argv.(1) = "-tqtick") then
+  let negfrm, metric = List.assoc Sys.argv.(1)
+    [ "-tq", (true, Eval.atomic_metric)
+    ; "-tqtick", (false, Eval.tick_metric)
+    ] in
   let f = Tools.clean_file (Parse.pa_file stdin) in
-  analyze true (create_logctx f) Eval.atomic_metric f
+  analyze negfrm (create_logctx f) metric f
