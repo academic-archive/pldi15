@@ -1,0 +1,8 @@
+x=0;
+while x<n (
+  x=x+1;
+  while x<n (
+    if * break;
+    x=x+1
+  )
+)
