@@ -1338,9 +1338,9 @@ http://www.informit.com/articles/article.aspx?p=2213858
 
 In this appendix we provide a non-exhaustive catalog of classes of
 programs that can be automatically analyzed by our system.  For
-simplicity, we use cost metric that counts cost $1$ for comparisons
-and assignments and cost $0$ for all other operations.  Of course, the
-examples can also be analyzed with any other cost metric.
+simplicity, we use cost metric that counts cost $1$ for assignments
+and cost $0$ for all other operations.  Of course, the examples can
+also be analyzed with any other cost metric.
 
 We assume that the variables in the code snippets are the inputs to
 the program. Some of the examples contain constants on which the
@@ -1535,6 +1535,70 @@ $1+2|[0,x]|+103|[y,x]|$
   \label{fig:cat1b}
 \end{figure*}
 
+
+\begin{figure*}[t!]
+ \setlength{\progwidth}{.24\linewidth}
+  \centering
+
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+  while (i>100) {
+    i--;
+  }
+  i=i+k+50;
+  while (i>=0) {
+    i--;
+  }
+   \end{lstlisting}
+
+$52 + |[-1,i]| + |[0,k]|$
+\\[.7\baselineskip]
+      {\bf t19}
+    \end{center}
+  \end{minipage}%
+%
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+  while (x<y) {
+    x=x+1;
+  }
+  while (y<x) {
+    y=y+1;
+  }
+   \end{lstlisting}
+
+$|[x,y]|+|[y,x]|$
+\\[.7\baselineskip]
+      {\bf t20}
+    \end{center}
+  \end{minipage}%
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+  while (x>0) {
+    x=x-1;
+    t=x;
+    x=y;
+    y=t;
+  }
+   \end{lstlisting}
+
+$4|[0,x]|+4|[0,y]|$
+\\[.7\baselineskip]
+      {\bf t30}
+    \end{center}
+  \end{minipage}
+
+   \caption{Amortization and Compositionality (c)}
+  \label{fig:cat1c}
+\end{figure*}
+
 \paragraph{Amortization and Compositionality}
 
 \pref{fig:cat1} shows code snippets that need amortization are
@@ -1621,6 +1685,136 @@ shared arbitrarily between the interval sizes $|[y,x]|$ and $|[0,x]|$
 as long as more than $1$ unit is assigned to $|[0,x]|$.  Since we know
 that $y\geq 0$ the choice of the LP solver is optimal but this seems
 to be a coincidence.
+
+Example \emph{t19} demonstrates another nice property that demonstates
+the compositionaliy of the analysis.  The program consists of two
+loops that decrement a variable $i$.  In the first loop, $i$ is
+decremented down to 100 and in the second loop $i$ is increment
+further down to $-1$.  However, between the loops we assign
+$i=i+k+50$.  So in total the program performs $52 + |[-1,i]| +
+|[0,k]|$ increments.  Our analysis finds this tight bound because our
+amortized analysis naturally takes into account the relation between
+the two loops.  Other techniques might derive a more conservative
+bound such as $52 + |[-1,i]| + |[0,k]| + |[100,i]|$.
+
+Example \emph{t20} shows how we can handle programs in which bounds
+contain absolute values like $|x-y|$.  The first loop body is only
+executed if $x<y$ and the second loop body is only executed if $y<x$.
+The analyzers finds a tight bound.
+
+At first sight, example \emph{t30} appears to be a simple loop that
+decrements the variable $x$ down to zero.  However, a closer look
+reveals that the loop actually decrements both input variables $x$ and
+$y$ down to zero before terminating.  In the loop body, first $x$ is
+decremented by one.  Then the values of the variables $x$ and $y$ are
+switched using the local variable $t$ as a buffer.  Out analysis
+infers the tight bound $4|[0,x]|+4|[0,y]|$.
+
+
+
+
+\begin{figure*}[t!]
+ \setlength{\progwidth}{.24\linewidth}
+  \centering
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+  while (n>x) {
+    if (m>y) 
+      y = y+1;
+    else
+      x = x+1;
+  }
+   \end{lstlisting}
+
+$|[x, n]| + |[y, m]|$
+\\[.7\baselineskip]
+      {\bf t11}
+    \end{center}
+  \end{minipage}
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+ XXX
+   \end{lstlisting}
+
+$XXX$
+\\[.7\baselineskip]
+      {\bf t12}
+    \end{center}
+  \end{minipage}
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+ XXX
+   \end{lstlisting}
+
+$XXX$
+\\[.7\baselineskip]
+      {\bf t22}
+    \end{center}
+  \end{minipage}
+
+   \caption{Examples from \cite{GulwaniMC09}}
+  \label{fig:cat2a}
+\end{figure*}
+
+
+
+\begin{figure*}[t!]
+ \setlength{\progwidth}{.24\linewidth}
+  \centering
+
+   \caption{Examples from [GulwaniPLDI09] and [GulwaniPLDI10]}
+  \label{fig:cat2b}
+\end{figure*}
+
+
+\paragraph{From  the Literature}
+
+Example \emph{t11} has been given in~\cite{GulwaniMC09}.  In the loop,
+we increment 
+
+
+\begin{figure*}[t!]
+ \setlength{\progwidth}{.24\linewidth}
+  \centering
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+ XXX
+   \end{lstlisting}
+
+$XXX$
+\\[.7\baselineskip]
+      {\bf Knuth-Morris-Pratt}
+    \end{center}
+  \end{minipage}
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+ XXX
+   \end{lstlisting}
+
+$XXX$
+\\[.7\baselineskip]
+      {\bf GCD}
+    \end{center}
+  \end{minipage}
+
+   \caption{Well-Known Algorithms}
+  \label{fig:cat3}
+\end{figure*}
+
+\paragraph{Well-Known Algorithms}
 
 
 
