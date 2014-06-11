@@ -10,7 +10,7 @@ module S = Set.Make(Id)
 module L = struct
   (* linear sums *)
   include Map.Make(Id)
-  type sum = {m : int t; k : int}
+  type sum = {m: int t; k: int}
 
   let const k = {m = empty; k}
 
@@ -95,10 +95,17 @@ let ineq_incr id op delta l =
 let set id vo ps =
   (* forget everything concerning the assigned variable *)
   let ps' = List.filter (fun i -> L.coeff id i = 0) ps in
-  match vo with None -> ps'
-  | Some v ->
-    plusv 1 v (plusv (-1) (VId id) (L.const 0)) ::
-    plusv (-1) v (plusv 1 (VId id) (L.const 0)) :: ps'
+  match vo with
+  | None -> ps'
+  | Some (VId id') ->
+    List.fold_left (fun ps' i ->
+        let c = L.coeff id' i in
+        if c = 0 then ps' else
+        L.addl id' (-c) (L.addl id (+c) i) :: ps'
+      ) ps' ps
+  | Some (VNum n) ->
+    plusv (-1) (VId id) (L.const (+n)) ::
+    plusv (+1) (VId id) (L.const (-n)) :: ps'
 
 let incr id op delta =
   if delta = VId id
