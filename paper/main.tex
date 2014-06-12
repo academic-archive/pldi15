@@ -1366,7 +1366,7 @@ Note however that it is sometimes crucial that constants are positive
   }
    \end{lstlisting}
 
-$1.1|[y,z]| + 0.1[|0,y|]$
+$1.1|[y,z]| + 0.1|[0,y]|$
 \\[.7\baselineskip] 
       {\bf t08}
     \end{center}
@@ -1456,7 +1456,7 @@ $12|[n,0]| + 0.01|[0,y]|$
   }
    \end{lstlisting}
 
-$4|[0,x]| + [|0,y|]$
+$4|[0,x]| + |[0,y]|$
 \\[.7\baselineskip]
       {\bf t07}
     \end{center}
@@ -1594,6 +1594,26 @@ $4|[0,x]|+4|[0,y]|$
       {\bf t30}
     \end{center}
   \end{minipage}
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+  flag=1;
+  while (flag>0) {
+    if (n>0 && *) {
+      n=n-1;
+      flag=1;
+    } else
+      flag=0;
+  }
+   \end{lstlisting}
+
+$2 + 2|[0, n]|$
+\\[.7\baselineskip]
+      {\bf t47}
+    \end{center}
+  \end{minipage}
 
    \caption{Amortization and Compositionality (c)}
   \label{fig:cat1c}
@@ -1630,7 +1650,7 @@ conditional we can obtain a constant potential $1$ since the interval
 size $|[y,x]|$ is decreasing.
 
 Example \emph{t13} shows how amortization can be used to handle tricky
-nested loops.  The outer loop is iterated $[|0,x|]$ times.  In the
+nested loops.  The outer loop is iterated $|[0,x]|$ times.  In the
 conditional, we either (the branching condition is again arbitrary)
 increment the variable $y$ or we execute an inner loop in which $y$ is
 counted back to $0$.  Then analysis computes a tight linear bound for
@@ -1710,6 +1730,18 @@ decremented by one.  Then the values of the variables $x$ and $y$ are
 switched using the local variable $t$ as a buffer.  Out analysis
 infers the tight bound $4|[0,x]|+4|[0,y]|$.
 
+Example \emph{t47} demonstrates how we can use integers as Booleans to
+amortize the cost of loops that depend on boolean flags.  The outer
+loop is executed as long as the variable flag is ``true'', that is,
+\code{flag>0}.  Inside the loop, there is a conditional that either
+(if $n>0$) decrements $n$ and assigns \code{flag=1}, or (if $n\geq0$)
+leaves n unchanged and assigns \code{flag=0}.  The analyzer computes
+the tight bound $2 + 2|[0, n]|$.  The potential in the loop invariant
+is $|[0,\mathit{flag}]| + 2|[0, n]|$.  In the \emph{then} branch of
+the conditional, we use the potential $2|[0, n]|$ and the fact that
+$n>0$.  In the \emph{else} branch, we use the potential
+$|[0,\mathit{flag}]|$ and the fact that $\mathit{flag}=1$.
+
 
 
 
@@ -1729,7 +1761,7 @@ infers the tight bound $4|[0,x]|+4|[0,y]|$.
 
 $|[x, n]| + |[y, m]|$
 \\[.7\baselineskip]
-      {\bf t11}
+      {\bf fig2\_1}
     \end{center}
   \end{minipage}
 %
@@ -1737,12 +1769,17 @@ $|[x, n]| + |[y, m]|$
   \begin{minipage}[b]{\progwidth}
     \begin{center}
    \begin{lstlisting}
- XXX
+  while (x<n) {
+    if (z>x)
+      x=x+1;
+    else
+      z=z+1;
+  }
    \end{lstlisting}
 
-$XXX$
+$|[x, n]| + |[z, n]|$
 \\[.7\baselineskip]
-      {\bf t12}
+      {\bf fig2\_2}
     \end{center}
   \end{minipage}
 %
@@ -1750,17 +1787,126 @@ $XXX$
   \begin{minipage}[b]{\progwidth}
     \begin{center}
    \begin{lstlisting}
- XXX
+  while (x<n) {
+    while (y<m) {
+      if (*) break;
+      y=y+1;
+    }
+    x=x+1;
+  }
    \end{lstlisting}
 
-$XXX$
+$|[x, n]| + |[y, m]|$
 \\[.7\baselineskip]
-      {\bf t22}
+      {\bf nested\_multiple}
+    \end{center}
+  \end{minipage}
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+  x=0;
+  while (x<n) {
+    x=x+1;
+    while (x<n) {
+      if (*) break;
+      x=x+1;
+    }
+  }
+   \end{lstlisting}
+
+$1 + |[0, n]|$
+\\[.7\baselineskip]
+      {\bf nested\_single}
     \end{center}
   \end{minipage}
 
-   \caption{Examples from \cite{GulwaniMC09}}
+   \caption{Examples from Gulwani et al's SPEED (a)~\cite{GulwaniMC09}}
   \label{fig:cat2a}
+\end{figure*}
+
+\begin{figure*}[t!]
+ \setlength{\progwidth}{.24\linewidth}
+  \centering
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+  x=0;
+  while (x<n) {
+    if (*) break;
+    x=x+1;
+  }
+  while (x<n)
+    x=x+1;
+   \end{lstlisting}
+
+$1 + |[0,n]|$
+\\[.7\baselineskip]
+      {\bf sequential\_single}
+    \end{center}
+  \end{minipage}
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+  x=0; y=0;
+  while (x<n) {
+    if (y<m)
+      y=y+1;
+    else
+      x=x+1;
+  }
+   \end{lstlisting}
+$2 + |[0, m]| + |[0, n]|$
+\\[.7\baselineskip]
+      {\bf simple\_multiple}
+    \end{center}
+  \end{minipage}
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+  x=0;
+  while (x<n) {
+    if (*)
+      x=x+1;
+    else 
+      x=x+1;
+   \end{lstlisting}
+
+$1 + |[0,n]|$
+\\[.7\baselineskip]
+      {\bf simple\_single}
+    \end{center}
+  \end{minipage}
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+  x=0; y=0;
+  while (*) {
+    if (x<N) {
+      x=x+1; y=y+1;
+    } else if (y<M ) {
+      x=x+1; y=y+1;
+    } else
+      break;
+  }
+   \end{lstlisting}
+
+$2 + 2 |[0, M]| + 2 |[0, N]|$
+
+\\[.7\baselineskip]
+      {\bf simple\_single\_2}
+    \end{center}
+  \end{minipage}
+
+   \caption{Examples from Gulwani et al's SPEED (b)~\cite{GulwaniMC09}}
+  \label{fig:cat2b}
 \end{figure*}
 
 
@@ -1770,14 +1916,19 @@ $XXX$
   \centering
 
    \caption{Examples from [GulwaniPLDI09] and [GulwaniPLDI10]}
-  \label{fig:cat2b}
+  \label{fig:cat2c}
 \end{figure*}
 
 
 \paragraph{From  the Literature}
 
-Example \emph{t11} has been given in~\cite{GulwaniMC09}.  In the loop,
-we increment 
+Our analyzer can derive almost all bounds for programs that have been
+described as challenges in the literature on bound generation.  There
+are only two types of programs that we were not able to handle:
+programs that require \emph{super-linear bounds} and program that
+require \emph{path-sensitive reasoning} to derive a bound.  In the
+following we list all linear examples from the literature that we
+found.  Two of the require path-sensitive reasoning.
 
 
 \begin{figure*}[t!]
