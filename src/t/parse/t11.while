@@ -1,5 +1,5 @@
-while n - x > 0
-  if m - y > 0
+while n > x
+  if m > y
     y = y + 1
   else
     x = x + 1

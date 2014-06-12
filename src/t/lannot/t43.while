@@ -2,14 +2,14 @@ func f(x) local (a)
   (
 { T }
     a = x;
-{ -a + x ≤ 0 /\ a - x ≤ 0 }
+{ T }
     while *
-{ a - x ≤ 0 }
+{ T }
       if a > 0
-{ -a + 1 ≤ 0 /\ a - x ≤ 0 }
+{ -a + 1 ≤ 0 }
         a = a - 1
       else
-{ a ≤ 0 /\ a - x ≤ 0 }
+{ a ≤ 0 }
         return 100;
     return a
 { 1 ≤ 0 }

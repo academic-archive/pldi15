@@ -1,6 +1,6 @@
-while n - x > 0
+while n > x
 { -n + x + 1 ≤ 0 }
-  if m - y > 0
+  if m > y
 { -m + y + 1 ≤ 0 /\ -n + x + 1 ≤ 0 }
     y = y + 1
   else

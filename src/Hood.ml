@@ -497,7 +497,7 @@ let _ =
   if Array.length Sys.argv > 1
   && (Sys.argv.(1) = "-tq" || Sys.argv.(1) = "-tqtick") then
   let negfrm, metric = List.assoc Sys.argv.(1)
-    [ "-tq", (true, Eval.atomic_metric)
+    [ "-tq", (true, Eval.set_metric)
     ; "-tqtick", (false, Eval.tick_metric)
     ] in
   let f = Tools.clean_file (Parse.pa_file stdin) in

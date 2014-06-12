@@ -1,15 +1,11 @@
 WHILE
 IDNT "n"
-MINUS
-IDNT "x"
 GT
-NUM 0
+IDNT "x"
 IF
 IDNT "m"
-MINUS
-IDNT "y"
 GT
-NUM 0
+IDNT "y"
 IDNT "y"
 EQ
 IDNT "y"
