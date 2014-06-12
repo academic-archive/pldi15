@@ -2003,7 +2003,7 @@ $---$
   }
   i=i+1;
    \end{lstlisting}
-$1 + |[0, n]|$
+$1 + |[0, n]| \text{ ticks}$
 \\[.7\baselineskip]
       {\bf ex1}
     \end{center}
@@ -2079,6 +2079,105 @@ programs that require \emph{super-linear bounds} and program that
 require \emph{path-sensitive reasoning} to derive a bound.  In the
 following we list all linear examples from the literature that we
 found.  Two of the require path-sensitive reasoning.
+
+\begin{figure*}[t!]
+ \setlength{\progwidth}{.28\linewidth}
+  \centering
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+void count_down (int x) {
+  int a = x;
+  if (a>0) {
+    a = a-1;
+    count_down(a);
+  }
+}
+int copy (int x, int y) {
+  if (x>0) {
+    x = x-1;
+    y = y+1;
+    y=copy(x,y);
+  };
+  return y;
+}
+void _main (int x,int y) {
+  y = copy (x,y);
+  count_down(y);
+}
+   \end{lstlisting}
+
+$1 + 4|[0, x]| + 2|[0, y]|$
+\\[.7\baselineskip]
+      {\bf t37}
+    \end{center}
+  \end{minipage}
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+void count_down (int x,int y)
+{ int a = x;
+  if (a>y) {
+    a = a-1;
+    count_up(a,y);
+  }
+}
+
+void count_up (int x, int y)
+{ int a = y;
+  if (a+1<x) {
+    a = a+2;
+    count_down(x,a);
+  }
+}
+
+void _main (int y, int z) {
+  count_down(y,z);
+}
+   \end{lstlisting}
+
+$1.67 + 1.33 |[z,y]|$
+\\[.7\baselineskip]
+      {\bf t39}
+    \end{center}
+  \end{minipage}
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+void produce () {
+  while (x>0) {
+    _tick(-1); x=x-1; y=y+1;
+  }
+}
+void consume () {
+  while (y>0) {
+    y=y-1; x=x+1; _tick(1);
+  }
+}
+void _main (int y, int z) {
+  consume(); produce(); consume();
+}
+   \end{lstlisting}
+
+$|[0, y]|$ ticks
+\\[.7\baselineskip]
+      {\bf t46}
+    \end{center}
+  \end{minipage}
+
+   \caption{Programs with (recursive) functions}
+  \label{fig:cat3}
+\end{figure*}
+
+
+\paragraph{Recursive Functions}
+
 
 
 \begin{figure*}[t!]
