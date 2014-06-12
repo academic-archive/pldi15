@@ -182,7 +182,7 @@ let slice cost {fileName; globals; _} =
       in slice_list slice_instr il
 
     | Return (expo, loc) ->
-      pay (cost OpReturn) (PBreak (gid ())) (* XXX *)
+      pay (cost OpReturn) (PReturn (VNum 0, gid ())) (* XXX *)
 
     | Goto (_, loc)
     | ComputedGoto (_, loc) -> E.s (
@@ -247,9 +247,9 @@ let slice cost {fileName; globals; _} =
 let _ =
   (* if Array.length Sys.argv > 2 && Sys.argv.(1) = "-tcee" then *)
   let file = Frontc.parse Sys.argv.(1) () in
-  let prog = slice (fun _ -> 1) file in
+  let _, prog = Tools.clean_file ([], slice (fun _ -> 1) file) in
   print_string "Sliced program:\n*******\n";
   pp_prog prog;
-  let l = Hood.create_logctx prog in
+  let l = Hood.create_logctx ([], prog) in
   print_string "\nAnalysis:\n";
-  Hood.analyze l Eval.tick_metric prog
+  Hood.analyze true l Eval.tick_metric ([], prog)
