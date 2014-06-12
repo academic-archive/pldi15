@@ -62,6 +62,7 @@ let mk_lexer ic =
     | '=' -> TEq
     | '\xff' -> TEof
     | ' ' | '\t' | '\r' | '\n' -> f ()
+    | '#' -> while next () <> '\n' do () done; f ()
     | _ -> raise (SyntaxError "lexing")
 
   in f
