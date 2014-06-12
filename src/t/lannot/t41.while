@@ -1,26 +1,19 @@
-func mult_rec(x, y) local (a)
-  (
+func f(x, y)
 { T }
-    assert y > -1;
-{ -y ≤ 0 }
-    a = x;
-    if a > 1
-      (
-{ -a + 2 ≤ 0 /\ -y ≤ 0 }
-        a = a - 1;
-        if a > y
-          (
-{ -a + y + 1 ≤ 0 /\ -a + 1 ≤ 0 /\ -y ≤ 0 }
-            a = a - y;
-{ -a + 1 ≤ 0 /\ -a - y + 1 ≤ 0 /\ -y ≤ 0 }
-            mult_rec(y, y);
-            mult_rec(a, y)
+  if y < x
+    (
+{ -x + y + 1 ≤ 0 }
+      y = y + 1;
+{ -x + y ≤ 0 }
+      f(x, x);
 { T }
-          )
+      f(x, y);
+      f(10, 10)
 { T }
-      )
-{ T }
-  )
+    )
+  else
+{ x - y ≤ 0 }
+    x = y
 
-mult_rec(x, y)
+f(x, y)
 { T }

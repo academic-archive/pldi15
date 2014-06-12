@@ -1,16 +1,12 @@
+# mutiple recursive calls
 
-func mult_rec (x,y) local (a)
-( assert y > -1;
-  a = x;
-  if a > 1 (
-    a = a-1;
-    if a > y (
-      a = a - y;
-      mult_rec(y,y);
-      mult_rec(a,y)
-    )
-  )
-)
+func f(x,y)
+  if y<x (
+    y=y+1;
+    f(x,x);
+    f(x,y);
+    f(10,10)
+  ) else
+    x=y
 
-mult_rec (x,y)
-
+f(x,y)

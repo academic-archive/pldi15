@@ -69,6 +69,7 @@ module Idx : sig
   val const: t
   val dst: var * var -> t
   val map: (var -> var) -> t -> t option
+  val local: VSet.t -> t -> bool
   val obj: t -> int
   val fold: ('a -> t -> 'a) -> 'a -> VSet.t -> 'a
   val value: pstate -> t -> int option
@@ -84,6 +85,10 @@ end = struct
       let a' = f a and b' = f b in
       if a' = b' then None else
       Some (Dst (a', b'))
+  let local vs = function
+    | Const -> false
+    | Dst (VNum _, a) | Dst (a, VNum _) -> VSet.mem a vs
+    | Dst (a, b) -> VSet.mem a vs && VSet.mem b vs
   let obj = function
     | Dst (VNum a, VNum b) -> max (b-a) 0 + 10
     | Dst (VNum n, _)
@@ -122,18 +127,19 @@ module Q(C: sig val state: Clp.t end): sig
   type ctx
   val vars: ctx -> VSet.t
   val empty: ctx
-  val addv: ctx -> VSet.t -> ctx
-  val delv: ctx -> ?zero: bool -> VSet.t -> ctx
+  val addv: ?zero: bool -> ctx -> VSet.t -> ctx
+  val delv: ?zero: bool -> ctx -> VSet.t -> ctx
   val setl: ctx -> (Idx.t * (Idx.t * int) list * int) list -> ctx
   val set: ctx -> Idx.t -> (Idx.t * int) list -> int -> ctx
   val zero: ctx -> Idx.t -> ctx
   val eqc: ctx -> ctx -> unit
-  val relax: pstate -> ?il:Idx.t list -> ctx -> ctx
+  val relax: ?il: Idx.t list -> pstate -> ctx -> ctx
   val merge: ctx list -> ctx
   val free: ctx -> Idx.t -> ctx
   val lift: ctx -> ctx -> ctx
   val subst: ctx -> id list -> var list -> ctx
   val frame: bool -> ctx -> ctx -> ctx * ctx
+  val restore: ctx -> ctx -> VSet.t -> ctx
   val solve: ctx * ctx -> unit
 end = struct
   module M = Map.Make(Idx)
@@ -148,22 +154,6 @@ end = struct
       } |] in
     Clp.add_columns C.state c;
     Clp.number_columns C.state - 1
-
-  let vars c = c.cvars
-
-  let empty = {cvars = VSet.empty; cmap = M.empty}
-
-  let addv c vs =
-    assert (VSet.is_empty (VSet.inter (vars c) vs));
-    let cvars = VSet.union [vars c; vs] in
-    let cmap = Idx.fold
-      (fun m i ->
-        let v =
-          try M.find i c.cmap with
-          Not_found -> newv () in
-        M.add i v m)
-      M.empty cvars in
-    {cvars; cmap}
 
   let mkrow ?(lo=0.) ?(up=0.) v' l k =
     let row_elements = Array.of_list begin
@@ -185,6 +175,24 @@ end = struct
       ; row_elements
       } |]
 
+  let vars c = c.cvars
+
+  let empty = {cvars = VSet.empty; cmap = M.empty}
+
+  let zv = let v = newv () in mkrow v [] 0; v (* lp variable set to 0 *)
+  let addv ?(zero=false) c vs =
+    assert (VSet.is_empty (VSet.inter (vars c) vs));
+    let cvars = VSet.union [vars c; vs] in
+    let cmap = Idx.fold
+      (fun m i ->
+        let v =
+          try M.find i c.cmap with
+          | Not_found when zero -> zv
+          | Not_found -> newv () in
+        M.add i v m)
+      M.empty cvars in
+    {cvars; cmap}
+
   let setl ({cmap=m;_} as c) eqs =
     let bdgs = List.map
       begin fun (id, l, k) ->
@@ -199,7 +207,7 @@ end = struct
 
   let zero c id = mkrow (M.find id c.cmap) [] 0; c
 
-  let delv c ?(zero=true) vs =
+  let delv ?(zero=true) c vs =
     assert (VSet.subset vs (vars c));
     let cvars = VSet.diff (vars c) vs in
     let m _ vo vo' =
@@ -223,7 +231,7 @@ end = struct
       (Idx.fold (fun l i -> eqv i :: l) [] c1.cvars) in
     Clp.add_rows C.state rows
 
-  let relax ps ?(il=[]) c =
+  let relax ?(il=[]) ps c =
     let ks =
       Idx.fold begin fun a i ->
         match Idx.value ps i with
@@ -310,6 +318,14 @@ end = struct
     , {c2 with cmap = M.add Idx.const v2 c2.cmap }
     )
 
+  let restore c c' locals =
+    assert (VSet.subset (vars c') (vars c));
+    assert (VSet.subset locals (vars c));
+    Idx.fold (fun c i ->
+        if not (Idx.local locals i) then c else
+        {c with cmap = M.add i (M.find i c'.cmap) c.cmap}
+      ) c (vars c)
+
   let solve (cini, cfin) =
     let obj = Clp.objective_coefficients C.state in
     Idx.fold begin fun () i ->
@@ -339,7 +355,9 @@ let analyze negfrm lctx cost (fdefs, p) =
   let open Idx in
   let open Eval in
 
+  let glos =  VSet.add (VNum 0) (file_globals (fdefs, p)) in
   let addconst q act = Q.set q const [(const, 1)] (cost act) in
+  let tmpret = "%ret" and vret = VId "%ret" in
   let rec gen_ qfuncs qret qbrk qseq =
     let gen = gen_ qfuncs qret qbrk in function
 
@@ -348,18 +366,21 @@ let analyze negfrm lctx cost (fdefs, p) =
     | PBreak _ -> addconst qbrk CBreak
     | PReturn (v, _) ->
       let q = Q.lift qret qseq in
-      Q.delv (Q.subst q ["%ret"] [v])
-        ~zero:false (VSet.singleton (VId "%ret"))
+      Q.delv (Q.subst q [tmpret] [v]) ~zero:false (VSet.of_list [vret])
 
     | PCall (ret, fname, args, _) ->
+      let varl = List.map (fun x -> VId x) in
       let f = List.find (fun x -> x.fname = fname) fdefs in
-      let fargs = VSet.of_list (List.map (fun x -> VId x) f.fargs) in
-      let flocs = VSet.of_list (List.map (fun x -> VId x) f.flocs) in
 
-      let qret = Q.addv qseq (VSet.singleton (VId "%ret")) in
+      let tmps = List.map (fun x -> "%" ^ x) f.fargs in
+      let tmpset = VSet.of_list (varl tmps) in
+      let argset = VSet.of_list (varl f.fargs) in
+      let locset = VSet.of_list (varl f.flocs) in
+
+      let qret = Q.addv qseq (VSet.of_list [vret]) in
       let qret =
         match ret with
-        | Some x -> Q.subst qret [x] [VId "%ret"]
+        | Some x -> Q.subst qret [x] [vret] (* XXX move *)
         | None -> qret in
 
       begin match
@@ -368,24 +389,28 @@ let analyze negfrm lctx cost (fdefs, p) =
       with
 
       | None -> (* unfold case *)
-        let qcall = Q.addv Q.empty (VSet.union [fargs; Q.vars qseq]) in
-        let qfun = Q.delv qret ~zero:false (VSet.singleton (VId "%ret")) in
-        let qfun = Q.addv qfun (VSet.union [fargs; flocs]) in
+        let qcall = Q.addv Q.empty (VSet.union [tmpset; Q.vars qseq]) in
+        let qfun = Q.delv qret ~zero:false (VSet.of_list [vret]) in
+        let qfun = Q.addv qfun (VSet.union [argset; locset]) in
         let qbdy = gen_
           ((fname, (qcall, qret)) :: qfuncs)
           qret Q.empty qfun f.fbody in
-        let qcall' = Q.delv qbdy flocs in
+        let qcall' = Q.addv qbdy tmpset in
+        let qcall' = Q.subst qcall' f.fargs (varl tmps) in (* XXX move *)
+        let qcall' = Q.delv qcall' (VSet.union [argset; locset]) in
         Q.eqc qcall qcall';
-        let q = Q.subst qcall f.fargs args in
-        Q.delv q ~zero:false fargs
+        let q = Q.subst qcall tmps args in
+        Q.delv q ~zero:false tmpset
 
       | Some (qcallf, qretf) -> (* recursive case *)
         let qcallf, qretf = Q.frame negfrm qcallf qretf in
+        let qcall = Q.subst (Q.lift qcallf qseq) tmps args in
+        let qcall = Q.delv ~zero:false qcall tmpset in
         let vdiff = VSet.diff (Q.vars qseq) (Q.vars qretf) in
-        let qretf = Q.addv qretf vdiff in
-        let _ = Q.delv qretf vdiff in
-        Q.eqc qret qretf;
-        Q.subst (Q.lift qcallf qseq) f.fargs args
+        let qretf = Q.addv ~zero:true qretf vdiff in
+        let locs = VSet.diff (Q.vars qseq) glos in
+        let qretf = Q.restore qretf qcall locs in
+        Q.eqc qret qretf; qcall
 
       end
 
@@ -474,8 +499,7 @@ let analyze negfrm lctx cost (fdefs, p) =
 
     in
 
-  let q = Q.addv Q.empty
-    (VSet.add (VNum 0) (file_globals (fdefs, p))) in
+  let q = Q.addv Q.empty glos in
   let qret = Q.addv q (VSet.singleton (VId "%ret")) in
   let qpre = gen_ [] qret Q.empty q p in
   Q.solve (Q.frame negfrm qpre q)

@@ -1,3 +1,5 @@
+# assign potential to booleans!
+
 flag=1;
 
 while flag>0 (
