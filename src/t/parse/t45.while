@@ -1,3 +1,10 @@
+func f(x) local (t)
+  (
+    t = x;
+    t = t + 1;
+    t = t + 1
+  )
+
 while x > z
   (
     x = x - 1;

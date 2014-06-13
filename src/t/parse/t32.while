@@ -1,3 +1,10 @@
+func swap() local (t)
+  (
+    t = x;
+    x = y;
+    y = t
+  )
+
 while x < 0
   x = x + 1;
 swap();

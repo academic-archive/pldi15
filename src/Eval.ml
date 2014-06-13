@@ -135,7 +135,7 @@ let _ =
   match try Some Sys.argv.(1) with _ -> None with
   | Some "-teval" ->
     let module E = Eval(QMInt) in
-    let p = Parse.pa_prog stdin in
+    let _, p = Parse.pa_file stdin in
     begin try
       let (res, cost) = E.eval set_metric p E.empty_heap in
       let hfinal = match res with E.OSeq h | E.OBreak h -> h in

@@ -405,7 +405,6 @@ let pa_file ic =
   match p_file (1, stream_of_fun (mk_lexer ic)) with
   | (Some f, _) -> f
   | (None, _) -> raise (SyntaxError "parse error")
-let pa_prog ic = snd (pa_file ic)
 
 let prog_id = function
   | PTick (_, id) | PBreak id | PAssert (_, id) | PInc (_, _, _, id)
@@ -526,9 +525,8 @@ let pp_file_hooks pre post (fl, prog) =
     printf "\n";
   end
 
-let pp_prog_hooks pre post p = pp_file_hooks pre post ([], p)
-let pp_prog p = let f _ = () in pp_file_hooks f f ([], p)
 let pp_file = let f _ = () in pp_file_hooks f f
+let pp_prog p = pp_file ([], p)
 
 
 (* tests *)
@@ -547,5 +545,5 @@ let _ =
     SyntaxError e -> Printf.eprintf "Syntax error: %s\n" e
   in match try Some Sys.argv.(1) with _ -> None with
   | Some "-tlex" -> handle test_lexer
-  | Some "-tparse" -> handle (fun () -> pp_prog (pa_prog stdin))
+  | Some "-tparse" -> handle (fun () -> pp_file (pa_file stdin))
   | _ -> ()
