@@ -26,6 +26,7 @@
 \newcommand{\Pref}[1]{\prettyref{#1} \vpageref[]{#1}}
 \newcommand{\ppref}[1]{\vpageref[]{#1}}
 \newrefformat{fig}{Figure~\ref{#1}}
+\newrefformat{app}{Appendix~\ref{#1}}
 \newrefformat{tab}{Table~\ref{#1}}
 \newrefformat{cha}{Challenge~\ref{#1}}
 \newrefformat{compiler}{Point~\ref{#1} of \pref{thm:compiler}}
@@ -168,7 +169,7 @@ follows.
   [XXX] and derives bounds that are non-negative linear combinations
   of sizes $|[x,y]|$ of intervals between program variables $x,y$.
 \item We show with a publically available prototype implementation and
-  an experimental evaluation that the our novel amortized resource
+  an experimental evaluation that our novel amortized resource
   analysis works efficiently for realistic programs and that the
   derived constant factors in the bounds are close to or identical
   with the optimal ones.
@@ -181,7 +182,7 @@ follows.
 %   with respect to the operational cost semantics.
 \end{itemize}
 %
-Our approach complements existing works since it provides a semantic
+Our approach complements existing work since it provides a semantic
 foundation for the computation of bounds while still providing support
 for automation that sometimes goes beyond the capabilities of existing
 techniques.  The quantitative Hoare logic and the automatic amortized
@@ -201,22 +202,22 @@ automatic amortized analysis for C code.  It targets programs that are
 common in system software, that is, programs whose resource
 consumption can be described as a function of sizes $|[x,y]|$ of
 intervals of integer variables.  A typical bound would be $B(x,y,z) =
-10{\cdot}|[x,y]| + 1{\cdot}|[z,0]|$ and we have for example
-$B(100,200,43) = 1043$.
+10{\cdot}|[x,y]| + 1{\cdot}|[z,0]|$ (for example $B(100,200,43) =
+1043$).
 %
 Despite the apparent simplicity of the new analysis system, it is able
-to reproduce multiple results from the literature which were obtained
-using methods based on abstract interpretation.  In contrast with
-abstract interpretation--based methods, our technique does not require
-any fixpoint computations on an abstract domain to obtain loop
-invariants.  The mechanism we designed is able to leverage local
-assertions such as $x < y$ that we collect along the branching points
-to obtain global invariants.  We achieve this by generating a linear
+to reproduce results from the literature which were obtained using
+methods based on abstract interpretation.  In contrast with abstract
+interpretation--based methods, our technique does not require any
+fixpoint computations on an abstract domain to obtain loop invariants.
+The mechanism we designed is able to leverage local assertions such as
+$x < y$ that we collect along the branching points of the program to
+obtain global invariants.  We achieve this by generating a linear
 constraint system that reflects resource cost and size changes of
 integer variables in the program.  A solution of the linear program is
 a resource usage bound for the C program.  We can naturally, handle
 advanced control flow such as break, return, iteration over negative
-counter variables, and mutually-recursive functions.
+integer variables, and mutually-recursive functions.
 
 Following the development steps of automatic amortized analysis for
 functional programs [XXX], we deliberately restrict our self to linear
@@ -225,7 +226,7 @@ manually-derived bounds in the logic).  More specifically, bounds have
 the form $\sum_{a,b} q_{(a,b)} |[a,b]|$ where $a$ and $b$ are integer
 variables or constants.  The reason is mainly clarity of presentation,
 since an extension to multivariate resource polynomials [XXX] would
-make the inference rules considerably more complected and should
+make the inference rules considerably more involved and should
 better be described separately.  However, we developed the linear
 inference system so that the extension to polynomial bounds shall
 work smoothly.  
@@ -248,9 +249,33 @@ corresponds to \emph{false} in classic Hoare logic.  Our quantitative
 logic is proved sound with respect to a cost semantic for Clight that
 accounts a constant cost for each evaluation step.  This constant cost
 is parametric in a resource metric that can be defined by the user.
+Our shallow embedding in Coq enables the derivation of both, bounds
+that are parametric in the cost metric or bounds for one specific
+metric.
 
 We have evaluated the quantitative logic and the automatic analysis
-with system code and examples from the literature. XXX
+with system code and examples from the literature. \pref{app:cat}
+contains a $50$ (XXX) challenging loop and recursion patterns that we
+collected from open source software and the literature.  Our analysis
+can find asymptotically tight bounds for $48$ of these patterns and in
+most cases the derived constant factors are tight.  We compared our
+automatic analyzer to other resource-analysis systems.  However, our
+analyzer and Rank are currently the only publically available tools
+that can directly operate on C programs.  We selected $5$ example for
+which we derived linear bounds and translated them to term-rewriting
+systems by hand in order to run them with the tools KoAT and Pubs.
+Both tools and Rank were not able to find linear bounds for the
+examples.  We contacted the authors of LOOPUS and SPEED but were not
+able to obtain a tool to perform a comparison.
+
+To show the practicability of our approach we developed a case study
+with different real-time schedulers implemented in C.  To perform a
+schedulability analysis that takes into account the overhead of the
+scheduler we derived time bounds for context switching and
+initialization of the scheduler.  We then computed time bounds for a
+set of given user task and took account the previously computed
+scheduler overhead to determine whether the scheduling requirements of
+all user tasks can be met.
 
 With the intention, of making the material easily accessible we first
 informally describe the new automatic amortized analysis
@@ -1335,6 +1360,7 @@ http://www.informit.com/articles/article.aspx?p=2213858
 \appendix
 
 \section{Catalog of Automatically Analyzed Programs}
+\lable{app:cat}
 
 In this appendix we provide a non-exhaustive catalog of classes of
 programs that can be automatically analyzed by our system.  For
