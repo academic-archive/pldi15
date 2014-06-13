@@ -1,19 +1,24 @@
-func f(x, y)
+func f(x, y) local (a)
+  (
 { T }
-  if y < x
-    (
-{ -x + y + 1 ≤ 0 }
-      y = y + 1;
-{ -x + y ≤ 0 }
-      f(x, x);
+    assert z >= 0;
+    if x + z < y
+      (
+{ x - y + z + 1 ≤ 0 /\ -z ≤ 0 }
+        x = x + 1;
+{ x - y + z ≤ 0 /\ -z ≤ 0 }
+        a = x;
+{ a - y + z ≤ 0 /\ x - y + z ≤ 0 /\ -z ≤ 0 }
+        a = a + z;
+{ a - y ≤ 0 /\ x - y + z ≤ 0 /\ -z ≤ 0 }
+        f(x, a);
 { T }
-      f(x, y);
-      f(10, 10)
+        f(a, y);
+        ()
 { T }
-    )
-  else
-{ x - y ≤ 0 }
-    x = y
+      )
+{ T }
+  )
 
 f(x, y)
 { T }
