@@ -17,9 +17,9 @@ func copy(x, y) local (t)
     if x > 0
       (
 { -x + 1 ≤ 0 }
-        y = y + 1;
-{ -x + 1 ≤ 0 }
         x = x - 1;
+{ -x ≤ 0 }
+        y = y + 1;
         y = copy(x, y)
 { T }
       );
