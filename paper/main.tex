@@ -1339,10 +1339,12 @@ http://www.informit.com/articles/article.aspx?p=2213858
 In this appendix we provide a non-exhaustive catalog of classes of
 programs that can be automatically analyzed by our system.  For
 simplicity, we use cost metric that counts cost $1$ for assignments
-and cost $0$ for all other operations.  Of course, the examples can
-also be analyzed with any other cost metric.
+and cost $0$ for all other operations.  Sometimes we also use the
+\emph{ticks metric} if we want to discuss features like returning
+resources.  Of course, the examples can also be analyzed with any other
+cost metric.
 
-We assume that the variables in the code snippets are the inputs to
+We assume that free variables in the code snippets are the inputs to
 the program. Some of the examples contain constants on which the
 computed bound depends.  These constants are randomly chosen to
 present an example but the analysis works for other constants as well.
@@ -1822,7 +1824,7 @@ $1 + |[0, n]|$
     \end{center}
   \end{minipage}
 
-   \caption{Examples from Gulwani et al's SPEED (a)~\cite{GulwaniMC09}}
+   \caption{Examples from Gulwani et al's SPEED~\cite{GulwaniMC09}} (a)
   \label{fig:cat2a}
 \end{figure*}
 
@@ -1904,7 +1906,7 @@ $2 + 2 |[0, M]| + 2 |[0, N]|$
     \end{center}
   \end{minipage}
 
-   \caption{Examples from Gulwani et al's SPEED (b)~\cite{GulwaniMC09}}
+   \caption{Examples from Gulwani et al's SPEED~\cite{GulwaniMC09} (b)}
   \label{fig:cat2b}
 \end{figure*}
 
@@ -1933,7 +1935,7 @@ $2 + 2 |[0, M]| + 2 |[0, N]|$
     }
   }
    \end{lstlisting}
-$4 + 4|[0, n]|$
+$2 + 4|[0, n]|$
 \\[.7\baselineskip]
       {\bf fig\_4\_2}
     \end{center}
@@ -1954,7 +1956,7 @@ $4 + 4|[0, n]|$
       i=i-m;
   }
    \end{lstlisting}
-$1 + 1|[0, n]|$
+$|[0, n]|$
 \\[.7\baselineskip]
       {\bf fig\_4\_4}
     \end{center}
@@ -1992,18 +1994,18 @@ $---$
    \begin{lstlisting}
   i=0;
   while (i<n) {
-    j=i; j=j+1;
-  }
-  while (j<n) {
-    if (0) {
-      _tick(1);
-      j=j-1; n=n-1;
+    j=i+1;
+    while (j<n) {
+      if (*) {
+	_tick(1);
+	j=j-1; n=n-1;
+      }
+      j=j+1;
     }
-    j=j+1;
+    i=i+1;
   }
-  i=i+1;
    \end{lstlisting}
-$1 + |[0, n]| \text{ ticks}$
+$|[0, n]| \text{ ticks}$
 \\[.7\baselineskip]
       {\bf ex1}
     \end{center}
@@ -2034,7 +2036,7 @@ $---$
     t = x;
     n=n-1;
     while (n>0) {
-      if (0) break;
+      if (*) break;
       n=n-1;
     }
   }
@@ -2072,13 +2074,107 @@ $2 + 3|[0, n]|$
 
 \paragraph{From  the Literature}
 
-Our analyzer can derive almost all bounds for programs that have been
-described as challenges in the literature on bound generation.  There
-are only two types of programs that we were not able to handle:
-programs that require \emph{super-linear bounds} and program that
-require \emph{path-sensitive reasoning} to derive a bound.  In the
-following we list all linear examples from the literature that we
-found.  Two of the require path-sensitive reasoning.
+Our analyzer can derive almost all linear bounds for programs that
+have been described as challenges in the literature on bound
+generation.  We found only three programs with a linear bound for
+which our analyzer could not find a tight bound.  The first one
+(\emph{fig\_4\_5}) from [GulwaniPLDI09] requires \emph{path-sensitive
+  reasoning} to derive a bound.  The other two, \emph{ex2} and
+\emph{ex5} (see [GulwaniPLDI10]), from [GulwaniPLDI10] were described
+to have a linear bound but seem to be non-terminating.
+
+Examples \emph{fig2\_1} and \emph{fig2\_2} are taken from Gulwani' et
+al~\cite{Gulwani-speed}.  They are both handled by the SPEED tool but
+require inference of a \emph{disjunctive invariant}.  In the abstract
+interpretation community, these invariants are known to be notoriously
+difficult to handle.
+%
+In example \emph{fig2\_1} we have one loop that first increments
+variable $y$ up to $m$ and then increments variable $x$ up to $n$.  We
+derive the tight bound $|[x, n]| + |[y, m]|$.
+%
+Example \emph{fig2\_2} is more tricky and trying to understand how it
+works may be challenging.  However, with the amortized analysis in
+mind, using the potential transfer reasoning, it is almost trivial to
+prove the termination.  While the SPEED tool has to find a fairly
+involved invariant for the loop, our tool is simply reasoning locally
+and works without any clever tricks. We obtain the tight bound $|[x,
+n]| + |[z, n]|$.
+
+Example \emph{nested\_multiple} is similar to example \emph{fig2\_1}.
+Instead of incrementing variable $y$ in the outer loop, $y$ is here
+potentially incremented multiple times in each iteration of the outer
+loop.  The idea of example \emph{nested\_single} is similar.  However,
+instead of incrementing variable $y$ in the inner loop, we increment
+$x$, the counter variable of the outer loop. Our analyzer derives a
+tight bound for both programs.  Note that a star \emph{*} in a
+branching condition denotes an arbitrary boolean condition that might
+of course change while iterating (non-deterministic choice).
+
+Example \emph{sequential\_single} is like example
+\emph{nested\_single}.  The only difference is that the inner loop of
+\emph{nested\_single} is now evaluated after the outer loop.  Example
+\emph{simple\_multiple} is a variant of example \emph{fig2\_1} and
+\emph{simple\_single} is a simple variant of \emph{nested\_single}.
+We derive tight bounds for all aforementioned programs.
+
+Example \emph{simple\_single\_2} uses conditionals and a \code{break}
+statement to control loop iterations.  If $x<N$ then variables $x$ and
+$y$ are incremented.  Otherwise, if $y<M$ then the same increment is
+executed.  If $y\geq M$ and $x\geq N$ then the loop is terminated with
+a break.  Our tool computes the bound $2 + 2 |[0, M]| + 2 |[0, N]|$.
+This bound is tight in the sense that there are inputs (such as $M =
+-100$ and $N = 100$) for which the bound precisely describes the
+execution cost.  However, SPEED can compute the more precise bound
+$\max(N,M)$.  We currently cannot express this bound in our system.
+
+Example \emph{fig\_4\_2} from [GulwaniPLDI09] is quite involved.
+Amortized reasoning helps to understand how we derive the bound $4 +
+4|[0, n]|$.  We start with potential $6 + 4|[0, n]|$ and use the
+constant potential to pay for the two first assignments.  We use the
+remaining potential $4 + 4|[0, n]|$ and the fact that $vb=0$ to
+establish the potential $4 + 4|[0, n]| + 2|[0,vb]|$ that serves as a
+loop invariant.  In the \emph{if branch} of the conditional, we use
+the constant potential $4$ of the invariant to pay for the two
+assignments ($2$) and the potential of $|0,vb|$ ($2$).  Since we also
+know that $|[0, n]|>0$ we obtain constant potential $4$ and establish
+the loop invariant again.  In the \emph{else branch}, we use the
+potential $2|[0,vb]|$ and the fact $vb>0$ to obtain $2$ potential
+units to pay for the assignment.  Since we have $4$ constant potential
+units left after the loop, we can subtract them from the initial
+potential $6 + 4|[0, n]|$.
+
+In example \emph{fig\_4\_4} it is essential that $m$ is positive.
+That ensures that we can obtain constant potential for the interval
+size $|[0,i]|$ in the else branch of the conditional since $|[0,i]|$
+decreases.  Example \emph{fig\_4\_5} is one of the three examples that
+we can not handle automatically.  The reasoning is based on the fact
+that the boolean value of the test \code{dir==fwd} does not change
+during the iteration of the loop.  As a result, the variable $i$ is
+either counted down to $0$ or up to $n$.  Our tool cannot handle
+example \emph{fig\_4\_5} because we don't do path sensitive reasoning.
+Note however that it would be more efficient to move the test
+\code{dir==fwd} outside of the loop (this would be also done by an
+optimizing compiler).  The resulting program can be analyzer by our
+tool.
+
+Example \emph{ex1} from [GulwaniPLDI10] specifically focusses on the
+code in \emph{if} statement.  So we use the \emph{tick metric} and
+insert \code{_tick(1)} inside the if statement to derive a bound on
+the number of times the code in the if statement is executed.  Note
+that we cannot derive a bound for the whole program since the outer
+loop is executed a quadratic number of times.  Nevertheless it is
+straightforward to derive a bound on the number of ticks using the
+amortized approach: In the if statement we know that $n>0$ and assign
+$n=n-1$.  So we can use the potential of the interval size $|[0,n]|$
+to pay for the tick.
+
+We cannot analyze example \emph{ex2} for which previous work reported
+a linear bound [GulwaniPLDI10].  The reason is that this example is
+not terminating since the inner loop is not bounded.  The same is true
+for example \emph{ex5} from the same paper, which is not listed here.
+Example \emph{ex2} is similar to example \emph{nested\_single} and
+\emph{ex3} is a variant of example \emph{t47}.
 
 \begin{figure*}[t!]
  \setlength{\progwidth}{.28\linewidth}
@@ -2178,6 +2274,41 @@ $|[0, y]|$ ticks
 
 \paragraph{Recursive Functions}
 
+Our approach can naturally deal with mutually-recursive functions.
+The recursion patterns can be exactly the same that are used in
+iterations of loops.  In the following, we present three simple
+examples that illustrate the analysis of functions.
+
+Example \emph{t37} illustrates that the analyzer is able to perform
+inter-procedural size tracking.  The function \code{copy} adds the
+argument $x$ to the argument $y$ if $x$ is positive.  However, this
+addition is done in steps of $1$ in each recursive call.  The function
+\code{count\_down} recursively decrements its argument down to $0$.
+The derived bound $1 + 4|[0, x]| + 2|[0, y]|$ is for the function
+\code{_main} in which we first add $x$ to $y$ using the function
+\code{copy} and then count down the variable $y$ using the function
+\code{count\_down}.  The derived bound is tight.
+
+Example \emph{t39} uses mutual recursion.  The function
+\code{count\_down} is similar to the function with the same name in
+example \emph{t37}.  However, we do not count down to $0$ but to a
+variable $y$ that is passed as an argument and we call the function
+\code{count\_up} afterwards.  The function \code{count\_up} is dual to
+\code{count\_down}.  Here, we count up $y$ by $2$ and recursively call
+\code{count\_down}.  For the function $\_main$ that calls
+\code{count\_down(y,z)}, the analyzer computes the tight bound $1.67 +
+1.33 |[z,y]|$.
+
+Example \emph{t46} shows a program that uses and returns resources.
+Again, we use the \emph{tick metric} and the function \code{\_tick} to
+describe the resource usage.  The function \code{produce} produces
+$|[0,x]|$ resources, that is, in each of the $|[0,x]|$ iterations, it
+receives one resource unit.  Similarly, the function \code{consume}
+consumes $|[0,y]|$ resources.  The analyzer computes the tight bound
+$|[0,y]|$ for the function \code{\_main}.  This is only possible since
+amortized analysis naturally tracks the size changes to the variables
+$x$ and $y$, and the interaction between \code{consume} and
+\code{produce}.
 
 
 \begin{figure*}[t!]
