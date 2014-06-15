@@ -291,70 +291,90 @@ bounds.  \pref{sec:exper} contains the results of the experimental
 evaluation and \pref{sec:related} describes related research.
 
 
-\section{Amortized Analysis for C Programs}
+\section{Informal Account}
 \label{sec:inform}
 
-\subsection{Amortized Analysis}
-The idea that drives the design of our system is amortized analysis
-[XXX].  Say that a program $p$ evaluates on a program state $H$ by
-consuming $n$ resource units, we note that $(p, H) \Downarrow_n$.  The
-basic idea of amortized analysis is to define a potential function
-$\Phi$ that maps program states to non-negative numbers, such that
-$\Phi(H) \ge n$.
+In this section, we informally introduce the quantiatative program
+logic and the automatic amortized analysis for for Clight programs.
+The purpose of this section is to build some intuition that should
+make the following sections, which contain more details, easy to read.
 
-Since imperative programs can be composed we must enrich
-the judgement $(\_, \_) \Downarrow_{\_}$ to talk about the heap
-resulting from the program execution $H'$.  So we now write
-$(p, H) \Downarrow_n H'$ to say that $H'$ results from $p$'s
-execution.  We now use two potential functions, one
-that applies before the execution, and one that applies
-after.  The two functions must respect the natural relation
-$\Phi(H) \ge n + \Phi'(H')$.  Intuitively speaking, $\Phi$ must
-give enough \emph{potential} to, both, finish the computation
-and pay for $\Phi'$ on the resulting heap. That way, if $(H, p_1) \Downarrow_n H'$
-and $(H', p_2) \Downarrow_m H''$, we get $\Phi(H) \ge
-n + \Phi'(H')$ and $\Phi'(H') \ge m + \Phi''(H'')$, which
-can be composed to give $\Phi(H) \ge (n + m) + \Phi''(H'')$.
-What we have observed is that, if we define $\Phi \vdash p \dashv \Phi'$
-to be
+\subsection{Quantitative Hoare Logic}
+
+The idea that drives the design of our system is amortized analysis
+[XXX].  Assume that a program $p$ executes on a stating state
+$\state_0$ and consumes $n$ resource units of some quantity we are
+interested in.  We denote that by writing $(p, \state_0)
+\Downarrow_n$.  The basic idea of amortized analysis is to define a
+potential function $\Phi$ that maps program states to non-negative
+numbers and to show that $\Phi(\state) \geq n$ if $\state$ is a
+program state such that such that $(p, \state) \Downarrow_n$.
+
+Since programs can be composed we must enrich the evaluation judgement
+$(p, \state) \Downarrow_{n}$ to talk about the state resulting from
+the program execution.  We write $(p, \state) \Downarrow_n \state'$ to
+say that $\state'$ is the program state after the execution of $p$ in
+starting state $\sigma$.  We now use two potential functions, one that
+applies before the execution, and one that applies after.  The two
+functions must respect the relation $\Phi(\state) \ge n +
+\Phi'(\state')$ for all states $\state$ and $\state'$ such that $(p,
+\state) \Downarrow_n \state'$.  Intuitively, $\Phi(\state)$ must
+provide enough \emph{potential} for, both, paying for resource cost of
+the computation and paying for the potential $\Phi'(\state')$ on the
+resulting state $\state'$. That way, if $(\state, p_1) \Downarrow_n
+\state'$ and $(\state', p_2) \Downarrow_m \state''$, we get
+$\Phi(\state) \ge n + \Phi'(\state')$ and $\Phi'(\state') \ge m +
+\Phi''(\state'')$.  This can be composed to $\Phi(\state) \ge (n + m)
++ \Phi''(\state'')$.  Note that the initial potential function $\Phi$
+provides an upper bound on the resource consumption of the whole
+program.  What we have observed is that, if we define $\htriple{\Phi}
+{p}{\Phi'}$ to mean
 $$
-\forall H\,n\,H',~(H, p)\Downarrow_n H' \implies \Phi(H) \ge
-n + \Phi'(H'),
+\forall \state, n, \state' : (\state, p) \Downarrow_n \state' \implies \Phi(\state) \ge
+n + \Phi'(\state')
 $$
-then we get the following familiar looking rule:
+then we get the following familiar looking rule.
 $$
 \RuleNolabel
-{\Phi \vdash p_1 \dashv \Phi' \\ \Phi' \vdash p_2 \dashv \Phi''}
-{\Phi \vdash p_1; p_2 \dashv \Phi''}
-.
+{\htriple{\Phi}{p_1}{\Phi'} \\ \htriple{\Phi'}{p_2}{\Phi''}}
+{\htriple{\Phi} {p_1; p_2}  {\Phi''}}
 $$
-Similarly, other language constructs contrain the potential
-functions to respect more rules that look very similar to
-Hoare logic or effect systems rules.  By fixing the shape of
-a potential function $\Phi$, it becomes possible to leverage
-existing tools to help finding a pair of potential functions
-for an arbitrary program.  This is explained in further details
-in the following sections.
+%
+Similarly, other language constructs lead to rules for the potential
+functions that look very similar to Hoare logic or effect systems
+rules.  This rules enable to interactively reason about resource usage
+in a flexible and compositional way, which, as a side effect, produces
+a certificate for the derived resource bound.
 
-We say that the analysis is amortized because the use of a
-potential function $\Phi$ gives the flexibility to amortize some
-operations.  For example, if heaps are simple mappings from
-$\{\code x, \code y\}$ to natural numbers, we have the following
-judgement (provided that $H~\code x \ge H~\code y \ge 0$ initially)
+\paragraph{Automatic Amortized Analysis}
+
+By fixing the shape of a potential function $\Phi$, it becomes
+possible to leverage existing tools to help finding a pair of
+potential functions for an arbitrary program.  This is explained in
+further details in the following sections.
+
+We say that the analysis is amortized because the use of a potential
+function $\Phi$ gives the flexibility to amortize some operations.
+For example, if program states are simple mappings from variables to
+natural numbers, we have the following judgement (provided that
+initially $\state(\code x) \ge \state(\code y) \ge 0$).
 $$
-(\Phi := \lambda H.~2\cdot(H~\code x) + 10)
-\vdash \code x = \code x - \code y \dashv
-(\Phi' := \lambda H'.~2\cdot(H'~\code x) + 2\cdot(H'~\code y) + 10).
+\htriple
+{\lambda \state . \, 2 {\cdot} \state (\code x) + 10}
+{\code{ x = x -  y}}
+{\lambda \state . \, 2 {\cdot} \state(\code x) + 2 {\cdot} \state(\code y) + 10}
 $$
-This must be understood as a motion of potential from $\code x$
-to $\code y$. If some resource is consumed $\code y$ times afterwards, we
-can now use $\code y$'s potential to pay for it. But interestingly, the
-initial potential function $\Phi$ only talks about~$\code x$: the potential
-function allowed us to impart the cost of the subsequent resource
-consumptions on the variable~$\code x$.
-This flexibility combined with intelligent decisions on potential
-motions allow our tool to discover linear invariants for surprisingly
-convoluted programs.
+This must be understood as a motion of potential from the
+variable~$\code x$ to the variable~$\code y$. If some resource is
+consumed $\code y$ times afterwards, we can then use $\code y$'s
+potential to pay for it. However, the initial potential function
+$\Phi$ only refers to the variable~$\code x$: the potential function
+allows us to pass on the cost of the subsequent resource consumption
+to~$\code x$.  This flexibility combined with intelligent decisions on
+potential motions allow our tool to discover linear invariants for
+surprisingly convoluted programs.
+
+
 
 \subsection{Motivating Examples}
 
@@ -1360,7 +1380,7 @@ http://www.informit.com/articles/article.aspx?p=2213858
 \appendix
 
 \section{Catalog of Automatically Analyzed Programs}
-\lable{app:cat}
+\label{app:cat}
 
 In this appendix we provide a non-exhaustive catalog of classes of
 programs that can be automatically analyzed by our system.  For
@@ -2385,3 +2405,9 @@ $XXX$
 
 
 \end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% mode: flyspell
+%%% TeX-master: t
+%%% End: 
