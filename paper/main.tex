@@ -346,12 +346,30 @@ rules.  This rules enable to interactively reason about resource usage
 in a flexible and compositional way, which, as a side effect, produces
 a certificate for the derived resource bound.
 
-\paragraph{Automatic Amortized Analysis}
+We have implemented and proved sound such a quantitative Hoare for
+CompCert Clight in the Coq Proof Assistant.  Because we use a shallow
+embedding in Coq, every function that can be expressed in Coq can in
+principle be used as a resource bound.  We can use the logic to prove
+a concrete bound for a given resource metric, or a bound that is
+parametric in set of resource metrics.  It is also possible to
+incorporate boolean preconditions into the bounds to express that the
+bound is only valid for a certain class of inputs.  To this end, we
+allow the potential function $\Phi$ in the pre and post conditions to
+take non-negative number or $\infty$ (infinity) as values.  Infinity,
+plays the same role as $\bot$ in Hoare logic.  Boolean assertions can
+be embedded into potential functions by mapping $\bot$ to $\infty$ and
+$\top$ to $0$.
 
-By fixing the shape of a potential function $\Phi$, it becomes
-possible to leverage existing tools to help finding a pair of
-potential functions for an arbitrary program.  This is explained in
-further details in the following sections.
+It is for instance possible to derive the following quantitative
+triple that holds for all stack metrics $M$.  A stack metric assigns
+cost $0$ to all evaluation steps except function calls.  Before a call
+$f(x)$, we consume $M(f) > 0$ resources and after the call we return
+$-M(f)$ resources.  So $M(f)$ corresponds to the stack-frame size of
+the function $f$.
+$$
+XXX
+$$
+XXX explanation of triple XXX
 
 We say that the analysis is amortized because the use of a potential
 function $\Phi$ gives the flexibility to amortize some operations.
@@ -371,8 +389,27 @@ potential to pay for it. However, the initial potential function
 $\Phi$ only refers to the variable~$\code x$: the potential function
 allows us to pass on the cost of the subsequent resource consumption
 to~$\code x$.  This flexibility combined with intelligent decisions on
-potential motions allow our tool to discover linear invariants for
-surprisingly convoluted programs.
+potential motions allows us to design an automatic analysis to
+discover linear invariants for surprisingly convoluted programs.
+
+\subsection{Automatic Amortized Analysis}
+
+A program logic provides a principled foundation for statically
+analyzing programs.  However, program logics need to be supported by
+automatic methods to be useful practice.  That is why we developed a
+new automatic amortized analysis for deriving quantitative Hoare
+triples for common C programs.
+
+To this end, we fix the shape of the potential functions $\Phi$ so
+that it becomes possible to use \emph{linear programming} to compute a
+derivation in the logic.  If we assume that a program state $\state$
+simply maps variable to integers then we require
+$$
+\Phi(\state) = \sum_{x,y \in \dom{\state}} q_{(x,y)} {\cdot} |[\state(x),\state(y)]|
+$$
+where $q_{(x,y)} \in \Qplus$ and $|[a,b]| = \max(b-a,0)$.
+
+
 
 
 
