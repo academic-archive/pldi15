@@ -2133,45 +2133,46 @@ remaining potential $4 + 4|[0, n]|$ and the fact that $vb=0$ to
 establish the potential $4 + 4|[0, n]| + 2|[0,vb]|$ that serves as a
 loop invariant.  In the \emph{if branch} of the conditional, we use
 the constant potential $4$ of the invariant to pay for the two
-assignments ($2$) and the potential of $|0,vb|$ ($2$).  Since we also
-know that $|[0, n]|>0$ we obtain constant potential $4$ and establish
-the loop invariant again.  In the \emph{else branch}, we use the
-potential $2|[0,vb]|$ and the fact $vb>0$ to obtain $2$ potential
-units to pay for the assignment.  Since we have $4$ constant potential
-units left after the loop, we can subtract them from the initial
-potential $6 + 4|[0, n]|$.
+assignments ($2$ units) and the potential of $|[0,vb]|$ ($2$ units).
+Since we also know that $|[0, n]|>0$ we obtain constant potential $4$
+and establish the loop invariant again.  In the \emph{else} branch, we
+use the potential $2|[0,vb]|$ and the fact $vb>0$ to obtain $2$
+potential units to pay for the assignment.  Since we have $4$ constant
+potential units left after the loop, we can subtract them from the
+initial potential $6 + 4|[0, n]|$.
 
 In example \emph{fig\_4\_4} it is essential that $m$ is positive.
 That ensures that we can obtain constant potential for the interval
-size $|[0,i]|$ in the else branch of the conditional since $|[0,i]|$
-decreases.  Example \emph{fig\_4\_5} is one of the three examples that
-we can not handle automatically.  The reasoning is based on the fact
-that the boolean value of the test \code{dir==fwd} does not change
-during the iteration of the loop.  As a result, the variable $i$ is
-either counted down to $0$ or up to $n$.  Our tool cannot handle
-example \emph{fig\_4\_5} because we don't do path sensitive reasoning.
-Note however that it would be more efficient to move the test
-\code{dir==fwd} outside of the loop (this would be also done by an
-optimizing compiler).  The resulting program can be analyzer by our
+size $|[0,i]|$ in the \emph{else} branch of the conditional since
+$|[0,i]|$ decreases.  Example \emph{fig\_4\_5} is one of the three
+examples that we can not handle automatically.  The execution is
+bounded because the boolean value of the test \code{dir==fwd} does not
+change during the iteration of the loop.  As a result, the variable
+$i$ is either counted down to $0$ or up to $n$.  Our tool cannot
+handle example \emph{fig\_4\_5} because we don't do path sensitive
+reasoning.  Note however that it would be more efficient to move the
+test \code{dir==fwd} outside of the loop (this would be also done by
+an optimizing compiler).  The resulting program could be analyzer by our
 tool.
 
 Example \emph{ex1} from [GulwaniPLDI10] specifically focusses on the
-code in \emph{if} statement.  So we use the \emph{tick metric} and
+code in the \emph{if} statement.  So we use the \emph{tick metric} and
 insert \code{_tick(1)} inside the if statement to derive a bound on
 the number of times the code in the if statement is executed.  Note
 that we cannot derive a bound for the whole program since the outer
 loop is executed a quadratic number of times.  Nevertheless it is
 straightforward to derive a bound on the number of ticks using the
 amortized approach: In the if statement we know that $n>0$ and assign
-$n=n-1$.  So we can use the potential of the interval size $|[0,n]|$
+\code{n=n-1}.  So we can use the potential of the interval size $|[0,n]|$
 to pay for the tick.
 
 We cannot analyze example \emph{ex2} for which previous work reported
 a linear bound [GulwaniPLDI10].  The reason is that this example is
 not terminating since the inner loop is not bounded.  The same is true
 for example \emph{ex5} from the same paper, which is not listed here.
-Example \emph{ex2} is similar to example \emph{nested\_single} and
-\emph{ex3} is a variant of example \emph{t47}.
+Finally, example \emph{ex2} is similar to example
+\emph{nested\_single}, and \emph{ex3} is a variant of example
+\emph{t47}.
 
 \begin{figure*}[t!]
  \setlength{\progwidth}{.28\linewidth}
@@ -2282,7 +2283,7 @@ argument $x$ to the argument $y$ if $x$ is positive.  However, this
 addition is done in steps of $1$ in each recursive call.  The function
 \code{count\_down} recursively decrements its argument down to $0$.
 The derived bound $1 + 4|[0, x]| + 2|[0, y]|$ is for the function
-\code{_main} in which we first add $x$ to $y$ using the function
+\code{\_main} in which we first add $x$ to $y$ using the function
 \code{copy} and then count down the variable $y$ using the function
 \code{count\_down}.  The derived bound is tight.
 
@@ -2292,7 +2293,7 @@ example \emph{t37}.  However, we do not count down to $0$ but to a
 variable $y$ that is passed as an argument and we call the function
 \code{count\_up} afterwards.  The function \code{count\_up} is dual to
 \code{count\_down}.  Here, we count up $y$ by $2$ and recursively call
-\code{count\_down}.  For the function $\_main$ that calls
+\code{count\_down}.  For the function $\_main$, which calls
 \code{count\_down(y,z)}, the analyzer computes the tight bound $1.67 +
 1.33 |[z,y]|$.
 
@@ -2334,7 +2335,20 @@ $XXX$
 
 $XXX$
 \\[.7\baselineskip]
-      {\bf GCD}
+      {\bf Greatest Common Divisor}
+    \end{center}
+  \end{minipage}
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+ XXX
+   \end{lstlisting}
+
+$XXX$
+\\[.7\baselineskip]
+      {\bf Quick Sort}
     \end{center}
   \end{minipage}
 
