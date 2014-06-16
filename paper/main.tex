@@ -401,168 +401,80 @@ new automatic amortized analysis for deriving quantitative Hoare
 triples for common C programs.
 
 To this end, we fix the shape of the potential functions $\Phi$ so
-that it becomes possible to use \emph{linear programming} to compute a
-derivation in the logic.  If we assume that a program state $\state$
-simply maps variable to integers then we require
+that it becomes possible to use \emph{linear programming} (LP) to
+compute a derivation in the logic.  If we assume that a program state
+$\state$ simply maps variable to integers then we require
 $$
-\Phi(\state) = \sum_{x,y \in \dom{\state}} q_{(x,y)} {\cdot} |[\state(x),\state(y)]|
+\Phi(\state) = q_0 + \sum_{x,y \in \dom{\state}} q_{(x,y)} {\cdot} |[\state(x),\state(y)]|
 $$
-where $q_{(x,y)} \in \Qplus$ and $|[a,b]| = \max(b-a,0)$.
+where $q_{(x,y)} \in \Qplus$ and $|[a,b]| = \max(b-a,0)$.  Note that
+$q_0$ is the constant potential and that we treat constants as program
+variables.  For instance, we always have $q_{(0,x)}|[0,x]|$ as a
+component of $\Phi(\state)$ if $x \in \dom{\state}$.
 
-
-
-
-
-\subsection{Motivating Examples}
-
-We now present a representative set of examples that can be
-handled by our tool.  The bounds that are given are for the number
-of ``base statements'' executed by the program, that is, the number
-of assertions, skip and assignment statements executed.  The
-bounds are given as literal expressions where a variable name {\tt x}
-represents the initial value of this variable.
-
-\paragraph{Simple loops.} The simplest loop scheme that is in
-use in typical imperative programs is counting upwards or
-downwards to a given bound N.  The two example programs
-are given below, on their right is the bound inferred by our analysis.
-\begin{center}
-\begin{tabular}{p{0.7\textwidth} | p{0.2\textwidth} }
-\lstinline|while x > N ( x = x - 1 )| & $|{\tt N} -  {\tt x}|$ \\
-\lstinline|while x < N ( x = x + 1 )| & $|{\tt N} -  {\tt x}|$ \\
-\end{tabular}
-\end{center}
-
-It is also frequent to iterate every $n$ elements in an array, also
-in this simple case our analysis works without any problem.  Note
-however that if we increment using a variable, it might very well be
-possible that the program diverges!  In this situation no worst
-case bound can be given and the analysis correctly fails.
-\begin{center}
-\begin{tabular}{p{0.7\textwidth} | p{0.2\textwidth} }
-\lstinline|while x <= -2 ( x = x + 2 )| & $| {\tt x} | / 2$ \\
-\lstinline|while x <= z - y ( x = x + y )| & Infeasible \\
-\lstinline|assert y > 0; while x <= z - y ( x = x + y )| & $1 + |{\tt x} - {\tt z}|$
-\end{tabular}
-\end{center}
-In the last example, the constant 1 is added to the loop bound
-to account for the initial \texttt{assert} that consumes one
-step.  Also, since the bound is for the worst case, it is tight
-only when {\tt y} is 1.
-
-\paragraph{In the literature.}
-The two examples below are taken from Gulwani's paper~\cite{Gulwani-speed}.
-They are both handled by the Speed tool but require inference of a so-called
-disjunctive invariant.  In the abstract interpretation community, these
-invariants are known to be notoriously difficult to handle.
-
-\begin{minipage}{0.45\textwidth}
+We then develop an inference rule for each syntactic construct that
+derives sound triples $\htriple{\Phi}p{\Phi'}$ in the quantitative
+logic but enables inference using and LP solver.  This idea is best
+explained by example.  Assume for the remainder of this section that
+we are interested in bounding the number of \emph{ticks} in a program.
+In other words, we use a resource metric that assigns cost $n$ to the
+function call \code{tick(n)} and cost $0$ to all other operations.
+The following example can then be bounded by $|[x,y]|$.
 \begin{lstlisting}
-while x < n
-  if y < m    y = y + 1
-  else        x = x + 1
+  while (x<y) {x=x+1; tick(1);}
 \end{lstlisting}
+To derive this bound in our automatic amortized analysis, we start
+with the initial potential $\Phi_0 = |[x,y]|$ (short for
+$\Phi_0(\state) = |[\state(x),\state(y)]|$) which we also use as the
+loop invariant.  For the loop body we then (like in Hoare logic) have
+to derive a triple like
+$\htriple{\Phi_0}{\code{x=x+1;tick(1)}}{\Phi_0}$.  However, we can
+only do so if we exploit the fact that $x<y$ at the beginning of the
+loop body.  The reasoning then works as follows.  We start with the
+potential $|[x,y]|$ and the fact that $|[x,y]| > 0$ before the
+assignment.  If we denote the update version of $x$ after the
+assignment by $x'$ then the relation $|[x,y]| = |[x',y]| + 1$ between
+the potential before and after the assignment \code{x=x+1} holds.
+This means that we have the potential $|[x,y]| + 1$ before the
+statement $tick(1)$.  Since \code{tick(1)} consumes one resource unit,
+we end up with potential $|[x,y]|$ after the loop body and have
+established the loop invariant again.
+
+More formally, we develop (in section XXX) a judgement 
 $$
-|{\tt m} - {\tt y}| + |{\tt n} - {\tt x}|
+\Gamma; Q \vdash S \dashv Q'; \Gamma'
 $$
-\end{minipage}
-\begin{minipage}{0.45\textwidth}
+such that $\Gamma$ contains logical assertions like $x<y$ that we
+collect along the conditional branches of the program and $Q$ is a
+family of coefficents $Q = (q_{(a,b)})_{a,b \in \text{scope}}$ that is
+indexed by the variables that are currently in scope.  The logical
+assertions in $\Gamma$ are of the form XXXX.  They are only used to
+determine at the assignment if we can extract constant potential to
+pay for future cost.  It is important to note that the reasoning the
+assertions in $\Gamma$ are very basic.  We do not perform any fixpoint
+computations or invariants.
+
+Note that our notion of a potential function is a refinement of the
+concept of a ranking function.  A potential function can be used like
+a ranking function if we use the tick metric and add \code{tick(1)} to
+every back edge (loops and function calls) of the program.  However, a
+potential function is more flexible.  For example, we can use a
+potential function to prove that the following program does not
+consume any resources in the tick metric.
 \begin{lstlisting}
-while x < n
-  if z > x    x = x + 1
-  else        z = z + 1
+  while (x<y) {tick(-1); x=x+1; tick(1);}
 \end{lstlisting}
-$$
-|{\tt n} - {\tt x}| + |{\tt n} - {\tt z}|
-$$
-\end{minipage}
-
-\hspace{1ex}
-
-While the first
-example is simple to understand, the second one is much more
-tricky and trying to understand how it actually works is quite challenging.
-However, with the amortized analysis in mind, using the potential transfer
-reasonning, it is almost trivial to prove the termination.  While the Speed
-tool has to find a fairly involved invariant for the loop, our tool is simply
-reasoning locally and works without any special trick.
-%
-Our analysis handles without problems all the other examples
-in~\cite{Gulwani-speed} that have a linear bound.  Here is
-a quick review of some of them together with the bounds we
-inferred.
-
-\begin{minipage}[b]{0.30\textwidth}
+Similarly we can prove that the following program can be bounded by
+$10|[x,y]|$.  In both cases, we reason exactly like in the first
+version of the while loop to prove the bound.  Of course, such loops
+with different notations can be seamlessly combined in a larger
+program.
 \begin{lstlisting}
-while x < n
-  while x < n
-    x = x + 1
+  while (x<y) {x=x+1; tick(10);}
 \end{lstlisting}
-$$
-|{\tt x} - {\tt n}|
-$$
-\end{minipage}
-\begin{minipage}[b]{0.30\textwidth}
-\begin{lstlisting}
-while x < n (x = x + 1);
-while x < n (x = x + 1)
-\end{lstlisting}
-$$
-|{\tt x} - {\tt n}|
-$$
-\end{minipage}
-\begin{minipage}[b]{0.30\textwidth}
-\begin{lstlisting}
-while x < n
-  ( while y < m (y = y+1)
-  ; x = x + 1 )
-\end{lstlisting}
-$$
-|{\tt x} - {\tt n}|
-+|{\tt y} - {\tt m}|
-$$
-\end{minipage}
 
-\paragraph{Amortized reasonning.}
-The two examples below show the power of amortized reasoning.
-Because they essentially rely on an amortized reasonning we believe
-that our tool is the only one able to deal with them.
-
-\begin{minipage}[b]{0.45\textwidth}
-\begin{lstlisting}
-assert y >= 1;
-while x + y <= N
-  ( x = x + y
-  ; z = y; z = z + 4
-  ; while z > 0 ( z = z - 1 ) )
-\end{lstlisting}
-$$
-1 + 8\,|{\tt N} - {\tt x}|
-$$
-\end{minipage}
-\begin{minipage}[b]{0.45\textwidth}
-\begin{lstlisting}
-while x > 0
-  ( x = x - 1
-  ; if ?
-      while s > 0 ( s = s - 1 )
-    else s = s + 1 )
-\end{lstlisting}
-$$
-3\,|{\tt x}| + |{\tt s}|
-$$
-\end{minipage}
-
-\hspace{1ex}
-
-Maybe surprisingly, the two examples have linear bounds.  In the first one, the
-worst case is when {\tt y} is 1, in this situation the inner loop will perform 5 times
-$|{\tt N} - {\tt x}|$ iterations. Indeed, for each decrement of {\tt x}, {\tt z} is set
-to 5 and iterated over.  The second example is classic in the amortized analysis
-community, it is the original example from Tarjan's paper~\cite{Tarjan-amort} that
-non deterministically pushes one element on a stack or pops many elements from
-that stack.  In the example source code, the stack depth is represented by the
-variable {\tt s} and the number of iterations is ruled by the initial value of {\tt x}.
+To understand how the analysis works, it is instructive to look at some
+more involved examples.  
 
 \section{Syntax}
 
@@ -1414,6 +1326,7 @@ http://www.informit.com/articles/article.aspx?p=2213858
 % Any opinions, findings, and conclusions contained in this document are
 % those of the authors and do not reflect the views of these agencies.
 
+\cleardoublepage
 \appendix
 
 \section{Catalog of Automatically Analyzed Programs}
@@ -1421,7 +1334,7 @@ http://www.informit.com/articles/article.aspx?p=2213858
 
 In this appendix we provide a non-exhaustive catalog of classes of
 programs that can be automatically analyzed by our system.  For
-simplicity, we use cost metric that counts cost $1$ for assignments
+simplicity, we use a cost metric that counts cost $1$ for assignments
 and cost $0$ for all other operations.  Sometimes we also use the
 \emph{ticks metric} if we want to discuss features like returning
 resources.  Of course, the examples can also be analyzed with any other
@@ -1506,7 +1419,7 @@ $3|[0,x]| + |[0,y]|$
 while (n<0) {
   n=n+1;
   y=y+1000;
-  while (y>=100){
+  while (y>=100 && *){
     y=y-100;
   }
 }
@@ -1586,7 +1499,7 @@ $1004|[y,x]|+|[x,0]|+|[0,y]|$
   }
    \end{lstlisting}
 
-$1+3|[0,x]|$
+$3|[0,x]|$
 \\[.7\baselineskip]
       {\bf t15}
     \end{center}
@@ -1706,17 +1619,19 @@ $2 + 2|[0, n]|$
 
 \paragraph{Amortization and Compositionality}
 
-\pref{fig:cat1} shows code snippets that need amortization are
-compositionality to obtain a whole program bound.  
+Figures~\ref{fig:cat1a}, \ref{fig:cat1b}, and~\ref{fig:cat1c} show
+code snippets that need amortization are compositionality to obtain a
+whole program bound.
 
 Example \emph{t07} demonstrates two different features of the
 analysis.  For one thing it shows that we can precisely track size
 changes inside loops.  In the first loop, we increment $y$ by $2$ in
-each of the $|[0,x]|$ iterations.  For another thing it shows that we
-automatically recognize dead code if we find conflicting assertions on
-a branching path: After the second loop we know $y \leq 0$ and as a
-result can assign arbitrary potential inside the third loop where we
-know that $y>0$.  As a result, we obtain a tight bound.
+each of the $|[0,x]|$ iterations.  An in the second loop, we decrement
+$y$.  For another thing it shows that we automatically recognize dead
+code if we find conflicting assertions on a branching path: After the
+second loop we know $y \leq 0$ and as a result can assign arbitrary
+potential inside the third loop where we know that $y>0$.  As a
+result, we obtain a tight bound.
 
 Example \emph{t08} shows the ability of the analysis to handle
 negative and non-negative numbers.  Note that there are no
@@ -1731,21 +1646,21 @@ is $y \geq c$ before assigning $y = y - c$.
 In example \emph{t10} we also do not restrict the inputs $x$ and $y$.
 They can be negative, positive, or zero.  The star {\tt *} in the
 conditional, stands for an arbitrary assertion.  In each branch of the
-conditional we can obtain a constant potential $1$ since the interval
+conditional we can obtain the constant potential $1$ since the interval
 size $|[y,x]|$ is decreasing.
 
 Example \emph{t13} shows how amortization can be used to handle tricky
 nested loops.  The outer loop is iterated $|[0,x]|$ times.  In the
 conditional, we either (the branching condition is again arbitrary)
 increment the variable $y$ or we execute an inner loop in which $y$ is
-counted back to $0$.  Then analysis computes a tight linear bound for
+counted back to $0$.  The analysis computes a tight linear bound for
 this program.  Again, the constants $0$ and $1$ in the inner loop can
 as well be replace by something more interesting, say $9$ and $10$
 like in example \emph{t08}.  Then we still obtain a tight linear
 bound.
 
 Example \emph{t27} is similar to example \emph{t13}.  Instead of
-decrements the variable $x$ in the outer loop we this time increment
+decrementing the variable $x$ in the outer loop we this time increment
 the variable $n$ till $n = 0$.  In each of the $|[n,0]|$ iterations,
 we increment the variable $y$ by $1000$.  We then execute an inner
 loop that increments $y$ by $100$ until $y=0$.  The analysis can
@@ -1756,7 +1671,7 @@ Example \emph{t28} is particularly interesting.  In the first loop we
 decrement the size $|[y,x]|$.  However, we also shift the interval
 $[y,x]$ to the interval $[y+1000,x+1000]$.  The analysis can derive
 that this does not change the size of the interval and computes the
-tight loop bound $3|[y,x]|$.  The additional to loops are in the
+tight loop bound $3|[y,x]|$.  The additional two loops are in the
 program to show that the size tracking in the first loop works
 accurately.  The second loop is executed $|[0,y]| + 1000|[y,x]|$ times
 in the worst case.  The third loop is executed $|[x,0]| + |[y,x]|$ in
@@ -1767,19 +1682,18 @@ bound.  Example \emph{t15} is such a case.  We assume here that the
 input variable $y$ is non-negative and write \code{assert(y>=0)}.  The
 semantic of \code{assert} is that it has no effect if the assertion is
 true and that the program is terminated without further cost
-otherwise.  The cost of an assert is $1$ resource unit in our cost
-metric.  If we enter the loop then we know that $x>0$ and we can
-obtain constant potential from the assignment $x=x-1$.  After the
+otherwise.  If we enter the loop then we know that $x>0$ and we can
+obtain constant potential from the assignment \code{x=x-1}.  After the
 assignment we know that $x\geq y$ and $y\geq 0$.  As a consequence, we
-can share the potential $3[0,x]$ before the assignment $x=x-y$ between
-$3|[0,x]|$ and $3|0,y|$ after the assignment.  In this way, we derive
-a tight linear bound.
+can share the potential $3|[0,x]|$ before the assignment \code{x=x-y}
+between $3|[0,x]|$ and $3|0,y|$ after the assignment.  In this way, we
+derive a tight linear bound.
 
 Example \emph{t16} is an extension of example \emph{t15}. We again
 assume that $y$ is non-negative and use the same mechanism to iterate
 the outer loop as in \emph{t15}.  In the inner loop, we also count the
 variable $z$ down to zero and perform $|[0,z]|$ interations.  However,
-insead of assigning $z=y$, we assign $z=2y+100$.  The analysis
+instead of assigning \code{z=y}, we assign \code{z=2y+100}.  The analysis
 computes the tight linear bound $1+2|[0,x]|+103|[y,x]|$.  The
 assignment of potential to the size interval $|[y,x]|$ in instead of
 $|[0,x]|$ is a random choice of the LP solver.  Other optimal
@@ -1788,7 +1702,7 @@ solutions of the linear program that the analyzer gernerates for
 $1+6|[0,x]|+99|[y,x]|$.  In fact, the $105$ potential units can be
 shared arbitrarily between the interval sizes $|[y,x]|$ and $|[0,x]|$
 as long as more than $1$ unit is assigned to $|[0,x]|$.  Since we know
-that $y\geq 0$ the choice of the LP solver is optimal but this seems
+that, $y\geq 0$ the choice of the LP solver is optimal but this seems
 to be a coincidence.
 
 Example \emph{t19} demonstrates another nice property that demonstates
@@ -1805,14 +1719,14 @@ bound such as $52 + |[-1,i]| + |[0,k]| + |[100,i]|$.
 Example \emph{t20} shows how we can handle programs in which bounds
 contain absolute values like $|x-y|$.  The first loop body is only
 executed if $x<y$ and the second loop body is only executed if $y<x$.
-The analyzers finds a tight bound.
+The analyzer finds a tight bound.
 
 At first sight, example \emph{t30} appears to be a simple loop that
 decrements the variable $x$ down to zero.  However, a closer look
 reveals that the loop actually decrements both input variables $x$ and
 $y$ down to zero before terminating.  In the loop body, first $x$ is
 decremented by one.  Then the values of the variables $x$ and $y$ are
-switched using the local variable $t$ as a buffer.  Out analysis
+switched using the local variable $t$ as a buffer.  Our analysis
 infers the tight bound $4|[0,x]|+4|[0,y]|$.
 
 Example \emph{t47} demonstrates how we can use integers as Booleans to
@@ -2166,7 +2080,7 @@ which our analyzer could not find a tight bound.  The first one
 \emph{ex5} (see [GulwaniPLDI10]), from [GulwaniPLDI10] were described
 to have a linear bound but seem to be non-terminating.
 
-Examples \emph{fig2\_1} and \emph{fig2\_2} are taken from Gulwani' et
+Examples \emph{fig2\_1} and \emph{fig2\_2} are taken from Gulwani et
 al~\cite{Gulwani-speed}.  They are both handled by the SPEED tool but
 require inference of a \emph{disjunctive invariant}.  In the abstract
 interpretation community, these invariants are known to be notoriously
@@ -2179,7 +2093,7 @@ derive the tight bound $|[x, n]| + |[y, m]|$.
 Example \emph{fig2\_2} is more tricky and trying to understand how it
 works may be challenging.  However, with the amortized analysis in
 mind, using the potential transfer reasoning, it is almost trivial to
-prove the termination.  While the SPEED tool has to find a fairly
+prove a bound.  While the SPEED tool has to find a fairly
 involved invariant for the loop, our tool is simply reasoning locally
 and works without any clever tricks. We obtain the tight bound $|[x,
 n]| + |[z, n]|$.
