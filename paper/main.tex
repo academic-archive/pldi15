@@ -599,10 +599,9 @@ This injection is used implicitely in the semantics.
 \and \Rule{S:FunCall}
 { \Delta~f = ((a_1, \dots, a_n), S)
 \\ \llbracket e \rrbracket_H = \code{ptr}~b
-\\ (H +\!\!\!+ (a_i \mapsto \llbracket e_i \rrbracket_H)_i, S) \Downarrow_{(q,q')} \code{ret}~H'~v
+\\ ({\rm alloc}(H, a_i, \llbracket e_i \rrbracket_H), S) \Downarrow_{(q,q')} \code{ret}~H'~v
 }
-{ (H, e \gets f(e_1, \dots, e_n))
-\Downarrow^r_{M_f\cdot(q,q')} \code{seq}~(H'\,\backslash\,(a_i)_i)[b \mapsto v] }
+{ (H, e \gets f(e_1, \dots, e_n)) \Downarrow^r_{M_f\cdot(q,q')} \code{seq}~{\rm free}(H',a_i)[b \mapsto v] }
 
 \and \Rule{S:LoopSeq}
 { (H, S) \Downarrow_{(q_1, q_1')} \code{seq}~H'
