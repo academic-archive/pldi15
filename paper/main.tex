@@ -478,69 +478,68 @@ more involved examples.
 
 \section{Syntax}
 
-Let us now start the formal part of this work.  We begin by defining
-a proper syntax for the language we will be using later on.  This is
-a more algebraic version of the surface syntax used in the previous
-examples.
+For the sake of simplicity, our quantitative program logic
+applies to the Clight language.  This language is the most
+abstract intermediate language used by CompCert.  It is very
+similar to vanilla C but the expressions are free of
+side-effects and there is only one looping construct.
 %
-\begin{mathpar}
-
-S := \code{skip}
-\mid \code{assert}(C)
-\mid x \gets E
-\mid \code{while}(C)~S
-\mid \code{if}(C)~S~\code{else}~S
+\begin{align*}
+S &:= \code{assert}~E
+\mid \code{skip}
+\mid \code{break}
+\mid \code{return}~E
+\mid E \gets E
+\mid E \gets f(E^*)
+\\
+& \mid \code{loop}~S
+\mid \code{if}(E)~S~\code{else}~S
 \mid S;S
+\end{align*}
+%
+We added the builtin primitive $\code{assert}$ that checks
+if a condition is true before continuing the program
+execution.  This will be used to explicit invariants to the
+automatic analysis later.
 
-\and
+The expressions are left abstract in this presentation.  To
+present both the semantics and the program logic, we simply
+need an evaluation function that maps any $e \in E$ to
+a value $\llbracket e \rrbracket_H$ using $H$ as current
+heap.
 
-E := x \mid x \pm y
-\end{mathpar}
+\section{Semantics}
 
-Note that expressions are kept extremely simple, this will help
-greatly when designing the analysis.  Moreover, programs
-containing fancier expressions can easily be compiled to this
-restricted form.  For example $a \gets b + c - d$ is semantically
-equivalent to $a \gets b; a \gets a + c; a \gets a - d$ which
-fits in the above syntax.
+Values computed by evaluating expressions can be integers, or
+memory locations. In our semantics, integers have infinite
+precision.  While the program logic would perform as well on
+machine integers, our automatic analysis would be unsound.
+%
+\begin{align*}
+V &:= \code{int}~i \mid \code{ptr}~b
+\end{align*}
 
-The syntax of conditions, noted $C$, is left unspecified
-for the moment.  We will describe it later when the practical
-implementation details are provided.  The only semantic tool
-we need to deal with this unknown is an evaluation
-function $\llbracket \_ \rrbracket_{\_}$ such that, for any
-condition $C$ and any heap $H$ we have $\llbracket
-C \rrbracket_H \in \{ \top, \bot \}$.
-
-Another peculiarity is that there are no integer constants in the
-syntax.  Once again this is for the sake of simplicity.  In practice
-the concrete syntax recognizes ``variables'' like {\tt -4} or
-{\tt 60} as read only variables.  Any heap used later in the
-operational semantics will map these variables to their natural
-value.
-
-\section{Cost Semantics}
-
-The semantics for the syntax defined above needs to account
-for resource consumption.  To account for all kinds of resources
+To formally describe the cost of operation of a given
+program, our semantics tracks resource consumption while
+executing.  To account for all kinds of resources
 we leave it as a parameter of the semantics to be specified
 by the user.  This parameter, called a metric, is a tuple of rational
 numbers with the following form
 $$
 (
-M_k, M_s, M_a,
-M_w^1, M_w^2, M_w^3,
+M_a, M_s, M_b, M_r, M_u, M_f,
+M_l,
 M_c^1, M_c^2,
-M_s^1, M_s^2
-).
+M_q
+)
 $$
 Each of these rational numbers indicates the amount of resource
 consumed by an operation.  If one of these numbers is negative,
-it means that some resource is released by the program.
+it means that resources are released by the program.
 
 The general form of an evaluation judgement is
 $(H, S) \Downarrow_{(q,q')} X$.  It is similar to the judgement
-presented in the overview section appart  from the fact that
+presented in the introducing section appart from the fact that
 two resource numbers are tracked instead of one.  Intuitively
 $(q, q')$ means that $q$ resources units are necessary to execute
 the program and that $q'$ units are available after its execution.
@@ -566,9 +565,9 @@ operation, the same way resource freeing and allocation do not
 commute.
 With $(0, 0)$ as a neutral element, the above composition defines
 a monoid structure on $\mathbb Q_0^+ \times \mathbb Q_0^+$.
-It is possible to inject $q \in \mathbb Q$ in this monoid with by taking
-$(q, 0)$ if $q \ge 0$ and $(0, -q)$ otherwise.  This injection
-is used implicitely in the semantics.
+It is possible to inject $q \in \mathbb Q$ in this monoid by
+turning it into $(q, 0)$ if $q \ge 0$ and $(0, -q)$ otherwise.
+This injection is used implicitely in the semantics.
 
 \begin{figure}[ht!]
 \begin{mathpar}
@@ -577,56 +576,70 @@ is used implicitely in the semantics.
 { }
 { (H, S) \Downarrow_{(0,0)} \circ }
 
+\and \Rule{S:Assert}
+{ {\rm istrue}~\llbracket e \rrbracket_H}
+{ (H, \code{assert}~e) \Downarrow_{M_a} \code{seq}~H }
+
 \and \Rule{S:Skip}
 { }
-{ (H, \code{skip}) \Downarrow_{M_k} H }
+{ (H, \code{skip}) \Downarrow_{M_s} \code{seq}~H }
 
-\and \Rule{S:Assign}
+\and \Rule{S:Break}
 { }
-{ (H, x \gets e) \Downarrow_{M_s} H[x \mapsto \llbracket e \rrbracket_H] }
+{ (H, \code{break}) \Downarrow_{M_b} \code{brk}~H }
 
-\and \Rule{S:Assert}
-{ H \models C }
-{ (H, \code{assert}(C)) \Downarrow_{M_a} H }
+\and \Rule{S:Return}
+{ }
+{ (H, \code{return}~e) \Downarrow_{M_r} \code{ret}~H~\llbracket e \rrbracket_H }
 
-\and \Rule{S:WhileStop}
-{ \llbracket C \rrbracket_H = \bot }
-{ (H, \code{while}(C)~S) \Downarrow_{M_w^3} H }
+\and \Rule{S:Update}
+{ \llbracket e \rrbracket_H = \code{ptr}~b }
+{ (H, e \gets e') \Downarrow_{M_u} \code{seq}~H[b \mapsto \llbracket e' \rrbracket_H] }
 
-\and \Rule{S:WhileAbort}
-{  k < \llbracket x - y \rrbracket_H
-\\ (H, S) \Downarrow_{(q_1, q'_1)} \circ
+\and \Rule{S:FunCall}
+{ \Delta~f = ((a_1, \dots, a_n), S)
+\\ \llbracket e \rrbracket_H = \code{ptr}~b
+\\ (H +\!\!\!+ (a_i \mapsto \llbracket e_i \rrbracket_H)_i, S) \Downarrow_{(q,q')} \code{ret}~H'~v
 }
-{ (H, \code{while}(k < x - y)~S) \Downarrow_{M_w^1 \cdot (q_1, q'_1) } \circ }
+{ (H, e \gets f(e_1, \dots, e_n))
+\Downarrow^r_{M_f\cdot(q,q')} \code{seq}~(H'\,\backslash\,(a_i)_i)[b \mapsto v] }
 
-\and \Rule{S:WhileStep}
-{  \llbracket C \rrbracket_H = \top
-\\ (H, S) \Downarrow_{(q_1, q'_1)} H'
-\\ (H', \code{while}(C)~S) \Downarrow_{(q_2, q'_2)} X
-}
-{ (H, \code{while}(C)~S) \Downarrow_{M_w^1 \cdot (q_1, q'_1) \cdot M_w^2 \cdot (q_2, q'_2)} X }
+\and \Rule{S:LoopSeq}
+{ (H, S) \Downarrow_{(q_1, q_1')} \code{seq}~H'
+\\ (H', \code{loop}~S) \Downarrow_{(q_2, q_2')} X }
+{ (H, \code{loop}~S) \Downarrow_{(q_1, q_1') \cdot M_l \cdot (q_2, q_2')} X }
+
+\and \Rule{S:LoopBrk}
+{ (H, S) \Downarrow_{(q, q')} \code{brk}~H' }
+{ (H, \code{loop}~S) \Downarrow_{(q, q')} \code{seq}~H' }
+
+\and \Rule{S:LoopAbort}
+{ (H, S) \Downarrow_{(q, q')} X
+\\ \forall H.~X \neq \code{seq}~H \land X \neq \code{brk}~H }
+{ (H, \code{loop}~S) \Downarrow_{(q, q')} X }
 
 \and \Rule{S:IfThen}
 {  (H, S_1) \Downarrow_{(q, q')} X
-\\ \llbracket C \rrbracket_H = \top
+\\ {\sf istrue}~\llbracket C \rrbracket_H
 }
 { (H, \code{if}(C)~S_1~\code{else}~S_2) \Downarrow_{M_c^1 \cdot (q, q')} X }
 
 \and \Rule{S:IfElse}
 {  (H, S_2) \Downarrow_{(q, q')} X
-\\ \llbracket C \rrbracket_H = \bot
+\\ {\sf isfalse}~\llbracket C \rrbracket_H
 }
 { (H, \code{if}(C)~S_1~\code{else}~S_2) \Downarrow_{M_c^2 \cdot (q, q')} X }
 
 \and \Rule{S:Seq}
-{  (H, S_1) \Downarrow_{(q_1, q'_1)} H'
+{  (H, S_1) \Downarrow_{(q_1, q'_1)} \code{seq}~H'
 \\ (H', S_2) \Downarrow_{(q_2, q'_2)} X
 }
-{ (H, S_1; S_2) \Downarrow_{M_s^1 \cdot (q_1, q'_1) \cdot M_s^2 \cdot (q_2, q'_2)} X }
+{ (H, S_1; S_2) \Downarrow_{(q_1, q'_1) \cdot M_q \cdot (q_2, q'_2)} X }
 
 \and \Rule{S:SeqAbort}
-{ (H, S_1) \Downarrow_{(q,q')} \circ }
-{ (H, S_1; S_2) \Downarrow_{(q,q')} \circ }
+{ (H, S_1) \Downarrow_{(q,q')} X
+\\ \forall H.~X \neq \code{seq}~H}
+{ (H, S_1; S_2) \Downarrow_{(q,q')} X }
 
 \end{mathpar}
 \caption{Operational semantics of statements}
@@ -2051,7 +2064,7 @@ $2 |[0, n]|$
   flag=1;
   while (flag>0) {
     flag=0;
-    while (n>0) {
+    while (n>0 && *) {
       n=n-1;       
       flag=1;
     }
