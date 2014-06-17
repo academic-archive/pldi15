@@ -628,17 +628,17 @@ This injection is used implicitely in the semantics.
 
 \and \Rule{S:IfThen}
 {  (\state, S_1) \Downarrow_{(q, q')} O
-\\ {\sf istrue}~\llbracket C \rrbracket_\state
+\\ {\sf istrue}~\llbracket e \rrbracket_\state
 }
-{ (\state, \code{if}(C)~S_1~\code{else}~S_2)
+{ (\state, \code{if}(e)~S_1~\code{else}~S_2)
   \Downarrow_{M_c^1 \cdot (q, q')} O
 }
 
 \and \Rule{S:IfElse}
 {  (\state, S_2) \Downarrow_{(q, q')} O
-\\ {\sf isfalse}~\llbracket C \rrbracket_\state
+\\ {\sf isfalse}~\llbracket e \rrbracket_\state
 }
-{ (\state, \code{if}(C)~S_1~\code{else}~S_2)
+{ (\state, \code{if}(e)~S_1~\code{else}~S_2)
   \Downarrow_{M_c^2 \cdot (q, q')} O
 }
 
