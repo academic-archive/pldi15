@@ -396,7 +396,7 @@ discover linear invariants for surprisingly convoluted programs.
 
 A program logic provides a principled foundation for statically
 analyzing programs.  However, program logics need to be supported by
-automatic methods to be useful practice.  That is why we developed a
+automatic methods to be useful in practice.  That is why we developed a
 new automatic amortized analysis for deriving quantitative Hoare
 triples for common C programs.
 
@@ -413,15 +413,15 @@ variables.  For instance, we always have $q_{(0,x)}|[0,x]|$ as a
 component of $\Phi(\state)$ if $x \in \dom{\state}$.
 
 We then develop an inference rule for each syntactic construct that
-derives sound triples $\htriple{\Phi}p{\Phi'}$ in the quantitative
-logic but enables inference using and LP solver.  This idea is best
+derives sound triples $\htriple{\Phi}P{\Phi'}$ in the quantitative
+logic but enables inference by using an LP solver.  This idea is best
 explained by example.  Assume for the remainder of this section that
 we are interested in bounding the number of \emph{ticks} in a program.
 In other words, we use a resource metric that assigns cost $n$ to the
 function call \code{tick(n)} and cost $0$ to all other operations.
-The following example can then be bounded by $|[x,y]|$.
+The cost of the following example can then be bounded by $|[x,y]|$.
 \begin{lstlisting}
-  while (x<y) {x=x+1; tick(1);}
+while (x<y) {x=x+1; tick(1);} #\hfill \textnormal{(Example 1)}#
 \end{lstlisting}
 To derive this bound in our automatic amortized analysis, we start
 with the initial potential $\Phi_0 = |[x,y]|$ (short for
@@ -432,14 +432,36 @@ $\htriple{\Phi_0}{\code{x=x+1;tick(1)}}{\Phi_0}$.  However, we can
 only do so if we exploit the fact that $x<y$ at the beginning of the
 loop body.  The reasoning then works as follows.  We start with the
 potential $|[x,y]|$ and the fact that $|[x,y]| > 0$ before the
-assignment.  If we denote the update version of $x$ after the
+assignment.  If we denote the updated version of $x$ after the
 assignment by $x'$ then the relation $|[x,y]| = |[x',y]| + 1$ between
 the potential before and after the assignment \code{x=x+1} holds.
 This means that we have the potential $|[x,y]| + 1$ before the
-statement $tick(1)$.  Since \code{tick(1)} consumes one resource unit,
+statement \code{tick(1)}.  Since \code{tick(1)} consumes one resource unit,
 we end up with potential $|[x,y]|$ after the loop body and have
 established the loop invariant again.
 
+
+\begin{figure}[t]
+  \centering
+\begin{lstlisting}[mathescape]
+${\color{blue}%
+  \cdot; \, 0 + 1 {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \vdash }$
+while (x<y) {
+  ${\color{blue}%
+  x{<}y; \; 0 + 1 {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \vdash }$
+  x=x+1; 
+  ${\color{blue}%
+  \dashv x{\leq}y; \, 1 + 1 {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \vdash }$
+  tick(1);
+  ${\color{blue}%
+  \dashv x{\leq}y; \, 0 + 1 {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| }$
+}
+${\color{blue}%
+ \dashv x{\geq}y; 0 + 1 {\cdot} |[x,y]| + 0 {\cdot} |[y,x]|}$
+\end{lstlisting}
+  \caption{Derivation of a bound on the number of ticks for Example~1.}
+  \label{fig:ex1}
+\end{figure}
 More formally, we develop (in section XXX) a judgement 
 $$
 \Gamma; Q \vdash S \dashv Q'; \Gamma'
@@ -448,33 +470,171 @@ such that $\Gamma$ contains logical assertions like $x<y$ that we
 collect along the conditional branches of the program and $Q$ is a
 family of coefficents $Q = (q_{(a,b)})_{a,b \in \text{scope}}$ that is
 indexed by the variables that are currently in scope.  The logical
-assertions in $\Gamma$ are of the form XXXX.  They are only used to
-determine at the assignment if we can extract constant potential to
-pay for future cost.  It is important to note that the reasoning the
-assertions in $\Gamma$ are very basic.  We do not perform any fixpoint
-computations or invariants.
+context $\Gamma$ is simply a conjunction of inequalities between.  It
+is used to determine at the assignment if we can extract constant
+potential to pay for future cost.  It is important to note that the
+reasoning the assertions in $\Gamma$ are very basic.  We do not
+perform any fixpoint computations or invariants.  \pref{fig:ex1} shows
+the derivation for Example 1.  Note that the logical assertions in
+$\Gamma$ are only used in the assignment \code{x=x+1}.
+
+It would of course be possible to keep track more sophisticated
+assertions in the logical context $\Gamma$.  However, this simple form
+is sufficient for the examples we considered and we can efficiently
+decide queries such as $\Gamma \implies x<y \; ?$, which we are
+interested in.  Nevertheless, this logical part of our analysis system
+is orthogonal to the quantitative part and can be easily extended if
+necessary.
 
 Note that our notion of a potential function is a refinement of the
 concept of a ranking function.  A potential function can be used like
-a ranking function if we use the tick metric and add \code{tick(1)} to
-every back edge (loops and function calls) of the program.  However, a
-potential function is more flexible.  For example, we can use a
-potential function to prove that the following program does not
+a ranking function if we use the tick metric and add the statement
+\code{tick(1)} to every back edge of the program (loops and function
+calls).  However, a potential function is more flexible.  For example,
+we can use a potential function to prove that Example~2 does not
 consume any resources in the tick metric.
 \begin{lstlisting}
-  while (x<y) {tick(-1); x=x+1; tick(1);}
+  while (x<y) {tick(-1); x=x+1; tick(1);} #\hfill \textnormal{(Example 2)}#
 \end{lstlisting}
-Similarly we can prove that the following program can be bounded by
-$10|[x,y]|$.  In both cases, we reason exactly like in the first
-version of the while loop to prove the bound.  Of course, such loops
-with different notations can be seamlessly combined in a larger
-program.
+Similarly we can prove that Example~3 can be bounded by $10|[x,y]|$.
+In both cases, we reason exactly like in the first version of the
+while loop to prove the bound.  Of course, such loops with different
+notations can be seamlessly combined in a larger program.
 \begin{lstlisting}
-  while (x<y) {x=x+1; tick(10);}
+  while (x<y) {x=x+1; tick(10);} #\hfill \textnormal{(Example 3)}#
 \end{lstlisting}
-
+%
 To understand how the analysis works, it is instructive to look at some
 more involved examples.  
+
+XXX add up and down XXX
+
+
+\newlength{\progwidth}
+
+\begin{figure*}[t!]
+ \setlength{\progwidth}{.22\linewidth}
+  \centering
+  \begin{minipage}[b]{.20\linewidth}
+    \begin{center}
+   \begin{lstlisting}
+while (n>x) {
+  ${\color{blue}%
+  n{>}x; \, |[x, n]| {+} |[y, m]| \vdash }$
+  if (m>y) 
+    ${\color{blue}%
+    m{>}y; \, |[x, n]| {+} |[y, m]| \vdash }$
+    y = y+1;
+    ${\color{blue}%
+    \dashv \cdot ; \, 1 {+} |[x, n]| {+} |[y, m]| }$
+  else
+    ${\color{blue}%
+    n{>}x; \, |[x, n]| {+} |[y, m]| \vdash }$
+    x = x+1;
+    ${\color{blue}%
+    \dashv \cdot; \, 1 {+} |[x, n]| {+} |[y, m]| }$
+  ${\color{blue}%
+  \dashv \cdot; \, 1 {+} |[x, n]| {+} |[y, m]| \vdash }$
+  tick(1);
+  ${\color{blue}%
+  \dashv \cdot; \, |[x, n]| {+} |[y, m]| }$
+}
+   \end{lstlisting}
+
+$|[x, n]| + |[y, m]|$
+\\[.7\baselineskip]
+      {\bf speed\_1}
+    \end{center}
+  \end{minipage}
+%
+\hfill
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+
+while (x<n) {
+  ${\color{blue}%
+  x{<}n; \, |[x, n]| {+} |[z, n]| \vdash }$
+  if (z>x)
+    ${\color{blue}%
+    x{<}n; \, |[x, n]| {+} |[z, n]| \vdash }$
+    x=x+1;
+    ${\color{blue}%
+    \dashv \cdot; \, 1 {+} |[x, n]| {+} |[z, n]| }$
+  else
+    ${\color{blue}%
+    z{\leq}x, x{<}n; \, |[x, n]| {+} |[z, n]| \vdash }$
+    z=z+1;
+    ${\color{blue}%
+    \dashv \cdot; \, 1 {+} |[x, n]| {+} |[z, n]| }$
+  ${\color{blue}%
+  \dashv \cdot; \, 1 {+} |[x, n]| {+} |[z, n]| \vdash }$
+  tick(1);
+  ${\color{blue}%
+  \dashv \cdot; \, |[x, n]| {+} |[z, n]| }$
+  }
+   \end{lstlisting}
+
+$|[x, n]| + |[z, n]|$
+\\[.7\baselineskip]
+      {\bf speed\_2}
+    \end{center}
+  \end{minipage}
+%
+\hfill
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+  while (z-y>0) {
+    y = y+1;
+    tick(3);
+  }
+  while (y>9) {
+    y=y-10;
+    tick(1);
+  }
+   \end{lstlisting}
+
+$3.1|[y,z]| + 0.1|[0,y]|$
+\\[.7\baselineskip] 
+      {\bf t08}
+    \end{center}
+  \end{minipage}
+%
+\hfill
+%
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+while (n<0) {
+  n=n+1;
+  y=y+1000;
+  while (y>=100 && *){
+    y=y-100;
+    tick(5);
+  }
+  tick(9);
+}
+   \end{lstlisting}
+
+$59|[n,0]| + 0.05|[0,y]|$
+\\[.7\baselineskip]
+      {\bf t27}
+    \end{center}
+  \end{minipage}
+
+  \caption{Derivations of bounds on the number of ticks for
+    challenging examples.  In the potential functions, we only mention
+    the non-zero terms and in the logical context $\Gamma$ we only
+    mention assertions that we actually use in the reasoning.}
+  \label{fig:ex_list}
+\end{figure*}
+
+
 
 \section{Syntax}
 
@@ -1498,7 +1658,7 @@ http://www.informit.com/articles/article.aspx?p=2213858
 % Any opinions, findings, and conclusions contained in this document are
 % those of the authors and do not reflect the views of these agencies.
 
-\cleardoublepage
+\clearpage
 \appendix
 
 \section{Catalog of Automatically Analyzed Programs}
@@ -1519,7 +1679,6 @@ present an example but the analysis works for other constants as well.
 Note however that it is sometimes crucial that constants are positive
 (or negative) and that the same constant at different places.
 
-\newlength{\progwidth}
 
 \begin{figure*}[t!]
 \setlength{\progwidth}{.24\linewidth}
