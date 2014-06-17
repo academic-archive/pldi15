@@ -740,15 +740,15 @@ programs, and partial computations at the same time.
 { }
 { \Delta; B; R \vdash
 \htriple
-  { M_u + Q\,\state[x \mapsto \sem{e}_\state] }{ x \gets e }{ Q }
+  { \lambda \state.\,M_u + Q\,\state[x \mapsto \sem{e}_\state] }{ x \gets e }{ Q }
 }
 
 \and
 \Rule{L:Call}
 {
-  \Delta~f = \forall z.(P_f\,z, Q_f\,z) \\
-  P_f \, y \, (\sem{e_1}_\state,\dots,\sem{e_n}_\state) \models P \\
-  \forall v. (Q_f \, y \, v \models Q \, \sigma[x \mapsto v])
+  \Delta f = \forall z.(P_f\,z, Q_f\,z) \\
+  P \models P_f \, y \, (\sem{e_1}_\state,\dots,\sem{e_n}_\state) \land A \\
+  \forall v.\, (Q_f \, y \, v \land A \models \lambda \state.\, Q \, \sigma[x \mapsto v])
 }
 { \Delta; B; R \vdash
 \htriple
@@ -795,6 +795,46 @@ programs, and partial computations at the same time.
 { \Delta; B; R \vdash
 \htriple
   { P }{ \code{if}(e)~S_1~\code{else}~S_2 }{ Q }
+}
+
+\and
+\Rule{L:Weaken}
+{
+  P \models P' \\
+  \Delta; B'; R' \vdash
+  \htriple{ P' }{ S }{ Q' } \\
+  Q' \models Q \\
+  B' \models B \\
+  \forall v.\, (R'\,v \models R\,v)
+}
+{ \Delta; B; R \vdash
+\htriple{ P }{ S }{ Q }
+}
+
+\and
+\Rule{L:Frame}
+{ \Delta; B; R \vdash
+\htriple{ P }{ S }{ Q } \\
+  x \in \mathbb Q_0^+
+}
+{ \Delta; B + x; R + x \vdash
+\htriple{ P + x }{ S }{ Q + x }
+}
+
+\and
+\Rule{L:Extend}
+{ \forall f\,P_f\,Q_f.\,
+  \Delta'f = \forall z.(P_f\,z, Q_f\,z)
+  \rightarrow
+  \forall y.\,
+  (\Delta \cup \Delta'; \bot; Q_f\,y \vdash
+    \htriple{ P_f\,y }{ \delta f }{ \bot })
+\\
+  \Delta \cup \Delta'; B; R \vdash
+  \htriple{ P }{ S }{ Q }
+}
+{ \Delta; B; R \vdash
+\htriple{ P }{ S }{ Q }
 }
 
 \end{mathpar}
