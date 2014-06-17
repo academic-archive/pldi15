@@ -686,15 +686,14 @@ example when an assertion fails.  In that case the side condition of
 is {\sc S:Abort}.
 
 The busy result is also useful to handle diverging programs with big-step
-judgements.  In case a program does not terminate, there is no heap $H'$
-such that $(H, S)\Downarrow_{(q, q')} H'$.  The only possible way to
-conclude a big-step judgement is to use the {\sc S:Abort} rule at some
-point in the computation.  One alternative to this technique is to use
-coinductive semantics~\cite{Leroy-coind}, however, using the busy
-result is precise enough in our setting of quantitative resource analysis and
-allows to have only one soundness proof for both unsafe and
-non-terminating programs.  Indeed, stating a result for
-$(H, S) \Downarrow_{(q,q')} \circ$ covers unsafe programs, diverging
+judgements.  In case a program does not terminate, it is impossible to
+derive $(\state, S)\Downarrow_{(q, q')} O$ with $O \neq \circ$.  The only
+possible way to conclude a big-step judgement is to use the {\sc S:Abort}
+rule at some point in the computation.  One alternative to this technique
+is to use coinductive semantics~\cite{Leroy-coind}, however, using the busy
+result prevents duplication and allows to have only one soundness proof for
+both unsafe and non-terminating programs.  Indeed, stating a result for
+$(\sigma, S) \Downarrow_{(q,q')} \circ$ covers unsafe programs, diverging
 programs, and partial computations at the same time.
 
 
