@@ -706,7 +706,7 @@ programs, and partial computations at the same time.
 { }
 { \Delta; B; R \vdash
 \htriple
-  { Q \land \code{istrue}~\sem{e}_\state }
+  { Q \implies \code{istrue}~\sem{e}_\state }
   { \code{assert}~e }
   { Q }
 }
