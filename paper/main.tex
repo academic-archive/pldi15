@@ -603,8 +603,8 @@ This injection is used implicitely in the semantics.
   \code{seq}~\state[x \mapsto \llbracket e \rrbracket_\state]
 }
 
-\and \Rule{S:FunCall}
-{ \Delta~f = (x_1, \dots, x_n, S) \\
+\and \Rule{S:Call}
+{ \delta~f = (x_1, \dots, x_n, S) \\
   ((\state, x_i \mapsto \llbracket e_i \rrbracket_\state), S)
     \Downarrow_{(q,q')} \code{ret}~\state'~v
 }
@@ -698,6 +698,109 @@ programs, and partial computations at the same time.
 
 
 \section{Proof System}
+
+\begin{figure*}[t]
+\begin{mathpar}
+
+\Rule{L:Assert}
+{ }
+{ \Delta; B; R \vdash
+\htriple
+  { Q \land \code{istrue}~\sem{e}_\state }
+  { \code{assert}~e }
+  { Q }
+}
+
+\and
+\Rule{L:Skip}
+{ }
+{ \Delta; B; R \vdash
+\htriple
+  { M_s + Q }{ \code{skip} }{ Q }
+}
+
+\and
+\Rule{L:Break}
+{ }
+{ \Delta; B; R \vdash
+\htriple
+  { M_b + B }{ \code{break} }{ Q }
+}
+
+\and
+\Rule{L:Return}
+{ }
+{ \Delta; B; R \vdash
+\htriple
+  { M_r + R\,\sem{e}_\state }{ \code{return}~e }{ Q }
+}
+
+\and
+\Rule{L:Update}
+{ }
+{ \Delta; B; R \vdash
+\htriple
+  { M_u + Q\,\state[x \mapsto \sem{e}_\state] }{ x \gets e }{ Q }
+}
+
+\and
+\Rule{L:Call}
+{
+  \Delta~f = \forall z.(P_f\,z, Q_f\,z) \\
+  P_f \, y \, (\sem{e_1}_\state,\dots,\sem{e_n}_\state) \models P \\
+  \forall v. (Q_f \, y \, v \models Q \, \sigma[x \mapsto v])
+}
+{ \Delta; B; R \vdash
+\htriple
+  { M_f + P }
+  { x \gets f(e_1, \dots, e_n) }
+  { Q }
+}
+
+\and
+\Rule{L:Loop}
+{ \Delta; Q; R \vdash
+\htriple
+  { I }{ S }{ I + M_l }
+}
+{ \Delta; B; R \vdash
+\htriple
+  { I }{ \code{loop}~S }{ Q }
+}
+
+\and
+\Rule{L:Seq}
+{ \Delta; B; R \vdash
+\htriple{ P }{ S_1 }{ Q' + M_s }
+\\
+  \Delta; B; R \vdash
+\htriple{ Q' }{ S_2 }{ Q }
+}
+{ \Delta; B; R \vdash
+\htriple{ P }{ S_1;S_2 }{ Q }
+}
+
+\and
+\Rule{L:If}
+{ \Delta; B; R \vdash
+\htriple
+  { P \land \code{istrue}~\sem{e}_\state - M_c^1}
+  { S_1 }{ Q }
+\\
+  \Delta; B; R \vdash
+\htriple
+  { P \land \code{isfalse}~\sem{e}_\state - M_c^2 }
+  { S_2 }{ Q }
+}
+{ \Delta; B; R \vdash
+\htriple
+  { P }{ \code{if}(e)~S_1~\code{else}~S_2 }{ Q }
+}
+
+\end{mathpar}
+
+\caption{Rules of the Quantitative Hoare Logic}
+\end{figure*}
 
 We define in this section an abstract version of the proof system that
 we will use to derive bounds in our practical implementation.
