@@ -489,8 +489,8 @@ S &:= \code{assert}~E
 \mid \code{skip}
 \mid \code{break}
 \mid \code{return}~E
-\mid E \gets E
-\mid E \gets f(E^*)
+\mid x \gets E
+\mid x \gets f(E^*)
 \\
 & \mid \code{loop}~S
 \mid \code{if}(E)~S~\code{else}~S
@@ -505,40 +505,43 @@ automatic analysis later.
 The expressions are left abstract in this presentation.  To
 present both the semantics and the program logic, we simply
 need an evaluation function that maps any $e \in E$ to
-a value $\llbracket e \rrbracket_H$ using $H$ as current
-heap.
+a value $\llbracket e \rrbracket_\state$ using $\state$ as current
+state.
 
 \section{Semantics}
 
-Values computed by evaluating expressions can be integers, or
-memory locations. In our semantics, integers have infinite
-precision.  While the program logic would perform as well on
-machine integers, our automatic analysis would be unsound.
-%
-\begin{align*}
-V &:= \code{int}~i \mid \code{ptr}~b
-\end{align*}
+The operational semantics uses a finite map $\state$ from
+variable names to integers.  This map is represented as
+an associative list to model the semantics of the stack of
+our language. It can be extended with new bindings
+(hiding older bindings with the same name), shrinked by
+forgetting a list of bindings, and updated by changing one
+binding.  We note $(\state, x_1 \mapsto v_1, \dots, x_n \mapsto v_n)$
+an extended heap, $\state~\backslash~(x_1, \dots, x_n)$ a
+state where bindings of $x_1, \dots, x_n$ were removed and
+$\state[x \mapsto v]$ an updated state.
 
 To formally describe the cost of operation of a given
 program, our semantics tracks resource consumption while
-executing.  To account for all kinds of resources
-we leave it as a parameter of the semantics to be specified
-by the user.  This parameter, called a metric, is a tuple of rational
-numbers with the following form
+executing.  The semantics is oblivious to the resource of
+interest for the user of our system.  We acheive this
+independence by parameterizing the semantics by a resource
+\emph{metric}, it is a tuple of rational numbers with the
+following form
 $$
 (
 M_a, M_s, M_b, M_r, M_u, M_f,
 M_l,
 M_c^1, M_c^2,
 M_q
-)
+).
 $$
 Each of these rational numbers indicates the amount of resource
 consumed by an operation.  If one of these numbers is negative,
 it means that resources are released by the program.
 
 The general form of an evaluation judgement is
-$(H, S) \Downarrow_{(q,q')} X$.  It is similar to the judgement
+$(\state, S) \Downarrow_{(q,q')} O$.  It is similar to the judgement
 presented in the introducing section appart from the fact that
 two resource numbers are tracked instead of one.  Intuitively
 $(q, q')$ means that $q$ resources units are necessary to execute
@@ -574,92 +577,107 @@ This injection is used implicitely in the semantics.
 
 \Rule{S:Abort}
 { }
-{ (H, S) \Downarrow_{(0,0)} \circ }
+{ (\state, S) \Downarrow_{(0,0)} \circ }
 
 \and \Rule{S:Assert}
-{ {\rm istrue}~\llbracket e \rrbracket_H}
-{ (H, \code{assert}~e) \Downarrow_{M_a} \code{seq}~H }
+{ {\rm istrue}~\llbracket e \rrbracket_\state}
+{ (\state, \code{assert}~e) \Downarrow_{M_a} \code{seq}~\state }
 
 \and \Rule{S:Skip}
 { }
-{ (H, \code{skip}) \Downarrow_{M_s} \code{seq}~H }
+{ (\state, \code{skip}) \Downarrow_{M_s} \code{seq}~\state }
 
 \and \Rule{S:Break}
 { }
-{ (H, \code{break}) \Downarrow_{M_b} \code{brk}~H }
+{ (\state, \code{break}) \Downarrow_{M_b} \code{brk}~\state }
 
 \and \Rule{S:Return}
 { }
-{ (H, \code{return}~e) \Downarrow_{M_r} \code{ret}~H~\llbracket e \rrbracket_H }
+{ (\state, \code{return}~e) \Downarrow_{M_r}
+  \code{ret}~\state~\llbracket e \rrbracket_\state
+}
 
 \and \Rule{S:Update}
-{ \llbracket e \rrbracket_H = \code{ptr}~b }
-{ (H, e \gets e') \Downarrow_{M_u} \code{seq}~H[b \mapsto \llbracket e' \rrbracket_H] }
+{ }
+{ (\state, x \gets e) \Downarrow_{M_u}
+  \code{seq}~\state[x \mapsto \llbracket e \rrbracket_\state]
+}
 
 \and \Rule{S:FunCall}
-{ \Delta~f = ((a_1, \dots, a_n), S)
-\\ \llbracket e \rrbracket_H = \code{ptr}~b
-\\ ({\rm alloc}(H, a_i, \llbracket e_i \rrbracket_H), S) \Downarrow_{(q,q')} \code{ret}~H'~v
+{ \Delta~f = (x_1, \dots, x_n, S) \\
+  ((\state, x_i \mapsto \llbracket e_i \rrbracket_\state), S)
+    \Downarrow_{(q,q')} \code{ret}~\state'~v
 }
-{ (H, e \gets f(e_1, \dots, e_n)) \Downarrow^r_{M_f\cdot(q,q')} \code{seq}~{\rm free}(H',a_i)[b \mapsto v] }
+{ (\state, x \gets f(e_1, \dots, e_n)) \Downarrow^r_{M_f\cdot(q,q')}
+  \code{seq}~(\state'~\backslash~(x_i))[x \mapsto v]
+}
 
 \and \Rule{S:LoopSeq}
-{ (H, S) \Downarrow_{(q_1, q_1')} \code{seq}~H'
-\\ (H', \code{loop}~S) \Downarrow_{(q_2, q_2')} X }
-{ (H, \code{loop}~S) \Downarrow_{(q_1, q_1') \cdot M_l \cdot (q_2, q_2')} X }
+{ (\state, S) \Downarrow_{(q_1, q_1')} \code{seq}~\state'
+\\ (\state', \code{loop}~S) \Downarrow_{(q_2, q_2')} O }
+{ (\state, \code{loop}~S) \Downarrow_{(q_1, q_1') \cdot M_l \cdot (q_2, q_2')} O }
 
 \and \Rule{S:LoopBrk}
-{ (H, S) \Downarrow_{(q, q')} \code{brk}~H' }
-{ (H, \code{loop}~S) \Downarrow_{(q, q')} \code{seq}~H' }
+{ (\state, S) \Downarrow_{(q, q')} \code{brk}~\state' }
+{ (\state, \code{loop}~S) \Downarrow_{(q, q')} \code{seq}~\state' }
 
 \and \Rule{S:LoopAbort}
-{ (H, S) \Downarrow_{(q, q')} X
-\\ \forall H.~X \neq \code{seq}~H \land X \neq \code{brk}~H }
-{ (H, \code{loop}~S) \Downarrow_{(q, q')} X }
+{ (\state, S) \Downarrow_{(q, q')} O
+\\ \forall \state.~O \neq \code{seq}~\state \land O \neq \code{brk}~\state }
+{ (\state, \code{loop}~S) \Downarrow_{(q, q')} O }
 
 \and \Rule{S:IfThen}
-{  (H, S_1) \Downarrow_{(q, q')} X
-\\ {\sf istrue}~\llbracket C \rrbracket_H
+{  (\state, S_1) \Downarrow_{(q, q')} O
+\\ {\sf istrue}~\llbracket C \rrbracket_\state
 }
-{ (H, \code{if}(C)~S_1~\code{else}~S_2) \Downarrow_{M_c^1 \cdot (q, q')} X }
+{ (\state, \code{if}(C)~S_1~\code{else}~S_2)
+  \Downarrow_{M_c^1 \cdot (q, q')} O
+}
 
 \and \Rule{S:IfElse}
-{  (H, S_2) \Downarrow_{(q, q')} X
-\\ {\sf isfalse}~\llbracket C \rrbracket_H
+{  (\state, S_2) \Downarrow_{(q, q')} O
+\\ {\sf isfalse}~\llbracket C \rrbracket_\state
 }
-{ (H, \code{if}(C)~S_1~\code{else}~S_2) \Downarrow_{M_c^2 \cdot (q, q')} X }
+{ (\state, \code{if}(C)~S_1~\code{else}~S_2)
+  \Downarrow_{M_c^2 \cdot (q, q')} O
+}
 
 \and \Rule{S:Seq}
-{  (H, S_1) \Downarrow_{(q_1, q'_1)} \code{seq}~H'
-\\ (H', S_2) \Downarrow_{(q_2, q'_2)} X
+{  (\state, S_1) \Downarrow_{(q_1, q'_1)} \code{seq}~\state'
+\\ (\state', S_2) \Downarrow_{(q_2, q'_2)} O
 }
-{ (H, S_1; S_2) \Downarrow_{(q_1, q'_1) \cdot M_q \cdot (q_2, q'_2)} X }
+{ (\state, S_1; S_2) \Downarrow_{(q_1, q'_1) \cdot M_q \cdot (q_2, q'_2)} O }
 
 \and \Rule{S:SeqAbort}
-{ (H, S_1) \Downarrow_{(q,q')} X
-\\ \forall H.~X \neq \code{seq}~H}
-{ (H, S_1; S_2) \Downarrow_{(q,q')} X }
+{ (\state, S_1) \Downarrow_{(q,q')} O
+\\ \forall \state.~O \neq \code{seq}~\state}
+{ (\state, S_1; S_2) \Downarrow_{(q,q')} O }
 
 \end{mathpar}
 \caption{Operational semantics of statements}
 \label{fig:opsem}
 \end{figure}
 
-Heaps manipulated by the operational semantics judgements are
-simple maps from variable names to integers.  We designate by
-$H[x \mapsto v]$ the heap $H$ updated to map the variable name
-$x$ to the number $v$.
-%
-The evaluation of expressions is trivial using heaps.
-\begin{mathpar}
-\llbracket x \rrbracket_H = H(x)
-\and
-\llbracket x \pm y \rrbracket_H = H(x) \pm H(y)
-\end{mathpar}
+In the evaluation judgement $(\state, S) \Downarrow_{(q, q')} O$,
+the outcome $O$ specifies how the statement $S$ terminated.
+$$
+O := \circ
+\mid \code{seq}~\sigma
+\mid \code{brk}~\sigma
+\mid \code{ret}~\sigma~v
+$$
+The \code{seq} outcome is the simple fallthrough outcome, for example
+a \code{skip} statement will terminate with this outcome without changing
+the heap as pictured in the rule {\sc S:Skip}.  The \code{brk} and
+\code{ret} outcomes describe a statement that terminated with a break or
+return statement.  In the latter case, a return value is also part of the
+outcome.  The use of these different outcomes can be explained by considering
+the loop statement rules:  If the inner statement breaks
+then the loop exits using the rule {\sc S:LoopBrk}, if the inner statement
+falls through another iteration is run using the rule {\sc S:LoopSeq},
+and all other cases are handled in the rule {\sc S:LoopAbort}.
 
-In the evaluation judgement $(H, S) \Downarrow_{(q, q')} X$, the result $X$ can
-be either a new heap, which means the execution terminated successfully
-or it can be the \emph{busy} result $\circ$.  This indicates an early
+The special outcome $\circ$ indicates an early
 termination, it can be triggered at any point using the rule {\sc S:Abort}
 and bubbles up through the execution context.
 Sometimes there is no other choice than to use this latter rule, for
