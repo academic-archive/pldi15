@@ -650,7 +650,7 @@ S &:= \code{assert}~E
 \mid \code{break}
 \mid \code{return}~E
 \mid x \gets E
-\mid x \gets f(E^*)
+\mid x \gets f(x^*)
 \\
 & \mid \code{loop}~S
 \mid \code{if}(E)~S~\code{else}~S
@@ -764,12 +764,12 @@ This injection is used implicitely in the semantics.
 }
 
 \and \Rule{S:Call}
-{ \delta~f = (x_1, \dots, x_n, S) \\
-  ((\state, x_i \mapsto \llbracket e_i \rrbracket_\state), S)
+{ \delta~f = (\vec y, S) \\
+  ((\state, y_i \mapsto \state(x_i)), S)
     \Downarrow_{(q,q')} \code{ret}~\state'~v
 }
-{ (\state, x \gets f(e_1, \dots, e_n)) \Downarrow^r_{M_f\cdot(q,q')}
-  \code{seq}~(\state'~\backslash~(x_i))[x \mapsto v]
+{ (\state, r \gets f(\vec x)) \Downarrow_{M_f\cdot(q,q')}
+  \code{seq}~(\state'~\backslash~(x_i))[r \mapsto v]
 }
 
 \and \Rule{S:LoopSeq}
@@ -906,14 +906,14 @@ programs, and partial computations at the same time.
 \and
 \Rule{L:Call}
 {
-  \Delta f = \forall z.(P_f\,z, Q_f\,z) \\
-  P \models P_f \, y \, (\sem{e_1}_\state,\dots,\sem{e_n}_\state) \land A \\
-  \forall v.\, (Q_f \, y \, v \land A \models \lambda \state.\, Q \, \sigma[x \mapsto v])
+  \Delta f = \forall z\,\vec v.(P_f\,z\,\vec v, Q_f\,z) \\
+  P \models P_f \, y \, (\sigma(\vec x)) \land A \\
+  \forall v.\, (Q_f \, y \, v \land A \models \lambda \state.\, Q \, \sigma[r \mapsto v])
 }
 { \Delta; B; R \vdash
 \htriple
   { M_f + P }
-  { x \gets f(e_1, \dots, e_n) }
+  { r \gets f(\vec x) }
   { Q }
 }
 
@@ -984,11 +984,11 @@ programs, and partial computations at the same time.
 \and
 \Rule{L:Extend}
 { \forall f\,P_f\,Q_f.\,
-  \Delta'f = \forall z.(P_f\,z, Q_f\,z)
+  \Delta'f = \forall z\,\vec v.(P_f\,z\,\vec v, Q_f\,z)
   \rightarrow
-  \forall y.\,
+  \forall y\,\vec v.\,
   (\Delta \cup \Delta'; \bot; Q_f\,y \vdash
-    \htriple{ P_f\,y }{ \delta f }{ \bot })
+    \htriple{ P_f\,y\,\vec v }{ \delta f }{ \bot })
 \\
   \Delta \cup \Delta'; B; R \vdash
   \htriple{ P }{ S }{ Q }
