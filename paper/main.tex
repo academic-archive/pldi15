@@ -752,69 +752,87 @@ state.
 
 \section{Semantics}
 
-The operational semantics uses a finite map $\state$ from
-variable names to integers.  This map is represented as
-an associative list to model the semantics of the stack of
-our language. It can be extended with new bindings
-(hiding older bindings with the same name), shrinked by
-forgetting a list of bindings, and updated by changing one
-binding.  We note $(\state, x_1 \mapsto v_1, \dots, x_n \mapsto v_n)$
-an extended heap, $\state~\backslash~(x_1, \dots, x_n)$ a
-state where bindings of $x_1, \dots, x_n$ were removed and
-$\state[x \mapsto v]$ an updated state.
+The operational semantics uses a mutable state $\state$
+composed of two maps from variable names to integers. The
+first map $\theta$ represents the local variable of a
+function and the second map $\gamma$ gives values to global
+variables of the program.
+
+For simplicity, we assume that local variables and global
+variables are always disjoint sets, this simplifies both
+the semantics and the description of our analysis.  The
+mutable state $\state$ can be accessed and modified, the
+access is written functionally and is defined by
+$$
+(\theta, \gamma)(x) =
+\left\{
+\begin{array}{lr}
+\theta(x) & \mbox{ if } x \in \dom \theta \\
+\gamma(x) & \mbox{ if } x \in \dom \gamma
+\end{array}
+\right..
+$$
+We note $\state[x \mapsto v]$ the state that results from
+updating $\state$ to make $x$ map to $v$.  Similarly to
+the state access, the formal definition of this operation
+is a simple case disjunction.  Thanks to the assumption we
+made above we can be sure that the different cases never
+overlap.
 
 To formally describe the cost of operation of a given
 program, our semantics tracks resource consumption while
 executing.  The semantics is oblivious to the resource of
-interest for the user of our system.  We acheive this
-independence by parameterizing the semantics by a resource
-\emph{metric}, it is a tuple of rational numbers with the
-following form
+interest for the user of our system.  We achieve this
+independence by parameterizing by a resource
+\emph{metric}, it is a tuple of nine rational numbers and
+one map from expressions to rational numbers
 $$
 (
-M_a, M_b, M_r, M_u, M_f,
+M_a,
+M_b,
+M_r,
+M_u,
+M_f,
 M_l,
-M_c^1, M_c^2,
-M_q, XXX
+M_c^1,
+M_c^2,
+M_q,
+M_e
 ).
 $$
 Each of these rational numbers indicates the amount of resource
-consumed by an operation.  If one of these numbers is negative,
+consumed by one operation.  If one of these numbers is negative,
 it means that resources are released by the program.
 
-The general form of an evaluation judgement is
-$(\state, S) \Downarrow_{(q,q')} O$.  It is similar to the judgement
-presented in the introducing section appart from the fact that
-two resource numbers are tracked instead of one.  Intuitively
-$(q, q')$ means that $q$ resources units are necessary to execute
-the program and that $q'$ units are available after its execution.
-For example, $\code{alloc}(3)$ consumes 3 heap cells, so
-the pair resulting from its evaluation would be $(3, 0)$; for
-$\code{free}(3)$, the pair would be $(0, 3)$.  When these
-statements are sequenced with \code{alloc} first, then \code{free},
-the evaluation yields $(3, 3)$.  These resource pairs can
-be composed with the following operation
-$$
-(q_1, q'_1) \cdot (q_2, q'_2) =
-\left\{
-\begin{array}{ll}
-(q_1, q'_2 + q'_1 - q_2) & \mbox{if } q'_1 \ge q_2 \\
-(q_1 + q_2 - q'_1, q'_2) & \mbox{if } q'_1 < q_2
-\end{array}
-\right.
-.
-$$
-This operation can be seen as the sequential composition of
-two resource consumptions, note that it is not a commutative
-operation, the same way resource freeing and allocation do not
-commute.
-With $(0, 0)$ as a neutral element, the above composition defines
-a monoid structure on $\mathbb Q_0^+ \times \mathbb Q_0^+$.
-It is possible to inject $q \in \mathbb Q$ in this monoid by
-turning it into $(q, 0)$ if $q \ge 0$ and $(0, -q)$ otherwise.
-This injection is used implicitely in the semantics.
+For technical reasons in our soundness proof and to be in line
+with CompCert's Clight, our language's semantics is defined
+in a small-step fashion.  The \pref{fig:opsem} contains the full
+list of reduction rules.  These rules provide a rewrite
+system for program configurations of the form
+$(\state, S, \cont, \cost)$, where $\state$ is the program state,
+$S$ is the statement being executed, $\cont$ is a continuation
+that describes what remains to be done once the execution of $S$
+is over, and $\cost$ is the non-negative quantity of resources
+available for further execution.  All rules that can decrease
+$\cost$ have the implicit side condition that the resource
+quantity available after the step is non-negative.  Using this
+resource counter we can define the resource consumption of a
+program as the minimal resource counter $\cost_*$ that lets the
+program run to termination without errors.
 
-\begin{figure}[ht!]
+The small-step semantics uses continuations to represent the
+context of execution of a given statement.
+A continuation can be a sequenced computation, it can also result
+from entering a loop or a function, or it can simply be the
+empty continuation (used to start a program).
+$$
+\cont := \Kstop
+\mid \Kseq S \cont
+\mid \Kloop S \cont
+\mid \Kcall r \theta \cont
+$$
+
+\begin{figure}[t!]
 \begin{mathpar}
 %
 \Rule{S:Assert}
@@ -843,18 +861,18 @@ This injection is used implicitely in the semantics.
 \and
 \Rule{S:RetSeq}
 {}
-{ (\state, \code{return}~e, \Kseq S \cont, \cost)
+{ (\state, \code{return}~x, \Kseq S \cont, \cost)
 \smallstep
-(\state, \code{return}~e, \cont, \cost)
+(\state, \code{return}~x, \cont, \cost)
 }
 \and
 %
 \and
 \Rule{S:RetLoop}
 {}
-{ (\state, \code{return}~e, \Kloop \cont, \cost)
+{ (\state, \code{return}~x, \Kloop \cont, \cost)
 \smallstep
-(\state, \code{return}~e, \cont, \cost)
+(\state, \code{return}~x, \cont, \cost)
 }
 %
 \and
@@ -862,7 +880,7 @@ This injection is used implicitely in the semantics.
 { \state = (\_, \gamma) \\
   \state' = (\theta, \gamma)[r \mapsto \state(x)]
 }
-{ (\state, \code{return}~e, \Kcall r \theta \cont, \cost)
+{ (\state, \code{return}~x, \Kcall r \theta \cont, \cost)
 \smallstep
 (\state', \code{skip}, \cont, \cost {-} M_r)
 }
@@ -899,7 +917,7 @@ This injection is used implicitely in the semantics.
 {}
 { (\state, \code{skip}, \Kloop S \cont, \cost)
 \smallstep
-(\state, S, \Kloop S \cont, \cost {-} M_l)
+(\state, \code{loop}~S, \cont, \cost {-} M_l)
 }
 %
 \and
@@ -939,44 +957,6 @@ This injection is used implicitely in the semantics.
 \caption{Operational semantics of statements}
 \label{fig:opsem}
 \end{figure}
-
-In the evaluation judgement $(\state, S) \Downarrow_{(q, q')} O$,
-the outcome $O$ specifies how the statement $S$ terminated.
-$$
-O := \circ
-\mid \code{seq}~\state
-\mid \code{brk}~\state
-\mid \code{ret}~\state~v
-$$
-The \code{seq} outcome is the simple fallthrough outcome, for example
-a \code{skip} statement will terminate with this outcome without changing
-the heap as pictured in the rule {\sc S:Skip}.  The \code{brk} and
-\code{ret} outcomes describe a statement that terminated with a break or
-return statement.  In the latter case, a return value is also part of the
-outcome.  The use of these different outcomes can be explained by considering
-the loop statement rules:  If the inner statement breaks
-then the loop exits using the rule {\sc S:LoopBrk}, if the inner statement
-falls through another iteration is run using the rule {\sc S:LoopSeq},
-and all other cases are handled in the rule {\sc S:LoopAbort}.
-
-The special outcome $\circ$ indicates an early
-termination, it can be triggered at any point using the rule {\sc S:Abort}
-and bubbles up through the execution context.
-Sometimes there is no other choice than to use this latter rule, for
-example when an assertion fails.  In that case the side condition of
-{\sc S:Assert} is not met and the only rule that can possibly be applied
-is {\sc S:Abort}.
-
-The busy result is also useful to handle diverging programs with big-step
-judgements.  In case a program does not terminate, it is impossible to
-derive $(\state, S)\Downarrow_{(q, q')} O$ with $O \neq \circ$.  The only
-possible way to conclude a big-step judgement is to use the {\sc S:Abort}
-rule at some point in the computation.  One alternative to this technique
-is to use coinductive semantics~\cite{Leroy-coind}, however, using the busy
-result prevents duplication and allows to have only one soundness proof for
-both unsafe and non-terminating programs.  Indeed, stating a result for
-$(\state, S) \Downarrow_{(q,q')} \circ$ covers unsafe programs, diverging
-programs, and partial computations at the same time.
 
 
 \section{Proof System}
