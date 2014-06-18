@@ -504,8 +504,26 @@ notations can be seamlessly combined in a larger program.
   while (x<y) {x=x+1; tick(10);} #\hfill \textnormal{(Example 3)}#
 \end{lstlisting}
 %
-To understand how the analysis works, it is instructive to look at some
-more involved examples.  
+To understand how the analysis works, it is instructive to look at
+some more involved examples.  Examples \emph{speed\_1} and
+\emph{speed\_2} are taken from Gulwani et al~\cite{Gulwani-speed}.
+They are both handled by the SPEED tool~\cite{Gulwani-speed} but
+require inference of a \emph{disjunctive invariant}.  In the abstract
+interpretation community, these invariants are known to be notoriously
+difficult to handle.
+%
+In example \emph{speed\_1} we have one loop that first increments
+variable $y$ up to $m$ and then increments variable $x$ up to $n$.  We
+derive the tight bound $|[x, n]| + |[y, m]|$.
+%
+Example \emph{speed\_2} is more tricky and trying to understand how it
+works may be challenging.  However, with the amortized analysis in
+mind, using the potential transfer reasoning, it is almost trivial to
+prove a bound.  While the SPEED tool has to find a fairly
+involved invariant for the loop, our tool is simply reasoning locally
+and works without any clever tricks. We obtain the tight bound $|[x,
+n]| + |[z, n]|$.
+
 
 XXX add up and down XXX
 
@@ -515,9 +533,10 @@ XXX add up and down XXX
 \begin{figure*}[t!]
  \setlength{\progwidth}{.22\linewidth}
   \centering
-  \begin{minipage}[b]{.20\linewidth}
+\hspace{-0.4cm}
+  \begin{minipage}[b]{.18\linewidth}
     \begin{center}
-   \begin{lstlisting}
+   \begin{lstlisting}[]
 while (n>x) {
   ${\color{blue}%
   n{>}x; \, |[x, n]| {+} |[y, m]| \vdash }$
@@ -587,14 +606,28 @@ $|[x, n]| + |[z, n]|$
   \begin{minipage}[b]{\progwidth}
     \begin{center}
    \begin{lstlisting}
-  while (z-y>0) {
-    y = y+1;
-    tick(3);
-  }
-  while (y>9) {
-    y=y-10;
-    tick(1);
-  }
+while (z-y>0) {
+  ${\color{blue}%
+  y{<}z; \, 3.1|[y,z]| {+} 0.1|[0,y]| \vdash }$
+  y = y+1;
+  ${\color{blue}%
+  \dashv \cdot; \, 3 {+} 3.1|[y,z]| {+} 0.1|[0,y]| \vdash }$
+  tick(3);
+  ${\color{blue}%
+  \dashv \cdot; \, 3.1|[y,z]| {+} 0.1|[0,y]| }$
+}
+${\color{blue}%
+\dashv \cdot; \, 3.1|[y,z]| {+} 0.1|[0,y]| \vdash }$
+while (y>9) {
+  ${\color{blue}%
+  y{>}9; \, 3.1|[y,z]| {+} 0.1|[0,y]| \vdash }$
+  y=y-10;
+  ${\color{blue}%
+  \dashv \cdot; \, 1 {+} 3.1|[y,z]| {+} 0.1|[0,y]| \vdash }$
+  tick(1);
+  ${\color{blue}%
+  \dashv \cdot; \, 3.1|[y,z]| {+} 0.1|[0,y]| }$
+}
    \end{lstlisting}
 
 $3.1|[y,z]| + 0.1|[0,y]|$
@@ -611,17 +644,32 @@ $3.1|[y,z]| + 0.1|[0,y]|$
     \begin{center}
    \begin{lstlisting}
 while (n<0) {
+  ${\color{blue}%
+  n{<}0; \,  P(n,y) \vdash }$
   n=n+1;
+  ${\color{blue}%
+  \dashv \cdot; \,  59 {+} P(n,y) \vdash }$
   y=y+1000;
+  ${\color{blue}%
+  \dashv \cdot; \, 9 {+} P(n,y) \vdash }$
   while (y>=100 && *){
+    ${\color{blue}%
+    y{>}99; \, 9 {+} P(n,y) \vdash }$
     y=y-100;
+    ${\color{blue}%
+    \dashv y{>}99; \, 14 {+} P(n,y) \vdash }$
     tick(5);
+    ${\color{blue}%
+    \dashv \cdot; \, 9 {+} P(n,y) }$
   }
+  ${\color{blue}%
+  \dashv \cdot; \, 9 {+} P(n,y) \vdash }$
   tick(9);
+  ${\color{blue}%
+  \dashv \cdot; \, P(n,y) \vdash }$
 }
    \end{lstlisting}
-
-$59|[n,0]| + 0.05|[0,y]|$
+$59|[n,0]| {+} 0.05|[0,y]|$
 \\[.7\baselineskip]
       {\bf t27}
     \end{center}
@@ -630,10 +678,44 @@ $59|[n,0]| + 0.05|[0,y]|$
   \caption{Derivations of bounds on the number of ticks for
     challenging examples.  In the potential functions, we only mention
     the non-zero terms and in the logical context $\Gamma$ we only
-    mention assertions that we actually use in the reasoning.}
+    mention assertions that we actually use in the reasoning. In
+    Example \emph{t27}, we use the abbreviation $P(n,y) := 59|[n,0]|
+    {+} 0.05|[0,y]|$.}
   \label{fig:ex_list}
 \end{figure*}
 
+
+\begin{figure}[t]
+  \centering
+    \begin{minipage}[b]{\linewidth}
+    \begin{center}
+   \begin{lstlisting}
+void count_down (int x,int y)
+{ int a = x;
+  if (a>y) {a=a-1; tick(1); count_up(a,y); }
+}
+void count_up (int x, int y)
+{ int a = y;
+  if (a+1<x) {a = a+2; tick(1); count_down(x,a); }
+}
+   \end{lstlisting}
+
+$0.33 + 0.67 |[y,x]|\;\;$ (\code{count\_down(x,y)})\\
+$\;\;\;\;\;\;\,0.67 |[y,x]|\;\;$ (\code{count\_up(x,y)})
+\\[.7\baselineskip]
+      {\bf t39}
+    \end{center}
+  \end{minipage}
+  \caption{Two mutually-recursive functions with the computed tick bounds.}
+  \label{fig:ex_rec}
+\end{figure}
+
+\subsection{Implementation}
+
+We do not yet generate certificates in the program logic that are
+checkable in Coq.  This is substantial additional engineering effort
+but is conceptually straightforward as we describe in detail in
+Section XXX.
 
 
 \section{Syntax}
@@ -2265,7 +2347,7 @@ $2 + 2 |[0, M]| + 2 |[0, N]|$
    \end{lstlisting}
 $2 + 4|[0, n]|$
 \\[.7\baselineskip]
-      {\bf fig\_4\_2}
+      {\bf fig4\_2}
     \end{center}
   \end{minipage}
 %
@@ -2286,7 +2368,7 @@ $2 + 4|[0, n]|$
    \end{lstlisting}
 $|[0, n]|$
 \\[.7\baselineskip]
-      {\bf fig\_4\_4}
+      {\bf fig4\_4}
     \end{center}
   \end{minipage}
 %
@@ -2303,7 +2385,7 @@ $|[0, n]|$
    \end{lstlisting}
 $---$
 \\[.7\baselineskip]
-      {\bf fig\_4\_5}
+      {\bf fig4\_5}
     \end{center}
   \end{minipage}
 
@@ -2406,7 +2488,7 @@ Our analyzer can derive almost all linear bounds for programs that
 have been described as challenges in the literature on bound
 generation.  We found only three programs with a linear bound for
 which our analyzer could not find a tight bound.  The first one
-(\emph{fig\_4\_5}) from [GulwaniPLDI09] requires \emph{path-sensitive
+(\emph{fig4\_5}) from [GulwaniPLDI09] requires \emph{path-sensitive
   reasoning} to derive a bound.  The other two, \emph{ex2} and
 \emph{ex5} (see [GulwaniPLDI10]), from [GulwaniPLDI10] were described
 to have a linear bound but seem to be non-terminating.
@@ -2456,7 +2538,7 @@ This bound is tight in the sense that there are inputs (such as $M =
 execution cost.  However, SPEED can compute the more precise bound
 $\max(N,M)$.  We currently cannot express this bound in our system.
 
-Example \emph{fig\_4\_2} from [GulwaniPLDI09] is quite involved.
+Example \emph{fig4\_2} from [GulwaniPLDI09] is quite involved.
 Amortized reasoning helps to understand how we derive the bound $4 +
 4|[0, n]|$.  We start with potential $6 + 4|[0, n]|$ and use the
 constant potential to pay for the two first assignments.  We use the
@@ -2472,15 +2554,15 @@ potential units to pay for the assignment.  Since we have $4$ constant
 potential units left after the loop, we can subtract them from the
 initial potential $6 + 4|[0, n]|$.
 
-In example \emph{fig\_4\_4} it is essential that $m$ is positive.
+In example \emph{fig4\_4} it is essential that $m$ is positive.
 That ensures that we can obtain constant potential for the interval
 size $|[0,i]|$ in the \emph{else} branch of the conditional since
-$|[0,i]|$ decreases.  Example \emph{fig\_4\_5} is one of the three
+$|[0,i]|$ decreases.  Example \emph{fig4\_5} is one of the three
 examples that we can not handle automatically.  The execution is
 bounded because the boolean value of the test \code{dir==fwd} does not
 change during the iteration of the loop.  As a result, the variable
 $i$ is either counted down to $0$ or up to $n$.  Our tool cannot
-handle example \emph{fig\_4\_5} because we don't do path sensitive
+handle example \emph{fig4\_5} because we don't do path sensitive
 reasoning.  Note however that it would be more efficient to move the
 test \code{dir==fwd} outside of the loop (this would be also done by
 an optimizing compiler).  The resulting program could be analyzer by our
