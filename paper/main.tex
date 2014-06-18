@@ -730,7 +730,7 @@ side-effects and there is only one looping construct.
 S &:= \code{assert}~E
 \mid \code{skip}
 \mid \code{break}
-\mid \code{return}~E
+\mid \code{return}~x
 \mid x \gets E
 \mid x \gets f(x^*)
 \\
@@ -772,10 +772,10 @@ independence by parameterizing the semantics by a resource
 following form
 $$
 (
-M_a, M_s, M_b, M_r, M_u, M_f,
+M_a, M_b, M_r, M_u, M_f,
 M_l,
 M_c^1, M_c^2,
-M_q
+M_q, XXX
 ).
 $$
 Each of these rational numbers indicates the amount of resource
@@ -816,84 +816,124 @@ This injection is used implicitely in the semantics.
 
 \begin{figure}[ht!]
 \begin{mathpar}
-
-\Rule{S:Abort}
+%
+\Rule{S:Assert}
+{ \code{istrue}~\sem{e}_\state }
+{ (\state, \code{assert}~e, \cont, \cost)
+\smallstep
+(\state, \code{skip}, \cont, \cost {-} M_a)
+}
+%
+\and
+\Rule{S:BrkSeq}
+{}
+{ (\state, \code{break}, \Kseq S \cont, \cost)
+\smallstep
+(\state, \code{break}, \cont, \cost)
+}
+%
+\and
+\Rule{S:BrkLoop}
+{}
+{ (\state, \code{break}, \Kloop \cont, \cost)
+\smallstep
+(\state, \code{skip}, \cont, \cost {-} M_b)
+}
+%
+\and
+\Rule{S:RetSeq}
+{}
+{ (\state, \code{return}~e, \Kseq S \cont, \cost)
+\smallstep
+(\state, \code{return}~e, \cont, \cost)
+}
+\and
+%
+\and
+\Rule{S:RetLoop}
+{}
+{ (\state, \code{return}~e, \Kloop \cont, \cost)
+\smallstep
+(\state, \code{return}~e, \cont, \cost)
+}
+%
+\and
+\Rule{S:RetCall}
+{ \state = (\_, \gamma) \\
+  \state' = (\theta, \gamma)[r \mapsto \state(x)]
+}
+{ (\state, \code{return}~e, \Kcall r \theta \cont, \cost)
+\smallstep
+(\state', \code{skip}, \cont, \cost {-} M_r)
+}
+%
+\and
+\Rule{S:Update}
+{ \state' = \state[x \mapsto \sem{e}_\state] }
+{ (\state, x \gets e, \cont, \cost)
+\smallstep
+(\state', \code{skip}, \cont, \cost {-} M_u {-} M_e(e))
+}
+%
+\and
+\Rule{S:Call}
+{ \delta f = (\vec x, S_f) \\
+  \state = (\theta, \gamma) \\
+  \state' = (\vec x \mapsto \state(\vec y), \gamma) \\
+}
+{ (\state, r \gets f(\vec y), \cont, \cost)
+\smallstep
+(\state', S_f, \Kcall r \theta \cont, \cost {-} M_f)
+}
+%
+\and
+\Rule{S:Loop}
+{}
+{ (\state, \code{loop}~S, \cont, \cost)
+\smallstep
+(\state, S, \Kloop S \cont, \cost)
+}
+%
+\and
+\Rule{S:SkipLoop}
+{}
+{ (\state, \code{skip}, \Kloop S \cont, \cost)
+\smallstep
+(\state, S, \Kloop S \cont, \cost {-} M_l)
+}
+%
+\and
+\Rule{S:IfTrue}
+{ \code{istrue}~\sem{e}_\sigma }
+{ (\state, \code{if}(e)~S_1~\code{else}~S_2, \cont, \cost)
+\smallstep
+(\state, S_1, \cont, \cost {-} M_c^1)
+}
+%
+\and
+\Rule{S:IfFalse}
+{ \code{isfalse}~\sem{e}_\sigma }
+{ (\state, \code{if}(e)~S_1~\code{else}~S_2, \cont, \cost)
+\smallstep
+(\state, S_2, \cont, \cost {-} M_c^2)
+}
+%
+\and
+\Rule{S:Seq}
 { }
-{ (\state, S) \Downarrow_{(0,0)} \circ }
-
-\and \Rule{S:Assert}
-{ {\rm istrue}~\llbracket e \rrbracket_\state}
-{ (\state, \code{assert}~e) \Downarrow_{M_a} \code{seq}~\state }
-
-\and \Rule{S:Skip}
-{ }
-{ (\state, \code{skip}) \Downarrow_{M_s} \code{seq}~\state }
-
-\and \Rule{S:Break}
-{ }
-{ (\state, \code{break}) \Downarrow_{M_b} \code{brk}~\state }
-
-\and \Rule{S:Return}
-{ }
-{ (\state, \code{return}~e) \Downarrow_{M_r}
-  \code{ret}~\state~\llbracket e \rrbracket_\state
+{ (\state, S_1; S_2, \cont, \cost)
+\smallstep
+(\state, S_1, \Kseq {S_2} \cont, \cost)
 }
-
-\and \Rule{S:Update}
-{ }
-{ (\state, x \gets e) \Downarrow_{M_u}
-  \code{seq}~\state[x \mapsto \llbracket e \rrbracket_\state]
+%
+\and
+\Rule{S:SkipSeq}
+{}
+{ (\state, \code{skip}, \Kseq S \cont, \cost)
+\smallstep
+(\state, S, \cont, \cost {-} M_q)
 }
-
-\and \Rule{S:Call}
-{ \delta~f = (\vec y, S) \\
-  ((\state, y_i \mapsto \state(x_i)), S)
-    \Downarrow_{(q,q')} \code{ret}~\state'~v
-}
-{ (\state, r \gets f(\vec x)) \Downarrow_{M_f\cdot(q,q')}
-  \code{seq}~(\state'~\backslash~(x_i))[r \mapsto v]
-}
-
-\and \Rule{S:LoopSeq}
-{ (\state, S) \Downarrow_{(q_1, q_1')} \code{seq}~\state'
-\\ (\state', \code{loop}~S) \Downarrow_{(q_2, q_2')} O }
-{ (\state, \code{loop}~S) \Downarrow_{(q_1, q_1') \cdot M_l \cdot (q_2, q_2')} O }
-
-\and \Rule{S:LoopBrk}
-{ (\state, S) \Downarrow_{(q, q')} \code{brk}~\state' }
-{ (\state, \code{loop}~S) \Downarrow_{(q, q')} \code{seq}~\state' }
-
-\and \Rule{S:LoopAbort}
-{ (\state, S) \Downarrow_{(q, q')} O
-\\ \forall \state.~O \neq \code{seq}~\state \land O \neq \code{brk}~\state }
-{ (\state, \code{loop}~S) \Downarrow_{(q, q')} O }
-
-\and \Rule{S:IfThen}
-{  (\state, S_1) \Downarrow_{(q, q')} O
-\\ {\sf istrue}~\llbracket e \rrbracket_\state
-}
-{ (\state, \code{if}(e)~S_1~\code{else}~S_2)
-  \Downarrow_{M_c^1 \cdot (q, q')} O
-}
-
-\and \Rule{S:IfElse}
-{  (\state, S_2) \Downarrow_{(q, q')} O
-\\ {\sf isfalse}~\llbracket e \rrbracket_\state
-}
-{ (\state, \code{if}(e)~S_1~\code{else}~S_2)
-  \Downarrow_{M_c^2 \cdot (q, q')} O
-}
-
-\and \Rule{S:Seq}
-{  (\state, S_1) \Downarrow_{(q_1, q'_1)} \code{seq}~\state'
-\\ (\state', S_2) \Downarrow_{(q_2, q'_2)} O
-}
-{ (\state, S_1; S_2) \Downarrow_{(q_1, q'_1) \cdot M_q \cdot (q_2, q'_2)} O }
-
-\and \Rule{S:SeqAbort}
-{ (\state, S_1) \Downarrow_{(q,q')} O
-\\ \forall \state.~O \neq \code{seq}~\state}
-{ (\state, S_1; S_2) \Downarrow_{(q,q')} O }
+%
 
 \end{mathpar}
 \caption{Operational semantics of statements}
@@ -904,9 +944,9 @@ In the evaluation judgement $(\state, S) \Downarrow_{(q, q')} O$,
 the outcome $O$ specifies how the statement $S$ terminated.
 $$
 O := \circ
-\mid \code{seq}~\sigma
-\mid \code{brk}~\sigma
-\mid \code{ret}~\sigma~v
+\mid \code{seq}~\state
+\mid \code{brk}~\state
+\mid \code{ret}~\state~v
 $$
 The \code{seq} outcome is the simple fallthrough outcome, for example
 a \code{skip} statement will terminate with this outcome without changing
@@ -935,7 +975,7 @@ rule at some point in the computation.  One alternative to this technique
 is to use coinductive semantics~\cite{Leroy-coind}, however, using the busy
 result prevents duplication and allows to have only one soundness proof for
 both unsafe and non-terminating programs.  Indeed, stating a result for
-$(\sigma, S) \Downarrow_{(q,q')} \circ$ covers unsafe programs, diverging
+$(\state, S) \Downarrow_{(q,q')} \circ$ covers unsafe programs, diverging
 programs, and partial computations at the same time.
 
 
@@ -943,7 +983,7 @@ programs, and partial computations at the same time.
 
 \begin{figure*}[t]
 \begin{mathpar}
-
+%
 \Rule{L:Assert}
 { }
 { \Delta; B; R \vdash
@@ -952,7 +992,7 @@ programs, and partial computations at the same time.
   { \code{assert}~e }
   { Q }
 }
-
+%
 \and
 \Rule{L:Skip}
 { }
@@ -960,7 +1000,7 @@ programs, and partial computations at the same time.
 \htriple
   { M_s + Q }{ \code{skip} }{ Q }
 }
-
+%
 \and
 \Rule{L:Break}
 { }
@@ -968,7 +1008,7 @@ programs, and partial computations at the same time.
 \htriple
   { M_b + B }{ \code{break} }{ Q }
 }
-
+%
 \and
 \Rule{L:Return}
 { }
@@ -976,7 +1016,7 @@ programs, and partial computations at the same time.
 \htriple
   { M_r + R\,\sem{e}_\state }{ \code{return}~e }{ Q }
 }
-
+%
 \and
 \Rule{L:Update}
 { }
@@ -984,13 +1024,13 @@ programs, and partial computations at the same time.
 \htriple
   { \lambda \state.\,M_u + Q\,\state[x \mapsto \sem{e}_\state] }{ x \gets e }{ Q }
 }
-
+%
 \and
 \Rule{L:Call}
 {
   \Delta f = \forall z\,\vec v.(P_f\,z\,\vec v, Q_f\,z) \\
-  P \models P_f \, y \, (\sigma(\vec x)) \land A \\
-  \forall v.\, (Q_f \, y \, v \land A \models \lambda \state.\, Q \, \sigma[r \mapsto v])
+  P \models P_f \, y \, (\state(\vec x)) \land A \\
+  \forall v.\, (Q_f \, y \, v \land A \models \lambda \state.\, Q \, \state[r \mapsto v])
 }
 { \Delta; B; R \vdash
 \htriple
@@ -998,7 +1038,7 @@ programs, and partial computations at the same time.
   { r \gets f(\vec x) }
   { Q }
 }
-
+%
 \and
 \Rule{L:Loop}
 { \Delta; Q; R \vdash
@@ -1009,7 +1049,7 @@ programs, and partial computations at the same time.
 \htriple
   { I }{ \code{loop}~S }{ Q }
 }
-
+%
 \and
 \Rule{L:Seq}
 { \Delta; B; R \vdash
@@ -1021,7 +1061,7 @@ programs, and partial computations at the same time.
 { \Delta; B; R \vdash
 \htriple{ P }{ S_1;S_2 }{ Q }
 }
-
+%
 \and
 \Rule{L:If}
 { \Delta; B; R \vdash
@@ -1038,7 +1078,7 @@ programs, and partial computations at the same time.
 \htriple
   { P }{ \code{if}(e)~S_1~\code{else}~S_2 }{ Q }
 }
-
+%
 \and
 \Rule{L:Weaken}
 {
@@ -1052,7 +1092,7 @@ programs, and partial computations at the same time.
 { \Delta; B; R \vdash
 \htriple{ P }{ S }{ Q }
 }
-
+%
 \and
 \Rule{L:Frame}
 { \Delta; B; R \vdash
@@ -1062,7 +1102,7 @@ programs, and partial computations at the same time.
 { \Delta; B + x; R + x \vdash
 \htriple{ P + x }{ S }{ Q + x }
 }
-
+%
 \and
 \Rule{L:Extend}
 { \forall f\,P_f\,Q_f.\,
@@ -1078,7 +1118,7 @@ programs, and partial computations at the same time.
 { \Delta; B; R \vdash
 \htriple{ P }{ S }{ Q }
 }
-
+%
 \end{mathpar}
 
 \caption{Rules of the Quantitative Hoare Logic}

@@ -116,7 +116,7 @@
 
 \newcommand{\htriple}[3]{\ensuremath{\{#1\}\, #2\, \{#3\}}}
 
-\newcommand{\smallstep}[1]{\ensuremath{ \to_{#1}}}
+\newcommand{\smallstep}[0]{\ensuremath{\to}}
 
 \newcommand{\conform}[2]{\ensuremath{\mathit{agree}(#1,#2)}}
 
@@ -157,15 +157,17 @@
 
 \newcommand{\evalE}[3]{\ensuremath{\llbracket #1 \rrbracket_{#3}^{#2}}}
 
-\newcommand{\Kseq}[2]{\ensuremath{\mathsf{Kseq}\, #1 \, #2 \,}}
+\newcommand{\Kseq}[2]{\ensuremath{\mathsf{Kseq}\, #1 \, #2}}
 
-\newcommand{\Kloop}[2]{\ensuremath{\mathsf{Kloop}\, #1 \, #2 \,}}
+\newcommand{\Kloop}[2]{\ensuremath{\mathsf{Kloop}\, #1 \, #2}}
 
 \newcommand{\Kstop}[0]{\ensuremath{\mathsf{Kstop}}}
 
-\newcommand{\Kcall}[4]{\ensuremath{\mathsf{Kcall}\, #1 \, #2 \, #3 \, #4 \,}}
+\newcommand{\Kcall}[3]{\ensuremath{\mathsf{Kcall}\, #1 \, #2 \, #3}}
 
 \newcommand{\cont}[0]{\ensuremath{K}}
+
+\newcommand{\cost}[0]{\ensuremath{c}}
 
 \newcommand{\used}[0]{\ensuremath{\sqbullet}}
 
