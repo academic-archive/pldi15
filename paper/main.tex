@@ -524,9 +524,43 @@ involved invariant for the loop, our tool is simply reasoning locally
 and works without any clever tricks. We obtain the tight bound $|[x,
 n]| + |[z, n]|$.
 
+Example \emph{t08} shows the ability of the analysis to handle
+negative and non-negative numbers.  Note that there are no
+restrictions on the signs of $z$ and $y$.  We also see that we can
+accurately track the size change of $y$ in the first loop.
+Furthermore, \emph{t08} shows that we do not handle the constants $1$
+or $0$ in any special way.  In all examples you could replace $0$ and
+$1$ with other constants like we did in the second loop and still
+derive a tight bound.  The only information, that the analyzer needs
+is $y \geq c$ before assigning $y = y - c$.
 
-XXX add up and down XXX
+Example \emph{t27} shows how amortization can be used to handle tricky
+nested loops.  The outer loop is iterated $|[n,0]|$ times.  In the
+outer loop, we increment the variable $n$ till $n = 0$.  In each of
+the $|[n,0]|$ iterations, we increment the variable $y$ by $1000$.  We
+then non-deterministically execute an inner loop that decrements $y$
+by $100$ until $y<100$.  The analysis can derive that only the first
+execution of the inner loop depends on the initial value of $y$.  We
+again derive a tight bound.
 
+As mentioned, the analysis naturally handles advanced control flow
+like \code{break} and \code{return} statements, and mutual recursion.
+\pref{fig:ex_rec} contains two mutually-recursive functions with their
+automatically derived bounds.  The function \code{count\_down}
+decrements its first argument $x$ until it reaches the second argument
+$y$. It then recursively calls the function \code{count\_up}.  The
+function \code{count\_up} is dual to \code{count\_down}.  Here, we
+count up $y$ by $2$ and recursively call \code{count\_down}.  Our
+analysis system can compute a tight bound.  This is comparable to the
+determination of the point at which to trains meet if they approach
+each other with different speeds.
+
+Please not that we can only show a very small selections of the
+programs that we can handle automatically here.  In \pref{app:cat} you
+find a list of more than $30$ classes of challenging programs that we
+can automatically analyze.  We hope that this gives you an impression
+of the capabilities of the analysis but we also point out that this
+list is far from being exhaustive.
 
 \newlength{\progwidth}
 
@@ -711,6 +745,12 @@ $\;\;\;\;\;\;\,0.67 |[y,x]|\;\;$ (\code{count\_up(x,y)})
 \end{figure}
 
 \subsection{Implementation}
+
+We implemented the new automatic amortized analysis using CIL [XXX].
+CIL is a subset of C that is very similar to CompCert Clight but
+provides tool support that facilitated the implementation.  The
+implementation is publically available at XXX.  More details can be
+found in section XXX.
 
 We do not yet generate certificates in the program logic that are
 checkable in Coq.  This is substantial additional engineering effort
