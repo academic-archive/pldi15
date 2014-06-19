@@ -551,11 +551,14 @@ decrements its first argument $x$ until it reaches the second argument
 $y$. It then recursively calls the function \code{count\_up}.  The
 function \code{count\_up} is dual to \code{count\_down}.  Here, we
 count up $y$ by $2$ and recursively call \code{count\_down}.  Our
-analysis system can compute a tight bound.  This is comparable to the
-determination of the point at which to trains meet if they approach
+analysis system can compute a tight bound.  On this example, it
+amounts to computing the meeting point of two trains that approach
 each other with different speeds.
+% This is comparable to the
+% determination of the point at which to trains meet if they approach
+% each other with different speeds.
 
-Please not that we can only show a very small selections of the
+Please note that we can only show a very small selections of the
 programs that we can handle automatically here.  In \pref{app:cat} you
 find a list of more than $30$ classes of challenging programs that we
 can automatically analyze.  We hope that this gives you an impression
@@ -724,13 +727,11 @@ $59|[n,0]| {+} 0.05|[0,y]|$
     \begin{minipage}[b]{\linewidth}
     \begin{center}
    \begin{lstlisting}
-void count_down (int x,int y)
-{ int a = x;
-  if (a>y) {a=a-1; tick(1); count_up(a,y); }
+void count_down (int x,int y) {
+  if (x>y) { tick(1); count_up(x-1,y); }
 }
-void count_up (int x, int y)
-{ int a = y;
-  if (a+1<x) {a = a+2; tick(1); count_down(x,a); }
+void count_up (int x, int y) {
+  if (y+1<x) { tick(1); count_down(x,y+2); }
 }
    \end{lstlisting}
 
@@ -1034,7 +1035,7 @@ $$
 { }
 { \Delta; B; R \vdash
 \htriple
-  { M_r + R\,\sem{e}_\state }{ \code{return}~e }{ Q }
+  { M_r + R\,x }{ \code{return}~x }{ Q }
 }
 %
 \and
@@ -2347,6 +2348,7 @@ $2 + |[0, m]| + |[0, n]|$
       x=x+1;
     else 
       x=x+1;
+  }
    \end{lstlisting}
 
 $1 + |[0,n]|$
