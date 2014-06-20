@@ -88,16 +88,17 @@ Stack-Space Bounds, Quantitative Verification
 In software engineering and software verification, we often would like
 to have static information about the quantitative behavior of
 programs.  For example, stack and heap-space bounds are important to
-ensure the reliability of safety-critical systems [XXX (see PLDI)].
+ensure the reliability of safety-critical systems~\cite{veristack14,Regehr05}.
 % Clock-cycle bounds are needed to guarantee the safety of real-time
 % systems [XXX wilhelm].  
 Static energy usage information is critical for autonomous systems and
-has applications in cloud computing [XXX?  (cite this guy form the
-us))].  Worst-case resource bounds can be used to prevent side-channel
-attacks through resource padding [XXX?].  Loop and
-recursion-depth bounds are used to ensure the accuracy of programs
-that are executed on unreliable hardware [XXX oopsla] and complexity
-bounds are needed to verify security protocols [XXX].
+has applications in cloud computing~\cite{CohenZSL12,CarrollH10}.
+Worst-case time bounds can help to create constant-time
+implementations that prevent side-channel
+attacks~\cite{KasperS09,BartheBCLP14}.  Loop and recursion-depth
+bounds are used to ensure the accuracy of programs that are executed
+on unreliable hardware~\cite{CarbinMR13} and complexity bounds are
+needed to verify cryptography protocols~\cite{BartheGB09}.
 % XXX Mention differential privacy here?
 %
 In general, quantitative performance information at design time can
@@ -508,8 +509,8 @@ notations can be seamlessly combined in a larger program.
 %
 To understand how the analysis works, it is instructive to look at
 some more involved examples.  Examples \emph{speed\_1} and
-\emph{speed\_2} are taken from Gulwani et al~\cite{Gulwani-speed}.
-They are both handled by the SPEED tool~\cite{Gulwani-speed} but
+\emph{speed\_2} are taken from Gulwani et al~\cite{GulwaniMC09}.
+They are both handled by the SPEED tool~\cite{GulwaniMC09} but
 require inference of a \emph{disjunctive invariant}.  In the abstract
 interpretation community, these invariants are known to be notoriously
 difficult to handle.
@@ -1154,7 +1155,7 @@ $$
 ${\color{blue} \{ A(0, N) + N \} }$
 i=1; m=a[0];
 ${\color{blue}%
-  \{ (i {=} 1 \land m=a[0]) + A(1, N) + (N-i) \} }$
+  \{ (i {=} 1 \land m=a[0]) + A(1, N) + (N-1) \} }$
 while (i<N) {
   ${\color{blue}%
     \{ (m = \max_{k \in [0, i-1]} a[k]) + A(i, N) + (N-i) \} }$
@@ -1169,7 +1170,7 @@ while (i<N) {
 ${\color{blue} \{ 0 \} }$
 \end{lstlisting}
 \caption{Example derivation where we noted $A(i, N)$
-  for $\#\{ k \mid k \ge i \land \forall\, 0\le j<k.\, a[j] < a[k]\}$}
+  for $\#\{ k \mid i \le k \le N \land \forall\, 0\le j<k.\, a[j] < a[k]\}$}
 \label{fig:exemple}
 \end{figure}
 
@@ -2585,7 +2586,7 @@ which our analyzer could not find a tight bound.  The first one
 to have a linear bound but seem to be non-terminating.
 
 Examples \emph{fig2\_1} and \emph{fig2\_2} are taken from Gulwani et
-al~\cite{Gulwani-speed}.  They are both handled by the SPEED tool but
+al~\cite{GulwaniMC09}.  They are both handled by the SPEED tool but
 require inference of a \emph{disjunctive invariant}.  In the abstract
 interpretation community, these invariants are known to be notoriously
 difficult to handle.
