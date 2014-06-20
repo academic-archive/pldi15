@@ -151,8 +151,9 @@ in comparison with semantic techniques [xxx].
 %
 %
 In this paper, we present a novel cost analysis system for C programs
-that works automatically, efficiently and precisely for many examples,
-can be used interactively if the automation fails, and produces
+that is based on a solid semantic foundation. It works automatically,
+efficiently and precisely for many examples, can be used interactively
+for manual bound derivation if the automation fails, and produces
 verifiable certificates for the bounds.  Our contributions are as
 follows.
 %
@@ -186,16 +187,16 @@ Our approach complements existing work since it provides a semantic
 foundation for the computation of bounds while still providing support
 for automation that sometimes goes beyond the capabilities of existing
 techniques.  The quantitative Hoare logic and the automatic amortized
-analysis enable semi-automatic interactive resource bound development
-in which an automatically derived bound can be used in the
-quantitative logic and a hand derived bound can be used by the
-automatic analysis.  Both the automatic amortized analysis and the
-quantitative logic are naturally compositional and describe the
-resource behavior of code fragments without referring to the source
-code.  As a result, we naturally derive global bounds that are
-functions of the input parameters of the program.  To the best of our
-knowledge, our system is the only one that can deal with resource like
-memory that may become available during the execution.
+analysis enable semi-automatic interactive resource-bound development.
+An automatically derived bound can be used in the quantitative logic
+and a hand derived bound can be used by the automatic analysis.  Both
+the automatic amortized analysis and the quantitative logic are
+naturally compositional and describe the resource behavior of code
+fragments without referring to the source code.  As a result, we
+naturally derive global bounds that are functions of the input
+parameters of the program.  To the best of our knowledge, our system
+is the only one that can deal with resource like memory that may
+become available during the execution.
 
 The main innovation that makes this work practical is our new
 automatic amortized analysis for C code.  It targets programs that are
@@ -255,18 +256,19 @@ metric.
 
 We have evaluated the quantitative logic and the automatic analysis
 with system code and examples from the literature. \pref{app:cat}
-contains a $50$ (XXX) challenging loop and recursion patterns that we
-collected from open source software and the literature.  Our analysis
-can find asymptotically tight bounds for $48$ of these patterns and in
-most cases the derived constant factors are tight.  We compared our
-automatic analyzer to other resource-analysis systems.  However, our
-analyzer and Rank are currently the only publically available tools
-that can directly operate on C programs.  We selected $5$ example for
-which we derived linear bounds and translated them to term-rewriting
-systems by hand in order to run them with the tools KoAT and Pubs.
-Both tools and Rank were not able to find linear bounds for the
-examples.  We contacted the authors of LOOPUS and SPEED but were not
-able to obtain a tool to perform a comparison.
+contains more than $30$ (XXX) challenging loop and recursion patterns
+that we collected from open source software and the literature.  Our
+analysis can find asymptotically tight bounds for $30$ all but 3 of
+these patterns and in most cases the derived constant factors are
+tight.  We compared our automatic analyzer to other resource-analysis
+systems.  We selected $5$ examples (see Section XXX) for which we
+derived linear bounds and translated them to term-rewriting systems by
+hand in order to run them with the tools KoAT and Pubs.  Both tools
+and Rank were not able to find linear bounds for the examples.  LOOPUS
+is able to derive a bound on XXX of the examples.  But in contrast to
+our analysis, the constant factors are not tight.  We also contacted
+the authors of SPEED but were not able to obtain a tool to perform a
+comparison.
 
 To show the practicability of our approach we developed a case study
 with different real-time schedulers implemented in C.  To perform a
