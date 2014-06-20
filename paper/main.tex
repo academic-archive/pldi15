@@ -1009,7 +1009,7 @@ $$
 { }
 { \Delta; B; R \vdash
 \htriple
-  { Q \implies \code{istrue}~\sem{e}_\state }
+  { Q \implies \code{istrue}~\sem{e}_\state + M_a }
   { \code{assert}~e }
   { Q }
 }
@@ -1143,7 +1143,34 @@ $$
 \end{mathpar}
 
 \caption{Rules of the Quantitative Hoare Logic}
+\label{fig:logic}
 \end{figure*}
+
+
+\begin{figure}
+\begin{lstlisting}
+${\color{blue} \{ A(0, N) + N \} }$
+i=1; m=a[0];
+${\color{blue}%
+  \{ (i {=} 1 \land m=a[0]) + A(1, N) + (N-i) \} }$
+while (i<N) {
+  ${\color{blue}%
+    \{ (m = \max_{k \in [0, i-1]} a[k]) + A(i, N) + (N-i) \} }$
+  if (a[i] > m)
+    m = a[i];
+  ${\color{blue}%
+    \{ (m = \max_{k \in [0, i]} a[k]) + A(i+1, N) + (N-i) \} }$
+  i = i+1;
+  ${\color{blue}%
+    \{ (m = \max_{k \in [0, i-1]} a[k]) + A(i, N) + (N-i) \} }$
+}
+${\color{blue} \{ 0 \} }$
+\end{lstlisting}
+\caption{Example derivation where we noted $A(i, N)$
+  for $\#\{ k \mid k \ge i \land \forall\, 0\le j<k.\, a[j] < a[k]\}$}
+\label{fig:exemple}
+\end{figure}
+
 
 We define in this section an abstract version of the proof system that
 we will use to derive bounds in our practical implementation.
