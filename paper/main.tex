@@ -335,7 +335,7 @@ provides an upper bound on the resource consumption of the whole
 program.  What we have observed is that, if we define $\htriple{\Phi}
 {p}{\Phi'}$ to mean
 $$
-\forall \state, n, \state' : (\state, p) \Downarrow_n \state' \implies \Phi(\state) \ge
+\forall \state\, n\, \state'.\, (\state, p) \Downarrow_n \state' \implies \Phi(\state) \ge
 n + \Phi'(\state')
 $$
 then we get the following familiar looking rule.
@@ -1267,7 +1267,7 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
 { \Gamma; Q \vdash \code{while}(C)~S \dashv Q - M_w^3; \Gamma, \neg C }
 
 \and \Rule{Q:Set}
-{ \forall u,~q_{yu} = q'_{xu} + q'_{yu}
+{ \forall u.\, q_{yu} = q'_{xu} + q'_{yu}
 \\ q'_{xy} \in \mathbb Q_0^+
 }
 { \Gamma[x/y]; Q + M_s \vdash x \gets y \dashv Q'; \Gamma }
@@ -1307,9 +1307,9 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
 { \mathcal L = \{ xy \mid \exists l_{xy},~\Gamma \models l_{xy} \le |x - y| \}
 \\ \mathcal U = \{ xy \mid \exists u_{xy},~\Gamma \models |x - y| \le u_{xy} \}
 %\\ q'_0 = q_0 + \sum_{i \in \mathcal U} u_i p_i - \sum_{i \in \mathcal L} l_i p_i
-\\ \forall i \in \mathcal U,~ q'_i \ge q_i - p_i
-\\ \forall i \in \mathcal L,~ q'_i \ge q_i + p_i
-\\ \forall i \not\in \mathcal U \cup \mathcal L,~ q'_i \ge q_i
+\\ \forall i \in \mathcal U.\, q'_i \ge q_i - p_i
+\\ \forall i \in \mathcal L.\, q'_i \ge q_i + p_i
+\\ \forall i \not\in \mathcal U \cup \mathcal L.\, q'_i \ge q_i
 }
 { Q' + \sum_{i \in \mathcal U} u_i p_i - \sum_{i \in \mathcal L} l_i p_i  \succeq_\Gamma Q }
 
@@ -1340,7 +1340,7 @@ soundness similar to the one exposed in the overview section.  To
 do this, the rules impose contraints on $Q$ and $Q'$.  To make the
 presentation lighter, we use the following  set of conventions.
 First, the context $Q'$ noted $Q \pm n$ is defined by $q'_0 = q_0 \pm n$
-and $\forall i \neq 0,~q'_i = q_i$.  Second, for any index $i$ such that
+and $\forall i \neq 0.\, q'_i = q_i$.  Second, for any index $i$ such that
 the relation between $q_i$ and $q'_i$ is not specified as a side condition
 of a rule, we assume that $q_i = q'_i$.  Third, we implicitely assume
 all the side conditions enforcing that the coefficients $(q_i)_{i \in I}$ are
@@ -1367,7 +1367,7 @@ heap $H$ to be $\bigwedge_i \llbracket C_i \rrbracket_H = \top$.
 The logical state
 is maintained using regular Hoare style rules.
 The semantic entailment on logical states is noted $\Gamma \models \Delta$,
-its meaning is that $\forall H,~ H\models\Gamma \implies H\models\Delta$.
+its meaning is that $\forall H.\, H\models\Gamma \implies H\models\Delta$.
 
 %\paragraph{Explanation of selected rules.}
 
@@ -1426,8 +1426,8 @@ We observe the following inequations.
 \end{align*}
 Since $H \models \Gamma$, using the transitivity of $\models$ and
 the definition of $\mathcal U$ and $\mathcal L$ we get
-$\forall i\in\mathcal L,~ l_i \le f_i(H)$ and
-$\forall i\in\mathcal U,~ f_i(H)\le u_i$.
+$\forall i\in\mathcal L.\, l_i \le f_i(H)$ and
+$\forall i\in\mathcal U.\, f_i(H)\le u_i$.
 These two inequalities justify the last step.
 \end{proof}
 
@@ -1482,7 +1482,7 @@ judgement derivation (to account for the structural rule {\sc Q:Weak}).
   easy to get $H'' \models \Gamma''$.  Now we prove
   the quantitative part of the theorem.  We have
   $(q, q') = M_s^1 \cdot (q_1, q'_1) \cdot M_s^2 \cdot (q_2, q'_2)$.
-  We assume $\forall i \in \{1, 2\},~M_s^i \ge 0$, the other cases
+  We assume $\forall i \in \{1, 2\}.\, M_s^i \ge 0$, the other cases
   are similar.
   \begin{itemize}[topsep=0pt]
   \item
@@ -1506,7 +1506,7 @@ judgement derivation (to account for the structural rule {\sc Q:Weak}).
   This proof goes just like in the {\sc S:Skip} case.
 
 \item Case {\sc S:WhileStep}.
-  Here again we assume $\forall i \in \{1, 2, 3\},~M_w^i \ge 0$.
+  Here again we assume $\forall i \in \{1, 2, 3\}.\, M_w^i \ge 0$.
   \begin{itemize}[topsep=0pt]
   \item
     If $q'_1 > M_w^2 + q_2$ then $q = M_w^1 + q_1$ and by induction
@@ -1615,7 +1615,7 @@ decision procedure, we use the well known trick of double negation.
 \begin{align*}
 \Gamma \models C
 &\Leftrightarrow \neg\neg (\Gamma \models C) \\
-&\Leftrightarrow \neg\neg (\forall H, H\models\Gamma \implies H\models C) \\
+&\Leftrightarrow \neg\neg (\forall H.\, H\models\Gamma \implies H\models C) \\
 &\Leftrightarrow \neg \exists H, H\models\Gamma \land \neg H\models C \\
 &\Leftrightarrow \neg \exists H, H\models\Gamma \land H\models \neg C \\
 &\Leftrightarrow \neg \exists H, H\models (\Gamma, \neg C)
