@@ -1179,27 +1179,29 @@ while (i < N) {
 \end{figure}
 
 \begin{figure}
+\center
+\begin{minipage}[b]{0.8\linewidth}
 \begin{lstlisting}
 ${\color{blue}%
   \{ \#_1(a) + 2k \}}$
 while (k > 0) {
   ${\color{blue}%
     \{ \#_1(a) + 2k \}}$
-  while (a[x] == 1 && x < N) {
+  while (x < N && a[x] == 1) {
     ${\color{blue}%
       \{ (a[x] = 1) + \#_1(a) + 2k \}}$
     a[x]=0;
     ${\color{blue}%
-      \{ (a[x] = 0) + \#_1(a) + 2k + 1 \}}$
+      \{ \#_1(a) + 2k + 1 \}}$
     tick(1);
     ${\color{blue}%
       \{ \#_1(a) + 2k \}}$
     x++; }
   ${\color{blue}%
-    \{ \#_1(a) + 2k \}}$
+    \{ (x \ge N \lor a[x] = 0) + \#_1(a) + 2k \}}$
   if (x < N) {
     ${\color{blue}%
-      \{ \#_1(a) + 1 + 2(k-1) + 1 \}}$
+      \{ (a[x] = 0) + \#_1(a) + 1 + 2(k-1) + 1 \}}$
     a[x]=1;
     ${\color{blue}%
       \{ \#_1(a) + 2(k-1) + 1 \}}$
@@ -1209,16 +1211,19 @@ while (k > 0) {
   k--;
   ${\color{blue}%
     \{ \#_1(a) + 2k \}}$
-} ${\color{blue} \{ 0 \}}$
+} ${\color{blue} \{ \#_1(a) \}}$
 
 \end{lstlisting}
+\end{minipage}
+
 \caption{Exemple derivation using amortized reasoning, we noted
   $\#_1(a)$ for $\# \{ i \mid 0 \le i < N \land a[i] = 1 \}$, we use the
-  tick metric that assigns cost $n$ to \lstinline{tick(n)} statments and
+  tick metric that assigns cost $n$ to \lstinline{tick(n)} statements and
   0 to other operations.
   }
 \label{fig:xmplinc}
 \end{figure}
+
 
 \begin{figure}
 \begin{lstlisting}
