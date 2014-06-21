@@ -1220,6 +1220,33 @@ while (k > 0) {
 \label{fig:xmplinc}
 \end{figure}
 
+\begin{figure}
+\begin{lstlisting}
+${\color{blue}%
+  \{ (Z = \log_2(h-l)) + Z \} }$
+bsearch(x,l,h) {
+  if (h-l > 1) {
+    ${\color{blue}%
+      \{ (h-l > 1 \land Z = \log_2(h-l)) + Z \} }$
+    m = h + (h-l)/2;
+    ${\color{blue}%
+      \{ (m = \frac{h+l}{2} \land h-l > 1 \land Z = \log_2(h-l)) + Z \} }$
+    if (a[m]>x) h=m; else l=m;
+    ${\color{blue}%
+      \{ (Z - 1 = \log_2(h-l)) + (Z-1) + 1 \} }$
+    l = bsearch(x,l,h); }
+  ${\color{blue}%
+    \{ Z-1 \} }$
+  return l;
+} ${\color{blue} \{ Z \} }$
+\end{lstlisting}
+\caption{Exemple derivation of a stack usage bound for a binary
+  search program, the metric used assigns a cost of 1 to function
+  calls and $-1$ to return statements, we noted $Z$ an arbitrary
+  logical variable.
+  }
+\end{figure}
+
 We define in this section an abstract version of the proof system that
 we will use to derive bounds in our practical implementation.
 
