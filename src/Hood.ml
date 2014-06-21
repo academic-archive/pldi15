@@ -72,7 +72,7 @@ module Idx : sig
   val local: VSet.t -> t -> bool
   val obj: t -> int
   val fold: ('a -> t -> 'a) -> 'a -> VSet.t -> 'a
-  val value: pstate -> t -> int option
+  val range: pstate -> t -> (int option * int option)
   val printk: float -> t -> unit
 end = struct
   type t = Const | Dst of var * var
@@ -103,17 +103,17 @@ end = struct
         pairs (List.fold_left g a vl) tl
       | [] -> a
     in pairs (f a const) vl
-  let value l = function
+  let range l = function
     | Dst (x1, x2) ->
-      begin match
-        Logic.value l x1, Logic.value l x2
-      with
-      | Some k1, Some k2 -> Some (max (k2 - k1) 0)
-      | _, _ -> None
-      end
-    | _ -> None
+      let pdiff = function
+        | (Some a, Some b) -> Some (max (a - b) 0)
+        | _ -> None in
+      let lo1, hi1 = Logic.range l x1 in
+      let lo2, hi2 = Logic.range l x2 in
+      (pdiff (lo2, hi1), pdiff (hi2, lo1))
+    | _ -> (None, None)
   let printk k i =
-    if abs_float k < 1e-8 then () else
+    if abs_float k < 1e-6 then () else
     match i with
     | Const ->
       Printf.printf "%.2f\n" k
@@ -133,7 +133,7 @@ module Q(C: sig val state: Clp.t end): sig
   val set: ctx -> Idx.t -> (Idx.t * int) list -> int -> ctx
   val zero: ctx -> Idx.t -> ctx
   val eqc: ctx -> ctx -> unit
-  val relax: ?il: Idx.t list -> pstate -> ctx -> ctx
+  val relax: pstate -> ctx -> ctx
   val merge: ctx list -> ctx
   val free: ctx -> Idx.t -> ctx
   val lift: ctx -> ctx -> ctx
@@ -145,11 +145,11 @@ end = struct
   module M = Map.Make(Idx)
   type ctx = { cvars: VSet.t; cmap: int M.t }
 
-  let newv ?(neg=false) () =
+  let newv ?(sign=(+1)) () =
     let c = [|
       { Clp.column_obj = 0.
-      ; Clp.column_lower = if neg then -. max_float else 0.
-      ; Clp.column_upper = max_float
+      ; Clp.column_lower = if sign <= 0 then -. max_float else 0.
+      ; Clp.column_upper = if sign >= 0 then max_float else 0.
       ; Clp.column_elements = [| |]
       } |] in
     Clp.add_columns C.state c;
@@ -231,22 +231,27 @@ end = struct
       (Idx.fold (fun l i -> eqv i :: l) [] c1.cvars) in
     Clp.add_rows C.state rows
 
-  let relax ?(il=[]) ps c =
-    let ks =
-      Idx.fold begin fun a i ->
-        match Idx.value ps i with
-        | Some k -> (i, k) :: a
-        | None -> a
-      end [] c.cvars in
+  let relax ps c =
+    let lo, eq, up =
+      Idx.fold begin fun (lo, eq, up) i ->
+        match Idx.range ps i with
+        | Some k1, Some k2 ->
+          if k1 >= k2
+          then (lo, (i, k1) :: eq, up)
+          else ((i, k1) :: lo, eq, (i, k2) :: up)
+        | Some k, _ -> ((i, k) :: lo, eq, up)
+        | _, Some k -> (lo, eq, (i, k) :: up)
+        | _ -> (lo, eq, up)
+      end ([], [], []) c.cvars in
     let l =
-      List.map
-        (fun i -> (i, (newv (), -1))) il @
-      List.map
-        (fun (i, k) -> (i, (newv ~neg:true (), - k))) ks in
+      List.map (fun (i, k) -> (i, (newv ~sign:(-1) (), k))) lo @
+      List.map (fun (i, k) -> (i, (newv ~sign:0 (), k))) eq @
+      List.map (fun (i, k) -> (i, (newv ~sign:(+1) (), k))) up in
+    if l = [] then c else
     let c = List.fold_left
       begin fun c (i, (ip, _)) ->
         let v' = newv () in
-        mkrow v' [(M.find i c.cmap, 1); (ip, 1)] 0;
+        mkrow v' [(M.find i c.cmap, 1); (ip, -1)] 0;
         { c with cmap = M.add i v' c.cmap }
       end c l in
     let v' = newv () and ic = Idx.const in
@@ -311,7 +316,8 @@ end = struct
     {cvars; cmap}
 
   let frame neg c1 c2 =
-    let vx = newv ~neg () and v1 = newv () and v2 = newv () in
+    let sign = if neg then 0 else 1 in
+    let vx = newv ~sign () and v1 = newv () and v2 = newv () in
     mkrow v1 [(M.find Idx.const c1.cmap, 1); (vx, 1)] 0;
     mkrow v2 [(M.find Idx.const c2.cmap, 1); (vx, 1)] 0;
     ( {c1 with cmap = M.add Idx.const v1 c1.cmap}
@@ -418,7 +424,7 @@ let analyze negfrm lctx cost (fdefs, p) =
       let vars = VSet.remove (VId x) (Q.vars qseq) in
       let {lpre; lpost} = UidMap.find pid lctx in
       let z = LVar (VNum 0) in
-      let eqs, rlx =
+      let eqs =
         let opy, iopyz, izopy =
           let iyz = dst (y, VNum 0) and izy = dst (VNum 0, y) in
           match op with
@@ -437,26 +443,23 @@ let analyze negfrm lctx cost (fdefs, p) =
           Logic.entails lpre opy CLe z,
           Logic.entails lpre opy CGe z
         with
-        | true, true -> [], []
+        | true, true -> []
         | false, false ->
           let f _ = false
-          in [iopyz, sum (-1) f f; izopy, sum (+1) f f], []
+          in [iopyz, sum (-1) f f; izopy, sum (+1) f f]
         | true, false -> (* op y <= 0 *)
-          let r = Logic.entails lpre opy CLt z in
           let sum = sum (-1)
             (fun v -> Logic.entails lpre xopy CGe (LVar v))
             (fun _ -> false)
-          in [iopyz, sum], if r then [iopyz] else []
+          in [iopyz, sum]
         | false, true -> (* op y >= 0 *)
-          let r = Logic.entails lpre opy CGt z in
           let sum = sum (+1)
             (fun _ -> false)
             (fun v -> Logic.entails lpre xopy CLe (LVar v))
-          in [izopy, sum], if r then [izopy] else []
+          in [izopy, sum]
       in
       if eqs = [] && Logic.entails lpre z CLt z then qseq else
-      (* relax constant indices and y if necessary *)
-      let q = Q.relax lpost ~il:rlx qseq in
+      let q = Q.relax lpost qseq in
       (* transfer potential to +y or -y *)
       let q = Q.setl q (List.map (fun (i,s) -> i,(i,1)::s,0) eqs) in
       (* pay for the assignment *)
@@ -484,13 +487,13 @@ let analyze negfrm lctx cost (fdefs, p) =
       let qpre = addconst qpre1 CSeq1 in
       qpre
 
-    | PWhile (_, p, _) ->
+    | PWhile (_, p, pid) ->
       let qinv = Q.merge [addconst qseq CWhile3] in
       let qseq1 = addconst qinv CWhile2 in
       let qpre1 = gen_ qfuncs qret qseq qseq1 p in
       let qinv' = addconst qpre1 CWhile1 in
       Q.eqc qinv qinv';
-      qinv'
+      Q.relax (UidMap.find pid lctx).lpre qinv'
 
     | PIf (_, p1, p2, _) ->
       let qpre1 = addconst (gen qseq p1) CIf1 in

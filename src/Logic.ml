@@ -218,23 +218,22 @@ let entails ps l1 c l2 =
   | [a] -> imp ps a
   | _ -> failwith "Logic.ml: bug in entails"
 
-let value ps = function
-  | VNum n -> Some n
+let range ps = function
+  | VNum n -> (Some n, Some n)
   | VId v ->
-    let ubs, lbs = List.fold_left
-      begin fun (ubs, lbs) a ->
+    let upd f a = function
+      | Some x -> Some (f a x)
+      | None -> Some a in
+    List.fold_left
+      begin fun (lb, ub) a ->
         let c = L.coeff v a in
-        if c = 0 || not (L.for_all (fun v' n -> v = v' || n = 0) a.L.m)
-          then (lbs, ubs) else
+        let pred v' n = v=v' || n=0 in
+        if c = 0 || not (L.for_all pred a.L.m)
+          then (lb, ub) else
           if c < 0
-            then (ubs, a.L.k / -c :: lbs)
-            else (-a.L.k / c :: ubs, lbs)
-      end ([], []) ps in
-    let rec inter us = function
-      | l :: ls -> if List.mem l us then Some l else inter us ls
-      | [] -> None in
-    inter ubs lbs
-
+            then (upd max (a.L.k / -c) lb, ub)
+            else (lb, upd min (-a.L.k / c) ub)
+      end (None, None) ps
 
 (* pretty printing *)
 let pp ps =
