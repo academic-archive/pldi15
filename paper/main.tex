@@ -106,13 +106,14 @@ provide useful feedback for developers.
 
 Static analysis of quantitative properties of imperative programs is
 an active research area and recent years have seen many innovations.
-Notable tools that have been developed include Speed [XXX], KoAT
-[XXX], Pubs [XXX], RANK [XXX], and LOOPUS [XXX].
+Notable tools that have been developed include
+SPEED~\cite{GulwaniMC09}, KoAT~\cite{BrockschmidtEFFG14},
+PUBS~\cite{AlbertAGPZ12}, Rank~\cite{AliasDFG10}, and LOOPUS~\cite{SinnZV14}.
 %
 While the these tools can derive impressive results for realistic
 software, there still exist shortcomings that hamper the application
 of the existing techniques in practice.
-\begin{enumerate}
+\begin{itemize}
 \item Analysis tools are black boxes that either deliver a result or fail
   without enabling \emph{user interaction} to manually or
   semi-automatically derive bounds for challenging parts of the
@@ -121,16 +122,17 @@ of the existing techniques in practice.
   bounds (for a single (nested) loop) that are difficult to combine to
   global whole program bounds.
 \item Existing techniques often rely on complex external tools such as
-  abstract interpretation based invariant generation [XXX speed] or
-  translation of the program into a term-rewriting system [costa,
-  tacas] without providing \emph{verifiable certificates} for the
-  correctness of the derived bound.
-\end{enumerate}
+  abstract interpretation based invariant
+  generation~\cite{GulwaniMC09} or translation of the program into a
+  term-rewriting system~\cite{BrockschmidtEFFG14, SinnZV14} without
+  providing \emph{verifiable certificates} for the correctness of the
+  derived bound.
+\end{itemize}
 %
 While there has been lot of progress in static quantitative analysis,
-Don Knuth correctly points out in a recent interview [XXX] that the
-state-of-the-art in formal quantitative methods still falls short
-in comparison with semantic techniques [xxx].
+Knuth correctly points out in a recent interview~\cite{KnuthInter}
+that the state-of-the-art in formal quantitative methods still falls
+short in comparison with semantic techniques.
 %
 \begin{quote}
   % Consider, for example, a computer program that sorts a list of
@@ -146,7 +148,7 @@ in comparison with semantic techniques [xxx].
   don't really understand my reasoning processes at all!
   \vspace{-3ex}
   \begin{flushright}
-    -- Donald Knuth, 2014
+    -- Donald E. Knuth, 2014
   \end{flushright}
 \end{quote}
 %
@@ -158,7 +160,7 @@ for manual bound derivation if the automation fails, and produces
 verifiable certificates for the bounds.  Our contributions are as
 follows.
 %
-\begin{itemize}
+\begin{enumerate}
 \item We define a operational cost semantics for C programs that
   accounts a constant cost for each statement which is parametric in a
   cost metric.  The semantics models cost of terminating and
@@ -182,7 +184,7 @@ follows.
   derivations in the quantitative Hoare logic.
 % \item We prove the completeness of the program logic
 %   with respect to the operational cost semantics.
-\end{itemize}
+\end{enumerate}
 %
 Our approach complements existing work since it provides a semantic
 foundation for the computation of bounds while still providing support
