@@ -162,16 +162,17 @@ follows.
 %
 \begin{enumerate}
 \item We define a operational cost semantics for C programs that
-  accounts a constant cost for each statement which is parametric in a
-  cost metric.  The semantics models cost of terminating and
+  accounts a constant cost for each statement.  The cost is parametric
+  in a cost metric and the semantics models cost of terminating and
   non-terminating executions.  A specific \emph{tick} function can be
-  inserted in the source code to further customize the cost
-  model.
+  inserted in the source code to further customize the cost model.
+
 \item We describe an automatic static analysis technique for deriving
   bounds for the cost that is defined by the operational semantics.
-  It is based on amortized resource analysis for functional programs
-  [XXX] and derives bounds that are non-negative linear combinations
-  of sizes $|[x,y]|$ of intervals between program variables $x,y$.
+  It is based on amortized resource analysis for functional
+  programs~\cite{Jost03,HoffmannAH12} and derives bounds that are
+  non-negative linear combinations of sizes $|[x,y]|$ of intervals
+  between program variables $x,y$.
 \item We show with a publically available prototype implementation and
   an experimental evaluation that our novel amortized resource
   analysis works efficiently for realistic programs and that the
@@ -224,16 +225,16 @@ advanced control flow such as break, return, iteration over negative
 integer variables, and mutually-recursive functions.
 
 Following the development steps of automatic amortized analysis for
-functional programs [XXX], we deliberately restrict our self to linear
-bounds in the automatic analysis (there a no restrictions for the
-manually-derived bounds in the logic).  More specifically, bounds have
-the form $\sum_{a,b} q_{(a,b)} |[a,b]|$ where $a$ and $b$ are integer
-variables or constants.  The reason is mainly clarity of presentation,
-since an extension to multivariate resource polynomials [XXX] would
-make the inference rules considerably more involved and should
-better be described separately.  However, we developed the linear
-inference system so that the extension to polynomial bounds shall
-work smoothly.  
+functional programs~\cite{Jost03,HoffmannH10}, we deliberately
+restrict our self to linear bounds in the automatic analysis (there a
+no restrictions for the manually-derived bounds in the logic).  More
+specifically, bounds have the form $\sum_{a,b} q_{(a,b)} |[a,b]|$
+where $a$ and $b$ are integer variables or constants.  The reason is
+mainly clarity of presentation, since an extension to multivariate
+resource polynomials~\cite{HoffmannAH11} would make the inference rules considerably
+more involved and should better be described separately.  However, we
+developed the linear inference system so that the extension to
+polynomial bounds shall work smoothly.
 
 We implemented our analysis for CompCert Clight, a subset of C in
 which loops can only be exited with a \code{break} statement and
@@ -241,14 +242,14 @@ expressions are free of side effects.  C programs can for instance be
 compiled to Clight programs using the verified CompCert C compiler.
 
 Our new quantitative Hoare logic for CompCert Clight is a
-generalization of a program logic that we recently developed to
-formally very stack-space bounds in Coq [PLDI].  In a nutshell, we
-replace the boolean predicates (pre and post conditions) of Hoare
-logic with numeric predicates that map a program state to a
+generalization of a program logic that we developed to formally very
+stack-space bounds for C programs in Coq~\cite{veristack14}.  In a
+nutshell, we replace the boolean predicates (pre and post conditions)
+of Hoare logic with numeric predicates that map a program state to a
 non-negative number or infinity.  The intuitive meaning of a
-quantitative Hoare triple $\htriple{P}{C}{Q}$ that $C$ consumes $P(S)$
-resources when executed in starting state $S$, and that $Q(S')$
-resources are left if $C$ terminates in state $S'$.  Infinity
+quantitative Hoare triple $\htriple{P}{S}{Q}$ that $C$ consumes $P(\state)$
+resources when executed in starting state $\state$, and that $Q(\state')$
+resources are left if $C$ terminates in state $\state'$.  Infinity
 corresponds to \emph{false} in classic Hoare logic.  Our quantitative
 logic is proved sound with respect to a cost semantic for Clight that
 accounts a constant cost for each evaluation step.  This constant cost
@@ -306,34 +307,35 @@ make the following sections, which contain more details, easy to read.
 
 \subsection{Quantitative Hoare Logic}
 
-The idea that drives the design of our system is amortized analysis
-[XXX].  Assume that a program $p$ executes on a stating state
-$\state_0$ and consumes $n$ resource units of some quantity we are
-interested in.  We denote that by writing $(p, \state_0)
-\Downarrow_n$.  The basic idea of amortized analysis is to define a
-potential function $\Phi$ that maps program states to non-negative
-numbers and to show that $\Phi(\state) \geq n$ if $\state$ is a
-program state such that such that $(p, \state) \Downarrow_n$.
+The idea that drives the design of our system is amortized
+analysis~\cite{Tarjan-amort}.  Assume that a program $S$
+executes on a starting state $\state_0$ and consumes $n$ resource units
+of some quantity we are interested in.  We denote that by writing $(S,
+\state_0) \Downarrow_n$.  The basic idea of amortized analysis is to
+define a potential function $\Phi$ that maps program states to
+non-negative numbers and to show that $\Phi(\state) \geq n$ if
+$\state$ is a program state such that such that $(S, \state)
+\Downarrow_n$.
 
 Since programs can be composed we must enrich the evaluation judgement
-$(p, \state) \Downarrow_{n}$ to talk about the state resulting from
-the program execution.  We write $(p, \state) \Downarrow_n \state'$ to
-say that $\state'$ is the program state after the execution of $p$ in
+$(S, \state) \Downarrow_{n}$ to talk about the state resulting from
+the program execution.  We write $(S, \state) \Downarrow_n \state'$ to
+say that $\state'$ is the program state after the execution of $S$ in
 starting state $\sigma$.  We now use two potential functions, one that
 applies before the execution, and one that applies after.  The two
 functions must respect the relation $\Phi(\state) \ge n +
-\Phi'(\state')$ for all states $\state$ and $\state'$ such that $(p,
+\Phi'(\state')$ for all states $\state$ and $\state'$ such that $(S,
 \state) \Downarrow_n \state'$.  Intuitively, $\Phi(\state)$ must
-provide enough \emph{potential} for, both, paying for resource cost of
+provide enough \emph{potential} for both, paying for resource cost of
 the computation and paying for the potential $\Phi'(\state')$ on the
-resulting state $\state'$. That way, if $(\state, p_1) \Downarrow_n
-\state'$ and $(\state', p_2) \Downarrow_m \state''$, we get
+resulting state $\state'$. That way, if $(\state, S_1) \Downarrow_n
+\state'$ and $(\state', S_2) \Downarrow_m \state''$, we get
 $\Phi(\state) \ge n + \Phi'(\state')$ and $\Phi'(\state') \ge m +
 \Phi''(\state'')$.  This can be composed to $\Phi(\state) \ge (n + m)
 + \Phi''(\state'')$.  Note that the initial potential function $\Phi$
 provides an upper bound on the resource consumption of the whole
 program.  What we have observed is that, if we define $\htriple{\Phi}
-{p}{\Phi'}$ to mean
+{S}{\Phi'}$ to mean
 $$
 \forall \state\, n\, \state'.\, (\state, p) \Downarrow_n \state' \implies \Phi(\state) \ge
 n + \Phi'(\state')
@@ -341,13 +343,13 @@ $$
 then we get the following familiar looking rule.
 $$
 \RuleNolabel
-{\htriple{\Phi}{p_1}{\Phi'} \\ \htriple{\Phi'}{p_2}{\Phi''}}
-{\htriple{\Phi} {p_1; p_2}  {\Phi''}}
+{\htriple{\Phi}{S_1}{\Phi'} \\ \htriple{\Phi'}{S_2}{\Phi''}}
+{\htriple{\Phi} {S_1; S_2}  {\Phi''}}
 $$
 %
 Similarly, other language constructs lead to rules for the potential
 functions that look very similar to Hoare logic or effect systems
-rules.  This rules enable to interactively reason about resource usage
+rules.  These rules enable interactive reasoning about resource usage
 in a flexible and compositional way, which, as a side effect, produces
 a certificate for the derived resource bound.
 
@@ -356,7 +358,7 @@ CompCert Clight in the Coq Proof Assistant.  Because we use a shallow
 embedding in Coq, every function that can be expressed in Coq can in
 principle be used as a resource bound.  We can use the logic to prove
 a concrete bound for a given resource metric, or a bound that is
-parametric in set of resource metrics.  It is also possible to
+parametric in a set of resource metrics.  It is also possible to
 incorporate boolean preconditions into the bounds to express that the
 bound is only valid for a certain class of inputs.  To this end, we
 allow the potential function $\Phi$ in the pre and post conditions to
@@ -364,6 +366,56 @@ take non-negative number or $\infty$ (infinity) as values.  Infinity,
 plays the same role as $\bot$ in Hoare logic.  Boolean assertions can
 be embedded into potential functions by mapping $\bot$ to $\infty$ and
 $\top$ to $0$.
+
+\begin{figure}
+\center
+\begin{minipage}[b]{0.8\linewidth}
+\begin{lstlisting}
+${\color{blue}%
+  \{ \#_1(a) + 2k \}}$
+while (k > 0) {
+  x=0;
+  ${\color{blue}%
+    \{ \#_1(a) + 2k \}}$
+  while (x < N && a[x] == 1) {
+    ${\color{blue}%
+      \{ (a[x] = 1) + \#_1(a) + 2k \}}$
+    a[x]=0;
+    ${\color{blue}%
+      \{ \#_1(a) + 2k + 1 \}}$
+    tick(1);
+    ${\color{blue}%
+      \{ \#_1(a) + 2k \}}$
+    x++; }
+  ${\color{blue}%
+    \{ (x \ge N \lor a[x] = 0) + \#_1(a) + 2k \}}$
+  if (x < N) {
+    ${\color{blue}%
+      \{ (a[x] = 0) + \#_1(a) + 1 + 2(k-1) + 1 \}}$
+    a[x]=1;
+    ${\color{blue}%
+      \{ \#_1(a) + 2(k-1) + 1 \}}$
+    tick(1); }
+  ${\color{blue}%
+    \{ \#_1(a) + 2(k-1) \}}$
+  k--;
+  ${\color{blue}%
+    \{ \#_1(a) + 2k \}}$
+} ${\color{blue} \{ \#_1(a) \}}$
+
+\end{lstlisting}
+\end{minipage}
+
+\caption{Exemple derivation using amortized reasoning, we noted
+  $\#_1(a)$ for $\# \{ i \mid 0 \le i < N \land a[i] = 1 \}$, we use the
+  tick metric that assigns cost $n$ to \lstinline{tick(n)} statements and
+  0 to other operations.
+  }
+\label{fig:xmplinc}
+\end{figure}
+
+
+
 
 It is for instance possible to derive the following quantitative
 triple that holds for all stack metrics $M$.  A stack metric assigns
@@ -1177,53 +1229,6 @@ while (i < N) {
   }
 \label{fig:xmplmax}
 \end{figure}
-
-\begin{figure}
-\center
-\begin{minipage}[b]{0.8\linewidth}
-\begin{lstlisting}
-${\color{blue}%
-  \{ \#_1(a) + 2k \}}$
-while (k > 0) {
-  ${\color{blue}%
-    \{ \#_1(a) + 2k \}}$
-  while (x < N && a[x] == 1) {
-    ${\color{blue}%
-      \{ (a[x] = 1) + \#_1(a) + 2k \}}$
-    a[x]=0;
-    ${\color{blue}%
-      \{ \#_1(a) + 2k + 1 \}}$
-    tick(1);
-    ${\color{blue}%
-      \{ \#_1(a) + 2k \}}$
-    x++; }
-  ${\color{blue}%
-    \{ (x \ge N \lor a[x] = 0) + \#_1(a) + 2k \}}$
-  if (x < N) {
-    ${\color{blue}%
-      \{ (a[x] = 0) + \#_1(a) + 1 + 2(k-1) + 1 \}}$
-    a[x]=1;
-    ${\color{blue}%
-      \{ \#_1(a) + 2(k-1) + 1 \}}$
-    tick(1); }
-  ${\color{blue}%
-    \{ \#_1(a) + 2(k-1) \}}$
-  k--;
-  ${\color{blue}%
-    \{ \#_1(a) + 2k \}}$
-} ${\color{blue} \{ \#_1(a) \}}$
-
-\end{lstlisting}
-\end{minipage}
-
-\caption{Exemple derivation using amortized reasoning, we noted
-  $\#_1(a)$ for $\# \{ i \mid 0 \le i < N \land a[i] = 1 \}$, we use the
-  tick metric that assigns cost $n$ to \lstinline{tick(n)} statements and
-  0 to other operations.
-  }
-\label{fig:xmplinc}
-\end{figure}
-
 
 \begin{figure}
 \begin{lstlisting}
