@@ -1373,7 +1373,7 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
 %
 \and \Rule{Q:Assert}
 {}
-{ \Gamma; B; R; Q + M_a \vdash \code{assert}(C) \dashv Q; \Gamma, C }
+{ \Gamma; B; R; Q + M_a \vdash \code{assert}~e \dashv Q; \Gamma, e }
 %
 \and \Rule{Q:Loop}
 { \Gamma; Q'; R; Q \vdash S \dashv M_l + Q; \Gamma }
@@ -1388,23 +1388,23 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
 \and \Rule{Q:IncrPos}
 { \Gamma \models 0 \le y
 \\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\}
-\\ \textstyle q'_{0y} = q_{0y}
+\\\\ \textstyle q'_{0y} = q_{0y}
       + \sum_{u \in \mathcal U} q_{xu}
       - \sum_{v \not\in \mathcal U} q_{vx}
 }
 { \textstyle
-  \Gamma[x/x + y]; Q + M_s \vdash x \gets x + y \dashv Q'; \Gamma
+  \Gamma[x/x + y]; B; R; Q + M_s \vdash x \gets x + y \dashv Q'; \Gamma
 }
 %
 \and \Rule{Q:IncrNeg}
 { \Gamma \models 0 \le y
 \\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
-\\ \textstyle q'_{y0} = q_{y0}
+\\\\ \textstyle q'_{y0} = q_{y0}
       + \sum_{u \in \mathcal U} q_{ux}
       - \sum_{v \not\in \mathcal U} q_{xv}
 }
 { \textstyle
-  \Gamma[x/x - y]; Q + M_s \vdash x \gets x - y \dashv Q'; \Gamma
+  \Gamma[x/x - y]; B; R; Q + M_s \vdash x \gets x - y \dashv Q'; \Gamma
 }
 %
 \and \Rule{Q:Incr}
@@ -1412,20 +1412,33 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
 \\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
 }
 { \textstyle
-  \Gamma[x/x + y]; Q + M_s \vdash x \gets x + y \dashv Q'; \Gamma
+  \Gamma[x/x \pm y]; B; R; Q + M_s \vdash x \gets x \pm y \dashv Q'; \Gamma
 }
 %
 \and \Rule{Q:If}
-{ \Gamma, C; Q - M_c^1 \vdash S_1 \dashv Q'; \Gamma'
-\\ \Gamma, \neg C; Q - M_c^2 \vdash S_2 \dashv Q'; \Gamma'
+{ \Gamma, e; B; R; Q - M_c^1 \vdash S_1 \dashv Q'; \Gamma'
+\\ \Gamma, \neg e; B; R; Q - M_c^2 \vdash S_2 \dashv Q'; \Gamma'
 }
-{ \Gamma; Q \vdash \code{if} (C)~S_1~\code{else}~S_2 \dashv Q'; \Gamma' }
+{ \Gamma; B; R; Q \vdash \code{if}(e)~S_1~\code{else}~S_2 \dashv Q'; \Gamma' }
 %
 \and\Rule{Q:Seq}
 {  \Gamma; B; R; Q - M_s^1 \vdash S_1 \dashv Q'; \Gamma'
 \\ \Gamma'; B; R; Q' - M_s^2 \vdash S_2 \dashv Q''; \Gamma''
 }
 { \Gamma; B; R; Q \vdash S_1;S_2 \dashv Q''; \Gamma'' }
+%
+\and\Rule{Q:Call}
+{ (\vec y, s, \Gamma_f, Q_f, Q_f', \Gamma_f') \in \Delta(f)
+\\ P = Q_f \Uparrow_{[\vec y = \vec x]}
+\\ P' = Q'_f \Uparrow_{[r = s]}
+\\ \forall i \in \ell \,\setminus \{r\} .\, q_i = q_i'
+\\ \forall i \not\in \ell \,\setminus \{r\} .(q_i = p_i \land q'_i = p'_i)
+\\ c \in \mathbb Q_0^+
+}
+{ \Gamma_f[\vec y / \vec x] \land \Gamma_\ell; B; R; Q + c
+  \vdash r \gets f(\vec x) \dashv
+  Q' + c; \Gamma_f'[s/r] \land \Gamma_\ell
+}
 %
 \and \Rule{Q:Weak}
 { \Gamma_1 \models \Gamma_2
