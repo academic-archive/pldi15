@@ -68,6 +68,31 @@
 
 
 \begin{abstract}
+  The goal of quantitative resource analysis is to provide developers
+  with quantitative information about the runtime behavior of software
+  at development time.  Recent years have seen tremendous progress in
+  automatically deriving worst-case resource bounds.  Yet, many
+  challenges in specifying, interactively deriving, formally
+  certifying, and composing resource bounds remain unsolved.
+
+  This paper describes a novel quantitative resource analysis
+  framework that tackles these challenges for C programs.  First, the
+  runtime resource cost of programs is formalized with a parametric
+  cost semantics for CompCert Clight.  Second, a quantitative Hoare
+  logic that can be used for interactive bound development is
+  implement and proved sound with respect to the cost semantics in the
+  Coq Proof Assistant.  Third, an automatic amortized resource
+  analysis for C programs that can compute derivations in the
+  quantitative Hoare logic is developed and implemented.  Both, the
+  quantitative logic and the automatic amortized analysis are
+  naturally compositional and can be combined to semi-automatically
+  derive global resource bounds.
+
+  The practicability of the analysis framework is demonstrated with an
+  experimental evaluation.  The logic is used to derive XXX A comparison
+  with other automatic tools shows that the constant factors in the
+  bounds that are derived by the automatic amortized analysis are
+  often more precise. XXX
 
 \end{abstract}
 
@@ -612,7 +637,7 @@ consume $T>0$ resources in each iteration.  The reasoning is similar
 to the description of Example~1 except that we obtain the potential
 $K{\cdot}\frac{T}{K}$ after the assignment.  Note that the logical
 assertions in $\Gamma$ are only used in rule for the assignment
-\code{x=x+1}.  To the best of our knowledge, no other tool is
+\code{x=x+K}.  To the best of our knowledge, no other tool is
 currently capable of deriving a tight bound on the cost of such a
 loop.  For $T=1$ (many systems focus on the number of loop iterations
 without a cost model) and $K=10$, KoAT~\cite{BrockschmidtEFFG14}
@@ -629,11 +654,12 @@ assignment rule.  Nevertheless, this logical part of our analysis
 system is orthogonal to the quantitative part and can be easily
 extended if necessary.
 
-To understand the capabilities of the automatic analysis, it is instructive to
-look at some more involved examples.  Examples \emph{speed\_1} and
-\emph{speed\_2} are taken from Gulwani et al~\cite{GulwaniMC09}.  They
-are both handled by the SPEED tool~\cite{GulwaniMC09} but require
-inference of a \emph{disjunctive invariant}.  In the abstract
+To understand the capabilities of the automatic analysis, it is
+instructive to study more involved examples.  \pref{fig:ex_list}
+contains Examples \emph{speed\_1} and \emph{speed\_2} that are taken
+from previous work on bound analysis~\cite{GulwaniMC09}.  The SPEED
+tool~\cite{GulwaniMC09} derives the bounds as our analysis but
+requires inference of a \emph{disjunctive invariant}.  In the abstract
 interpretation community, these invariants are known to be notoriously
 difficult to handle.
 %
@@ -660,13 +686,12 @@ derive a tight bound.  The only information, that the analyzer needs
 is $y \geq c$ before assigning $y = y - c$.
 
 Example \emph{t27} shows how amortization can be used to handle tricky
-nested loops.  The outer loop is iterated $|[n,0]|$ times.  In the
-outer loop, we increment the variable $n$ till $n = 0$.  In each of
-the $|[n,0]|$ iterations, we increment the variable $y$ by $1000$.  We
-then non-deterministically execute an inner loop that decrements $y$
-by $100$ until $y<100$.  The analysis can derive that only the first
-execution of the inner loop depends on the initial value of $y$.  We
-again derive a tight bound.
+nested loops.  The outer loop we increment the variable $n$ till $n =
+0$.  In each of the $|[n,0]|$ iterations, we increment the variable
+$y$ by $1000$.  We then non-deterministically execute an inner loop
+that decrements $y$ by $100$ until $y<100$.  The analysis can derive
+that only the first execution of the inner loop depends on the initial
+value of $y$.  We again derive tight constant factors.
 
 As mentioned, the analysis naturally handles advanced control flow
 like \code{break} and \code{return} statements, and mutual recursion.
@@ -676,19 +701,19 @@ decrements its first argument $x$ until it reaches the second argument
 $y$. It then recursively calls the function \code{count\_up}.  The
 function \code{count\_up} is dual to \code{count\_down}.  Here, we
 count up $y$ by $2$ and recursively call \code{count\_down}.  Our
-analysis system can compute a tight bound.  On this example, it
-amounts to computing the meeting point of two trains that approach
-each other with different speeds.
+analysis system can compute a tight bound.  On this example, the
+analysis amounts to computing the meeting point of two trains that
+approach each other with different speeds.
 % This is comparable to the
 % determination of the point at which to trains meet if they approach
 % each other with different speeds.
 
-Please note that we can only show a very small selections of the
-programs that we can handle automatically here.  In \pref{app:cat} you
-find a list of more than $30$ classes of challenging programs that we
-can automatically analyze.  We hope that this gives you an impression
-of the capabilities of the analysis but we also point out that this
-list is far from being exhaustive.
+We only show a very small selections of the programs that we can
+handle automatically here.  In \pref{app:cat} you find a list of more
+than $30$ classes of challenging programs that we can automatically
+analyze.  We hope that this gives you an impression of the
+capabilities of the analysis but we also point out that this list is
+far from being exhaustive.
 
 \newlength{\progwidth}
 
