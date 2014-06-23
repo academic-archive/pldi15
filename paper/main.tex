@@ -551,18 +551,18 @@ established the loop invariant again.
 \begin{lstlisting}[mathescape]
 ${\color{blue}%
   \cdot; \, 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \vdash }$
-while (y-x>K) {
+while (x+K<=y) {
   ${\color{blue}%
-  x{<}y; \; 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \vdash }$
+  x + K \le y; \; 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \vdash }$
   x=x+K; 
   ${\color{blue}%
-  \dashv x{\leq}y; \, T + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \vdash }$
+  \dashv x \leq y; \, T + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \vdash }$
   tick(T);
   ${\color{blue}%
-  \dashv x{\leq}y; \, 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| }$
+  \dashv x \leq y; \, 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| }$
 }
 ${\color{blue}%
- \dashv x{\geq}y; 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]|}$
+ \dashv x \geq y; 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]|}$
 \end{lstlisting}
   \caption{Automatic derivation of a tight bound on the number of
     ticks for a standard \emph{for loop}.  The parameters $K>0$ and
@@ -616,9 +616,9 @@ assertions in $\Gamma$ are only used in rule for the assignment
 currently capable of deriving a tight bound on the cost of such a
 loop.  For $T=1$ (many systems focus on the number of loop iterations
 without a cost model) and $K=10$, KoAT~\cite{BrockschmidtEFFG14}
-computes the bound XXX, PUBS~\cite{AlbertAGPZ12} computes the bound
-XXX, Rank~\cite{AliasDFG10} computes the bound XXX, and
-LOOPUS~\cite{SinnZV14} computes the bound XXX.
+computes the bound $x + y + 10$, PUBS~\cite{AlbertAGPZ12} computes
+the tight bound $0.1(y-x)$, Rank~\cite{AliasDFG10} computes the bound XXX, and
+LOOPUS~\cite{SinnZV14} computes the bound $y-(x+9)$.
 
 It might be surprising that we only track simple linear relations in
 the logical context $\Gamma$.  It would of course be possible to keep
