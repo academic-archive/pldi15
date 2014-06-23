@@ -174,6 +174,17 @@ let slice cost {fileName; globals; _} =
         | Call (None, Lval (Var fassert, NoOffset), [exp], _)
         when fassert.vname = "assert" ->
           PAssert (transl_cond exp, gid ())
+        | Call (Some lv, Lval (Var fnondet, NoOffset), [], loc)
+        when fnondet.vname = "nondet" ->
+          begin match
+            check_lvalue loc lv
+          with
+          | Some v -> pay (cost OpSet) (PSet (v, None, gid ()))
+          | None -> E.s (
+              E.error "%s:%d unsupported non-deterministic assignment"
+                loc.file loc.line
+            )
+          end
         | Call (_, _, _, loc)
         | Asm (_, _, _, _, _, loc) -> E.s (
             E.error "%s:%d unsupported instruction"
@@ -230,14 +241,17 @@ let slice cost {fileName; globals; _} =
       )
   in
   let fmain =
-    let rec f = function
-      | GFun ({svar;_} as fmain, _) :: _
-      when svar.vname = "main" -> fmain
-      | _ :: tl -> f tl
-      | [] -> E.s (
-          E.error "%s: missing main function" fileName
-        )
-    in f globals
+    let rec funs = function
+      | GFun (f, _) :: tl -> f :: funs tl
+      | _ :: tl -> funs tl
+      | [] -> [] in
+    try
+      match funs globals with
+      | [ f ] -> f
+      | l -> List.find (fun f -> f.svar.vname = "main") l
+    with Not_found -> E.s (
+      E.error "%s: no functions to analyze" fileName
+    )
   in
   assert (List.for_all (fun v -> v.vglob = false) fmain.sformals);
   assert (List.for_all (fun v -> v.vglob = false) fmain.slocals);
@@ -248,8 +262,11 @@ let _ =
   (* if Array.length Sys.argv > 2 && Sys.argv.(1) = "-tcee" then *)
   let file = Frontc.parse Sys.argv.(1) () in
   let _, prog = Tools.clean_file ([], slice (fun _ -> 1) file) in
+  (*
   print_string "Sliced program:\n*******\n";
   pp_prog prog;
+  print_newline ();
+  *)
   let l = Hood.create_logctx ([], prog) in
-  print_string "\nAnalysis:\n";
+  print_string "Analysis:\n";
   Hood.analyze true l Eval.tick_metric ([], prog)
