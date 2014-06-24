@@ -76,17 +76,17 @@
   certifying, and composing resource bounds remain unsolved.
 
   This paper describes a novel quantitative resource analysis
-  framework that tackles these challenges for C programs.  First, the
-  runtime resource cost of programs is formalized with a parametric
-  cost semantics for CompCert Clight.  Second, a quantitative Hoare
-  logic that can be used for interactive bound development is
-  implement and proved sound with respect to the cost semantics in the
-  Coq Proof Assistant.  Third, an automatic amortized resource
-  analysis for C programs that computes derivations in the
-  quantitative Hoare logic is developed and implemented.  Both, the
-  quantitative logic and the automatic amortized analysis are
-  naturally compositional and can be combined to semi-automatically
-  derive global resource bounds.
+  framework that tackles these challenges for C programs.  The
+  analysis framework consists of three parts.  First, the runtime
+  resource cost of programs is formalized with a parametric cost
+  semantics for CompCert Clight.  Second, a quantitative Hoare logic
+  that can be used for interactive bound development is implement and
+  proved sound with respect to the cost semantics in the Coq Proof
+  Assistant.  Third, an automatic amortized resource analysis for C
+  programs that computes derivations in the quantitative Hoare logic
+  is developed and implemented.  Both, the quantitative logic and the
+  automatic amortized analysis are naturally compositional and can be
+  combined to semi-automatically derive global resource bounds.
 
   The practicability of the analysis framework is demonstrated with an
   experimental evaluation.  The logic is used to derive XXX A comparison
