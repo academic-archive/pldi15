@@ -1645,17 +1645,17 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
 %
 \and\Rule{Q:Call}
 { (\vec y, s, \Gamma_f, Q_f, Q_f', \Gamma_f') \in \Delta(f)
-\\ \text{Loc} = \text{Locals}(Q)
-\\ \forall i \neq j . \, x_i \neq x_j
-\\ c \in \mathbb Q_0^+
-\\\\ Q \ge P + S
-\\ P' + S \ge Q'
-\\ R = Q_f[\vec y / \vec x]
-\\ R' = Q'_f[s/r]
-\\ \forall i \in \dom{R} . \, p_i = r_i
-\\ \forall i \in \dom{R'} .\, p'_i = r'_i 
-\\ \forall i \not\in \dom{R'} .\, p'_i = 0
-\\ \forall i \not\in \text{Loc}
+\and \text{Loc} = \text{Locals}(Q)
+\and \forall i \neq j . \, x_i \neq x_j
+\and c \in \mathbb Q_0^+
+\\ Q = P + S
+\and Q' = P' + S
+\and U = Q_f[\vec y / \vec x]
+\and U' = Q'_f[s/r]
+\\ \forall i \in \dom{U} . \, p_i = u_i
+\and \forall i \in \dom{U'} .\, p'_i = u'_i 
+\and \forall i \not\in \dom{U'} .\, p'_i = 0
+\and \forall i \not\in \text{Loc}
   .\, s_i = 0
 }
 { \Gamma_f[\vec y / \vec x] \land \Gamma_{\text{Loc}}; B; R; Q + c
