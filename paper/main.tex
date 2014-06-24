@@ -978,11 +978,9 @@ Clight.
 The evaluation function \evalE{\cdot}{} that maps an expression $e \in
 E$ to a value $\evalE{e}{\state} \in \Z$ in program state $\state$.
 
-For simplicity, we assume that local variables and global
-variables are always disjoint sets. % This simplifies both
-% the semantics and the description of our analysis.  
-The mutable state $\state$ can be accessed and modified, the access is
-written functionally and is defined by
+For simplicity, we assume that local variables and global variables
+are always disjoint.  We just write $\state(x)$ to obtain the value of
+$x$ in program state $\state$.  Such a lookup is defined as
 $$
 (\theta, \gamma)(x) =
 \left\{
@@ -992,11 +990,10 @@ $$
 \end{array}
 \right..
 $$
-For a program state $\state$, we write $\state[x \mapsto v]$ for the
-program state that maps $x$ to $v$ and behaves as $\state$ for all
-other variables, regardless whether $x \in \dom \theta$ or $x \in \dom
-\gamma$.  Similarly, we just write $\state(x)$ to obtain the value of
-$x$ in program state $\state$.
+For a program state $\state$, we similarly write $\state[x \mapsto v]$
+for the program state that maps $x$ to $v$ and behaves as $\state$ for
+all other variables, regardless whether $x \in \dom \theta$ or $x \in
+\dom \gamma$.
 
 The small-step semantics is standard, except that it tracks the
 resource consumption of a program.  The semantics is oblivious to the
@@ -1021,11 +1018,11 @@ M_t(n)
 )
 $$
 Each of these rational numbers indicates the amount of resource
-consumed by a corresponding operation.  If one of these numbers is
-negative, it means that resources are released by the program.  The
-metric that we use in the implementation can also depend on other
-information that is statically available such as the name of the called
-function or the number of arguments.
+consumed by a corresponding operation.  If the assigned resource cost
+is negative then it means that resources are released.  The metric
+that we use in the implementation can also depend on other information
+that is statically available such as the name of the called function
+or the number of arguments.
 
 
 \begin{figure}[t!]
@@ -1162,15 +1159,19 @@ function or the number of arguments.
 \end{figure}
 
 
-\pref{fig:opsem} contains the reduction rules of the semantics.
-The rules define a rewrite system for program configurations of the
-form $(\state, S, \cont, \cost)$, where $\state$ is the program state,
-$S$ is the statement being executed, $\cont$ is a continuation that
+\pref{fig:opsem} contains the reduction rules of the semantics.  The
+rules define a rewrite system for program configurations of the form
+$(\state, S, \cont, \cost)$, where $\state$ is the program state, $S$
+is the statement being executed, $\cont$ is a continuation that
 describes what remains to be done after the execution of $S$, and
-$\cost$ is the non-negative number of resources available for further
-execution.  All rules that can decrease $\cost$ have the implicit side
-condition that the resource quantity available after the step is
-non-negative.  
+$\cost \in \Q$ is the non-negative number of resources available for
+further execution.  All rules that can decrease $\cost$ have the
+implicit side condition that the resource quantity available
+\emph{before} the step is non-negative.  This means that we allow
+$(\state, S, \cont, \cost)$ with $c<0$ on the right-hand side
+transition relation $\smallstep{M}^*$ to indicate that the execution
+ran out of reassesses.  However, every execution that reaches such a
+state is stuck.
 
 A continuation $\cont$ represents the context of the execution of a
 given statement.  A continuation can be the empty continuation
@@ -1189,14 +1190,17 @@ maps function names to a list of variables and the statement that
 defines the function body.  It is used in the rule \textsc{S:Call}.
 
 The intuitive meaning of an evaluation judgement $(\state, S, \cont,
-\cost) \smallstep{M}^* (\state', S', \cont', \cost')$ is the following.
-If the statement $S$ is executed in program state $\state$, with
-continuation $\cont$, and with $\cost$ resources available
-then---after a finite number of steps---the evaluation will reach the
-new machine state $(\state', S', \cont')$ and there are $\cost'$
-resources available.  The resource consumption of the evaluation up to
-this point is then $\cost - \cost'$.  If this difference is negative
-then resource became available during the execution.
+\cost) \smallstep{M}^* (\state', S', \cont', \cost')$ is the
+following.  If the statement $S$ is executed in program state
+$\state$, with continuation $\cont$, and with $\cost$ resources
+available then---after a finite number of steps---the evaluation will
+reach the new machine state $(\state', S', \cont',\cost')$ and there
+are $\cost'$ resources available.  If $\cost' \ge 0$ then the
+execution did not run out of resources and the resource consumption up
+to this point is $\cost - \cost'$.  If this difference is negative
+then resource became available during the execution.  If however
+$\cost' < 0$ then the execution ran out of resources and is stuck.
+The cost of the execution is then $\cost \ge 0$.
 
 \pref{lem:sem1} summarizes the main properties of the resource
 counter of the semantics.  It can be proved by induction on the number
@@ -1204,11 +1208,11 @@ of steps.
 \begin{lemma}
 \label{lem:sem1}
   \begin{enumerate}
-  \item If $(\state, S, \cont, \cost) \smallstep{M}^* (\state', S',
+  \item If $(\state, S, \cont, \cost) \smallstep{M}^k (\state', S',
     \cont', \cost')$ and $n\ge 0$ then $(\state, S, \cont, \cost {+} n)
-    \smallstep{M}^* (\state', S', \cont', \cost' {+} n)$.
-  \item If $(\state, S, \cont, \cost) \smallstep{M}^* (\state', S',
-    \cont', \cost')$ and $(\state, S, \cont, d) \smallstep{M}^* (\state', S',
+    \smallstep{M}^k (\state', S', \cont', \cost' {+} n)$.
+  \item If $(\state, S, \cont, \cost) \smallstep{M}^k (\state', S',
+    \cont', \cost')$ and $(\state, S, \cont, d) \smallstep{M}^k (\state', S',
     \cont', d')$ then $\cost - \cost' = d - d'$.
   \end{enumerate}
 \end{lemma}
@@ -1222,9 +1226,10 @@ termination.  This is formalized by \pref{lem:sem_term}.
  \label{lem:sem_term}
  Let $M$ be a positive metric and assume that there exists $b \in
  \Qplus$ such that $(\state, S, \cont, \cost) \smallstep{M}^*
- (\state', S', \cont', \cost') \implies \cost {-} \cost' {\leq} b$.  Then
- $(\state, S, \cont, d) \smallstep{M}^* (\state'', \code{skip}, \Kstop,
- d')$ for some $d$, $d'$ and $\state''$.
+ (\state', S', \cont', \cost') \implies \cost {-} \cost' {\leq} b$.
+ Then there exists $B \in \N$ such that $(\state, S, \cont, d)
+ \smallstep{M}^n (\state'', S', \cont', d')$ for some $n$, $d$, $d'$
+ and $\state''$ implies $n \le B$.
 \end{lemma}
 
 
