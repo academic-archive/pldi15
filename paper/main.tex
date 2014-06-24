@@ -1632,22 +1632,23 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
 { \Gamma; B; R; Q \vdash S_1;S_2 \dashv Q''; \Gamma'' }
 %
 \and\Rule{Q:Call}
-{ (\vec y, s, \Gamma_f, P, P', \Gamma_f') \in \Delta(f)
-\\ \ell = \text{Locals}(Q)
-\\ R = P[\vec y / \vec x]
-\\ \forall i \in \dom{R} . \, q_i = r_i
-\\ R' = P'[s/r]
-\\ \forall i \in \dom{R'} .\, q'_i = r'_i
-\\ \forall i \not\in \dom{R'} .\, q'_i = 0
-\\ \forall i \in \ell . \, q_i = q_i'
-% \\ P' = Q'_f \Uparrow_{[r = s]}
-% \\ \forall i \in \ell \,\setminus \{r\} .\, q_i = q_i'
-% \\ \forall i \not\in \ell \,\setminus \{r\} .(q_i = p_i \land q'_i = p'_i)
-% \\ c \in \mathbb Q_0^+
+{ (\vec y, s, \Gamma_f, Q_f, Q_f', \Gamma_f') \in \Delta(f)
+\\ \text{Loc} = \text{Locals}(Q)
+\\ \forall i \neq j . \, x_i \neq x_j
+\\ c \in \mathbb Q_0^+
+\\\\ Q \ge P + S
+\\ P' + S \ge Q'
+\\ R = Q_f[\vec y / \vec x]
+\\ R' = Q'_f[s/r]
+\\ \forall i \in \dom{R} . \, p_i = r_i
+\\ \forall i \in \dom{R'} .\, p'_i = r'_i 
+\\ \forall i \not\in \dom{R'} .\, p'_i = 0
+\\ \forall i \not\in \text{Loc}
+  .\, s_i = 0
 }
-{ \Gamma_f[\vec y / \vec x] \land \Gamma_\ell; B; R; Q + c
+{ \Gamma_f[\vec y / \vec x] \land \Gamma_{\text{Loc}}; B; R; Q + c
   \vdash r \gets f(\vec x) \dashv
-  Q' + c; \Gamma_f'[s/r] \land \Gamma_\ell
+  Q' + c; \Gamma_f'[s/r] \land \Gamma_{\text{Loc}}
 }
 %
 \and \Rule{Q:Weak}
