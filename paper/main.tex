@@ -452,7 +452,7 @@ subsequent function calls.  So $M_f$ corresponds to the stack-frame
 size of the function $f$.
 %
 \begin{center}
-${ (Z = \log_2(h-l)) + Z{\cdot}M_\code{bsearch} \} }$
+${ \{ (Z = \log_2(h-l)) + Z{\cdot}M_\code{bsearch} \} }$
 \code{bsearch(x,l,h)}
 ${ \{ Z{\cdot}M_\code{bsearch} \} }$
   
@@ -1267,17 +1267,25 @@ executed with starting state $\state$, the empty continuation
 $\Kstop$, and at least $P(\state)$ resources available then the
 evaluation does not run out of resources and there are at least
 $Q(\state')$ resources left if the evaluation terminates in state
-$\state'$.  However, the assertion $B : \Assn$ provides the
+$\state'$.  The assertion $B : \Assn$ provides the
 postcondition for the case in which the code block $S$ is exited by a
 \code{break} statement.  So if the execution is terminated in state
 $\state'$ with a \code{break} then $B(\state')$ resources are
 available.  Similarly, $R : \Z \to \Assn$ is the postcondition for the
-case in which the code block $S$ is exited by a \code{return x}
+case in which the code block $S$ is exited by a $\code{return}~x$
 statement.  The integer argument of $R$ is the return value.
-Finally, the function context 
-$$\Delta {:} \text{Funs} \to \Z^*
-\\
-((\Val \times \Mem) {\to} \N \cup \{\infty\}) {\times} ((\Val \times \Mem) {\to} \N {\cup} \{\infty\})$$ 
+Finally, the function context of judgements that we write $\Delta$ is
+a mapping from function names to specification of the form
+$$
+  \forall z \, \vec v \, v .(P_f \, z \, \vec v, Q_f \, z \, v).
+$$
+The assertion $P_f \, z \, \vec v$ is the precondition of the
+function $f$ and the assertion $Q_f \, z \, v$ is its postcondition.
+They are both parameterized by an arbitary logical variable $z$
+(which can be a tuple) that helps relating them.  The precondition
+is allowed to depend on $\vec v$, the value of all the arguments at
+the function invocation.  Similarly, the postcondition depends on
+the return value $v$ of the function.
 
 
 % The continuation-based semantics of a Clight requires that we
@@ -1338,7 +1346,7 @@ $$\Delta {:} \text{Funs} \to \Z^*
 { }
 { \Delta; B; R \vdash
 \htriple
-  { M_s + Q }{ \code{skip} }{ Q }
+  { Q }{ \code{skip} }{ Q }
 }
 %
 \and
@@ -1354,7 +1362,7 @@ $$\Delta {:} \text{Funs} \to \Z^*
 { }
 { \Delta; B; R \vdash
 \htriple
-  { M_r + R\,x }{ \code{return}~x }{ Q }
+  { R\,(\state(x)) }{ \code{return}~x }{ Q }
 }
 %
 \and
@@ -1368,7 +1376,7 @@ $$\Delta {:} \text{Funs} \to \Z^*
 \and
 \Rule{L:Call}
 {
-  \Delta f = \forall z\,\vec v.(P_f\,z\,\vec v, Q_f\,z) \\
+  \Delta(f) = \forall z\,\vec v\,v.(P_f\,z\,\vec v, Q_f\,z\,v) \\
   P \models P_f \, y \, (\state(\vec x)) \land A \\
   \forall v.\, (Q_f \, y \, v \land A \models \lambda \state.\, Q \, \state[r \mapsto v])
 }
@@ -1376,7 +1384,7 @@ $$\Delta {:} \text{Funs} \to \Z^*
 \htriple
   { M_f + P }
   { r \gets f(\vec x) }
-  { Q }
+  { Q - M_r }
 }
 %
 \and
@@ -1445,15 +1453,15 @@ $$\Delta {:} \text{Funs} \to \Z^*
 %
 \and
 \Rule{L:Extend}
-{ \forall f\,P_f\,Q_f.\,
-  \Delta'f = \forall z\,\vec v.(P_f\,z\,\vec v, Q_f\,z)
+{ \Delta \cup \Delta'; B; R \vdash
+  \htriple{ P }{ S }{ Q }
+\\
+  \forall f\,P_f\,Q_f.\,
+  \Delta'(f) = \forall z\,\vec v\,v.(P_f\,z\,\vec v, Q_f\,z\,v)
   \rightarrow
   \forall y\,\vec v.\,
   (\Delta \cup \Delta'; \bot; Q_f\,y \vdash
     \htriple{ P_f\,y\,\vec v }{ S_f }{ \bot })
-\\
-  \Delta \cup \Delta'; B; R \vdash
-  \htriple{ P }{ S }{ Q }
 }
 { \Delta; B; R \vdash
 \htriple{ P }{ S }{ Q }
