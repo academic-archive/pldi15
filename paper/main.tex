@@ -178,7 +178,7 @@ short in comparison with semantic techniques.
 \end{quote}
 %
 %
-In this paper, we present a novel cost analysis system for C programs
+In this paper, we present a novel resource analysis framework for C programs
 that is based on a solid semantic foundation. It works automatically,
 efficiently and precisely for many examples, can be used interactively
 for manual bound derivation if the automation fails, and produces
@@ -224,8 +224,8 @@ naturally compositional and describe the resource behavior of code
 fragments without referring to the source code.  As a result, we
 naturally derive global bounds that are functions of the input
 parameters of the program.  To the best of our knowledge, our system
-is the only one that can deal with resource like memory that may
-become available during the execution.
+is the only one that can automatically handle resources like memory
+that may become available during the execution.
 
 The main innovation that makes this work practical is our new
 automatic amortized analysis for C code.  It targets programs that are
