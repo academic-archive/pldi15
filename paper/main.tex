@@ -1279,55 +1279,15 @@ a mapping from function names to specification of the form
 $$
   \forall z \, \vec v \, v .(P_f \, z \, \vec v, Q_f \, z \, v).
 $$
-The assertion $P_f \, z \, \vec v$ is the precondition of the
-function $f$ and the assertion $Q_f \, z \, v$ is its postcondition.
-They are both parameterized by an arbitary logical variable $z$
-(which can be a tuple) that helps relating them.  The precondition
-is allowed to depend on $\vec v$, the value of all the arguments at
-the function invocation.  Similarly, the postcondition depends on
-the return value $v$ of the function.
-
-
-% The continuation-based semantics of a Clight requires that we
-% distinguish pre- and postconditions in the   This is approach is
-% standard in Hoare logics and followed for instance in Appel's
-% separation logic for Clight~\cite{AppelLogic}.  Our postconditions
-% $$
-% Q = (Q^s, Q^b, Q^r) : \Assn \times \Assn \times (\Val \to \Assn)
-% $$
-% provide one assertion $Q^s$ for the case in which the block is exited by
-% fall through, one assertion $Q^b$ if the block is exited by a \code{break}, and a
-% function $Q^r$ from values to assertions in case the block is exited by a
-% \code{return}.  The function argument in the last case represents the return
-% value and the intended meaning is that the resulting assertion is
-% guaranteed to hold for every return value.
-
-% Since we have to deal with recursive functions, we also need a
-% function context
-% $$\Gamma {:} \funs {\to} ((\Val \times \Mem) {\to} \N \cup \{\infty\}) {\times} ((\Val \times \Mem) {\to} \N {\cup} \{\infty\})$$ 
-% that maps function names to their specifications, that is, pre- and
-% postconditions.  The precondition depends on the value that is passed
-% to the function by the caller and the memory.  The postcondition
-% depends on the return value and the memory.  For simplicity, we assume
-% that a function has only one argument in this article.  In the Coq
-% implementation, an arbitrary number of function arguments is allowed.
-
-% In summary, a quantitative Hoare triple has the form
-% $$
-% \Gamma \vdash \htriple{P}{S}{Q}
-% $$
-% where $\Gamma$ is a function context, $P : \Assn$ is a precondition,
-% $Q : \Assn \times \Assn \times (\Val \to \Assn)$ is a postcondition,
-% and $S$ is a statement.
-
-% Intuitively, an assertion can be seen as a \emph{potential function}
-% that maps a program state to a non-negative potential.  The potential
-% of the precondition $P$ must be sufficient to cover the cost of the
-% execution of the statement $S$ and the potential $Q$ after the execution
-% of $S$ (as in amortized resource analysis~\cite{HoffmannAH12}).
-
-
-
+The assertion $P_f \, z \, \vec v$ is the precondition of the function
+$f$ and the assertion $Q_f \, z \, v$ is its postcondition.  They are
+both parameterized by an arbitary logical variable $z$ (which can be a
+tuple) that relates the function arguments with the return value.  The
+precondition also depends on $\vec v$, the value of all the arguments
+at the function invocation.  Similarly, the postcondition depends on
+the return value $v$ of the function.  The use of logical variables to
+express relations between different states of an execution is a
+standard technique of Hoare logic.
 
 \begin{figure*}[t]
 \begin{mathpar}
