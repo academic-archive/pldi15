@@ -1438,6 +1438,53 @@ standard technique of Hoare logic.
 \label{fig:logic}
 \end{figure*}
 
+\paragraph{Semantic meaning of triples.}
+
+We already gave an intuition of the meaning of judgements
+derived in the logic, to make it formal we define the
+\emph{resource safety} $\safe n P S \cont$ of an assertion
+and a program configuration as
+\begin{align*}
+  \forall \state \, \cost \, m \, \cost' .\,&
+  (m \le n \land P(\state) \le \cost \land
+    (\state, S, \cont, \cost) \smallstep{M}^m (\_, \_, \_, \cost')) \\
+  &\implies 0 \le \cost'.
+\end{align*}
+This predicate is step indexed by an integer $n$ that will
+be used in the soundness proof for the function call and
+loop cases.  The constraint $0 \le \cost'$ imposed by the
+definition makes sure that the program does not stop on a
+resource error.  However, it does not rule out memory safety
+errors or assertion failures, this is because our logic does
+not prove any safety or correctness theorems but only
+focuses on resource usage.
+
+The safety of a continuation $\cont$ is defined using three
+assertions, one for each of the possible outcome of a program
+statement.  We denote it by $\safeK n B R Q \cont$ and define
+it to be
+\begin{align*}
+& \safe n B {\code{break}} \cont \\
+\land& \safe n {\lambda \state.\,R\,(\state(x))} {\code{return}~x} \cont \\
+\land& \safe n Q {\code{skip}} \cont.
+\end{align*}
+
+We can now define the \emph{semantic validity} of a function-context
+free logic judgement $B; R \vdash \htriple P S Q$ as follows
+\begin{align*}
+\valid n B R P S Q := \\
+\forall m\, \cont .\,& (m \le n \land \safeK m B R Q \cont) \\
+&\implies \safe m P S \cont.
+\end{align*}
+We use this validity definition to give a meaning to function
+specifications $\forall z \, \vec v \, v.(P_f \, z \, \vec v,
+Q_f \, z \, v)$ as follows
+$$
+  \forall z \, \vec v \, n .\,
+  \valid n \bot {Q_f \, z} {P_f \, z \, \vec v} {S_f} \bot ,
+$$
+where $S_f$ is the body of the function $f$.
+
 
 \section{Automatic Amortized Analysis}
 
