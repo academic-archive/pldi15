@@ -82,7 +82,7 @@
   logic that can be used for interactive bound development is
   implement and proved sound with respect to the cost semantics in the
   Coq Proof Assistant.  Third, an automatic amortized resource
-  analysis for C programs that can compute derivations in the
+  analysis for C programs that computes derivations in the
   quantitative Hoare logic is developed and implemented.  Both, the
   quantitative logic and the automatic amortized analysis are
   naturally compositional and can be combined to semi-automatically
@@ -233,7 +233,8 @@ common in system software, that is, programs whose resource
 consumption can be described as a function of sizes $|[x,y]|$ of
 intervals of integer variables.  A typical bound would be $B(x,y,z) =
 10{\cdot}|[x,y]| + 1{\cdot}|[z,0]|$ (for example $B(100,200,43) =
-1043$).
+1043$).  The use of interval sizes in potential functions is an
+important novelty.
 %
 Despite the apparent simplicity of the new analysis system, it is able
 to reproduce results from the literature which were obtained using
@@ -909,13 +910,19 @@ but is conceptually straightforward as we describe in detail in
 Section XXX.
 
 
-\section{Syntax}
+\section{Syntax and Semantics}
 
-For the sake of simplicity, our quantitative program logic
-applies to the Clight language.  This language is the most
-abstract intermediate language used by CompCert.  It is very
-similar to vanilla C but the expressions are free of
-side-effects and there is only one looping construct.
+We implemented our cost semantics and the quantitative Hoare logic in
+Coq for \emph{CompCert Clight}.  Clight is the most abstract
+intermediate language used by CompCert.  Mainly, it is a subset of C
+in which loops can only be exited with a \code{break} statement and
+expressions are free of side effects.
+
+\paragraph{Syntax}
+
+In this article, we describe our system for a subset of Clight to
+discuss general ideas instead of technical details.  This subset is
+given by the following grammar.
 %
 \begin{align*}
 S &:= \code{assert}~E
@@ -928,32 +935,52 @@ S &:= \code{assert}~E
 & \mid \code{loop}~S
 \mid \code{if}(E)~S~\code{else}~S
 \mid S;S
+\mid \code{tick}(n)
 \end{align*}
 %
-We added the builtin primitive $\code{assert}$ that checks
-if a condition is true before continuing the program
-execution.  This will be used to explicit invariants to the
-automatic analysis later.
+Expressions are $E$ are left abstract in our presentation.  For our
+analysis framework, it is only important that they are side-effect
+free.
+%
+The most notable difference to full Clight is that we can only assign
+to variables and thus do not consider operations that update the heap.
+Moreover, function arguments and return values are assumed to be
+variables.  In the implementation we can deal with heap updates and
+general function calls and returns.  However, we have not implemented
+function pointers, goto statements, continue statements, and switch
+statements.
 
-The expressions are left abstract in this presentation.  To
-present both the semantics and the program logic, we simply
-need an evaluation function that maps any $e \in E$ to
-a value $\llbracket e \rrbracket_\state$ using $\state$ as current
-state.
+We include the built-in primitive $\code{assert}~E$ that terminates
+the program if the argument $E$ evaluates to false and has no effect
+otherwise.  This is useful to express assumptions on the inputs of a
+program for the automatic analysis.  We also add the built-in function
+$\code{tick}(n)$ that can be called with a constant integer $n$ as a
+flexible way to model resource consumption or release (if $n$ is
+negative).
 
-\section{Semantics}
 
-The operational semantics uses a mutable state $\state$
-composed of two maps from variable names to integers. The
-first map $\theta$ represents the local variable of a
-function and the second map $\gamma$ gives values to global
-variables of the program.
+\paragraph{Semantics}
+
+CompCert Clight's operational semantics is based on small-step
+transitions and continuations.  Expressions---which do not have side
+effects---are evaluated in a big-step fashion.  Here, we describe a
+simplified version of Clight's semantics that is sufficient for the
+subset that we are describing.
+
+A program state $\state = (\theta, \gamma)$ composed of two maps from
+variable names to integers. The first map $\theta : \text{Locals} \to
+\Z$ assigns integers to local variables of a function and the second
+map $\gamma : \text{Globals} \to \Z$ gives values to global variables
+of the program.
+%
+The evaluation function \evalE{\cdot}{} that maps an expression $e \in
+E$ to a value $\evalE{e}{\state} \in \Z$ in program state $\state$.
 
 For simplicity, we assume that local variables and global
-variables are always disjoint sets, this simplifies both
-the semantics and the description of our analysis.  The
-mutable state $\state$ can be accessed and modified, the
-access is written functionally and is defined by
+variables are always disjoint sets. % This simplifies both
+% the semantics and the description of our analysis.  
+The mutable state $\state$ can be accessed and modified, the access is
+written functionally and is defined by
 $$
 (\theta, \gamma)(x) =
 \left\{
@@ -963,22 +990,20 @@ $$
 \end{array}
 \right..
 $$
-We note $\state[x \mapsto v]$ the state that results from
-updating $\state$ to make $x$ map to $v$.  Similarly to
-the state access, the formal definition of this operation
-is a simple case disjunction.  Thanks to the assumption we
-made above we can be sure that the different cases never
-overlap.
+For a program state $\state$, we write $\state[x \mapsto v]$ for the
+program state that maps $x$ to $v$ and behaves as $\state$ for all
+other variables, regardless whether $x \in \dom \theta$ or $x \in \dom
+\gamma$.  Similarly, we just write $\state(x)$ to obtain the value of
+$x$ in program state $\state$.
 
-To formally describe the cost of operation of a given
-program, our semantics tracks resource consumption while
-executing.  The semantics is oblivious to the resource of
-interest for the user of our system.  We achieve this
-independence by parameterizing by a resource
-\emph{metric}, it is a tuple of nine rational numbers and
-one map from expressions to rational numbers
+The small-step semantics is standard, except that it tracks the
+resource consumption of a program.  The semantics is oblivious to the
+resource of interest for the user of our system.  We achieve this
+independence by parameterizing evaluations with a resource
+\emph{metric} $M$; a tuple of nine rational numbers and one map $M_e :
+\text{Expr} \to \Q$ from expressions to rational numbers.
 $$
-(
+M = (
 M_a,
 M_b,
 M_r,
@@ -988,40 +1013,80 @@ M_l,
 M_c^1,
 M_c^2,
 M_q,
-M_e
-).
+M_e(E)
+)
 $$
 Each of these rational numbers indicates the amount of resource
-consumed by one operation.  If one of these numbers is negative,
-it means that resources are released by the program.
+consumed by a corresponding operation.  If one of these numbers is
+negative, it means that resources are released by the program.  The
+metric that we use in the implementation can also depend on other
+information that is statically available such as the name of the called
+function or the number of arguments.
 
-For technical reasons in our soundness proof and to be in line
-with CompCert's Clight, our language's semantics is defined
-in a small-step fashion.  The \pref{fig:opsem} contains the full
-list of reduction rules.  These rules provide a rewrite
-system for program configurations of the form
-$(\state, S, \cont, \cost)$, where $\state$ is the program state,
-$S$ is the statement being executed, $\cont$ is a continuation
-that describes what remains to be done once the execution of $S$
-is over, and $\cost$ is the non-negative quantity of resources
-available for further execution.  All rules that can decrease
-$\cost$ have the implicit side condition that the resource
-quantity available after the step is non-negative.  Using this
-resource counter we can define the resource consumption of a
-program as the minimal resource counter $\cost_*$ that lets the
-program run to termination without errors.
+\pref{fig:opsem} contains the reduction rules of the semantics.
+The rules define a rewrite system for program configurations of the
+form $(\state, S, \cont, \cost)$, where $\state$ is the program state,
+$S$ is the statement being executed, $\cont$ is a continuation that
+describes what remains to be done after the execution of $S$, and
+$\cost$ is the non-negative number of resources available for further
+execution.  All rules that can decrease $\cost$ have the implicit side
+condition that the resource quantity available after the step is
+non-negative.  
 
-The small-step semantics uses continuations to represent the
-context of execution of a given statement.
-A continuation can be a sequenced computation, it can also result
-from entering a loop or a function, or it can simply be the
-empty continuation (used to start a program).
+A continuation $\cont$ represents the context of the execution of a
+given statement.  A continuation can be the empty continuation
+$\Kstop$ (used to start a program), a sequenced computation $\Kseq S
+\cont$, a loop continuation $\Kloop S \cont$, or the continuation
+$\Kcall r \theta \cont$ of a function call.
 $$
 \cont := \Kstop
 \mid \Kseq S \cont
 \mid \Kloop S \cont
 \mid \Kcall r \theta \cont
 $$
+%
+During the execution we assume a fixed function context $\fenv$ that
+maps function names to a list of variables and the statement that
+defines the function body.  It is used in the rule \textsc{S:Call}.
+
+The intuitive meaning of an evaluation judgement $(\state, S, \cont,
+\cost) \smallstep{M}^* (\state', S', \cont', \cost')$ is the following.
+If the statement $S$ is executed in program state $\state$, with
+continuation $\cont$, and with $\cost$ resources available
+then---after a finite number of steps---the evaluation will reach the
+new machine state $(\state', S', \cont')$ and there are $\cost'$
+resources available.  The resource consumption of the evaluation up to
+this point is then $\cost - \cost'$.  If this difference is negative
+then resource became available during the execution.
+
+\pref{lem:sem1} summarizes the main properties of the resource
+counter of the semantics.  It can be proved by induction on the number
+of steps.
+\begin{lemma}
+\label{lem:sem1}
+  \begin{enumerate}
+  \item If $(\state, S, \cont, \cost) \smallstep{M}^* (\state', S',
+    \cont', \cost')$ and $n\ge 0$ then $(\state, S, \cont, \cost {+} n)
+    \smallstep{M}^* (\state', S', \cont', \cost' {+} n)$.
+  \item If $(\state, S, \cont, \cost) \smallstep{M}^* (\state', S',
+    \cont', \cost')$ and $(\state, S, \cont, d) \smallstep{M}^* (\state', S',
+    \cont', d')$ then $\cost - \cost' = d - d'$.
+  \end{enumerate}
+\end{lemma}
+%
+If we assume that we have a \emph{positive resource metric}, that is,
+a metric that assigns a positive cost to each evaluation step then we
+can link bounds on the resource consumption under the metric to
+termination.  This is formalized by \pref{lem:sem_term}.
+%
+\begin{lemma}
+ \label{lem:sem_term}
+ Let $M$ be a positive metric and assume that there exists $b \in
+ \Qplus$ such that $(\state, S, \cont, \cost) \smallstep{M}^*
+ (\state', S', \cont', \cost') \implies \cost {-} \cost' {\leq} b$.  Then
+ $(\state, S, \cont, d) \smallstep{M}^* (\state'', \code{skip}, \Kstop,
+ d')$ for some $d$, $d'$ and $\state''$.
+\end{lemma}
 
 \begin{figure}[t!]
 \begin{mathpar}
@@ -1029,7 +1094,7 @@ $$
 \Rule{S:Assert}
 { \code{istrue}~\sem{e}_\state }
 { (\state, \code{assert}~e, \cont, \cost)
-\smallstep
+\smallstep{M}
 (\state, \code{skip}, \cont, \cost {-} M_a)
 }
 %
@@ -1037,15 +1102,15 @@ $$
 \Rule{S:BrkSeq}
 {}
 { (\state, \code{break}, \Kseq S \cont, \cost)
-\smallstep
+\smallstep{M}
 (\state, \code{break}, \cont, \cost)
 }
 %
 \and
 \Rule{S:BrkLoop}
 {}
-{ (\state, \code{break}, \Kloop \cont, \cost)
-\smallstep
+{ (\state, \code{break}, \Kloop S \cont, \cost)
+\smallstep{M}
 (\state, \code{skip}, \cont, \cost {-} M_b)
 }
 %
@@ -1053,7 +1118,7 @@ $$
 \Rule{S:RetSeq}
 {}
 { (\state, \code{return}~x, \Kseq S \cont, \cost)
-\smallstep
+\smallstep{M}
 (\state, \code{return}~x, \cont, \cost)
 }
 \and
@@ -1061,8 +1126,8 @@ $$
 \and
 \Rule{S:RetLoop}
 {}
-{ (\state, \code{return}~x, \Kloop \cont, \cost)
-\smallstep
+{ (\state, \code{return}~x, \Kloop S \cont, \cost)
+\smallstep{M}
 (\state, \code{return}~x, \cont, \cost)
 }
 %
@@ -1072,7 +1137,7 @@ $$
   \state' = (\theta, \gamma)[r \mapsto \state(x)]
 }
 { (\state, \code{return}~x, \Kcall r \theta \cont, \cost)
-\smallstep
+\smallstep{M}
 (\state', \code{skip}, \cont, \cost {-} M_r)
 }
 %
@@ -1080,18 +1145,18 @@ $$
 \Rule{S:Update}
 { \state' = \state[x \mapsto \sem{e}_\state] }
 { (\state, x \gets e, \cont, \cost)
-\smallstep
+\smallstep{M}
 (\state', \code{skip}, \cont, \cost {-} M_u {-} M_e(e))
 }
 %
 \and
 \Rule{S:Call}
-{ \delta f = (\vec x, S_f) \\
+{ \fenv f = (\vec x, S_f) \\
   \state = (\theta, \gamma) \\
   \state' = (\vec x \mapsto \state(\vec y), \gamma) \\
 }
 { (\state, r \gets f(\vec y), \cont, \cost)
-\smallstep
+\smallstep{M}
 (\state', S_f, \Kcall r \theta \cont, \cost {-} M_f)
 }
 %
@@ -1099,7 +1164,7 @@ $$
 \Rule{S:Loop}
 {}
 { (\state, \code{loop}~S, \cont, \cost)
-\smallstep
+\smallstep{M}
 (\state, S, \Kloop S \cont, \cost)
 }
 %
@@ -1107,7 +1172,7 @@ $$
 \Rule{S:SkipLoop}
 {}
 { (\state, \code{skip}, \Kloop S \cont, \cost)
-\smallstep
+\smallstep{M}
 (\state, \code{loop}~S, \cont, \cost {-} M_l)
 }
 %
@@ -1115,7 +1180,7 @@ $$
 \Rule{S:IfTrue}
 { \code{istrue}~\sem{e}_\sigma }
 { (\state, \code{if}(e)~S_1~\code{else}~S_2, \cont, \cost)
-\smallstep
+\smallstep{M}
 (\state, S_1, \cont, \cost {-} M_c^1)
 }
 %
@@ -1123,7 +1188,7 @@ $$
 \Rule{S:IfFalse}
 { \code{isfalse}~\sem{e}_\sigma }
 { (\state, \code{if}(e)~S_1~\code{else}~S_2, \cont, \cost)
-\smallstep
+\smallstep{M}
 (\state, S_2, \cont, \cost {-} M_c^2)
 }
 %
@@ -1131,7 +1196,7 @@ $$
 \Rule{S:Seq}
 { }
 { (\state, S_1; S_2, \cont, \cost)
-\smallstep
+\smallstep{M}
 (\state, S_1, \Kseq {S_2} \cont, \cost)
 }
 %
@@ -1139,7 +1204,7 @@ $$
 \Rule{S:SkipSeq}
 {}
 { (\state, \code{skip}, \Kseq S \cont, \cost)
-\smallstep
+\smallstep{M}
 (\state, S, \cont, \cost {-} M_q)
 }
 %
