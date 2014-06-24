@@ -1469,22 +1469,35 @@ it to be
 \land& \safe n Q {\code{skip}} \cont.
 \end{align*}
 
-We can now define the \emph{semantic validity} of a function-context
-free logic judgement $B; R \vdash \htriple P S Q$ as follows
+We can now define the \emph{semantic validity} of a logic judgement
+$B; R \vdash \htriple P S Q$ without function context as follows
 \begin{align*}
-\valid n B R P S Q := \\
-\forall m\, \cont .\,& (m \le n \land \safeK m B R Q \cont) \\
-&\implies \safe m P S \cont.
+&\valid n B R P S Q := \\
+&\qquad \forall m \, \cont \, x .\, (m \le n \land \safeK m {B+x} {R+x} {Q+x} \cont) \\
+&\qquad \implies \safe m {P+x} S \cont.
 \end{align*}
-We use this validity definition to give a meaning to function
-specifications $\forall z \, \vec v \, v.(P_f \, z \, \vec v,
-Q_f \, z \, v)$ as follows
-$$
-  \forall z \, \vec v \, n .\,
+Note how the validity of a triple embeds the frame rule of
+our logic, this refinement is necessary to have a stronger
+induction hypothesis available during the proof.
+
+Using this semantic validity  we can define the validity of
+a function context $\Delta$ that we write $\validC n \Delta$ as
+\begin{align*}
+  &\forall f .\, \Delta(f) =
+    \forall z \, \vec v \, v .(P_f \, z \, \vec v, Q_f \, z \, v)
+    \implies \\
+  &\qquad \forall z \, \vec v .\,
   \valid n \bot {Q_f \, z} {P_f \, z \, \vec v} {S_f} \bot ,
-$$
+\end{align*}
 where $S_f$ is the body of the function $f$.
 
+\begin{theorem}[Soundness of the logic]
+  If $\Delta; B; R \vdash \htriple P S Q$ is derivable, then
+  $$
+    \forall n .\, \validC n \Delta
+      \implies \forall n .\, \valid n B R P S Q.
+  $$
+\end{theorem}
 
 \section{Automatic Amortized Analysis}
 
