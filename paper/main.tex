@@ -389,9 +389,9 @@ incorporate boolean preconditions into the bounds to express that the
 bound is only valid for a certain class of inputs.  To this end, we
 allow the potential function $\Phi$ in the pre and post conditions to
 take non-negative number or $\infty$ (infinity) as values.  Infinity,
-plays the same role as $\bot$ in Hoare logic.  Boolean assertions can
-be embedded into potential functions by mapping $\bot$ to $\infty$ and
-$\top$ to $0$.
+plays the same role as $\mathit{false}$ in Hoare logic.  Boolean assertions can
+be embedded into potential functions by mapping $\mathit{false}$ to $\infty$ and
+$\mathit{true}$ to $0$.
 
 \begin{figure}
 \center
@@ -1000,8 +1000,9 @@ The small-step semantics is standard, except that it tracks the
 resource consumption of a program.  The semantics is oblivious to the
 resource of interest for the user of our system.  We achieve this
 independence by parameterizing evaluations with a resource
-\emph{metric} $M$; a tuple of nine rational numbers and one map $M_e :
-\text{Expr} \to \Q$ from expressions to rational numbers.
+\emph{metric} $M$; a tuple of nine rational numbers, one map $M_e :
+\text{Expr} \to \Q$ from expressions to rational numbers, and one map
+$M_t : \Z \to \Q$ from integers to rational numbers.
 $$
 M = (
 M_a,
@@ -1013,7 +1014,8 @@ M_l,
 M_c^1,
 M_c^2,
 M_q,
-M_e(E)
+M_e(E),
+M_t(n)
 )
 $$
 Each of these rational numbers indicates the amount of resource
@@ -1023,70 +1025,6 @@ metric that we use in the implementation can also depend on other
 information that is statically available such as the name of the called
 function or the number of arguments.
 
-\pref{fig:opsem} contains the reduction rules of the semantics.
-The rules define a rewrite system for program configurations of the
-form $(\state, S, \cont, \cost)$, where $\state$ is the program state,
-$S$ is the statement being executed, $\cont$ is a continuation that
-describes what remains to be done after the execution of $S$, and
-$\cost$ is the non-negative number of resources available for further
-execution.  All rules that can decrease $\cost$ have the implicit side
-condition that the resource quantity available after the step is
-non-negative.  
-
-A continuation $\cont$ represents the context of the execution of a
-given statement.  A continuation can be the empty continuation
-$\Kstop$ (used to start a program), a sequenced computation $\Kseq S
-\cont$, a loop continuation $\Kloop S \cont$, or the continuation
-$\Kcall r \theta \cont$ of a function call.
-$$
-\cont := \Kstop
-\mid \Kseq S \cont
-\mid \Kloop S \cont
-\mid \Kcall r \theta \cont
-$$
-%
-During the execution we assume a fixed function context $\fenv$ that
-maps function names to a list of variables and the statement that
-defines the function body.  It is used in the rule \textsc{S:Call}.
-
-The intuitive meaning of an evaluation judgement $(\state, S, \cont,
-\cost) \smallstep{M}^* (\state', S', \cont', \cost')$ is the following.
-If the statement $S$ is executed in program state $\state$, with
-continuation $\cont$, and with $\cost$ resources available
-then---after a finite number of steps---the evaluation will reach the
-new machine state $(\state', S', \cont')$ and there are $\cost'$
-resources available.  The resource consumption of the evaluation up to
-this point is then $\cost - \cost'$.  If this difference is negative
-then resource became available during the execution.
-
-\pref{lem:sem1} summarizes the main properties of the resource
-counter of the semantics.  It can be proved by induction on the number
-of steps.
-\begin{lemma}
-\label{lem:sem1}
-  \begin{enumerate}
-  \item If $(\state, S, \cont, \cost) \smallstep{M}^* (\state', S',
-    \cont', \cost')$ and $n\ge 0$ then $(\state, S, \cont, \cost {+} n)
-    \smallstep{M}^* (\state', S', \cont', \cost' {+} n)$.
-  \item If $(\state, S, \cont, \cost) \smallstep{M}^* (\state', S',
-    \cont', \cost')$ and $(\state, S, \cont, d) \smallstep{M}^* (\state', S',
-    \cont', d')$ then $\cost - \cost' = d - d'$.
-  \end{enumerate}
-\end{lemma}
-%
-If we assume that we have a \emph{positive resource metric}, that is,
-a metric that assigns a positive cost to each evaluation step then we
-can link bounds on the resource consumption under the metric to
-termination.  This is formalized by \pref{lem:sem_term}.
-%
-\begin{lemma}
- \label{lem:sem_term}
- Let $M$ be a positive metric and assume that there exists $b \in
- \Qplus$ such that $(\state, S, \cont, \cost) \smallstep{M}^*
- (\state', S', \cont', \cost') \implies \cost {-} \cost' {\leq} b$.  Then
- $(\state, S, \cont, d) \smallstep{M}^* (\state'', \code{skip}, \Kstop,
- d')$ for some $d$, $d'$ and $\state''$.
-\end{lemma}
 
 \begin{figure}[t!]
 \begin{mathpar}
@@ -1208,6 +1146,13 @@ termination.  This is formalized by \pref{lem:sem_term}.
 (\state, S, \cont, \cost {-} M_q)
 }
 %
+\and
+\Rule{S:Tick}
+{ }
+{ (\state, \code{tick}(n), \cont, \cost)
+\smallstep{M}
+(\state, \code{skip}, \cont, \cost {-} M_t(n))
+}
 
 \end{mathpar}
 \caption{Operational semantics of statements}
@@ -1215,7 +1160,136 @@ termination.  This is formalized by \pref{lem:sem_term}.
 \end{figure}
 
 
-\section{Proof System}
+\pref{fig:opsem} contains the reduction rules of the semantics.
+The rules define a rewrite system for program configurations of the
+form $(\state, S, \cont, \cost)$, where $\state$ is the program state,
+$S$ is the statement being executed, $\cont$ is a continuation that
+describes what remains to be done after the execution of $S$, and
+$\cost$ is the non-negative number of resources available for further
+execution.  All rules that can decrease $\cost$ have the implicit side
+condition that the resource quantity available after the step is
+non-negative.  
+
+A continuation $\cont$ represents the context of the execution of a
+given statement.  A continuation can be the empty continuation
+$\Kstop$ (used to start a program), a sequenced computation $\Kseq S
+\cont$, a loop continuation $\Kloop S \cont$, or the continuation
+$\Kcall r \theta \cont$ of a function call.
+$$
+\cont := \Kstop
+\mid \Kseq S \cont
+\mid \Kloop S \cont
+\mid \Kcall r \theta \cont
+$$
+%
+During the execution we assume a fixed function context $\fenv$ that
+maps function names to a list of variables and the statement that
+defines the function body.  It is used in the rule \textsc{S:Call}.
+
+The intuitive meaning of an evaluation judgement $(\state, S, \cont,
+\cost) \smallstep{M}^* (\state', S', \cont', \cost')$ is the following.
+If the statement $S$ is executed in program state $\state$, with
+continuation $\cont$, and with $\cost$ resources available
+then---after a finite number of steps---the evaluation will reach the
+new machine state $(\state', S', \cont')$ and there are $\cost'$
+resources available.  The resource consumption of the evaluation up to
+this point is then $\cost - \cost'$.  If this difference is negative
+then resource became available during the execution.
+
+\pref{lem:sem1} summarizes the main properties of the resource
+counter of the semantics.  It can be proved by induction on the number
+of steps.
+\begin{lemma}
+\label{lem:sem1}
+  \begin{enumerate}
+  \item If $(\state, S, \cont, \cost) \smallstep{M}^* (\state', S',
+    \cont', \cost')$ and $n\ge 0$ then $(\state, S, \cont, \cost {+} n)
+    \smallstep{M}^* (\state', S', \cont', \cost' {+} n)$.
+  \item If $(\state, S, \cont, \cost) \smallstep{M}^* (\state', S',
+    \cont', \cost')$ and $(\state, S, \cont, d) \smallstep{M}^* (\state', S',
+    \cont', d')$ then $\cost - \cost' = d - d'$.
+  \end{enumerate}
+\end{lemma}
+%
+If we assume that we have a \emph{positive resource metric}, that is,
+a metric that assigns a positive cost to each evaluation step then we
+can link bounds on the resource consumption under the metric to
+termination.  This is formalized by \pref{lem:sem_term}.
+%
+\begin{lemma}
+ \label{lem:sem_term}
+ Let $M$ be a positive metric and assume that there exists $b \in
+ \Qplus$ such that $(\state, S, \cont, \cost) \smallstep{M}^*
+ (\state', S', \cont', \cost') \implies \cost {-} \cost' {\leq} b$.  Then
+ $(\state, S, \cont, d) \smallstep{M}^* (\state'', \code{skip}, \Kstop,
+ d')$ for some $d$, $d'$ and $\state''$.
+\end{lemma}
+
+
+\section{Quantitative Hoare Logic}
+
+In this section we describe a simplified version of the quantitative
+Hoare logic that we use in Coq to interactively prove resource bounds.
+
+We generalize classic Hoare logic to express not only classical
+boolean-valued assertions but also assertions that talk about the
+future resource usage.  Instead of the usual assertions $P : \State
+\to \mathit{bool}$ of Hoare logic we use assertions
+$$
+P : \State \to \Q \cup \{ \infty \} \; .
+$$
+This can be understood as a refinement of boolean assertions where
+$\mathit{false}$ is $\infty$ and $\mathit{true}$ is refined by $\Q$.
+We write $\Assn$ for $\State \to \Q \cup \{ \infty \}$ and $\bot$ for
+$\lambda \state . \, \infty$.  To use Coq's support for propositional
+reasoning, assertions have the type $\State \to \Q \to \mathrm{Prop}$
+in the implementation.  For a given $\state \in \State$, such an
+assertion can be seen as a set $B \subseteq \Q$ of valid bounds.
+However, we find the presentation in this article easier to read.
+
+
+
+% The continuation-based semantics of a Clight requires that we
+% distinguish pre- and postconditions in the logic to account for
+% different possible ways to exit a block of code.  This is approach is
+% standard in Hoare logics and followed for instance in Appel's
+% separation logic for Clight~\cite{AppelLogic}.  Our postconditions
+% $$
+% Q = (Q^s, Q^b, Q^r) : \Assn \times \Assn \times (\Val \to \Assn)
+% $$
+% provide one assertion $Q^s$ for the case in which the block is exited by
+% fall through, one assertion $Q^b$ if the block is exited by a \code{break}, and a
+% function $Q^r$ from values to assertions in case the block is exited by a
+% \code{return}.  The function argument in the last case represents the return
+% value and the intended meaning is that the resulting assertion is
+% guaranteed to hold for every return value.
+
+% Since we have to deal with recursive functions, we also need a
+% function context
+% $$\Gamma {:} \funs {\to} ((\Val \times \Mem) {\to} \N \cup \{\infty\}) {\times} ((\Val \times \Mem) {\to} \N {\cup} \{\infty\})$$ 
+% that maps function names to their specifications, that is, pre- and
+% postconditions.  The precondition depends on the value that is passed
+% to the function by the caller and the memory.  The postcondition
+% depends on the return value and the memory.  For simplicity, we assume
+% that a function has only one argument in this article.  In the Coq
+% implementation, an arbitrary number of function arguments is allowed.
+
+% In summary, a quantitative Hoare triple has the form
+% $$
+% \Gamma \vdash \htriple{P}{S}{Q}
+% $$
+% where $\Gamma$ is a function context, $P : \Assn$ is a precondition,
+% $Q : \Assn \times \Assn \times (\Val \to \Assn)$ is a postcondition,
+% and $S$ is a statement.
+
+% Intuitively, an assertion can be seen as a \emph{potential function}
+% that maps a program state to a non-negative potential.  The potential
+% of the precondition $P$ must be sufficient to cover the cost of the
+% execution of the statement $S$ and the potential $Q$ after the execution
+% of $S$ (as in amortized resource analysis~\cite{HoffmannAH12}).
+
+
+
 
 \begin{figure*}[t]
 \begin{mathpar}
@@ -1361,6 +1435,8 @@ termination.  This is formalized by \pref{lem:sem_term}.
 \label{fig:logic}
 \end{figure*}
 
+
+\section{Automatic Amortized Analysis}
 
 \begin{figure}
 \begin{lstlisting}
