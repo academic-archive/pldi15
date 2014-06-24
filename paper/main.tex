@@ -1577,29 +1577,31 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
 %
 \Rule{Q:Skip}
 {}
-{ \Gamma; B; R; Q \vdash \code{skip} \dashv Q; \Gamma }
+{ B; R; (\Gamma, Q) \vdash \code{skip} \dashv (\Gamma, Q) }
 %
 \and \Rule{Q:Break}
 {}
-{ \Gamma; B; R; B + M_b \vdash \code{break} \dashv Q'; \Gamma' }
+{  (\Gamma, Q_B); R; (\Gamma, Q_B {+} M_b) \vdash \code{break} \dashv (\Gamma', Q') }
 %
 \and \Rule{Q:Return}
-{}
-{ \Gamma; B; R; R \, x + M_r \vdash \code{return}~x \dashv Q'; \Gamma' }
+{ P = Q_R[\Vret/x]  
+\\ \forall i \in \dom{P} . \, p_i = q_i
+}
+{ B; (\Gamma,Q_R); (\Gamma, Q{+} M_r) \vdash \code{return}~x \dashv (\Gamma',Q') }
 %
 \and \Rule{Q:Assert}
 {}
-{ \Gamma; B; R; Q + M_a \vdash \code{assert}~e \dashv Q; \Gamma, e }
+{ B; R; (\Gamma, Q {+} M_a) \vdash \code{assert}~e \dashv (\Gamma \land e, Q) }
 %
 \and \Rule{Q:Loop}
-{ \Gamma; Q'; R; Q \vdash S \dashv M_l + Q; \Gamma }
-{ \Gamma; B; R; Q \vdash \code{loop}~S \dashv Q'; \code{inv}_S~\Gamma }
+{ (\Gamma', Q'); R; (\Gamma,Q) \vdash S \dashv (\Gamma,  Q {+} M_l) }
+{ B; R; (\Gamma, Q) \vdash \code{loop}~S \dashv (\Gamma', Q') }
 %
 \and \Rule{Q:Set}
 { q'_{xy}, q'_{yx} \in \mathbb Q_0^+
 \\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
 }
-{ \Gamma[x/y]; B; R; Q + M_s \vdash x \gets y \dashv Q'; \Gamma }
+{ B; R; (\Gamma[x/y], Q {+} M_s) \vdash x \gets y \dashv (\Gamma, Q') }
 %
 \and \Rule{Q:IncrPos}
 { \Gamma \models 0 \le y
@@ -1609,10 +1611,10 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
       - \sum_{v \not\in \mathcal U} q_{vx}
 }
 { \textstyle
-  \Gamma[x/x + y]; B; R; Q + M_s \vdash x \gets x + y \dashv Q'; \Gamma
+  B; R; (\Gamma[x/x {+} y], Q {+} M_s) \vdash x \gets x + y \dashv (\Gamma, Q')
 }
 %
-\and \Rule{Q:IncrNeg}
+\and \Rule[rightskip=1cm]{Q:IncrNeg}
 { \Gamma \models 0 \le y
 \\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
 \\\\ \textstyle q'_{y0} = q_{y0}
@@ -1620,7 +1622,7 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
       - \sum_{v \not\in \mathcal U} q_{xv}
 }
 { \textstyle
-  \Gamma[x/x - y]; B; R; Q + M_s \vdash x \gets x - y \dashv Q'; \Gamma
+  B; R; (\Gamma[x/x {-} y],Q {+} M_s) \vdash x \gets x - y \dashv (\Gamma, Q')
 }
 %
 \and \Rule{Q:Incr}
@@ -1628,49 +1630,49 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
 \\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
 }
 { \textstyle
-  \Gamma[x/x \pm y]; B; R; Q + M_s \vdash x \gets x \pm y \dashv Q'; \Gamma
+  B; R; (\Gamma[x/x \pm y], Q {+} M_s) \vdash x \gets x \pm y \dashv (\Gamma, Q')
 }
 %
 \and \Rule{Q:If}
-{ \Gamma, e; B; R; Q - M_c^1 \vdash S_1 \dashv Q'; \Gamma'
-\\ \Gamma, \neg e; B; R; Q - M_c^2 \vdash S_2 \dashv Q'; \Gamma'
+{ B; R; (\Gamma \land e, Q {-} M_c^1) \vdash S_1 \dashv (\Gamma',Q')
+\\ B; R; (\Gamma \land \neg e, Q {-} M_c^2) \vdash S_2 \dashv (\Gamma',Q')
 }
-{ \Gamma; B; R; Q \vdash \code{if}(e)~S_1~\code{else}~S_2 \dashv Q'; \Gamma' }
+{ B; R; (\Gamma, Q) \vdash \code{if}(e)~S_1~\code{else}~S_2 \dashv (\Gamma',Q') }
 %
 \and\Rule{Q:Seq}
-{  \Gamma; B; R; Q - M_s^1 \vdash S_1 \dashv Q'; \Gamma'
-\\ \Gamma'; B; R; Q' - M_s^2 \vdash S_2 \dashv Q''; \Gamma''
+{  B; R; (\Gamma, Q {-} M_s^1) \vdash S_1 \dashv (\Gamma', Q')
+\\ B; R; (\Gamma', Q' {-} M_s^2) \vdash S_2 \dashv (\Gamma'',Q'')
 }
-{ \Gamma; B; R; Q \vdash S_1;S_2 \dashv Q''; \Gamma'' }
+{ B; R; (\Gamma, Q) \vdash S_1;S_2 \dashv (\Gamma'',Q'') }
 %
 \and\Rule{Q:Call}
-{ (\vec y, s, \Gamma_f, Q_f, Q_f', \Gamma_f') \in \Delta(f)
+{ (\Gamma_f, Q_f,  \Gamma_f', Q_f') \in \Delta(f)
 \and \text{Loc} = \text{Locals}(Q)
 \and \forall i \neq j . \, x_i \neq x_j
 \and c \in \mathbb Q_0^+
 \\ Q = P + S
 \and Q' = P' + S
-\and U = Q_f[\vec y / \vec x]
-\and U' = Q'_f[s/r]
+\and U = Q_f[\Vargs / \vec x]
+\and U' = Q'_f[\Vret/r]
 \\ \forall i \in \dom{U} . \, p_i = u_i
 \and \forall i \in \dom{U'} .\, p'_i = u'_i 
 \and \forall i \not\in \dom{U'} .\, p'_i = 0
 \and \forall i \not\in \text{Loc}
   .\, s_i = 0
 }
-{ \Gamma_f[\vec y / \vec x] \land \Gamma_{\text{Loc}}; B; R; Q + c
+{ B; R; (\Gamma_f[\Vargs / \vec x] \land \Gamma_{\text{Loc}}, Q {+} c)
   \vdash r \gets f(\vec x) \dashv
-  Q' + c; \Gamma_f'[s/r] \land \Gamma_{\text{Loc}}
+  (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c)
 }
 %
 \and \Rule{Q:Weak}
 { \Gamma_1 \models \Gamma_2
-\\ Q_1 \succeq_\Gamma Q_2
-\\ \Gamma_2; B; R; Q_2 \vdash S \dashv Q'_2; \Gamma'_2
-\\ Q'_2 \succeq_\Gamma Q'_1
+\\ Q_1 \succeq_{\Gamma_1} Q_2
+\\ B; R; (\Gamma_2,Q_2) \vdash S \dashv (\Gamma'_2, Q'_2)
+\\ Q'_2 \succeq_{\Gamma_2'} Q'_1
 \\ \Gamma'_2 \models \Gamma'_1
 }
-{ \Gamma_1; B; R; Q_1 \vdash S \dashv Q'_1; \Gamma'_1 }
+{ B; R; (\Gamma_1,Q_1) \vdash S \dashv (\Gamma'_1, Q'_1) }
 %
 \and \Rule{Relax}
 { \mathcal L = \{ xy \mid \exists l_{xy},~\Gamma \models l_{xy} \le |\inter x y| \}
@@ -1681,8 +1683,14 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
 }
 { Q' + \sum_{i \in \mathcal U} u_i p_i - \sum_{i \in \mathcal L} l_i p_i  \succeq_\Gamma Q }
 %
+\and \Rule{Q:Abst}
+{ \fenv f = (\vec y, S_f)
+\\ B; (\Gamma_f', Q'_f); (\Gamma_f[\Vargs/\vec y], Q_f[\Vargs/ \vec y] ) \vdash S \dashv (\Gamma', Q')
+}
+{ (\Gamma_f, Q_f, \Gamma_f', Q_f') \in \Delta(f) }
+%
 \end{mathpar}
-\caption{Abstract proof rules of the quantitative analysis}
+\caption{Inference rules of the quantitative analysis}
 \label{fig:proof}
 \end{figure*}
 
