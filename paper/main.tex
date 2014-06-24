@@ -273,16 +273,16 @@ stack-space bounds for C programs in Coq~\cite{veristack14}.  In a
 nutshell, we replace the boolean predicates (pre and post conditions)
 of Hoare logic with numeric predicates that map a program state to a
 non-negative number or infinity.  The intuitive meaning of a
-quantitative Hoare triple $\htriple{P}{S}{Q}$ that $C$ consumes $P(\state)$
-resources when executed in starting state $\state$, and that $Q(\state')$
-resources are left if $C$ terminates in state $\state'$.  Infinity
-corresponds to \emph{false} in classic Hoare logic.  Our quantitative
-logic is proved sound with respect to a cost semantic for Clight that
-accounts a constant cost for each evaluation step.  This constant cost
-is parametric in a resource metric that can be defined by the user.
-Our shallow embedding in Coq enables the derivation of both, bounds
-that are parametric in the cost metric or bounds for one specific
-metric.
+quantitative Hoare triple $\htriple{P}{S}{Q}$ is that $S$ consumes
+less then $P(\state)$ resources when executed in starting state
+$\state$, and that $Q(\state')$ resources are left if $S$ terminates
+in state $\state'$.  Infinity corresponds to \emph{false} in classic
+Hoare logic.  Our quantitative logic is proved sound with respect to a
+cost semantic for Clight that accounts a constant cost for each
+evaluation step.  This constant cost is parametric in a resource
+metric that can be defined by the user.  Our shallow embedding in Coq
+enables the derivation of both, bounds that are parametric in the cost
+metric or bounds for one specific metric.
 
 We have evaluated the quantitative logic and the automatic analysis
 with system code and examples from the literature. \pref{app:cat}
@@ -971,7 +971,9 @@ A program state $\state = (\theta, \gamma)$ composed of two maps from
 variable names to integers. The first map $\theta : \text{Locals} \to
 \Z$ assigns integers to local variables of a function and the second
 map $\gamma : \text{Globals} \to \Z$ gives values to global variables
-of the program.
+of the program.  In this article, we assume that all values are
+integers but in the implementation we support all data types of
+Clight.
 %
 The evaluation function \evalE{\cdot}{} that maps an expression $e \in
 E$ to a value $\evalE{e}{\state} \in \Z$ in program state $\state$.
@@ -1247,11 +1249,39 @@ in the implementation.  For a given $\state \in \State$, such an
 assertion can be seen as a set $B \subseteq \Q$ of valid bounds.
 However, we find the presentation in this article easier to read.
 
+Due to \code{break} and \code{return} statements of Clight, there are
+different possible ways to exit a block of code.  We also have to keep
+track of the resource specifications of functions.  To account for
+this in the logic, our quantitative Hoare triples have the form
+$$
+\Delta; B; R \vdash
+\htriple
+  { Q }
+  { S }
+  { Q' } \; .
+$$
+The triple $\htriple{ Q }{ S }{ Q' }$ consists of a statement $S$ and
+two assertions $Q,Q' : \Assn$.  It corresponds to triples in classic
+Hoare logic and the intuitive meaning is as follows.  If $S$ is
+executed with starting state $\state$, the empty continuation
+$\Kstop$, and at least $P(\state)$ resources available then the
+evaluation does not run out of resources and there are at least
+$Q(\state')$ resources left if the evaluation terminates in state
+$\state'$.  However, the assertion $B : \Assn$ provides the
+postcondition for the case in which the code block $S$ is exited by a
+\code{break} statement.  So if the execution is terminated in state
+$\state'$ with a \code{break} then $B(\state')$ resources are
+available.  Similarly, $R : \Z \to \Assn$ is the postcondition for the
+case in which the code block $S$ is exited by a \code{return x}
+statement.  The integer argument of $R$ is the return value.
+Finally, the function context 
+$$\Delta {:} \text{Funs} \to \Z^*
+\\
+((\Val \times \Mem) {\to} \N \cup \{\infty\}) {\times} ((\Val \times \Mem) {\to} \N {\cup} \{\infty\})$$ 
 
 
 % The continuation-based semantics of a Clight requires that we
-% distinguish pre- and postconditions in the logic to account for
-% different possible ways to exit a block of code.  This is approach is
+% distinguish pre- and postconditions in the   This is approach is
 % standard in Hoare logics and followed for instance in Appel's
 % separation logic for Clight~\cite{AppelLogic}.  Our postconditions
 % $$
@@ -1594,12 +1624,18 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
 { \Gamma; B; R; Q \vdash S_1;S_2 \dashv Q''; \Gamma'' }
 %
 \and\Rule{Q:Call}
-{ (\vec y, s, \Gamma_f, Q_f, Q_f', \Gamma_f') \in \Delta(f)
-\\ P = Q_f \Uparrow_{[\vec y = \vec x]}
-\\ P' = Q'_f \Uparrow_{[r = s]}
-\\ \forall i \in \ell \,\setminus \{r\} .\, q_i = q_i'
-\\ \forall i \not\in \ell \,\setminus \{r\} .(q_i = p_i \land q'_i = p'_i)
-\\ c \in \mathbb Q_0^+
+{ (\vec y, s, \Gamma_f, P, P', \Gamma_f') \in \Delta(f)
+\\ \ell = \text{Locals}(Q)
+\\ R = P[\vec y / \vec x]
+\\ \forall i \in \dom{R} . \, q_i = r_i
+\\ R' = P'[s/r]
+\\ \forall i \in \dom{R'} .\, q'_i = r'_i
+\\ \forall i \not\in \dom{R'} .\, q'_i = 0
+\\ \forall i \in \ell . \, q_i = q_i'
+% \\ P' = Q'_f \Uparrow_{[r = s]}
+% \\ \forall i \in \ell \,\setminus \{r\} .\, q_i = q_i'
+% \\ \forall i \not\in \ell \,\setminus \{r\} .(q_i = p_i \land q'_i = p'_i)
+% \\ c \in \mathbb Q_0^+
 }
 { \Gamma_f[\vec y / \vec x] \land \Gamma_\ell; B; R; Q + c
   \vdash r \gets f(\vec x) \dashv
