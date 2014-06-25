@@ -1791,7 +1791,11 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
 {}
 { B; R; (\Gamma, Q {+} M_a) \vdash \code{assert}~e \dashv (\Gamma \land e, Q) }
 %
-\and \Rule{Q:Loop}
+\and \Rule{Q:Tick}
+{}
+{ B; R; (\Gamma, Q{+}M_t(n)) \vdash \code{tick}(n) \dashv (\Gamma, Q) }
+%
+\\ \Rule{Q:Loop}
 { (\Gamma', Q'); R; (\Gamma,Q) \vdash S \dashv (\Gamma,  Q {+} M_l) }
 { B; R; (\Gamma, Q) \vdash \code{loop}~S \dashv (\Gamma', Q') }
 %
@@ -1801,28 +1805,26 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
 }
 { B; R; (\Gamma[x/y], Q {+} M_u {+} M_e(y)) \vdash x \gets y \dashv (\Gamma, Q') }
 %
-\and \Rule[leftskip=1.5cm]{Q:IncP}
+\and \Rule{Q:IncP}
 { \Gamma \models 0 \le y
 \\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\}
-\\\\ \textstyle q'_{0y} = q_{0y}
+\\ \textstyle q'_{0y} = q_{0y}
       + \sum_{u \in \mathcal U} q_{xu}
       - \sum_{v \not\in \mathcal U} q_{vx}
-\\ M = M_u + M_e(x {+} y)
 }
 { \textstyle
-  B; R; (\Gamma[x/x {+} y], Q {+} M) \vdash x \gets x + y \dashv (\Gamma, Q')
+  B; R; (\Gamma[x/x {+} y], Q {+} M_u {+} M_e(x {+} y)) \vdash x \gets x + y \dashv (\Gamma, Q')
 }
 %
-\and \Rule[rightskip=1.5cm]{Q:IncM}
+\and \Rule{Q:IncM}
 { \Gamma \models 0 \le y
 \\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
-\\\\ \textstyle q'_{y0} = q_{y0}
+\\ \textstyle q'_{y0} = q_{y0}
       + \sum_{u \in \mathcal U} q_{ux}
       - \sum_{v \not\in \mathcal U} q_{xv}
-\\ M = M_u + M_e(x {-} y)
 }
 { \textstyle
-  B; R; (\Gamma[x/x {-} y],Q {+} M) \vdash x \gets x - y \dashv (\Gamma, Q')
+  B; R; (\Gamma[x/x {-} y],Q {+} M_u {+} M_e(x {-} y)) \vdash x \gets x - y \dashv (\Gamma, Q')
 }
 %
 \and \Rule{Q:Inc}
@@ -1874,10 +1876,6 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
   \vdash r \gets f(\vec x) \dashv
   (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c {-} M_r)
 }
-%
-\and \Rule{Q:Tick}
-{}
-{ B; R; (\Gamma, Q{+}M_t(n)) \vdash \code{tick}(n) \dashv (\Gamma, Q) }
 %
 \and \Rule{Relax}
 { \mathcal L = \{ xy \mid \exists l_{xy},~\Gamma \models l_{xy} \le |\inter x y| \}
