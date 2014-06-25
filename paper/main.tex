@@ -1293,6 +1293,14 @@ at the function invocation.  Similarly, the postcondition depends on
 the return value $v$ of the function.  The use of logical variables to
 express relations between different states of an execution is a
 standard technique of Hoare logic.
+%
+To ensure soundness, we require that $P_f$ and $Q_f$ do not depend on
+the local variables on the call stack, that is, $\forall z \, \vec v
+\, \theta \, \theta' \, \gamma . \, P_f \, z \, \vec v \,
+(\theta,\gamma) = P_f \, z \, \vec v \, (\theta',\gamma)$.
+
+For two assertions $P,Q : \Assn$, we write $P \models Q$ to if for all
+program state $\state$ $P(\state) \ge Q(\state)$.
 
 \begin{figure*}[t]
 \begin{mathpar}
@@ -1521,39 +1529,40 @@ quantitative assertions.  In the precondition of the rule {\sc L:Tick}
 we account for the execution cost $M_t(n)$ of the \code{tick}
 statement that depends on the integer $n$.
 
-In the rule {\sc L:Call}, accounts for the cost usage of
-programs. It enforces that enough stack space is available to call the
-function $f$ by adding $M(f)$ to the precondition and the
-postcondition. The pre- and postconditions are taken from the context
-$\Gamma$. This context is extended using the {\sc L:Abstract} rule
-described below. The assertions in the context are parametric with
-respect to both the function argument value and the return value. This
-allows to specify a bound for a function whose recursion depth depends
-on an input parameter.  The argument parameter is instantiated by the
-call rule using the result of the evaluation of the argument
-expression in the current state. Note the symmetry of the rule {\sc
-  L:Call}: $M(f)$ is added on both sides to account for the stack
-space that becomes available after the call.  This justifies that the
-{\sc L:Return} rule does not account for stack-space release.
+In the rule {\sc L:Call}, accounts for the execution cost of both
+$M_f$ for function calls and $M_r$ for \code{return} statements.  This
+justifies that the {\sc L:Return} rule does not account for resource
+consumption.  The pre- and postconditions $P_f$ and $Q_f$ are taken
+from the function context $\Delta$.  The assertions in the context are
+parametric with respect to both the function argument value and the
+return value. This allows to specify a bound for a function whose
+resource consumption depends on an input parameter.  The argument
+parameter is instantiated by the call rule using the result of the
+evaluation of the argument variables in the current state.  Recall
+that we require that $P_f$ and $Q_f$ do not depend on the local
+variables on the call stack, that is, $\forall z \, \vec v \, \theta
+\, \theta' \, \gamma . \, P_f \, z \, \vec v \, (\theta,\gamma) = P_f
+\, z \, \vec v \, (\theta',\gamma)$.  To transfer potential that
+depends on local variables of the callee from the precondition $P$ to
+the postcondition $Q$, we use an assertion $A : \Assn$ that is
+independent of global variables, that is, $\forall \theta \, \gamma \,
+\gamma' . \, A (\theta,\gamma) = A(\theta,\gamma')$.  It is still
+possible to express relations between global and local variables using
+logical variables (see the following paragraph).
 
-Finally, we describe the rules which are not syntax directed. The rule
-{\sc L:Abstract} allows to make a proof on any statement with an extra
-hypothesis in the derivation context provided that we have a proof
-that this hypothesis is true. We can see as the quantitative
-interpretation of the usual logical Modus Ponens.
+Finally, we describe the rules which are not syntax directed.  There
+are two weakening rules available in the quantitative Hoare logic.
+The framing rule {\sc L:Frame} is designed to weaken a statement by
+stating that if $S$ needs $P$ resources to run and leaves $Q$
+resources available after its execution, then it can very well run
+with $P + c$ resources and return $Q + c$ resources.  The consequence
+{\sc L:Conseq} rule is directly imported from classical Hoare logic
+except that instead of using the logical implication $\Rightarrow$ we
+use the quantitative $\models$ that point-wise applies $\ge$.  This
+rule indeed weakens the statement since it requires more resource to
+run the statement and yields less than what has been proved to be
+available after its termination.
 
-There are two weakening rules available in the quantitative Hoare
-logic.  The framing rule {\sc L:Frame} is designed to weaken a
-statement by stating that if $S$ needs $P$ bytes to run and leaves $Q$
-bytes free at its end, then it can very well run with $P + c$ bytes
-and return $Q + c$ bytes. It comes very handy when we want to prove
-tight bounds using the $\max$ function as demonstrated
-in~\pref{fig:example_derivation}. The consequence {\sc L:Conseq} rule
-is directly imported from classical Hoare logics except that instead
-of using the logical implication $\implies$ we use the quantitative
-$\ge$. This rule indeed weakens the statement since it requires more
-resource to run the statement and yields less than what has been
-proved to be available after its termination.
 
 \paragraph{Logical Variables and Shallow Embedding}
 
