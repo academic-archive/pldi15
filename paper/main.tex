@@ -84,7 +84,9 @@
   proved sound with respect to the cost semantics in the Coq Proof
   Assistant.  Third, an automatic amortized resource analysis for C
   programs that computes derivations in the quantitative Hoare logic
-  is developed and implemented.  Both, the quantitative logic and the
+  is developed and implemented.  It is the first automatic amortized
+  analysis that can derive bounds that depend on negative integers and
+  differences between numbers.  Both, the quantitative logic and the
   automatic amortized analysis are naturally compositional and can be
   combined to semi-automatically derive global resource bounds.
 
@@ -162,7 +164,7 @@ short in comparison with semantic techniques.
 \begin{quote}
   % Consider, for example, a computer program that sorts a list of
   % numbers into order. 
-  Thanks to the work of Floyd, Hoare, and others,
+  $[\cdots]$ Thanks to the work of Floyd, Hoare, and others,
   we have formal definitions of semantics, and tools by which we can
   verify that sorting is indeed always achieved. My job is to go
   beyond correctness, to an analysis of such things as the program's
@@ -177,13 +179,27 @@ short in comparison with semantic techniques.
   \end{flushright}
 \end{quote}
 %
-%
-In this paper, we present a novel resource analysis framework for C programs
-that is based on a solid semantic foundation. It works automatically,
-efficiently and precisely for many examples, can be used interactively
-for manual bound derivation if the automation fails, and produces
-verifiable certificates for the bounds.  Our contributions are as
-follows.
+The goal of this work is to develop a resource analysis framework for
+C programs that is based on a solid semantic foundation.  The choice
+of C is primarily motivated by our ongoing work on the formally
+verified hypervisor kernel CertiKOS~\cite{GuVFSC11}.  CertiKOS is
+mainly developed in C and is supposed to provide verified guaranties
+on timing and memory usage.  Moreover, C is also a natural choice
+because it is still the most widely used language for system
+development; in particular in safety-critical embedded and real-time
+systems where resource bound analyses are often required by regulatory
+authorities~\cite{May2013}.
+
+In a recent work, we formally verified a bound on the stack usage of
+CertiKOS
+
+
+In this article, we present the first resource analysis framework for
+C that makes it possible to combine automatically and interactively
+derived resource bounds.  It works automatically, efficiently and
+precisely for many examples, can be used interactively for manual
+bound derivation if the automation fails, and produces verifiable
+certificates for the bounds.  Our contributions are as follows.
 %
 \begin{enumerate}
 \item We define a operational cost semantics for C programs that
@@ -1566,17 +1582,17 @@ available after its termination.
 
 \paragraph{Logical Variables and Shallow Embedding}
 
-It is often necessary, when specifying a program, to relate certain
-invariants in the pre- and postcondition.  A standard solution of
-Hoare logics to this problem is \emph{logical variables} (reference XXX).  These
-additional variables also mentioned in the literature as auxiliary
-state are constant across the derivation.  For example, if we note
-$Z$ such a logical variable, we can specify the function
-$\code{double}()$ which doubles the global variable $x$ as
+It is often necessary to relate certain invariants in the pre- and
+postcondition when specifying a program.  A standard solution of Hoare
+logic is to use \emph{logical variables}~\cite{Kleymann99}.  These
+additional variables (also called auxiliary state in the literature)
+are constant across the derivation.  For example, if $Z$ is such
+a logical variable, we can specify the function $\code{double}()$
+which doubles the global variable $x$ as
 $$
   \htriple{z = Z}{\code{double}()}{x = 2 \cdot Z}.
 $$
-
+%
 When formalizing Hoare logics in a proof assistant one can either
 fully specify the syntax and semantics of assertions and hence get a
 deep embedding, or use the assertions of the host theory to get a
@@ -1584,39 +1600,27 @@ shallow embedding.  For simplicity, we used the latter approach in our
 development.  This choice makes it possible to have logical variables
 almost for free: we can simply use the variable and binding mechanisms
 of Coq, our host theory.  When an logical variable is needed we
-introduce it using a universal quantifier of Coq before deriving triples
-in the logic, so the Coq theorem for the above example would look like
+introduce it using a universal quantifier of Coq before deriving
+triples in the logic, so the Coq theorem for the above example would
+look as follows.
 %
 \begin{lstlisting}
 Theorem dbl_triple: forall Z,
   htriple ($\lambda\sigma$.$\sigma$(x) = Z) ($\code{double}()$) ($\lambda\sigma$.$\sigma$(x) = 2*Z).
 \end{lstlisting}
-
+%
 However, this trick alone is often not sufficient when working with a
 recursive function $f$.  In that case we apply the {\sc L:Extend} rule
-of the logic to assume the specification of $f$ then proceed to prove
-the function body with this induction hypothesis.  But in this process
-it can be the case that the induction hypothesis needs to be used with
-a different value of a logical variable.  To cope with this problem,
-assumptions in the function context $\Delta$ are universally quantified
-over logical variables and the {\sc L:Extend} rule once again leverages
-the host proof assistant to require that the triple on $f$'s body is
-proved for every possible logical variable $y$.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+of the logic.  First we add a specification $\forall z\,\vec
+v\,v.(P_f\,z\,\vec v, Q_f\,z\,v)$ of $f$ to the function context
+$\Delta$.  Then we proceed to prove the function $S_f$ body with this
+induction hypothesis.  In this process it can be the case that the
+induction hypothesis needs to be used with a different value of a
+logical variable.  To cope with this problem, assumptions in the
+function context $\Delta$ are universally quantified over logical
+variables.  The {\sc L:Extend} rule uses the host proof assistant to
+require that the triple on $f$'s body is proved for every possible
+logical variable $y$.
 
 
 
@@ -2302,153 +2306,153 @@ driven by practice but it might be possible to prove that these
 program points are the only ones where weakening is needed.
 
 
-\section{Polynomial Potential}
+% \section{Polynomial Potential}
 
-\paragraph{Index Sets}
+% \paragraph{Index Sets}
 
-Let $V$ be a set of variables.  An \emph{index} $I \in \ind(V)$ is a
-family that maps two-element sets of variables to natural numbers,
-that is,
-$$
-I = (i_{\{x,y\}})_{\{x,y\} \subseteq V} \; .
-$$
-%
-We identify a family $I$ with the set $\{ (\{x,y\},i_{\{x,y\}})
-\mid \{x,y\} \subseteq V\}$.
+% Let $V$ be a set of variables.  An \emph{index} $I \in \ind(V)$ is a
+% family that maps two-element sets of variables to natural numbers,
+% that is,
+% $$
+% I = (i_{\{x,y\}})_{\{x,y\} \subseteq V} \; .
+% $$
+% %
+% We identify a family $I$ with the set $\{ (\{x,y\},i_{\{x,y\}})
+% \mid \{x,y\} \subseteq V\}$.
 
-Let $\ind(V)$ denote the set of all such indices.  We write $\ind$
-instead of $\ind(V)$ if the set of variables $V$ is fixed or obvious
-from the context.
-%
-We assume that allways $0 \in V$ and sometimes write $i_x$ instead of $i_{\{x,0\}}$.
+% Let $\ind(V)$ denote the set of all such indices.  We write $\ind$
+% instead of $\ind(V)$ if the set of variables $V$ is fixed or obvious
+% from the context.
+% %
+% We assume that allways $0 \in V$ and sometimes write $i_x$ instead of $i_{\{x,0\}}$.
 
-The \emph{degree} $\deg(I)$ of an index $I = (i_{\{x,y\}})_{\{x,y\}
-  \subseteq V}$ is defined as
-$$
-\deg(I) = \sum_{\{x,y\} \in V} i_{\{x,y\}} \;.
-$$
-We define $\ind_k(V) = \{ I \mid I \in \ind(V) \text{ and } \deg(i) \leq k
-\}$ to be the set of indices of degree at most $k$.
+% The \emph{degree} $\deg(I)$ of an index $I = (i_{\{x,y\}})_{\{x,y\}
+%   \subseteq V}$ is defined as
+% $$
+% \deg(I) = \sum_{\{x,y\} \in V} i_{\{x,y\}} \;.
+% $$
+% We define $\ind_k(V) = \{ I \mid I \in \ind(V) \text{ and } \deg(i) \leq k
+% \}$ to be the set of indices of degree at most $k$.
 
-\paragraph{Resource Polynomials}
+% \paragraph{Resource Polynomials}
 
-Let $V$ be a set of variables.  An index $I \in \ind(V)$ denotes a
-\emph{base polynomial} $P_I : \states \to \N$ for $V$ that maps a
-program state $H$ to product of binomial coefficients (a natural
-number).  We define
-$$
-P_I(H) = \prod_{{\{x,y\}} \subseteq V} \binom {|H(x){-}H(y)|} {i_{\{x,y\}}} \; .
-$$
-%
-A \emph{resource polynomial} $R$ for the variable set $V$ is a
-non-negative linear combination of the base polynomials for $V$.
+% Let $V$ be a set of variables.  An index $I \in \ind(V)$ denotes a
+% \emph{base polynomial} $P_I : \states \to \N$ for $V$ that maps a
+% program state $H$ to product of binomial coefficients (a natural
+% number).  We define
+% $$
+% P_I(H) = \prod_{{\{x,y\}} \subseteq V} \binom {|H(x){-}H(y)|} {i_{\{x,y\}}} \; .
+% $$
+% %
+% A \emph{resource polynomial} $R$ for the variable set $V$ is a
+% non-negative linear combination of the base polynomials for $V$.
 
-\paragraph{Potential Annotations}
+% \paragraph{Potential Annotations}
 
-A \emph{potential annotation} for the variable set $V$ is a family
-$$Q = (q_I)_{I \in \ind(V)}$$ 
-of non-negative rational numbers.  Such an annotation denotes the
-resource polynomial $R_Q$ that is defined by
-$$
-R_Q(H) = \sum_{I \in \ind(V)} q_I \cdot P_I(H) \; .
-$$
-%
-We say that the potential annotation $Q$ is of degree $k$ if $q_I = 0$
-for $I \in \ind(V)$ with $\deg(I) > k$.
+% A \emph{potential annotation} for the variable set $V$ is a family
+% $$Q = (q_I)_{I \in \ind(V)}$$ 
+% of non-negative rational numbers.  Such an annotation denotes the
+% resource polynomial $R_Q$ that is defined by
+% $$
+% R_Q(H) = \sum_{I \in \ind(V)} q_I \cdot P_I(H) \; .
+% $$
+% %
+% We say that the potential annotation $Q$ is of degree $k$ if $q_I = 0$
+% for $I \in \ind(V)$ with $\deg(I) > k$.
 
-\paragraph{Additive Shifts}
+% \paragraph{Additive Shifts}
 
-Let $Q$ be a potential annotation for a variable set $V$ and let
-$\{x,y\} \subseteq V$ be a two-element variable set.  The
-\emph{additive shift} with respect to $\{x,y\}$ is a potential
-annotation $\shift_{\{x,y\}}(Q) = (q'_I)_{I \in \ind(V)} $ for $V$
-that is defined through
-$$
-q'_I = q_I + q_{I^{\{x,y\}{+}1}} \; .
-$$
-For an index $I = (i_{\{x,y\}})_{\{x,y\} \subseteq V}$ we use the
-notation $I^{\{x,y\}{+}k}$ to denote the index
-$(i'_{\{x,y\}})_{\{x,y\} \subseteq V}$ such that
-$$
-i'_{\{t,u\}} = \left\{
-  \begin{array}{ll}
-    i_{\{t,u\}} + k  & \text{if } \{t,u\} = \{x,y\} \\
-    i_{\{t,u\}} & \text{otherwise}
-  \end{array}
-\right.
-\;.
-$$
-%
-The additive shift for natural numbers reflects the identity 
-\begin{equation}
-\label{eq:shift}
-\sum_{0 {\leq} i \leq {k}} q_i \binom{n+1}{i} = \sum_{0 {\leq} i \leq {k}} (q_i{+}q_{i+1}) \binom{n}{i}
-\end{equation}
-where $q_{k+1} = 0$.  It is used in the effect system if the
-difference $n+1$ between two variables $x,y$ decreases by one.
+% Let $Q$ be a potential annotation for a variable set $V$ and let
+% $\{x,y\} \subseteq V$ be a two-element variable set.  The
+% \emph{additive shift} with respect to $\{x,y\}$ is a potential
+% annotation $\shift_{\{x,y\}}(Q) = (q'_I)_{I \in \ind(V)} $ for $V$
+% that is defined through
+% $$
+% q'_I = q_I + q_{I^{\{x,y\}{+}1}} \; .
+% $$
+% For an index $I = (i_{\{x,y\}})_{\{x,y\} \subseteq V}$ we use the
+% notation $I^{\{x,y\}{+}k}$ to denote the index
+% $(i'_{\{x,y\}})_{\{x,y\} \subseteq V}$ such that
+% $$
+% i'_{\{t,u\}} = \left\{
+%   \begin{array}{ll}
+%     i_{\{t,u\}} + k  & \text{if } \{t,u\} = \{x,y\} \\
+%     i_{\{t,u\}} & \text{otherwise}
+%   \end{array}
+% \right.
+% \;.
+% $$
+% %
+% The additive shift for natural numbers reflects the identity 
+% \begin{equation}
+% \label{eq:shift}
+% \sum_{0 {\leq} i \leq {k}} q_i \binom{n+1}{i} = \sum_{0 {\leq} i \leq {k}} (q_i{+}q_{i+1}) \binom{n}{i}
+% \end{equation}
+% where $q_{k+1} = 0$.  It is used in the effect system if the
+% difference $n+1$ between two variables $x,y$ decreases by one.
 
-\begin{lemma} Let $V$ be a set of variables with $x,y \in V$ and let
-  $H$ be a program state. Let $|H'(t) {-} H'(u)| = |H(t) {-} H(u)|$
-  for $\{t,u\} \neq \{x,y\}$ and let $|H'(x) {-} H'(y)| = |H(x) {-}
-  H(y)| - 1$.
-  %
-  If $Q' = \shift_{\{x,y\}}(Q)$ then $R_Q(H) = R_{Q'}(H')$.
-\end{lemma}
+% \begin{lemma} Let $V$ be a set of variables with $x,y \in V$ and let
+%   $H$ be a program state. Let $|H'(t) {-} H'(u)| = |H(t) {-} H(u)|$
+%   for $\{t,u\} \neq \{x,y\}$ and let $|H'(x) {-} H'(y)| = |H(x) {-}
+%   H(y)| - 1$.
+%   %
+%   If $Q' = \shift_{\{x,y\}}(Q)$ then $R_Q(H) = R_{Q'}(H')$.
+% \end{lemma}
 
-We now study the effect of multiple simultaneous shifts.  Let $Q$ be a
-resource annotation for a variable set $V$ and let $U_1,\ldots,U_n
-\subseteq V$ with $|U_i| = 2$ for all $i$ and $U_i \neq U_j$ for $i
-\neq j$ be pairwise distinct two-element variable sets.  The
-simulations additive shift $\shift_{U_1,\ldots,U_n}(Q)$ of $Q$ with
-respect to $U_1,\ldots,U_n$ is defined by
-$$
-\shift_{U_1,\ldots,U_n}(Q) = \shift_{U_1}( \cdots \shift_{U_n}(Q) \cdots ) \; .
-$$
-%
-\begin{proposition}
-  Let $V$ be a set of variables and let $U_1,\ldots,U_n$ be pairwise
-  distinct two-element variable sets.  Let $|H'(x) {-} H'(y)| = |H(x)
-  {-} H(y)|$ for $\{x,y\} \not\in \{U_1,\ldots,U_n\}$ and let $|H'(x)
-  {-} H'(y)| = |H(x) {-} H(y)| - 1$ for $\{x,y\} \in
-  \{U_1,\ldots,U_n\}$.
-  %
-  If $Q' = \shift_{U_1,\ldots,U_n}(Q)$ then $R_Q(H) = R_{Q'}(H')$.
-\end{proposition}
-%
-As shown by the following lemma, the order in which the shifts for the
-individual $U_i$ are applied is insignificant.
-%
-\begin{lemma}
-  Let $\sigma : \{1,\ldots,n\} \to \{1,\ldots,n\}$ be a
-  permutation. Then $\shift_{U_1,\ldots,U_n}(Q) =
-  \shift_{U_{\sigma(1)},\ldots,U_{\sigma(n)}}(Q)$.
-\end{lemma}
-%
-For reasons of efficiency in the constraint generation, we give a more
-direct formula for the simultaneous shift.  Let $I \in \ind(V)$ and
-let $U_1,\ldots,U_n$ be pairwise distinct two-element variable sets.
-We define the index $I^{U_1,\ldots,U_n + k}$ as the family $(i'_{\{x,y\}})_{\{x,y\} \subseteq V}$ such that
-$$
-i'_{\{t,u\}} = \left\{
-  \begin{array}{ll}
-    i_{\{t,u\}} + k  & \text{if } \{t,u\} \in \{U_1,\ldots,U_n\} \\
-    i_{\{t,u\}} & \text{otherwise}
-  \end{array}
-\right.  \;.
-$$
+% We now study the effect of multiple simultaneous shifts.  Let $Q$ be a
+% resource annotation for a variable set $V$ and let $U_1,\ldots,U_n
+% \subseteq V$ with $|U_i| = 2$ for all $i$ and $U_i \neq U_j$ for $i
+% \neq j$ be pairwise distinct two-element variable sets.  The
+% simulations additive shift $\shift_{U_1,\ldots,U_n}(Q)$ of $Q$ with
+% respect to $U_1,\ldots,U_n$ is defined by
+% $$
+% \shift_{U_1,\ldots,U_n}(Q) = \shift_{U_1}( \cdots \shift_{U_n}(Q) \cdots ) \; .
+% $$
+% %
+% \begin{proposition}
+%   Let $V$ be a set of variables and let $U_1,\ldots,U_n$ be pairwise
+%   distinct two-element variable sets.  Let $|H'(x) {-} H'(y)| = |H(x)
+%   {-} H(y)|$ for $\{x,y\} \not\in \{U_1,\ldots,U_n\}$ and let $|H'(x)
+%   {-} H'(y)| = |H(x) {-} H(y)| - 1$ for $\{x,y\} \in
+%   \{U_1,\ldots,U_n\}$.
+%   %
+%   If $Q' = \shift_{U_1,\ldots,U_n}(Q)$ then $R_Q(H) = R_{Q'}(H')$.
+% \end{proposition}
+% %
+% As shown by the following lemma, the order in which the shifts for the
+% individual $U_i$ are applied is insignificant.
+% %
+% \begin{lemma}
+%   Let $\sigma : \{1,\ldots,n\} \to \{1,\ldots,n\}$ be a
+%   permutation. Then $\shift_{U_1,\ldots,U_n}(Q) =
+%   \shift_{U_{\sigma(1)},\ldots,U_{\sigma(n)}}(Q)$.
+% \end{lemma}
+% %
+% For reasons of efficiency in the constraint generation, we give a more
+% direct formula for the simultaneous shift.  Let $I \in \ind(V)$ and
+% let $U_1,\ldots,U_n$ be pairwise distinct two-element variable sets.
+% We define the index $I^{U_1,\ldots,U_n + k}$ as the family $(i'_{\{x,y\}})_{\{x,y\} \subseteq V}$ such that
+% $$
+% i'_{\{t,u\}} = \left\{
+%   \begin{array}{ll}
+%     i_{\{t,u\}} + k  & \text{if } \{t,u\} \in \{U_1,\ldots,U_n\} \\
+%     i_{\{t,u\}} & \text{otherwise}
+%   \end{array}
+% \right.  \;.
+% $$
 
-%
-\begin{lemma}
-  Let $V$ be a variable set and let $U_1,\ldots,U_n$ be pairwise
-  distinct two-element variable sets.
-  %
-  Let $Q = (q_I)_{I \in \ind(V)}$ be a resource annotation for
-  $V$ and let $ Q' = (q'_I)_{I \in \ind(V)}$ where
-  $$
-  q'_I = \sum_{\{j_1,\ldots,j_m\} \subseteq \{1,\ldots,n\} } q_{I^{U_{j_1},\ldots,U_{j_m}+1}} \; .
-  $$
-  Then $Q' = \shift_{U_1,\ldots,U_n}(Q)$.
-\end{lemma}
+% %
+% \begin{lemma}
+%   Let $V$ be a variable set and let $U_1,\ldots,U_n$ be pairwise
+%   distinct two-element variable sets.
+%   %
+%   Let $Q = (q_I)_{I \in \ind(V)}$ be a resource annotation for
+%   $V$ and let $ Q' = (q'_I)_{I \in \ind(V)}$ where
+%   $$
+%   q'_I = \sum_{\{j_1,\ldots,j_m\} \subseteq \{1,\ldots,n\} } q_{I^{U_{j_1},\ldots,U_{j_m}+1}} \; .
+%   $$
+%   Then $Q' = \shift_{U_1,\ldots,U_n}(Q)$.
+% \end{lemma}
 
 
 
@@ -2460,57 +2464,6 @@ $$
 %%
 
 
-\section{NOTES}
-
-\subsection{Things to say in the intro}
-
-\paragraph{Quote of Knuth}
-
-\begin{quotation}
-  There's even a fundamental gap in the foundations of my main
-  mathematical specialty, the analysis of algorithms. Consider, for
-  example, a computer program that sorts a list of numbers into
-  order. Thanks to the work of Floyd, Hoare, and others, we have
-  formal definitions of semantics, and tools by which we can verify
-  that sorting is indeed always achieved. My job is to go beyond
-  correctness, to an analysis of such things as the program's running
-  time: I write down a recurrence, say, which is supposed to represent
-  the average number of comparisons made by that program on random
-  input data. I'm 100\% sure that my recurrence correctly describes
-  the program's performance, and all of my colleagues agree with me
-  that the recurrence is "obviously" valid. Yet I have no formal tools
-  by which I can prove that my recurrence is right. I don't really
-  understand my reasoning processes at all! My student Lyle Ramshaw
-  began to create suitable foundations in his thesis (1979), but the
-  problem seems inherently difficult. Nevertheless, I don't lose any
-  sleep over this situation.
-\end{quotation}
-http://www.informit.com/articles/article.aspx?p=2213858
-
-\paragraph{to do}
-
-\begin{itemize}
-\item describe schedulability analysis for two schedulers
-\item include program logic from the stack paper for arbitrary resources
-\item what operational semantics to use? 
-\item verify automatic tool with program logic
-\item derive some crazy bounds (polynomial? logarithmic?) with the logic
-\item logic can also be used by automation: put linear constraints in the precondition
-\end{itemize}
-
-\paragraph{Advanteges over previous work}
-
-\begin{itemize}
-\item integrates well with hand-derived bounds in a program logic
-\item have formal soundness proof with respect to cost semantics
-\item can attach certificate to the code (proof-carrying code)
-\item can deal with resources that \emph{become available} (e.g, freeing memory) in an execution
-\item derive global bounds for the program as a function of the inputs (as opposed to local loop bounds)
-\item can handle advance control flow such as break, return, mutual recursive functions
-\item do not rely on abstract-interpretation based invariant generation
-\item show that constant factors are very precise with respect to the cost semantics
-\item demonstrate that the analysis is applicable in the formal verification of system code
-\end{itemize}
 
 
 % \acks
