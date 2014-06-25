@@ -1012,7 +1012,7 @@ M_f,
 M_l,
 M_c^1,
 M_c^2,
-M_q,
+M_s,
 M_e(E),
 M_t(n)
 )
@@ -1142,7 +1142,7 @@ or the number of arguments.
 {}
 { (\state, \code{skip}, \Kseq S \cont, \cost)
 \smallstep{M}
-(\state, S, \cont, \cost {-} M_q)
+(\state, S, \cont, \cost {-} M_s)
 }
 %
 \and
@@ -1301,7 +1301,7 @@ standard technique of Hoare logic.
 { }
 { \Delta; B; R \vdash
 \htriple
-  { Q \implies \code{istrue}~\sem{e}_\state + M_a }
+  { \code{istrue}~\sem{e}_\state \implies Q + M_a }
   { \code{assert}~e }
   { Q }
 }
@@ -1379,12 +1379,12 @@ standard technique of Hoare logic.
 \Rule{L:If}
 { \Delta; B; R \vdash
 \htriple
-  { P \land \code{istrue}~\sem{e}_\state - M_c^1}
+  { \code{istrue}~\sem{e}_\state + P - M_c^1}
   { S_1 }{ Q }
 \\
   \Delta; B; R \vdash
 \htriple
-  { P \land \code{isfalse}~\sem{e}_\state - M_c^2 }
+  { \code{isfalse}~\sem{e}_\state + P - M_c^2 }
   { S_2 }{ Q }
 }
 { \Delta; B; R \vdash
@@ -1465,41 +1465,64 @@ The potential functions $B$ for the \code{break} and $R$ for the
 \code{return} part of the postcondition are not reachable and can
 therefore be arbitrary.
 
-The rule {\sc L:Assert} is strange XXX.
+In the rule {\sc L:Assert}, we use the notation
+$\code{istrue}~\sem{e}_\state \implies Q + M_a$ to express that we
+require potential $Q + M_a$ in the precondition if $e$ evaluates to
+$\mathit{true}$ in the current program state.  If $e$ evaluates to
+$\mathit{false}$ then the potential in the precondition can be
+arbitrary since the program is terminated.
 
-The rules {\sc L:Break} and {\sc L:Return} are similar to the rule
-{\sc L:Skip}.  The only difference is that we replace requirement of
-the \code{skip} part of the postcondition with analogue requirements
-on the \code{break} and \code{return} part, respectively.  The
-aforementioned rules not trigger any stack-space consumption nor
-release of stack-space.  This might seem strange in the \code{return}
-case but will become clear in the description of the {\sc L:Call} rule
-later on.
+In the rules {\sc L:Break} and {\sc L:Return}, the postcondition can
+be arbitrary since it is unreachable.  Instead, we have to justify the
+potential functions $B$ and $R$ that hold after a \code{return} and a
+\code{break}, respectively.  In {\sc L:Break}, we require to have
+potential $M_b+B$ in the precondition: $M_b$ to pay for the execution
+cost of \code{break} and $B$ to pay for the potential after the
+\code{break}.  In ${\sc L:Return}$ we only require to have potential
+$R$ in the precondition to pay for the potential after the
+\code{return}.  The reason is that we found it to be more convenient
+to account for the execution cost $M_r$ of the return in rule {\sc
+  L:Call} for function calls.
 
-The rules {\sc L:AssignL} and {\sc L:AssignC} for local and global
-assignment follow the traditional backward style of Hoare logic. It is
-ensured that the precondition takes the same value on the initial
-state as the \code{skip} part of the postcondition on the state
-modified by assignment.
+The rule {\sc L:Update} is the standard assignment rule of Hoare
+logic.  With the substitution $\state[x \mapsto \sem{e}_\state]$ in
+the precondition we ensure that $Q$ evaluates to the same number as in
+the postcondition.  We also require that have we the constant
+potential $M_u$ available in the precondition to pay for the cost of
+the update.
 
-Despite its seemingly simplicity, the {\sc L:Seq} rule must not be
-overlooked to understand how the quantitative Hoare logic works.  We
-have to define it in such a way that it accounts for early
-exits in statements. For instance, if $S_1$ contains a \code{break}
-statement then $S_2$ will never be executed so we must ensure in the
-\code{break} part of $S_1$'s postcondition that the \code{break} part
-of $S_1;S_2$ holds. For the same reason, the \code{return} part of
-$S_1$'s postcondition is special.
+Despite its seemingly simplicity, the {\sc L:Seq} rule is important to
+understand how the quantitative Hoare logic works.  We have to define
+it in such a way that it accounts for early exits in statements. For
+instance, if $S_1$ contains a \code{break} statement then $S_2$ will
+never be executed so we must ensure in the \code{break} part $B$ of
+$S_1$'s judgement that the \code{break} part $B$ of of $S_1;S_2$
+holds. The same is true for the return part $R$ of the judgements for
+$S_1$ and $S_2$.  The interaction between the actual pre- and
+postconditions is analogous to standard Hoare logic.  In the
+postcondition of $S_1$ we account for the cost $M_s$ of the execution
+of the sequence.
 
-The {\sc L:Loop} rule uses the same principles as the {\sc Seq} rule
-to tweak the final postcondition. In the case of {\sc L:Loop}, we
-simply ensure that the \code{break} part of the inner statement
-becomes the \code{skip} part of the overall statement. We use $\bot$
-as the \code{break} part of the $\code{loop}\, S$ statement since its
-operational semantics prevent it from terminating differently than by
-a \code{skip} or a \code{return}.
+In the rule {\sc L:Loop}, we ensure that the \code{break} part of the
+loop body $S$ becomes the postcondition of the loop statement. We use
+an arbitrary $B$ as the \code{break} part of the judgement for
+$\code{loop}\, S$ since its operational semantics prevents it from
+terminating differently than by a \code{skip} or a \code{return}.  The
+precondition $I$ of the loop is the loop invariant.  That is why we
+require to have potential $I$ available in the precondition of the
+loop body $S$.  In the post condition of $S$, the potential must be
+sufficient to pay for the invariant $I$ and the cost $M_l$ of the loop
+iteration.
 
-The {\sc L:Call} rule accounts for the actual stack-space usage of
+The {\sc L:If} is similar to the rule for the conditional in classic
+Hoare logic.  In the preconditions of the judgments for the two
+branches $S_1$ and $S_2$ we lift the boolean assertions
+$\code{isfalse}~\sem{e}_\state$ and $\code{isfalse}~\sem{e}_\state$ to
+quantitative assertions.  In the precondition of the rule {\sc L:Tick}
+we account for the execution cost $M_t(n)$ of the \code{tick}
+statement that depends on the integer $n$.
+
+In the rule {\sc L:Call}, accounts for the cost usage of
 programs. It enforces that enough stack space is available to call the
 function $f$ by adding $M(f)$ to the precondition and the
 postcondition. The pre- and postconditions are taken from the context
@@ -1533,7 +1556,7 @@ $\ge$. This rule indeed weakens the statement since it requires more
 resource to run the statement and yields less than what has been
 proved to be available after its termination.
 
-\paragraph{Auxiliary State and Stack Framing}
+\paragraph{Auxiliary State and Shallow Embedding}
 
 % As mentioned, our account of the logic in this article is slightly
 % simplified compared to the Coq development to improve readability.
