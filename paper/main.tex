@@ -1452,9 +1452,8 @@ standard technique of Hoare logic.
 
 \pref{fig:logic} shows the inference rules of the quantitative logic.
 The rules are slightly simplified in comparison to the implemented
-rules in Coq.  The main difference is that the presented version do
-not formalize an auxiliary state that is needed to relate pre and
-postconditions (see the following paragraph for more details).
+rules in Coq.  The main difference is that the presented version does
+not formalize the heap operations.
 
 In the rule {\sc L:Skip}, we do not have to account for any resource
 consumption.  As a result, the precondition $Q$ can be any (potential)
@@ -1470,7 +1469,7 @@ $\code{istrue}~\sem{e}_\state \implies Q + M_a$ to express that we
 require potential $Q + M_a$ in the precondition if $e$ evaluates to
 $\mathit{true}$ in the current program state.  If $e$ evaluates to
 $\mathit{false}$ then the potential in the precondition can be
-arbitrary since the program is terminated.
+arbitrary since the program will be terminated.
 
 In the rules {\sc L:Break} and {\sc L:Return}, the postcondition can
 be arbitrary since it is unreachable.  Instead, we have to justify the
@@ -1478,7 +1477,7 @@ potential functions $B$ and $R$ that hold after a \code{return} and a
 \code{break}, respectively.  In {\sc L:Break}, we require to have
 potential $M_b+B$ in the precondition: $M_b$ to pay for the execution
 cost of \code{break} and $B$ to pay for the potential after the
-\code{break}.  In ${\sc L:Return}$ we only require to have potential
+\code{break}.  In {\sc L:Return} we only require to have potential
 $R$ in the precondition to pay for the potential after the
 \code{return}.  The reason is that we found it to be more convenient
 to account for the execution cost $M_r$ of the return in rule {\sc
@@ -1551,12 +1550,69 @@ and return $Q + c$ bytes. It comes very handy when we want to prove
 tight bounds using the $\max$ function as demonstrated
 in~\pref{fig:example_derivation}. The consequence {\sc L:Conseq} rule
 is directly imported from classical Hoare logics except that instead
-of using the logical implication $\Rightarrow$ we use the quantitative
+of using the logical implication $\implies$ we use the quantitative
 $\ge$. This rule indeed weakens the statement since it requires more
 resource to run the statement and yields less than what has been
 proved to be available after its termination.
 
-\paragraph{Auxiliary State and Shallow Embedding}
+\paragraph{Logical Variables and Shallow Embedding}
+
+It is often necessary, when specifying a program, to relate certain
+invariants in the pre- and postcondition.  A standard solution of
+Hoare logics to this problem is \emph{logical variables} (reference XXX).  These
+additional variables also mentioned in the literature as auxiliary
+state are constant across the derivation.  For example, if we note
+$Z$ such a logical variable, we can specify the function
+$\code{double}()$ which doubles the global variable $x$ as
+$$
+  \htriple{z = Z}{\code{double}()}{x = 2 \cdot Z}.
+$$
+
+When formalizing Hoare logics in a proof assistant one can either
+fully specify the syntax and semantics of assertions and hence get a
+deep embedding, or use the assertions of the host theory to get a
+shallow embedding.  For simplicity, we used the latter approach in our
+development.  This choice makes it possible to have logical variables
+almost for free: we can simply use the variable and binding mechanisms
+of Coq, our host theory.  When an logical variable is needed we
+introduce it using a universal quantifier of Coq before deriving triples
+in the logic, so the Coq theorem for the above example would look like
+%
+\begin{lstlisting}
+Theorem dbl_triple: forall Z,
+  htriple ($\lambda\sigma$.$\sigma$(x) = Z) ($\code{double}()$) ($\lambda\sigma$.$\sigma$(x) = 2*Z).
+\end{lstlisting}
+
+However, this trick alone is often not sufficient when working with a
+recursive function $f$.  In that case we apply the {\sc L:Extend} rule
+of the logic to assume the specification of $f$ then proceed to prove
+the function body with this induction hypothesis.  But in this process
+it can be the case that the induction hypothesis needs to be used with
+a different value of a logical variable.  To cope with this problem,
+assumptions in the function context $\Delta$ are universally quantified
+over logical variables and the {\sc L:Extend} rule once again leverages
+the host proof assistant to require that the triple on $f$'s body is
+proved for every possible logical variable $y$.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 % As mentioned, our account of the logic in this article is slightly
 % simplified compared to the Coq development to improve readability.
