@@ -154,7 +154,7 @@ of the existing techniques in practice.
   derived bound.
 \end{itemize}
 %
-While there has been lot of progress in static quantitative analysis,
+While there has been much progress in static quantitative analysis,
 Knuth correctly points out in a recent interview~\cite{KnuthInter}
 that the state-of-the-art in formal quantitative methods still falls
 short in comparison with semantic techniques.
@@ -1393,6 +1393,17 @@ standard technique of Hoare logic.
 }
 %
 \and
+\Rule{L:Tick}
+{ }
+{ \Delta; B; R \vdash
+\htriple
+  { Q {+} M_t(n) }
+  { \code{tick}(n) }
+  { Q }
+}
+%
+\and
+%
 \Rule{L:Weaken}
 {
   P \models P' \\
@@ -1438,7 +1449,159 @@ standard technique of Hoare logic.
 \label{fig:logic}
 \end{figure*}
 
-\paragraph{Semantic meaning of triples.}
+\paragraph{Rules of the Quantitative Logic}
+
+\pref{fig:logic} shows the inference rules of the quantitative logic.
+The rules are slightly simplified in comparison to the implemented
+rules in Coq.  The main difference is that the presented version do
+not formalize an auxiliary state that is needed to relate pre and
+postconditions (see the following paragraph for more details).
+
+In the rule {\sc L:Skip}, we do not have to account for any resource
+consumption.  As a result, the precondition $Q$ can be any (potential)
+function and we only have to make sure that we do not end up with more
+potential.  Since the execution of \code{skip} leaves the program
+state unchanged, we can simply use the precondition as postcondition.
+The potential functions $B$ for the \code{break} and $R$ for the
+\code{return} part of the postcondition are not reachable and can
+therefore be arbitrary.
+
+The rule {\sc L:Assert} is strange XXX.
+
+The rules {\sc L:Break} and {\sc L:Return} are similar to the rule
+{\sc L:Skip}.  The only difference is that we replace requirement of
+the \code{skip} part of the postcondition with analogue requirements
+on the \code{break} and \code{return} part, respectively.  The
+aforementioned rules not trigger any stack-space consumption nor
+release of stack-space.  This might seem strange in the \code{return}
+case but will become clear in the description of the {\sc L:Call} rule
+later on.
+
+The rules {\sc L:AssignL} and {\sc L:AssignC} for local and global
+assignment follow the traditional backward style of Hoare logic. It is
+ensured that the precondition takes the same value on the initial
+state as the \code{skip} part of the postcondition on the state
+modified by assignment.
+
+Despite its seemingly simplicity, the {\sc L:Seq} rule must not be
+overlooked to understand how the quantitative Hoare logic works.  We
+have to define it in such a way that it accounts for early
+exits in statements. For instance, if $S_1$ contains a \code{break}
+statement then $S_2$ will never be executed so we must ensure in the
+\code{break} part of $S_1$'s postcondition that the \code{break} part
+of $S_1;S_2$ holds. For the same reason, the \code{return} part of
+$S_1$'s postcondition is special.
+
+The {\sc L:Loop} rule uses the same principles as the {\sc Seq} rule
+to tweak the final postcondition. In the case of {\sc L:Loop}, we
+simply ensure that the \code{break} part of the inner statement
+becomes the \code{skip} part of the overall statement. We use $\bot$
+as the \code{break} part of the $\code{loop}\, S$ statement since its
+operational semantics prevent it from terminating differently than by
+a \code{skip} or a \code{return}.
+
+The {\sc L:Call} rule accounts for the actual stack-space usage of
+programs. It enforces that enough stack space is available to call the
+function $f$ by adding $M(f)$ to the precondition and the
+postcondition. The pre- and postconditions are taken from the context
+$\Gamma$. This context is extended using the {\sc L:Abstract} rule
+described below. The assertions in the context are parametric with
+respect to both the function argument value and the return value. This
+allows to specify a bound for a function whose recursion depth depends
+on an input parameter.  The argument parameter is instantiated by the
+call rule using the result of the evaluation of the argument
+expression in the current state. Note the symmetry of the rule {\sc
+  L:Call}: $M(f)$ is added on both sides to account for the stack
+space that becomes available after the call.  This justifies that the
+{\sc L:Return} rule does not account for stack-space release.
+
+Finally, we describe the rules which are not syntax directed. The rule
+{\sc L:Abstract} allows to make a proof on any statement with an extra
+hypothesis in the derivation context provided that we have a proof
+that this hypothesis is true. We can see as the quantitative
+interpretation of the usual logical Modus Ponens.
+
+There are two weakening rules available in the quantitative Hoare
+logic.  The framing rule {\sc L:Frame} is designed to weaken a
+statement by stating that if $S$ needs $P$ bytes to run and leaves $Q$
+bytes free at its end, then it can very well run with $P + c$ bytes
+and return $Q + c$ bytes. It comes very handy when we want to prove
+tight bounds using the $\max$ function as demonstrated
+in~\pref{fig:example_derivation}. The consequence {\sc L:Conseq} rule
+is directly imported from classical Hoare logics except that instead
+of using the logical implication $\Rightarrow$ we use the quantitative
+$\ge$. This rule indeed weakens the statement since it requires more
+resource to run the statement and yields less than what has been
+proved to be available after its termination.
+
+\paragraph{Auxiliary State and Stack Framing}
+
+% As mentioned, our account of the logic in this article is slightly
+% simplified compared to the Coq development to improve readability.
+% % However, the described logic is very close to the implemented version.
+
+% The main difference between the implemented logic and the logic
+% described here is that the latter does not have an
+% \emph{auxiliary state}.
+% %
+% Auxiliary state is a classic extension of Hoare logic (see for
+% example~\cite{Nipkow02}).
+%  It is used to share information
+% between the pre- and postcondition of a triple.  In a logic without
+% auxiliary state (or similar techniques) it is not possible to relate
+% program states before and after a statement.  For example, you cannot
+% specify that the function {\tt\ int\ twice\ ()\ $\{$i = i+i;$\}$\ }
+% doubles the value of the variable $i$.  With an auxiliary variable $Z$
+% it is possible specify this fact in Hoare logic using the triple $\htriple{i =
+%   Z}{\code{twice()}}{ i = 2 \cdot Z}$.
+
+
+% In the Coq implementation,
+% assertions have the type $\State \times \mathit{Aux} \to \N \cup
+% \{\infty\}$.  The auxiliary state is an arbitrary type in Coq and can
+% be instantiated by the user.  Most of the rules of the logic remain
+% unchanged in the presence of auxiliary state.  The
+% only exception is the consequence rule \textsc{L:Conseq} that reads as
+% follows.
+% {  \footnotesize
+% \begin{mathpar}
+%   \RuleNolabel
+%  {  \htriple{P'}{S}{R}
+%  \\  
+%  {\!\!\!\! \begin{array}{r}
+% \forall \sigma \, a. P(\sigma,a) {\in} \N \! \implies  \! \exists a'.  
+%      P(\sigma,a) {\geq} P'(\sigma,a') \hspace{3.3em} \\ \land (\forall \sigma'\, i.  R^i(\sigma',a') {\geq} Q^i(\sigma',a))
+%  \end{array}}\!\!\!\!
+%  }
+%  { \htriple{P}{S}{Q}
+%  }
+% \end{mathpar}}
+% This is the quantitative version of a consequence rule that has been
+% introduced in the context of Hoare logic and is attributed to Martin
+% Hofmann~\cite{Nipkow02}.  Its typical use case is when we apply the rule {\sc L:Call}
+% to a recursive call.  In this case, the Hoare triple for the function
+% call is proved by an assumption from the derivation context with
+% a slightly different auxiliary state.  In the example derivation
+% in~\pref{fig:bsearch_deriv} this different state is $Z - 1$.  Adapting
+% the derivation hypothesis to prove the recursive call is enabled in
+% our logic by the extended consequence rule introduced above.
+
+% \paragraph{Stack Framing}
+
+% A minor difference in the function application rule is that we only
+% present the rule for function calls with a single argument and without
+% \emph{framing of stack assertions}.  The latter is necessary in the
+% code of a caller to carry over information on the local environment
+% from the precondition of the function call to the postcondition of the
+% function call.  This is a general problem in Hoare logic and stack
+% framing is a well known solution.  For instance, we would like to prove
+% something like $\htriple{y}{ f(x) }{y}$ where $y$ is a local variable.
+% This is not possible with the rule \textsc{L:Call} but it is with the more
+% general rule in the Coq implementation~\iffullversion{\cite{coqfiles}}{\cite{anoncoq}}.
+
+
+
+\paragraph{Soundness of Quantitative Hoare Triples.}
 
 We already gave an intuition of the meaning of judgements
 derived in the logic, to make it formal we define the
@@ -1677,6 +1840,10 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
   \vdash r \gets f(\vec x) \dashv
   (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c)
 }
+%
+\Rule{Q:Tick}
+{}
+{ B; R; (\Gamma, Q{+}M_t(n)) \vdash \code{tick}(n) \dashv (\Gamma, Q) }
 %
 \and \Rule{Q:Weak}
 { \Gamma_1 \models \Gamma_2
