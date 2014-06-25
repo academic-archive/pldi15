@@ -1403,7 +1403,6 @@ standard technique of Hoare logic.
 }
 %
 \and
-%
 \Rule{L:Weaken}
 {
   P \models P' \\
@@ -1773,53 +1772,65 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
 { (\Gamma', Q'); R; (\Gamma,Q) \vdash S \dashv (\Gamma,  Q {+} M_l) }
 { B; R; (\Gamma, Q) \vdash \code{loop}~S \dashv (\Gamma', Q') }
 %
-\and \Rule{Q:Set}
+\and \Rule{Q:Update}
 { q'_{xy}, q'_{yx} \in \mathbb Q_0^+
 \\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
 }
-{ B; R; (\Gamma[x/y], Q {+} M_s) \vdash x \gets y \dashv (\Gamma, Q') }
+{ B; R; (\Gamma[x/y], Q {+} M_u {+} M_e(y)) \vdash x \gets y \dashv (\Gamma, Q') }
 %
-\and \Rule{Q:IncrPos}
+\and \Rule[leftskip=1.5cm]{Q:IncP}
 { \Gamma \models 0 \le y
 \\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\}
 \\\\ \textstyle q'_{0y} = q_{0y}
       + \sum_{u \in \mathcal U} q_{xu}
       - \sum_{v \not\in \mathcal U} q_{vx}
+\\ M = M_u + M_e(x {+} y)
 }
 { \textstyle
-  B; R; (\Gamma[x/x {+} y], Q {+} M_s) \vdash x \gets x + y \dashv (\Gamma, Q')
+  B; R; (\Gamma[x/x {+} y], Q {+} M) \vdash x \gets x + y \dashv (\Gamma, Q')
 }
 %
-\and \Rule[rightskip=1cm]{Q:IncrNeg}
+\and \Rule[rightskip=1.5cm]{Q:IncM}
 { \Gamma \models 0 \le y
 \\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
 \\\\ \textstyle q'_{y0} = q_{y0}
       + \sum_{u \in \mathcal U} q_{ux}
       - \sum_{v \not\in \mathcal U} q_{xv}
+\\ M = M_u + M_e(x {-} y)
 }
 { \textstyle
-  B; R; (\Gamma[x/x {-} y],Q {+} M_s) \vdash x \gets x - y \dashv (\Gamma, Q')
+  B; R; (\Gamma[x/x {-} y],Q {+} M) \vdash x \gets x - y \dashv (\Gamma, Q')
 }
 %
-\and \Rule{Q:Incr}
+\and \Rule{Q:Inc}
 { \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
 \\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
+\\\\ M = M_u + M_e(x {\pm} y)
 }
 { \textstyle
-  B; R; (\Gamma[x/x \pm y], Q {+} M_s) \vdash x \gets x \pm y \dashv (\Gamma, Q')
+  B; R; (\Gamma[x/x {\pm} y], Q {+} M) \vdash x \gets x \pm y \dashv (\Gamma, Q')
 }
 %
 \and \Rule{Q:If}
 { B; R; (\Gamma \land e, Q {-} M_c^1) \vdash S_1 \dashv (\Gamma',Q')
-\\ B; R; (\Gamma \land \neg e, Q {-} M_c^2) \vdash S_2 \dashv (\Gamma',Q')
+\\\\ B; R; (\Gamma \land \neg e, Q {-} M_c^2) \vdash S_2 \dashv (\Gamma',Q')
 }
 { B; R; (\Gamma, Q) \vdash \code{if}(e)~S_1~\code{else}~S_2 \dashv (\Gamma',Q') }
 %
 \and\Rule{Q:Seq}
-{  B; R; (\Gamma, Q {-} M_s^1) \vdash S_1 \dashv (\Gamma', Q')
-\\ B; R; (\Gamma', Q' {-} M_s^2) \vdash S_2 \dashv (\Gamma'',Q'')
+{  B; R; (\Gamma, Q) \vdash S_1 \dashv (\Gamma', Q' {+} M_s)
+\\\\ B; R; (\Gamma', Q') \vdash S_2 \dashv (\Gamma'',Q'')
 }
 { B; R; (\Gamma, Q) \vdash S_1;S_2 \dashv (\Gamma'',Q'') }
+%
+\and \Rule{Q:Weak}
+{ B; R; (\Gamma_2,Q_2) \vdash S \dashv (\Gamma'_2, Q'_2)
+\\\\ \Gamma_1 \models \Gamma_2
+\\ Q_1 \succeq_{\Gamma_1} Q_2
+\\ Q'_2 \succeq_{\Gamma_2'} Q'_1
+\\ \Gamma'_2 \models \Gamma'_1
+}
+{ B; R; (\Gamma_1,Q_1) \vdash S \dashv (\Gamma'_1, Q'_1) }
 %
 \and\Rule{Q:Call}
 { (\Gamma_f, Q_f,  \Gamma_f', Q_f') \in \Delta(f)
@@ -1836,23 +1847,14 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
 \and \forall i \not\in \text{Loc}
   .\, s_i = 0
 }
-{ B; R; (\Gamma_f[\Vargs / \vec x] \land \Gamma_{\text{Loc}}, Q {+} c)
+{ B; R; (\Gamma_f[\Vargs / \vec x] \land \Gamma_{\text{Loc}}, Q {+} c {+} M_f)
   \vdash r \gets f(\vec x) \dashv
-  (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c)
+  (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c {-} M_r)
 }
 %
-\Rule{Q:Tick}
+\and \Rule{Q:Tick}
 {}
 { B; R; (\Gamma, Q{+}M_t(n)) \vdash \code{tick}(n) \dashv (\Gamma, Q) }
-%
-\and \Rule{Q:Weak}
-{ \Gamma_1 \models \Gamma_2
-\\ Q_1 \succeq_{\Gamma_1} Q_2
-\\ B; R; (\Gamma_2,Q_2) \vdash S \dashv (\Gamma'_2, Q'_2)
-\\ Q'_2 \succeq_{\Gamma_2'} Q'_1
-\\ \Gamma'_2 \models \Gamma'_1
-}
-{ B; R; (\Gamma_1,Q_1) \vdash S \dashv (\Gamma'_1, Q'_1) }
 %
 \and \Rule{Relax}
 { \mathcal L = \{ xy \mid \exists l_{xy},~\Gamma \models l_{xy} \le |\inter x y| \}
@@ -1863,7 +1865,7 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
 }
 { Q' + \sum_{i \in \mathcal U} u_i p_i - \sum_{i \in \mathcal L} l_i p_i  \succeq_\Gamma Q }
 %
-\and \Rule{Q:Abst}
+\and \Rule{Extend}
 { \fenv f = (\vec y, S_f)
 \\ B; (\Gamma_f', Q'_f); (\Gamma_f[\Vargs/\vec y], Q_f[\Vargs/ \vec y] ) \vdash S \dashv (\Gamma', Q')
 }
