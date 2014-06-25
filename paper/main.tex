@@ -1606,7 +1606,7 @@ look as follows.
 %
 \begin{lstlisting}
 Theorem dbl_triple: forall Z,
-  htriple ($\lambda\sigma$.$\sigma$(x) = Z) ($\code{double}()$) ($\lambda\sigma$.$\sigma$(x) = 2*Z).
+  qtriple ($\lambda\sigma$.$\sigma$(x) = Z) ($\code{double}()$) ($\lambda\sigma$.$\sigma$(x) = 2*Z).
 \end{lstlisting}
 %
 However, this trick alone is often not sufficient when working with a
@@ -1690,6 +1690,68 @@ logical variable $y$.
 % This is not possible with the rule \textsc{L:Call} but it is with the more
 % general rule in the Coq implementation~\iffullversion{\cite{coqfiles}}{\cite{anoncoq}}.
 
+\paragraph{Using the Quantitative Logic.}
+
+Our first example on~\pref{fig:xmplmax} uses the expressive power of
+the logic to get a very precise runtime bound on a program searching
+a maximal element in an array.  The metric used simply counts the
+assignments performed by the program.  Hence, the resource consumption
+is closely related to the number $A$ of times the test \lstinline{a[i] > m}
+is true during the execution.
+%
+It is clear that $A+1$ is the count of ``maximums so far in the
+array \lstinline{a}'':
+$$
+  \# \{ k \mid 0 \le k < N \land \forall\, 0 \le j < k.\, a[j] < a[k] \},
+$$
+where we write $\# S$ for the cardinal of the set $S$.  This number is
+obviously bounded by $N$, the size of the array.  So any automated tool
+available would derive the linear bound $2 \cdot N$ for that program.
+But using the expressivity of our logic we can get a finer bound
+that depends on the contents of the array before the program execution.
+
+The only non-trivial part of this derivation is finding the loop
+invariant that is used in the while loop. To this end
+it is necessary to define the number $A(i)$ of ``maximums so far
+starting from $i$ in the array \lstinline{a}.''  When the condition
+\lstinline{a[i] > m} is true, we know that we encountered a ``maximum
+so far'' because $m$ is a maximal element of \lstinline{a[$0 \dots i$]},
+thus $A(i) = 1 + A(i+1)$ and we get one potential unit to pay for the
+assignment.  In the other case, no maximum so far is encountered so
+$A(i) = A(i+1)$.  As a side remark, if $K \ge 0$, it is possible to
+have $\{ A(0) + N + K \}$ and $\{ K \}$ as pre- and postcondition
+of the same program; it can be done either by adapting the proof or by
+applying the {\sc L:Frame} rule one top of the triple already derived.
+More generally, it is clear that without function calls, the {\sc L:Frame}
+is admissible in our system.
+
+The second example on~\pref{fig:xmplbs} shows a use case for
+logical variables as well as a metric for stack consumption.
+We are interested in showing that a binary search function
+$\code{bsearch}$ has logarithmic stack consumption.  We use
+a logical variable $Z$ in the function specification
+$\htriple{(Z = \log_2(h-l)) + Z \cdot F}{}{Z \cdot F}$
+to express that the stack required by the function is fully
+returned afterwards.
+
+The critical step in this proof is the application of the
+{\sc L:Call} rule to prove the recursive call.  At this point
+the context $\Delta$ contains the following specification
+for the function \code{bsearch}
+$$
+  \forall y \, (x,l,h) \, \_.
+  ( (\lambda y \, (\_, l, h) .\, (y {=} \log_2(h {-} l)) + y {\cdot} F)
+  , (\lambda y \, \_ .\, y {\cdot} F)
+  ).
+$$
+Using the {\sc L:Call} rule it is possible to instantiate
+$y$ with $Z - 1$, and because $M_f = F$ and $M_r = -F$ in
+the stack resource metric, the appropriate triple can be
+derived on the call site.  The rest of the proof does not
+involve any resource manipulation and is just bookkeeping
+of logical assertions.
+
+
 
 
 \paragraph{Soundness of Quantitative Hoare Triples.}
@@ -1757,23 +1819,23 @@ where $S_f$ is the body of the function $f$.
 
 \begin{figure}
 \begin{lstlisting}
-${\color{blue} \{ A(0, N) + N \} }$
+${\color{blue} \{ A(0) + N \} }$
 i=1; m=a[0];
 ${\color{blue}%
-  \{ (i {=} 1 \land m=a[0]) + A(1, N) + (N-1) \} }$
+  \{ (i {=} 1 \land m=a[0]) + A(1) + (N-1) \} }$
 while (i < N) {
   ${\color{blue}%
-    \{ (m = \max_{k \in [0, i-1]} a[k]) + A(i, N) + (N-i) \} }$
+    \{ (m = \max_{k \in [0, i-1]} a[k]) + A(i) + (N-i) \} }$
   if (a[i] > m)
     m=a[i];
   ${\color{blue}%
-    \{ (m = \max_{k \in [0, i]} a[k]) + A(i+1, N) + (N-i) \} }$
+    \{ (m = \max_{k \in [0, i]} a[k]) + A(i+1) + (N-i) \} }$
   i=i+1;
   ${\color{blue}%
-    \{ (m = \max_{k \in [0, i-1]} a[k]) + A(i, N) + (N-i) \} }$
+    \{ (m = \max_{k \in [0, i-1]} a[k]) + A(i) + (N-i) \} }$
 } ${\color{blue} \{ 0 \} }$
 \end{lstlisting}
-\caption{Example derivation where we noted $A(i, N)$
+\caption{Example derivation where we wrote $A(i)$
   for $\#\{ k \mid i \le k \le N \land \forall\, 0\le j<k.\, a[j] < a[k]\}$,
   the metric used here assigns a cost of 1 to every assignment
   and 0 to all other operations.
@@ -1784,28 +1846,30 @@ while (i < N) {
 \begin{figure}
 \begin{lstlisting}
 ${\color{blue}%
-  \{ (Z = \log_2(h-l)) + Z \} }$
+  \{ (Z = \log_2(h-l)) + Z \cdot F \} }$
 bsearch(x,l,h) {
   if (h-l > 1) {
     ${\color{blue}%
-      \{ (h-l > 1 \land Z = \log_2(h-l)) + Z \} }$
+      \{ (Z \ge 1 \land Z = \log_2(h-l)) + Z \cdot F \} }$
     m = h + (h-l)/2;
     ${\color{blue}%
-      \{ (m = \frac{h+l}{2} \land h-l > 1 \land Z = \log_2(h-l)) + Z \} }$
+      \{ (m = \frac{h+l}{2} \land Z \ge 1 \land Z = \log_2(h-l)) + Z \cdot F \} }$
     if (a[m]>x) h=m; else l=m;
     ${\color{blue}%
-      \{ (Z - 1 = \log_2(h-l)) + (Z-1) + 1 \} }$
+      \{ (Z - 1 = \log_2(h-l)) + (Z-1) \cdot F + F \} }$
     l = bsearch(x,l,h); }
   ${\color{blue}%
-    \{ Z-1 \} }$
+    \{ (Z-1) \cdot F - (-F) \} }$
   return l;
-} ${\color{blue} \{ Z \} }$
+} ${\color{blue} \{ Z \cdot F \} }$
 \end{lstlisting}
 \caption{Example derivation of a stack usage bound for a binary
-  search program, the metric used assigns a cost of 1 to function
-  calls and $-1$ to return statements, we noted $Z$ an arbitrary
+  search program.  The metric used sets a cost of $F$ before
+  to function call and $-F$ after the call, $F$ is the stack
+  frame size of the function $\code{bsearch}$.  We use $Z$ as
   logical variable.
   }
+\label{fig:xmplbs}
 \end{figure}
 
 We define in this section an abstract version of the proof system that
