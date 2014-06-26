@@ -1632,13 +1632,13 @@ $$
 When formalizing Hoare logics in a proof assistant one can either
 fully specify the syntax and semantics of assertions and hence get a
 deep embedding, or use the assertions of the host theory to get a
-shallow embedding.  For simplicity, we used the latter approach in our
-development.  This choice makes it possible to have logical variables
-almost for free: we can simply use the variable and binding mechanisms
-of Coq, our host theory.  When an logical variable is needed we
-introduce it using a universal quantifier of Coq before using the
-logic to derive triples, so the Coq theorem for the above example
-would look as follows.
+shallow embedding.  Because of its flexibility, we used the latter
+approach in our development.  This choice makes it possible to have
+logical variables almost for free: we can simply use the variable and
+binding mechanisms of Coq, our host theory.  When an logical variable
+is needed we introduce it using a universal quantifier of Coq before
+using the logic to derive triples.  For example, the Coq theorem for
+the above example would look as follows.
 %
 \begin{lstlisting}
 Theorem dbl_triple: forall Z,
@@ -1650,58 +1650,64 @@ recursive function $f$.  In that case we apply the {\sc L:Extend} rule
 of the logic.  First we add a specification $\forall z\,\vec
 v\,v.(P_f\,z\,\vec v, Q_f\,z\,v)$ of $f$ to the function context
 $\Delta$.  Then we proceed to prove the function body $S_f$ with this
-induction hypothesis.  In this process it can be the case that we
-have to use the induction hypothesis with a different value of a
-logical variable.  To cope with this problem, assumptions in the
-function context $\Delta$ are universally quantified over logical
-variables.  The {\sc L:Extend} rule uses the host proof assistant to
-require that the triple on $f$'s body is proved for every possible
-logical variable $y$.
+induction hypothesis.  In this process it can be the case that we have
+to use the induction hypothesis with a different value of a logical
+variable (e.g., because the values of the arguments in the recursive
+call differ from the values of the arguments of the callee).  To cope
+with this problem, assumptions in the function context $\Delta$ are
+universally quantified over logical variables.  The {\sc L:Extend}
+rule uses the host proof assistant to require that the triple on $f$'s
+body is proved for every possible logical variable $y$.
 
 
 \paragraph{Using the Quantitative Logic.}
 
-Our first example on~\pref{fig:xmplmax} derives a precise runtime bound
-on a program that searches a maximal element in an array.
-The metric used simply counts the assignments performed by the program.
-Hence, the resource consumption is closely related to the number $A$ of
-times the test \lstinline{a[i] > m} is true during the execution.
+In the following we demonstrate the use of the logic with two example
+derivations.
+
+In the example in~\pref{fig:xmplmax} we derive a precise runtime
+bound on a program that searches a maximal element in an array.  The
+cost metric that we use simply counts the assignments performed by the
+program.  Hence, the resource consumption is closely related to the
+number $A(0)$ of times the test \lstinline{a[i] > m} is true during the
+execution.
 %
-It is clear that $A+1$ is the count of ``maximums so far in the
-array \lstinline{a}'':
+We observe that $A(0)+1$ is the count of ``maximum candidates'' in the
+array \lstinline{a} seen by the algorithm. We define
 $$
-  \# \{ k \mid 0 \le k < N \land \forall\, 0 \le j < k.\, a[j] < a[k] \},
+ A(i) =  \# \{ k \mid i \le k < N \land \forall\, 0 \le j < k.\, a[j] < a[k] \} \, .
 $$
-where we write $\# S$ for the cardinal of the set $S$.  This number is
+where we write $\# S$ for the cardinal of the set $S$.  $A(0)$ is
 obviously bounded by $N$, the size of the array.  So any automated tool
 available would derive the linear bound $2 \cdot N$ for that program.
-But with the expressivity of our logic it is possible to use the
+But with the expressivity of our  it is possible to use the
 previous set cardinal directly and precisely tie the bound to the
 initial contents of the array.
 
 The non-trivial part of this derivation is finding the loop
 invariant for the while loop. To this end
-it is necessary to define the number $A(i)$ of ``maximums so far
+it is necessary to define the number $A(i)$ of ``maximum candidates so far
 starting from $i$ in the array \lstinline{a}.''  When the condition
 \lstinline{a[i] > m} is true, we know that we encountered a ``maximum
 so far'' because $m$ is a maximal element of \lstinline{a[$0 \dots i$]},
 thus $A(i) = 1 + A(i+1)$ and we get one potential unit to pay for the
 assignment.  In the other case, no maximum so far is encountered so
-$A(i) = A(i+1)$.  As a side remark, if $K \ge 0$, it is possible to
-have $\{ A(0) + N + K \}$ and $\{ K \}$ as pre- and postcondition
-of the same program.  It can be done either by adapting the proof or by
-applying the {\sc L:Frame} rule one top of the triple already derived.
-More generally, it is clear that without function calls, the {\sc L:Frame}
-rule is admissible in our system.
+$A(i) = A(i+1)$.  % As a side remark, if $K \ge 0$, it is possible to
+% have $\{ A(0) + N + K \}$ and $\{ K \}$ as pre- and postcondition
+% of the same program.  It can be done either by adapting the proof or by
+% applying the {\sc L:Frame} rule one top of the triple already derived.
+% More generally, without function calls, the {\sc L:Frame}
+% rule is admissible in our system.
 
-The second example on~\pref{fig:xmplbs} shows a use case for
-logical variables as well as a metric for stack consumption.
-We are interested in showing that a binary search function
-$\code{bsearch}$ has logarithmic stack consumption.  We use
-a logical variable $Z$ in the function specification
-$\htriple{(Z = \log_2(h-l)) + Z \cdot F}{}{Z \cdot F}$
-to express that the stack required by the function is fully
-returned afterwards.
+The example in~\pref{fig:xmplbs} shows a use case for logical
+variables as well as a metric for stack consumption. In a stack
+metric, we account a constant cost for a function call ($M_f>0$) that
+is returned after the call ($M_r = -M_f <0$).  All other resource cost
+are $0$.  We are interested in showing that a binary search function
+$\code{bsearch}$ has logarithmic stack consumption.  We use a logical
+variable $Z$ in the function specification $\htriple{(Z = \log_2(h-l))
+  + Z \cdot F}{}{Z \cdot F}$ to express that the stack required by the
+function is fully returned afterwards.
 
 The critical step in this proof is the application of the
 {\sc L:Call} rule to prove the recursive call.  At this point
@@ -1781,25 +1787,25 @@ bsearch(x,l,h) {
 \paragraph{Soundness of Quantitative Hoare Triples.}
 
 We already gave an intuition of the meaning of judgements
-derived in the logic, to make it formal we define the
+derived in the logic.  To make it formal, we define the
 \emph{resource safety} $\safe n P S \cont$ of an assertion
 and a program configuration as
 \begin{align*}
   \forall \state \, \cost \, m \, \cost' .\,&
   (m \le n \land P(\state) \le \cost \land
     (\state, S, \cont, \cost) \smallstep{M}^m (\_, \_, \_, \cost')) \\
-  &\implies 0 \le \cost'.
+  &\implies \cost' \ge 0.
 \end{align*}
-This predicate is step indexed by an integer $n$ that will
-be used in the soundness proof for the function call and
-loop cases.  The constraint $0 \le \cost'$ imposed by the
-definition makes sure that the program does not stop on a
-resource error.  However, it does not rule out memory safety
-errors or assertion failures, this is because our logic does
-not prove any safety or correctness theorems but only
-focuses on resource usage.
+This predicate is step indexed by an integer $n$ that is used in the
+soundness proof for the function call and loop cases.  The constraint
+$\cost' \geq 0$ imposed by the definition ensures that the program does
+not stop because of a resource error (recall that a negative resource
+counter on the right-hand side is a resource failure).  However, it
+does not rule out memory safety errors or assertion failures, this is
+because our logic does not prove any safety or correctness theorems
+but only focuses on resource usage.
 
-The safety of a continuation $\cont$ is defined using three
+The resource safety of a continuation $\cont$ is defined using three
 assertions, one for each of the possible outcome of a program
 statement.  We denote it by $\safeK n B R Q \cont$ and define
 it to be
@@ -1808,9 +1814,10 @@ it to be
 \land& \safe n {\lambda \state.\,R\,(\state(x))} {\code{return}~x} \cont \\
 \land& \safe n Q {\code{skip}} \cont.
 \end{align*}
-
-We can now define the \emph{semantic validity} of a logic judgement
-$B; R \vdash \htriple P S Q$ without function context as follows
+%
+We can now define the \emph{semantic validity} of a judgement $\cdot; B; R
+\vdash \htriple P S Q$ of the quantitative Hoare logic with
+empty function context as follows
 \begin{align*}
 &\valid n B R P S Q := \\
 &\qquad \forall m \, \cont \, x .\, (m \le n \land \safeK m {B+x} {R+x} {Q+x} \cont) \\
@@ -1830,6 +1837,9 @@ a function context $\Delta$ that we write $\validC n \Delta$ as
   \valid n \bot {Q_f \, z} {P_f \, z \, \vec v} {S_f} \bot ,
 \end{align*}
 where $S_f$ is the body of the function $f$.
+
+XXXXX  Some more explanations.  Where is the difficulty? XXX
+
 %
 \begin{theorem}[Soundness of the logic]
   If $\Delta; B; R \vdash \htriple P S Q$ is derivable, then
@@ -1838,6 +1848,10 @@ where $S_f$ is the body of the function $f$.
       \implies \valid {n {+} 1} B R P S Q.
   $$
 \end{theorem}
+
+XXXXX  Some more explanations.  Why n+1?XXX
+
+
 %
 \noindent
 If $S$ is a complete program and $\Delta$ is empty by
