@@ -1204,18 +1204,22 @@ or the number of arguments.
 %
 \and
 \Rule{S:IfTrue}
-{ \code{istrue}~\sem{e}_\sigma }
+{ \code{istrue}~\sem{e}_\sigma
+\\ \cost' = \cost {-} M_c^1 {-} M_e(e)
+}
 { (\state, \code{if}(e)~S_1~\code{else}~S_2, \cont, \cost)
 \smallstep{M}
-(\state, S_1, \cont, \cost {-} M_c^1)
+(\state, S_1, \cont, \cost')
 }
 %
 \and
 \Rule{S:IfFalse}
-{ \code{isfalse}~\sem{e}_\sigma }
+{ \code{isfalse}~\sem{e}_\sigma 
+\\ \cost' = \cost {-} M_c^2 {-} M_e(e)
+}
 { (\state, \code{if}(e)~S_1~\code{else}~S_2, \cont, \cost)
 \smallstep{M}
-(\state, S_2, \cont, \cost {-} M_c^2)
+(\state, S_2, \cont, \cost')
 }
 %
 \and
@@ -1432,7 +1436,7 @@ program state $\state$ $P(\state) \ge Q(\state)$.
 { }
 { \Delta; B; R \vdash
 \htriple
-  { \lambda \state.\,M_u + Q\,\state[x \mapsto \sem{e}_\state] }{ x \gets e }{ Q }
+  { \lambda \state.\,M_u + M_e(e) + Q\,\state[x \mapsto \sem{e}_\state] }{ x \gets e }{ Q }
 }
 %
 \and
@@ -1486,7 +1490,7 @@ program state $\state$ $P(\state) \ge Q(\state)$.
 }
 { \Delta; B; R \vdash
 \htriple
-  { P }{ \code{if}(e)~S_1~\code{else}~S_2 }{ Q }
+  { P + M_e(e) }{ \code{if}(e)~S_1~\code{else}~S_2 }{ Q }
 }
 %
 \and
@@ -1494,7 +1498,7 @@ program state $\state$ $P(\state) \ge Q(\state)$.
 { }
 { \Delta; B; R \vdash
 \htriple
-  { Q {+} M_t(n) }
+  { Q + M_t(n) }
   { \code{tick}(n) }
   { Q }
 }
@@ -1584,8 +1588,8 @@ The rule {\sc L:Update} is the standard assignment rule of Hoare
 logic.  With the substitution $\state[x \mapsto \sem{e}_\state]$ in
 the precondition we ensure that $Q$ evaluates to the same number as in
 the postcondition.  We also require that have we the constant
-potential $M_u$ available in the precondition to pay for the cost of
-the update.
+potential $M_u + M_e(e)$ available in the precondition to pay for the
+cost of the evaluation of $e$ and the update.
 
 Despite its seemingly simplicity, the {\sc L:Seq} rule is important to
 understand how the quantitative Hoare logic works.  We have to define
@@ -1952,33 +1956,82 @@ minimal implementation.
 \paragraph{Deduction Rules.}
 
 The deductive system defined in~\pref{fig:auto} derives
-judgements of the form $\Gamma; Q \vdash S \dashv Q'; \Gamma'$.
-Its semantics are formally described in the soundness section but we
-will give an intuition of its meaning here.
+judgements of the form
+$$
+  (\Gamma_B, Q_B); (\Gamma_R, Q_R);
+    (\Gamma, Q) \vdash S \dashv (\Gamma', Q').
+$$
+These judgements are analogous to the logic judgements
+$\Delta; B; R \vdash \htriple P S Q$ where each assertion
+splits in two parts, a logical part $\Gamma$ and a quantitative
+part $Q$.  We left the function context $\Delta$ appart in
+the presentation to avoid cluttering notations, but it is
+implicit on all judgements.  We call precondition the pair
+$(\Gamma, Q)$ and postcondition the pair $(\Gamma', Q')$.
+The correspondence between judgements of the automation
+and the ones of the quantitative logic is made formal by our
+soundness proof of the analysis.
 
-\paragraph{Quantitative part.}
-The judgement is really two parts, one logical part, and one quantitative
-part.  The quantitative part is, as shown in the overview section, a
-representation of two potential functions $\Phi$ and $\Phi'$ using
-two maps from indices to non-negative rational numbers
-$Q, Q' : I \rightarrow \Qplusz$, these maps are called
-\emph{quantitative contexts}.
-We note $q_i$ for $Q(i)$.  Since $Q$ specifies a value for each
-index in $I$ it is clear that it defines a unique linear potential function
-as described in the previous section. We define $H \mapsto \Phi_H(Q)$
-to be the linear potential function canonically associated to $Q$.
+Since the different rules of~\pref{fig:auto} manage the
+logical state in exactly the same way as the Quantitative
+Logic, we will focus on the quantitative annotations in the
+sequel.
+%
+As a convention, if $Q$ is a quantitative annotation we
+will write $q_i$ for its $i$th coordinate.  The notation
+$Q \pm n$ used in many rules defines a new context $Q'$
+such that $q'_0 = q_0 \pm n$ and $\forall i \neq 0 .\,
+q'_i = q_i$.  Finally, if a rule mentions $Q$ and $Q'$
+and leaves the latter undefined at some index $i$ we
+will implicitely assume that $q'_i = q_i$.
 
-The rules of~\pref{fig:auto} are designed to enforce a semantic
-soundness similar to the one exposed in the overview section.  To
-do this, the rules impose contraints on $Q$ and $Q'$.  To make the
-presentation lighter, we use the following  set of conventions.
-First, the context $Q'$ noted $Q \pm n$ is defined by $q'_0 = q_0 \pm n$
-and $\forall i \neq 0.\, q'_i = q_i$.  Second, for any index $i$ such that
-the relation between $q_i$ and $q'_i$ is not specified as a side condition
-of a rule, we assume that $q_i = q'_i$.  Third, we implicitely assume
-all the side conditions enforcing that the coefficients $(q_i)_{i \in I}$ are
-non-negative numbers. Finally, when we write $q_x$ for $q_{x0}$ where
-0 is a program variable symbolizing the constant 0.
+%
+% Next paragraph is useless shit.
+%
+
+The {\sc Q:Skip} rule simply reuses its postcondition as
+precondition.  This is a sound choice since evaluating
+a $\code{skip}$ statement never costs any resource and
+does not change the program state.  A similar rule is
+the {\sc Q:Tick} rule which enforces that the quantitative
+annotation of the precondition is at least $M_t(n)$ to
+pay for the resource consumption.  Since the program
+state is also unchanged in this case, the logical part
+$\Gamma$ of the precondition can soundly be reused in
+the postcondition.  A slightly different rule is
+{\sc Q:Break}, in that case the regular control flow is
+broken, so anything that follows \code{break} in the
+program will not be executed.  Thus, the postcondition
+$(\Gamma', Q')$ can be arbitrary, and the precondition
+is taken from the break part of the judgement similarly
+to what is done in the logic.
+
+From these three examples alone, one can see that our
+automation follows very closely the rules of the logic.
+The case of the update statement is more interesting
+and specific to linear potential functions.
+In the {\sc Q:IncP} rule the program updates a variable
+$x$ to add it $y \ge 0$.  Since $x$ is changed, the
+quantitative annotation must be updated to reflect the
+change of the program state.  We write $x'$ the value
+of $x$ after the assignment ($x + y$). Since $x$ is
+the only variable changed, only intervals of the form
+$\inter u x$ and $\inter x u$ will be resized.
+Note that for any $u$, $\inter x u$ will get smaller
+with the update,  and if $x' \in \inter x u$ 
+we have $|\inter x u| = |\inter x {x'}| + |\inter {x'} u|$.
+But $|\inter x {x'}| = |\inter 0 y|$, this means that
+the potential $q'_{0y}$ in the postcondition can
+be increased by $q_{xu}$ under the guard that
+$x' \in \inter x u$.  Dually, the interval
+$\inter v x$ can get bigger with the update.
+And we know that $|\inter v {x'}| \ge y + |\inter v x|$,
+so we decrease the potential of $\inter 0 y$
+by $q_{vx}$.  Remark that the rule forces it only for
+$v \not\in \mathcal U$, because if not, we know
+that $x \le v$ so $|\inter v x| = 0$.
+
+
 
 
 
@@ -2041,9 +2094,9 @@ non-negative numbers. Finally, when we write $q_x$ for $q_{x0}$ where
 }
 %
 \and \Rule{Q:Inc}
-{ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
+{ M = M_u + M_e(x {\pm} y)
+\\\\ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
 \\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
-\\\\ M = M_u + M_e(x {\pm} y)
 }
 { \textstyle
   B; R; (\Gamma[x/x {\pm} y], Q {+} M) \vdash x \gets x \pm y \dashv (\Gamma, Q')
@@ -2053,7 +2106,7 @@ non-negative numbers. Finally, when we write $q_x$ for $q_{x0}$ where
 { B; R; (\Gamma \land e, Q {-} M_c^1) \vdash S_1 \dashv (\Gamma',Q')
 \\\\ B; R; (\Gamma \land \neg e, Q {-} M_c^2) \vdash S_2 \dashv (\Gamma',Q')
 }
-{ B; R; (\Gamma, Q) \vdash \code{if}(e)~S_1~\code{else}~S_2 \dashv (\Gamma',Q') }
+{ B; R; (\Gamma, Q{+}M_e(e)) \vdash \code{if}(e)~S_1~\code{else}~S_2 \dashv (\Gamma',Q') }
 %
 \and\Rule{Q:Seq}
 {  B; R; (\Gamma, Q) \vdash S_1 \dashv (\Gamma', Q' {+} M_s)
@@ -2065,8 +2118,8 @@ non-negative numbers. Finally, when we write $q_x$ for $q_{x0}$ where
 { B; R; (\Gamma_2,Q_2) \vdash S \dashv (\Gamma'_2, Q'_2)
 \\\\ \Gamma_1 \models \Gamma_2
 \\ Q_1 \succeq_{\Gamma_1} Q_2
-\\ Q'_2 \succeq_{\Gamma_2'} Q'_1
 \\ \Gamma'_2 \models \Gamma'_1
+\\ Q'_2 \succeq_{\Gamma_2'} Q'_1
 }
 { B; R; (\Gamma_1,Q_1) \vdash S \dashv (\Gamma'_1, Q'_1) }
 %
