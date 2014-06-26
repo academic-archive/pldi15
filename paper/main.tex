@@ -1812,14 +1812,27 @@ a function context $\Delta$ that we write $\validC n \Delta$ as
   \valid n \bot {Q_f \, z} {P_f \, z \, \vec v} {S_f} \bot ,
 \end{align*}
 where $S_f$ is the body of the function $f$.
-
+%
 \begin{theorem}[Soundness of the logic]
   If $\Delta; B; R \vdash \htriple P S Q$ is derivable, then
   $$
     \forall n .\, \validC n \Delta
-      \implies \forall n .\, \valid n B R P S Q.
+      \implies \valid {n {+} 1} B R P S Q.
   $$
 \end{theorem}
+%
+\noindent
+If $S$ is a complete program and $\Delta$ is empty by
+expanding the definitions and remarking that $\validC n \Delta$
+and $\safeK n B R Q \Kstop$ are true for every $n$ we get that 
+$$
+  \forall n .\, \safe n P S \Kstop.
+$$
+This means that for any starting state $\state$, $P(\state)$
+provides enough resource for any run of the program $S$.  This
+setting is actually the main use case of the previous theorem
+which is stated as a stronger result to allow a proof by
+induction.
 
 \section{Automatic Amortized Analysis}
 
