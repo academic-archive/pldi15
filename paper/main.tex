@@ -627,7 +627,7 @@ $\state$ simply maps variable to integers then we require
 $$
 \Phi(\state) = q_0 + \sum_{x,y \in \dom{\state}} q_{(x,y)} {\cdot} |[\state(x),\state(y)]|
 $$
-where $q_{(x,y)} \in \Qplus$ and $|[a,b]| = \max(b-a,0)$.  Note that
+where $q_{(x,y)} \in \Qplusz$ and $|[a,b]| = \max(b-a,0)$.  Note that
 $q_0$ is the constant potential and that we treat constants as program
 variables.  For instance, we always have $q_{(0,x)}|[0,x]|$ as a
 component of $\Phi(\state)$ if $x \in \dom{\state}$.
@@ -1314,7 +1314,7 @@ termination.  This is formalized by \pref{lem:sem_term}.
 \begin{lemma}
  \label{lem:sem_term}
  Let $M$ be a positive metric and assume that there exists $b \in
- \Qplus$ such that $(\state, S, \cont, \cost) \smallstep{M}^*
+ \Qplusz$ such that $(\state, S, \cont, \cost) \smallstep{M}^*
  (\state', S', \cont', \cost') \implies \cost {-} \cost' {\leq} b$.
  Then there exists $B \in \N$ such that $(\state, S, \cont, d)
  \smallstep{M}^n (\state'', S', \cont', d')$ for some $n$, $d$, $d'$
@@ -1517,7 +1517,7 @@ program state $\state$ $P(\state) \ge Q(\state)$.
 \Rule{L:Frame}
 { \Delta; B; R \vdash
 \htriple{ P }{ S }{ Q } \\
-  x \in \mathbb Q_0^+
+  x \in \Qplusz
 }
 { \Delta; B + x; R + x \vdash
 \htriple{ P + x }{ S }{ Q + x }
@@ -1759,6 +1759,61 @@ of logical assertions.
 
 
 
+\begin{figure}
+\begin{lstlisting}
+${\color{blue} \{ A(0) + N \} }$
+i=1; m=a[0];
+${\color{blue}%
+  \{ (i {=} 1 \land m=a[0]) + A(1) + (N-1) \} }$
+while (i < N) {
+  ${\color{blue}%
+    \{ (m = \max_{k \in [0, i-1]} a[k]) + A(i) + (N-i) \} }$
+  if (a[i] > m)
+    m=a[i];
+  ${\color{blue}%
+    \{ (m = \max_{k \in [0, i]} a[k]) + A(i+1) + (N-i) \} }$
+  i=i+1;
+  ${\color{blue}%
+    \{ (m = \max_{k \in [0, i-1]} a[k]) + A(i) + (N-i) \} }$
+} ${\color{blue} \{ 0 \} }$
+\end{lstlisting}
+\caption{Example derivation where we wrote $A(i)$
+  for $\#\{ k \mid i \le k \le N \land \forall\, 0\le j<k.\, a[j] < a[k]\}$,
+  the metric used here assigns a cost of 1 to every assignment
+  and 0 to all other operations.
+  }
+\label{fig:xmplmax}
+\end{figure}
+
+\begin{figure}
+\begin{lstlisting}
+${\color{blue}%
+  \{ (Z = \log_2(h-l)) + Z \cdot F \} }$
+bsearch(x,l,h) {
+  if (h-l > 1) {
+    ${\color{blue}%
+      \{ (Z \ge 1 \land Z = \log_2(h-l)) + Z \cdot F \} }$
+    m = h + (h-l)/2;
+    ${\color{blue}%
+      \{ (m = \frac{h+l}{2} \land Z \ge 1 \land Z = \log_2(h-l)) + Z \cdot F \} }$
+    if (a[m]>x) h=m; else l=m;
+    ${\color{blue}%
+      \{ (Z - 1 = \log_2(h-l)) + (Z-1) \cdot F + F \} }$
+    l = bsearch(x,l,h); }
+  ${\color{blue}%
+    \{ (Z-1) \cdot F - (-F) \} }$
+  return l;
+} ${\color{blue} \{ Z \cdot F \} }$
+\end{lstlisting}
+\caption{Example derivation of a stack usage bound for a binary
+  search program.  The metric used sets a cost of $F$ before
+  to function call and $-F$ after the call, $F$ is the stack
+  frame size of the function $\code{bsearch}$.  We use $Z$ as
+  logical variable.
+  }
+\label{fig:xmplbs}
+\end{figure}
+
 
 \paragraph{Soundness of Quantitative Hoare Triples.}
 
@@ -1834,93 +1889,99 @@ setting is actually the main use case of the previous theorem
 which is stated as a stronger result to allow a proof by
 induction.
 
-\section{Automatic Amortized Analysis}
 
-\begin{figure}
-\begin{lstlisting}
-${\color{blue} \{ A(0) + N \} }$
-i=1; m=a[0];
-${\color{blue}%
-  \{ (i {=} 1 \land m=a[0]) + A(1) + (N-1) \} }$
-while (i < N) {
-  ${\color{blue}%
-    \{ (m = \max_{k \in [0, i-1]} a[k]) + A(i) + (N-i) \} }$
-  if (a[i] > m)
-    m=a[i];
-  ${\color{blue}%
-    \{ (m = \max_{k \in [0, i]} a[k]) + A(i+1) + (N-i) \} }$
-  i=i+1;
-  ${\color{blue}%
-    \{ (m = \max_{k \in [0, i-1]} a[k]) + A(i) + (N-i) \} }$
-} ${\color{blue} \{ 0 \} }$
-\end{lstlisting}
-\caption{Example derivation where we wrote $A(i)$
-  for $\#\{ k \mid i \le k \le N \land \forall\, 0\le j<k.\, a[j] < a[k]\}$,
-  the metric used here assigns a cost of 1 to every assignment
-  and 0 to all other operations.
-  }
-\label{fig:xmplmax}
-\end{figure}
 
-\begin{figure}
-\begin{lstlisting}
-${\color{blue}%
-  \{ (Z = \log_2(h-l)) + Z \cdot F \} }$
-bsearch(x,l,h) {
-  if (h-l > 1) {
-    ${\color{blue}%
-      \{ (Z \ge 1 \land Z = \log_2(h-l)) + Z \cdot F \} }$
-    m = h + (h-l)/2;
-    ${\color{blue}%
-      \{ (m = \frac{h+l}{2} \land Z \ge 1 \land Z = \log_2(h-l)) + Z \cdot F \} }$
-    if (a[m]>x) h=m; else l=m;
-    ${\color{blue}%
-      \{ (Z - 1 = \log_2(h-l)) + (Z-1) \cdot F + F \} }$
-    l = bsearch(x,l,h); }
-  ${\color{blue}%
-    \{ (Z-1) \cdot F - (-F) \} }$
-  return l;
-} ${\color{blue} \{ Z \cdot F \} }$
-\end{lstlisting}
-\caption{Example derivation of a stack usage bound for a binary
-  search program.  The metric used sets a cost of $F$ before
-  to function call and $-F$ after the call, $F$ is the stack
-  frame size of the function $\code{bsearch}$.  We use $Z$ as
-  logical variable.
-  }
-\label{fig:xmplbs}
-\end{figure}
+\section{Automatic Analysis}
 
-We define in this section an abstract version of the proof system that
-we will use to derive bounds in our practical implementation.
+In this section we present the deductive system used in our practical
+implementation to derive linear bounds on C programs.
 
-\subsection{Linear Potential Functions}
+\paragraph{Linear Potential Functions.}
 
-To get a practical and automated implementation of amortized analysis
-as presented in the overview section we need the fix the shape of
-potential functions.  The general form of a potential function is as follows
+To find derivations in our Quantitative Logic automatically, the main
+insight is to consider only assertions that match a certain shape.
+The general form of a potential function that we consider is
 $$
-\Phi(H) = q_0 + \sum_{a \prec b} q_{ab}\,|H(a) - H(b)|.
+  \Phi(\state) = q_0 + \sum_{x, y \in \dom\state}
+    q_{(x, y)} \cdot |\inter {\state(x)} {\state(y)}|.
 $$
-Where $a$ and $b$ range over the set of all program variables $V$ and
-$(q_{ab})$ and $q_0$ are non-negative rational numbers.  The relation
-$\prec$ is an arbitrary complete order on $V$ that is used only to
-avoid considering the two equal quantities $|H(a) - H(b)|$ and
-$|H(b) - H(a)|$ in the above sum.
 
-To simplify the references to the $q$ coefficients later we introduce
+To simplify the references to the linear coefficients $q$, we introduce
 an \emph{index set} $I$.  This set is defined to be $\{0\} \cup
-\{(a, b) \mid a \prec b\}$.  Each index $i$ corresponds to a \emph{base
+\{(x, y) \mid x, y \in \Var \}$.  Each index $i$ corresponds to a \emph{base
 function} $f_i$ in the potential function: $0$ corresponds to the constant
-function $\_ \mapsto 1$, and $(a,b)$ corresponds to $H \mapsto
-|H(a) - H(b)|$.  Using these notations we can rewrite the above
+function $\_ \mapsto 1$, and $(x,y)$ corresponds to $\state \mapsto
+|\inter {\state(x)} {\state(y)}|$.  Using these notations we can rewrite the above
 equality as
 $$
-\Phi(H) = \sum_{i \in I} q_i f_i(H).
+  \Phi = \sum_{i \in I} q_i f_i.
 $$
-From now on, we will write $ab$ to denote the index $(a,b)$.
+We will often write $xy$ to denote the index $(x,y)$.  The family
+$(f_i)_{i\in I}$ is actually a basis (in the linear algebra sense)
+for potential functions, this allows us to represent uniquely any
+linear potential function $\Phi$ as a \emph{quantitative annotation}
+$Q = (q_i)_{i \in I}$, that is a family of rational numbers where
+only a finite number of elements are not zero.
+%
+For soundness, we require that potential functions always give
+non-negative results.  This is acheived by restricting coefficients
+in a quantitative annotation to be always non-negative.
 
-\subsection{Proof Rules}
+\paragraph{Logical State.}
+
+Quantitative annotations alone are not enough to make our system
+functional.  A minimal logical state needs to be maintained to
+justify certain operations on quantitative annotations.  For
+example when analyzing the code $x \gets x + y$, it is helpful
+to know the sign of $y$ to determine which intervals will increase
+or decrease.  The knowledge needed by our rules can often be
+inferred by local reasoning within usual theories (e.g. Presburger
+arithmetic or bit vectors).
+
+Our implementation uses conjunctions of linear inequalities as
+logical state.  We never compute fixpoints and take $\top$
+as pre- and postconditions for functions. It has proved to be
+sufficient for the variety of examples we designed and found
+in the literature.
+
+In contrast to the quantitative annotations, logical contexts in
+the presented system are left abstract.  This allows for simpler
+rules and leaves room for numerous improvements on top of our
+minimal implementation.
+
+\paragraph{Deduction Rules.}
+
+The deductive system defined in~\pref{fig:auto} derives
+judgements of the form $\Gamma; Q \vdash S \dashv Q'; \Gamma'$.
+Its semantics are formally described in the soundness section but we
+will give an intuition of its meaning here.
+
+\paragraph{Quantitative part.}
+The judgement is really two parts, one logical part, and one quantitative
+part.  The quantitative part is, as shown in the overview section, a
+representation of two potential functions $\Phi$ and $\Phi'$ using
+two maps from indices to non-negative rational numbers
+$Q, Q' : I \rightarrow \Qplusz$, these maps are called
+\emph{quantitative contexts}.
+We note $q_i$ for $Q(i)$.  Since $Q$ specifies a value for each
+index in $I$ it is clear that it defines a unique linear potential function
+as described in the previous section. We define $H \mapsto \Phi_H(Q)$
+to be the linear potential function canonically associated to $Q$.
+
+The rules of~\pref{fig:auto} are designed to enforce a semantic
+soundness similar to the one exposed in the overview section.  To
+do this, the rules impose contraints on $Q$ and $Q'$.  To make the
+presentation lighter, we use the following  set of conventions.
+First, the context $Q'$ noted $Q \pm n$ is defined by $q'_0 = q_0 \pm n$
+and $\forall i \neq 0.\, q'_i = q_i$.  Second, for any index $i$ such that
+the relation between $q_i$ and $q'_i$ is not specified as a side condition
+of a rule, we assume that $q_i = q'_i$.  Third, we implicitely assume
+all the side conditions enforcing that the coefficients $(q_i)_{i \in I}$ are
+non-negative numbers. Finally, when we write $q_x$ for $q_{x0}$ where
+0 is a program variable symbolizing the constant 0.
+
+
+
 
 \begin{figure*}[t]
 \begin{mathpar}
@@ -1952,7 +2013,7 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
 { B; R; (\Gamma, Q) \vdash \code{loop}~S \dashv (\Gamma', Q') }
 %
 \and \Rule{Q:Update}
-{ q'_{xy}, q'_{yx} \in \mathbb Q_0^+
+{ q'_{xy}, q'_{yx} \in \Qplusz
 \\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
 }
 { B; R; (\Gamma[x/y], Q {+} M_u {+} M_e(y)) \vdash x \gets y \dashv (\Gamma, Q') }
@@ -2013,7 +2074,7 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
 { (\Gamma_f, Q_f,  \Gamma_f', Q_f') \in \Delta(f)
 \and \text{Loc} = \text{Locals}(Q)
 \and \forall i \neq j . \, x_i \neq x_j
-\and c \in \mathbb Q_0^+
+\and c \in \Qplusz
 \\ Q = P + S
 \and Q' = P' + S
 \and U = Q_f[\Vargs / \vec x]
@@ -2046,61 +2107,9 @@ From now on, we will write $ab$ to denote the index $(a,b)$.
 %
 \end{mathpar}
 \caption{Inference rules of the quantitative analysis}
-\label{fig:proof}
+\label{fig:auto}
 \end{figure*}
 
-The deductive system defined in~\pref{fig:proof} derives
-judgements of the form $\Gamma; Q \vdash S \dashv Q'; \Gamma'$.
-Its semantics are formally described in the soundness section but we
-will give an intuition of its meaning here.
-
-\paragraph{Quantitative part.}
-The judgement is really two parts, one logical part, and one quantitative
-part.  The quantitative part is, as shown in the overview section, a
-representation of two potential functions $\Phi$ and $\Phi'$ using
-two maps from indices to non-negative rational numbers
-$Q, Q' : I \rightarrow \mathbb Q_0^+$, these maps are called
-\emph{quantitative contexts}.
-We note $q_i$ for $Q(i)$.  Since $Q$ specifies a value for each
-index in $I$ it is clear that it defines a unique linear potential function
-as described in the previous section. We define $H \mapsto \Phi_H(Q)$
-to be the linear potential function canonically associated to $Q$.
-
-The rules of~\pref{fig:proof} are designed to enforce a semantic
-soundness similar to the one exposed in the overview section.  To
-do this, the rules impose contraints on $Q$ and $Q'$.  To make the
-presentation lighter, we use the following  set of conventions.
-First, the context $Q'$ noted $Q \pm n$ is defined by $q'_0 = q_0 \pm n$
-and $\forall i \neq 0.\, q'_i = q_i$.  Second, for any index $i$ such that
-the relation between $q_i$ and $q'_i$ is not specified as a side condition
-of a rule, we assume that $q_i = q'_i$.  Third, we implicitely assume
-all the side conditions enforcing that the coefficients $(q_i)_{i \in I}$ are
-non-negative numbers. Finally, when we write $q_x$ for $q_{x0}$ where
-0 is a program variable symbolizing the constant 0.
-
-\paragraph{Logical part.}
-The second part of judgements maintains an abstract program state.
-This should be seen as a very weak Hoare logic.  It has to be weak because
-we want to automate it trivially and it can be weak because we only use
-it to get very local and simple knowledge.  The specifics of logical assertions
-in $\Gamma$ are left to the implementation section.
-%
-The purpose of this logical state is to help the rules
-make some sound decisions when relating coefficients of quantitative
-contexts.
-
-Syntactically $\Gamma$ is a list of program conditions.  Because of the
-rules {\sc Q:While} and {\sc Q:If}, we require the program conditions
-to be closed by negation.  Semantically we define the validity
-$H \models \Gamma$ of $\Gamma = C_1, \dots, C_n$ on a given
-heap $H$ to be $\bigwedge_i \llbracket C_i \rrbracket_H = \top$.
-%
-The logical state
-is maintained using regular Hoare style rules.
-The semantic entailment on logical states is noted $\Gamma \models \Delta$,
-its meaning is that $\forall H.\, H\models\Gamma \implies H\models\Delta$.
-
-%\paragraph{Explanation of selected rules.}
 
 \section{Soundness Theorems}
 
