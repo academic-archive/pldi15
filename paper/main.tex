@@ -1655,8 +1655,8 @@ available after its termination.
 
 \paragraph{Logical Variables and Shallow Embedding}
 
-It is often necessary to relate certain invariants in the pre- and
-postcondition when specifying a program.  A standard solution of Hoare
+When specifying a program, it is often necessary to relate certain
+invariants in the pre- and postcondition.  A standard solution of Hoare
 logic is to use \emph{logical variables}~\cite{Kleymann99}.  These
 additional variables (also called auxiliary state in the literature)
 are constant across the derivation.  For example, if $Z$ is such
@@ -1673,9 +1673,9 @@ shallow embedding.  For simplicity, we used the latter approach in our
 development.  This choice makes it possible to have logical variables
 almost for free: we can simply use the variable and binding mechanisms
 of Coq, our host theory.  When an logical variable is needed we
-introduce it using a universal quantifier of Coq before deriving
-triples in the logic, so the Coq theorem for the above example would
-look as follows.
+introduce it using a universal quantifier of Coq before using the
+logic to derive triples, so the Coq theorem for the above example
+would look as follows.
 %
 \begin{lstlisting}
 Theorem dbl_triple: forall Z,
@@ -1686,9 +1686,9 @@ However, this trick alone is often not sufficient when working with a
 recursive function $f$.  In that case we apply the {\sc L:Extend} rule
 of the logic.  First we add a specification $\forall z\,\vec
 v\,v.(P_f\,z\,\vec v, Q_f\,z\,v)$ of $f$ to the function context
-$\Delta$.  Then we proceed to prove the function $S_f$ body with this
-induction hypothesis.  In this process it can be the case that the
-induction hypothesis needs to be used with a different value of a
+$\Delta$.  Then we proceed to prove the function body $S_f$ with this
+induction hypothesis.  In this process it can be the case that we
+have to use the induction hypothesis with a different value of a
 logical variable.  To cope with this problem, assumptions in the
 function context $\Delta$ are universally quantified over logical
 variables.  The {\sc L:Extend} rule uses the host proof assistant to
@@ -1696,81 +1696,13 @@ require that the triple on $f$'s body is proved for every possible
 logical variable $y$.
 
 
-
-
-
-
-% As mentioned, our account of the logic in this article is slightly
-% simplified compared to the Coq development to improve readability.
-% % However, the described logic is very close to the implemented version.
-
-% The main difference between the implemented logic and the logic
-% described here is that the latter does not have an
-% \emph{auxiliary state}.
-% %
-% Auxiliary state is a classic extension of Hoare logic (see for
-% example~\cite{Nipkow02}).
-%  It is used to share information
-% between the pre- and postcondition of a triple.  In a logic without
-% auxiliary state (or similar techniques) it is not possible to relate
-% program states before and after a statement.  For example, you cannot
-% specify that the function {\tt\ int\ twice\ ()\ $\{$i = i+i;$\}$\ }
-% doubles the value of the variable $i$.  With an auxiliary variable $Z$
-% it is possible specify this fact in Hoare logic using the triple $\htriple{i =
-%   Z}{\code{twice()}}{ i = 2 \cdot Z}$.
-
-
-% In the Coq implementation,
-% assertions have the type $\State \times \mathit{Aux} \to \N \cup
-% \{\infty\}$.  The auxiliary state is an arbitrary type in Coq and can
-% be instantiated by the user.  Most of the rules of the logic remain
-% unchanged in the presence of auxiliary state.  The
-% only exception is the consequence rule \textsc{L:Conseq} that reads as
-% follows.
-% {  \footnotesize
-% \begin{mathpar}
-%   \RuleNolabel
-%  {  \htriple{P'}{S}{R}
-%  \\  
-%  {\!\!\!\! \begin{array}{r}
-% \forall \sigma \, a. P(\sigma,a) {\in} \N \! \implies  \! \exists a'.  
-%      P(\sigma,a) {\geq} P'(\sigma,a') \hspace{3.3em} \\ \land (\forall \sigma'\, i.  R^i(\sigma',a') {\geq} Q^i(\sigma',a))
-%  \end{array}}\!\!\!\!
-%  }
-%  { \htriple{P}{S}{Q}
-%  }
-% \end{mathpar}}
-% This is the quantitative version of a consequence rule that has been
-% introduced in the context of Hoare logic and is attributed to Martin
-% Hofmann~\cite{Nipkow02}.  Its typical use case is when we apply the rule {\sc L:Call}
-% to a recursive call.  In this case, the Hoare triple for the function
-% call is proved by an assumption from the derivation context with
-% a slightly different auxiliary state.  In the example derivation
-% in~\pref{fig:bsearch_deriv} this different state is $Z - 1$.  Adapting
-% the derivation hypothesis to prove the recursive call is enabled in
-% our logic by the extended consequence rule introduced above.
-
-% \paragraph{Stack Framing}
-
-% A minor difference in the function application rule is that we only
-% present the rule for function calls with a single argument and without
-% \emph{framing of stack assertions}.  The latter is necessary in the
-% code of a caller to carry over information on the local environment
-% from the precondition of the function call to the postcondition of the
-% function call.  This is a general problem in Hoare logic and stack
-% framing is a well known solution.  For instance, we would like to prove
-% something like $\htriple{y}{ f(x) }{y}$ where $y$ is a local variable.
-% This is not possible with the rule \textsc{L:Call} but it is with the more
-% general rule in the Coq implementation~\iffullversion{\cite{coqfiles}}{\cite{anoncoq}}.
-
 \paragraph{Using the Quantitative Logic.}
 
-Our first example on~\pref{fig:xmplmax} uses the expressive power of
-the logic to get a very precise runtime bound on a program searching
-a maximal element in an array.  The metric used simply counts the
-assignments performed by the program.  Hence, the resource consumption
-is closely related to the number $A$ of times the test \lstinline{a[i] > m}
-is true during the execution.
+Our first example on~\pref{fig:xmplmax} derives a precise runtime bound
+on a program that searches a maximal element in an array.
+The metric used simply counts the assignments performed by the program.
+Hence, the resource consumption is closely related to the number $A$ of
+times the test \lstinline{a[i] > m} is true during the execution.
 %
 It is clear that $A+1$ is the count of ``maximums so far in the
 array \lstinline{a}'':
@@ -1780,11 +1712,12 @@ $$
 where we write $\# S$ for the cardinal of the set $S$.  This number is
 obviously bounded by $N$, the size of the array.  So any automated tool
 available would derive the linear bound $2 \cdot N$ for that program.
-But using the expressivity of our logic we can get a finer bound
-that depends on the contents of the array before the program execution.
+But with the expressivity of our logic it is possible to use the
+previous set cardinal directly and precisely tie the bound to the
+initial contents of the array.
 
-The only non-trivial part of this derivation is finding the loop
-invariant that is used in the while loop. To this end
+The non-trivial part of this derivation is finding the loop
+invariant that for the while loop. To this end
 it is necessary to define the number $A(i)$ of ``maximums so far
 starting from $i$ in the array \lstinline{a}.''  When the condition
 \lstinline{a[i] > m} is true, we know that we encountered a ``maximum
@@ -1793,10 +1726,10 @@ thus $A(i) = 1 + A(i+1)$ and we get one potential unit to pay for the
 assignment.  In the other case, no maximum so far is encountered so
 $A(i) = A(i+1)$.  As a side remark, if $K \ge 0$, it is possible to
 have $\{ A(0) + N + K \}$ and $\{ K \}$ as pre- and postcondition
-of the same program; it can be done either by adapting the proof or by
+of the same program.  It can be done either by adapting the proof or by
 applying the {\sc L:Frame} rule one top of the triple already derived.
 More generally, it is clear that without function calls, the {\sc L:Frame}
-is admissible in our system.
+rule is admissible in our system.
 
 The second example on~\pref{fig:xmplbs} shows a use case for
 logical variables as well as a metric for stack consumption.
