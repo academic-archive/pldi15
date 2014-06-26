@@ -1990,8 +1990,37 @@ by $q_{vx}$.  Remark that the rule forces it only for
 $v \not\in \mathcal U$, because if not, we know
 that $x \le v$ so $|\inter v x| = 0$.
 
-
-
+Another very technical rule is {\sc Q:Call}.  It needs to
+account for the stack ``switching'' caused by the function
+call, the argument/return value passing, and the preservation
+of local variables.  We can sum up the requirements for
+this rule as follows,
+\begin{itemize}
+\item
+  any potential in the function pre/postcondition is equalized
+  to its matching potential in the pre/precondition,
+\item
+  the potential of intervals $|\inter x y|$ is preserved
+  if $x$ and $y$ are local variables,
+\item
+  and the unknown potentials after the call (e.g.
+  $|\inter x g|$, with $x$ local and $g$ global)
+  are zeroed out in the postcondition.
+\end{itemize}
+If $x$ and $y$ are local variables and $\code{f}(x,y)$ is
+called, the rule takes care to split the potential of
+$|\inter x y|$ in two parts, one part to perform the
+computation in the function $f$ and one part to keep for
+later use after the function call.  This splitting is
+materialized in the equation $Q = P + S$.  Arguments in
+the function precondition $(\Gamma_f, Q_f)$ are named
+using a fixed vector $\Vargs$ of names different from
+all program variables.  This prevents name conflicts
+from happening and ensures that the substitution
+$[\Vargs/\vec x]$ is meaningful.  Symmetrically,
+we use the unique name $\Vret$ to represent the
+return value in the function postcondition
+$(\Gamma'_f, Q'_f)$.
 
 
 
