@@ -263,7 +263,7 @@ let _ =
   let file = Frontc.parse Sys.argv.(1) () in
   let _, prog = Tools.clean_file ([], slice (fun _ -> 1) file) in
   (*
-  print_string "Sliced program:\n*******\n";
+  print_string "Sliced program:\n";
   pp_prog prog;
   print_newline ();
   *)

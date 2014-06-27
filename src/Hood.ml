@@ -342,15 +342,15 @@ end = struct
     flush stdout;
     Clp.set_log_level C.state 0; (* use 0 to turn CLP output off *)
     Clp.initial_solve C.state;
-    let sep () =  print_string "*******\n"; in
     match Clp.status C.state with
     | 0 ->
       let sol = Clp.primal_column_solution C.state in
-      let p c = sep ();
-        Idx.fold (fun () i -> Idx.printk sol.(M.find i c.cmap) i)
-          () (vars c) in
-      p cini; if debug > 0 then p cfin
-    | _ -> sep(); print_string "Sorry, I could not find a bound.\n"
+      let p c = Idx.fold
+        (fun () i -> Idx.printk sol.(M.find i c.cmap) i)
+        () (vars c) in
+      p cini;
+      if debug > 0 then (print_string "Final annotation:\n"; p cfin)
+    | _ -> print_string "Sorry, I could not find a bound.\n"
 
 end
 
