@@ -2051,6 +2051,60 @@ Symmetrically, we use the unique name $\Vret$ to represent
 the return value in the function postcondition
 $(\Gamma'_f, Q'_f)$.
 
+\paragraph{Soundness Proof.}
+
+The soundness of the analysis leverages the quantitative logic.
+We propose to translate judgements of~\pref{fig:auto} into
+quantitative triples.  We define a translation function
+$\tr$, such that if a judgement $J$ in the automatic analysis
+is derivable, $\tr(J)$ is derivable in the quantitative
+logic.  Using this translated judgement and the soundness
+of our logic it is possible to get a certified resource bound
+for the analyzed program.
+
+The translation of an assertion $(\Gamma, Q)$ in the automatic
+analysis is defined by
+$$
+  \tr(\Gamma, Q) := \lambda\state .\, (\Gamma(\state)) + \Phi_Q(\state),
+$$
+where we write $\Phi_Q$ for the unique linear potential function
+defined by the quantitative annotation $Q$.  We also need to
+translate the assumptions in function contexts of the automatic
+analysis, this is done as follows
+%
+\begin{align*}
+\tr(\Gamma_f, Q_f, \Gamma'_f, Q'_f) :=
+&\forall z \, \vec v \, v . (
+  \lambda \_ \, \vec v \, \state .\, \tr(\Gamma_f, Q_f)(\state[\Vargs \mapsto \vec v]), \\
+&\phantom{\forall z \, \vec v \, v . (}
+  \lambda \_ \, v \, \state .\, \tr(\Gamma'_f, Q'_f)(\state[\Vret \mapsto v])
+  ).
+\end{align*}
+%
+These definitions let us translate the judgement $J = B; R; P \vdash
+S \dashv P'$ in the context $\Delta$ by
+$$
+  \tr(J) :=
+  (\lambda f .\, \tr(\Delta(f))); \tr(B); \tr(R) \vdash
+    \htriple{\tr(P)}{S}{\tr(P')}.
+$$
+The soundness of the automatic analysis can now be stated
+formally with the following theorem.
+%
+\begin{theorem}[Soundness of the analysis]
+  If $J$ is a judgement derived with the rules of
+  \pref{fig:auto}, then $\tr(J)$ is a quantitative
+  Hoare triple derivable with the rules of
+  \pref{fig:logic}.
+\end{theorem}
+%
+\noindent
+The proof of this theorem is constructive and basically
+maps each rule of the automatic analysis directly to
+its counterpart in the quantitative logic.  With the
+computational content of the proof, we have an
+effective algorithm to construct proof objects for
+upper bounds derived automatically.
 
 
 \begin{figure*}[t]
