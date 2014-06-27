@@ -893,7 +893,7 @@ while (n<0) {
     y{>}99; \, 9 {+} P(n,y) \vdash }$
     y=y-100;
     ${\color{blue}%
-    \dashv y{>}99; \, 14 {+} P(n,y) \vdash }$
+    \dashv \cdot; \, 14 {+} P(n,y) \vdash }$
     tick(5);
     ${\color{blue}%
     \dashv \cdot; \, 9 {+} P(n,y) }$
@@ -902,7 +902,7 @@ while (n<0) {
   \dashv \cdot; \, 9 {+} P(n,y) \vdash }$
   tick(9);
   ${\color{blue}%
-  \dashv \cdot; \, P(n,y) \vdash }$
+  \dashv \cdot; \, P(n,y) }$
 }
    \end{lstlisting}
 $59|[n,0]| {+} 0.05|[0,y]|$
@@ -1669,18 +1669,18 @@ In the example in~\pref{fig:xmplmax} we derive a precise runtime
 bound on a program that searches a maximal element in an array.  The
 cost metric that we use simply counts the assignments performed by the
 program.  Hence, the resource consumption is closely related to the
-number $A(0)$ of times the test \lstinline{a[i] > m} is true during the
+number $A(1)$ of times the test \lstinline{a[i] > m} is true during the
 execution.
 %
-We observe that $A(0)+1$ is the count of ``maximum candidates'' in the
+We observe that $A(1)+1$ is the count of ``maximum candidates'' in the
 array \lstinline{a} seen by the algorithm. We define
 $$
  A(i) =  \# \{ k \mid i \le k < N \land \forall\, 0 \le j < k.\, a[j] < a[k] \} \, .
 $$
-where we write $\# S$ for the cardinal of the set $S$.  $A(0)$ is
+where we write $\# S$ for the cardinal of the set $S$.  $A(1)$ is
 obviously bounded by $N$, the size of the array.  So any automated tool
 available would derive the linear bound $2 \cdot N$ for that program.
-But with the expressivity of our  it is possible to use the
+But with the expressivity of our logic it is possible to use the
 previous set cardinal directly and precisely tie the bound to the
 initial contents of the array.
 
@@ -1815,9 +1815,9 @@ it to be
 \land& \safe n Q {\code{skip}} \cont.
 \end{align*}
 %
-We can now define the \emph{semantic validity} of a judgement $\cdot; B; R
-\vdash \htriple P S Q$ of the quantitative Hoare logic with
-empty function context as follows
+We can now define the \emph{semantic validity} of a judgement $B; R
+\vdash \htriple P S Q$ of the quantitative logic without function
+context as follows
 \begin{align*}
 &\valid n B R P S Q := \\
 &\qquad \forall m \, \cont \, x .\, (m \le n \land \safeK m {B+x} {R+x} {Q+x} \cont) \\
@@ -1827,8 +1827,8 @@ Note how the validity of a triple embeds the frame rule of
 our logic, this refinement is necessary to have a stronger
 induction hypothesis available during the proof.
 
-Using this semantic validity  we can define the validity of
-a function context $\Delta$ that we write $\validC n \Delta$ as
+Using the semantic validity of triples we can define the validity
+of a function context $\Delta$, written $\validC n \Delta$, as
 \begin{align*}
   &\forall f .\, \Delta(f) =
     \forall z \, \vec v \, v .(P_f \, z \, \vec v, Q_f \, z \, v)
@@ -1836,10 +1836,13 @@ a function context $\Delta$ that we write $\validC n \Delta$ as
   &\qquad \forall z \, \vec v .\,
   \valid n \bot {Q_f \, z} {P_f \, z \, \vec v} {S_f} \bot ,
 \end{align*}
-where $S_f$ is the body of the function $f$.
-
-XXXXX  Some more explanations.  Where is the difficulty? XXX
-
+where $S_f$ is the body of the function $f$.  A full
+judgement that mentions a non-empty function context
+$\Delta$ is in fact a guarded statement: it makes
+assumptions on some functions' behavior.  The predicate
+$\validC n \Delta$ gives the precise meaning of the
+assumptions made.  It is also step-indexed to prove the
+soundness of the {\sc L:Extend} rule by induction.
 %
 \begin{theorem}[Soundness of the logic]
   If $\Delta; B; R \vdash \htriple P S Q$ is derivable, then
@@ -1848,19 +1851,30 @@ XXXXX  Some more explanations.  Where is the difficulty? XXX
       \implies \valid {n {+} 1} B R P S Q.
   $$
 \end{theorem}
-
-XXXXX  Some more explanations.  Why n+1?XXX
-
-
 %
 \noindent
-If $S$ is a complete program and $\Delta$ is empty by
-expanding the definitions and remarking that $\validC n \Delta$
-and $\safeK n B R Q \Kstop$ are true for every $n$ we get that 
+The difference $\delta = 1$ between the index in the triple
+validity and the one in context validity is constrained by
+the soundness proofs of {\sc L:Call} and {\sc L:Extend}.  For
+{\sc L:Call}, the language semantics makes one step and
+proceeds with the function body, so we must have
+$\delta \le 1$ to use the assumptions in $\Delta$.
+For {\sc L:Extend}, we have to show that $\Delta \cup \Delta'$
+is a valid context for $n$ steps.  The induction hypothesis
+in that case says that if $\Delta \cup \Delta'$ is valid
+for $m$ steps, $\Delta'$ is valid for $m+\delta$ steps.
+So if we want to solve this goal by induction, it is
+necessary that $\delta \ge 1$.  These two contraints force
+$\delta$ to be exactly one in the theorem statement.
+
+If $S$ is a complete program and $\Delta$ is empty, by
+expanding the definitions we see that $\Delta$ is valid
+for every $n$ and that $\Kstop$ is safe for every $n$, so
+we get
 $$
   \forall n .\, \safe n P S \Kstop.
 $$
-This means that for any starting state $\state$, $P(\state)$
+This means that from any starting state $\state$, $P(\state)$
 provides enough resource for any run of the program $S$.  This
 setting is actually the main use case of the previous theorem
 which is stated as a stronger result to allow a proof by
@@ -1875,7 +1889,7 @@ implementation to derive linear bounds on C programs.
 
 \paragraph{Linear Potential Functions.}
 
-To find derivations in our Quantitative Logic automatically, the main
+To find derivations in our quantitative logic automatically, the main
 insight is to consider only assertions that match a certain shape.
 The general form of a potential function that we consider is
 $$
@@ -1946,8 +1960,8 @@ and the ones of the quantitative logic is made formal by our
 soundness proof of the analysis.
 
 Since the different rules of~\pref{fig:auto} manage the
-logical state in exactly the same way as the Quantitative
-Logic, we will focus on the quantitative annotations in the
+logical state in exactly the same way as the quantitative
+logic, we will focus on the quantitative annotations in the
 sequel.
 %
 As a convention, if $Q$ is a quantitative annotation we
@@ -1959,7 +1973,7 @@ and leaves the latter undefined at some index $i$ we
 will implicitely assume that $q'_i = q_i$.
 
 %
-% Next paragraph is useless shit.
+% Next paragraph is shit.
 %
 
 The {\sc Q:Skip} rule simply reuses its postcondition as
@@ -1998,11 +2012,12 @@ the potential $q'_{0y}$ in the postcondition can
 be increased by $q_{xu}$ under the guard that
 $x' \in \inter x u$.  Dually, the interval
 $\inter v x$ can get bigger with the update.
-And we know that $|\inter v {x'}| \ge y + |\inter v x|$,
+And we know that $|\inter v {x'}| \le y + |\inter v x|$,
 so we decrease the potential of $\inter 0 y$
-by $q_{vx}$.  Remark that the rule forces it only for
-$v \not\in \mathcal U$, because if not, we know
-that $x \le v$ so $|\inter v x| = 0$.
+by $q_{vx}$ to pay for this change.  Remark that
+the rule forces it only for $v \not\in \mathcal U$,
+because if not, we know that $x \le v$ so
+$|\inter v x| = 0$.
 
 Another very technical rule is {\sc Q:Call}.  It needs to
 account for the stack ``switching'' caused by the function
@@ -2012,7 +2027,7 @@ this rule as follows,
 \begin{itemize}
 \item
   any potential in the function pre/postcondition is equalized
-  to its matching potential in the pre/precondition,
+  to its matching potential in the call pre/postcondition,
 \item
   the potential of intervals $|\inter x y|$ is preserved
   if $x$ and $y$ are local variables,
@@ -2026,14 +2041,14 @@ called, the rule takes care to split the potential of
 $|\inter x y|$ in two parts, one part to perform the
 computation in the function $f$ and one part to keep for
 later use after the function call.  This splitting is
-materialized in the equation $Q = P + S$.  Arguments in
-the function precondition $(\Gamma_f, Q_f)$ are named
-using a fixed vector $\Vargs$ of names different from
-all program variables.  This prevents name conflicts
-from happening and ensures that the substitution
-$[\Vargs/\vec x]$ is meaningful.  Symmetrically,
-we use the unique name $\Vret$ to represent the
-return value in the function postcondition
+realized by the equations $Q = P + S$ and $Q' =
+P' + S'$.  Arguments in the function precondition
+$(\Gamma_f, Q_f)$ are named using a fixed vector $\Vargs$
+of names different from all program variables.  This
+prevents name conflicts from happening and ensures that
+the substitution $[\Vargs/\vec x]$ is meaningful.
+Symmetrically, we use the unique name $\Vret$ to represent
+the return value in the function postcondition
 $(\Gamma'_f, Q'_f)$.
 
 
