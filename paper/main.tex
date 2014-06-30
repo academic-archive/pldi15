@@ -3693,17 +3693,36 @@ $x$ and $y$, and the interaction between \code{consume} and
 
 
 \begin{figure*}[t!]
- \setlength{\progwidth}{.24\linewidth}
+ \setlength{\progwidth}{.32\linewidth}
   \centering
 %
 %
   \begin{minipage}[b]{\progwidth}
     \begin{center}
    \begin{lstlisting}
- XXX
+int srch(
+  int t[], int n,
+  int p[], int m,
+  int b[]
+) {
+  int i=0, j=0, k=-1;
+
+  while (i < n) {
+    while (j >= 0 && t[i]!=p[j]) {
+      k = b[j];
+      assert(k > 0);
+      assert(k <= j + 1);
+      j -= k;
+    }
+    i++, j++;
+    if (j == m)
+      break;
+  }
+  return i;
+}
    \end{lstlisting}
 
-$XXX$
+$1 + 2|\inter 0 n|$
 \\[.7\baselineskip]
       {\bf Knuth-Morris-Pratt}
     \end{center}
@@ -3713,10 +3732,19 @@ $XXX$
   \begin{minipage}[b]{\progwidth}
     \begin{center}
    \begin{lstlisting}
- XXX
+int gcd(int x, int y) {
+  if (x <= 0) return y;
+  if (y <= 0) return x;
+
+  for (;;) {
+    if (x>y) x -= y;
+    else if (y>x) y -= x;
+    else return x;
+  }
+}
    \end{lstlisting}
 
-$XXX$
+$|\inter 0 x| + |\inter 0 y|$
 \\[.7\baselineskip]
       {\bf Greatest Common Divisor}
     \end{center}
@@ -3726,10 +3754,28 @@ $XXX$
   \begin{minipage}[b]{\progwidth}
     \begin{center}
    \begin{lstlisting}
- XXX
+void qsort(int a[], int lo, int hi) {
+  int m1, m2, n;
+
+  if (hi - lo < 1) return;
+
+  n = nondet(); /* partition the array */
+  assert( n > 0 );
+  assert( lo + n <= hi );
+
+  m1 = n + lo;
+  m2 = m1 - 1;
+
+  qsort(a, m1, hi);
+  qsort(a, lo, m2);
+}
+
+void main(int a[], int len) {
+  qsort(a, 0, len);
+}
    \end{lstlisting}
 
-$XXX$
+$1 + 2 |\inter 0 {\code{len}}|$
 \\[.7\baselineskip]
       {\bf Quick Sort}
     \end{center}
