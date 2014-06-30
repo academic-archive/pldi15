@@ -97,7 +97,9 @@ let set id vo ps =
   let ps' = List.filter (fun i -> L.coeff id i = 0) ps in
   match vo with
   | None -> ps'
-  | Some (VId id') ->
+  | Some ((VId id') as v') ->
+    plusv (-1) (VId id) (plusv (+1) v' (L.const 0)) ::
+    plusv (+1) (VId id) (plusv (-1) v' (L.const 0)) ::
     List.fold_left (fun ps' i ->
         let c = L.coeff id' i in
         if c = 0 then ps' else
