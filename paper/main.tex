@@ -84,13 +84,13 @@
   cost semantics for CompCert Clight.  Second, a quantitative Hoare
   logic that can be used for interactive bound development is
   implement and proved sound with respect to the cost semantics in the
-  Coq Proof Assistant.  The logic is very expressive and a shallow
+  Coq Proof Assistant.  The logic is very expressive and shallow
   embedding enables a derived bound to be any function that is
   definable in Coq.  Third, an automatic amortized resource analysis
   for C programs that computes derivations in the quantitative Hoare
   logic is developed and implemented.  It is the first automatic
   amortized analysis that can derive bounds that depend on negative
-  integers and differences between numbers, which is crucial to handle
+  integers or differences between numbers, which is crucial to handle
   typical systems code.  Both, the quantitative logic and the
   automatic amortized analysis are naturally compositional and can be
   combined to semi-automatically derive global resource bounds.
@@ -101,7 +101,7 @@
   tailored to specific algorithms.  A comparison of the automatic
   amortized analysis with other automatic tools on 30 challenging
   examples from the literature and open-source software shows that the
-  derived constant factors in our bounds are often more precise.
+  derived bounds are often more precise.
 \end{abstract}
 
 \category{D.2.4}{Software Engineering}
