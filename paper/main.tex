@@ -254,7 +254,7 @@ programs.  The logic is naturally compositional and the derived
 \emph{quantitative Hoare triples} can be used to specify the resource
 consumption of library functions or to describe resource contracts
 between different functions.  However, reasoning about quantitative
-properties can often be more tedious then reasoning about intentional
+properties can often be more tedious than reasoning about intentional
 properties.  Consequently, automation is inevitable to derive resource
 bounds for large code bases like CertiKOS.  Such an automation was
 easily achievable in the case of constant stack bounds for a code base
@@ -285,7 +285,7 @@ Our \emph{second contribution} is an automatic amortized resource
 analysis for CompCert Clight that computes derivations in the
 quantitative Hoare logic.  It is the first automatic amortized
 resource analysis that can derive bounds that depend on negative
-integers and handles programs with mutually recursive as well as
+integers and handles programs with mutually recursive functions as well as
 \code{break} and \code{return} statements.  It targets programs that
 are common in system software, that is, programs whose resource
 consumption can be described as a function of sizes $|[x,y]| =
@@ -300,8 +300,8 @@ practical for C.
 Despite the apparent simplicity of the new analysis system, it is able
 to reproduce results from the literature (e.g,
 SPEED~\cite{GulwaniMC09}) that have been obtained using sophisticated
-abstract--interpretation base methods.  In contrast with abstract
-interpretation--based methods, our technique does not require any
+abstract-interpretation based methods.  In contrast with abstract-interpretation
+based methods, our technique does not require any
 fixpoint computations to obtain loop invariants.  The mechanism we
 designed is able to leverage local assertions such as $x < y$ that we
 collect along the branching points of the program to obtain global
@@ -315,7 +315,7 @@ program.  % We can naturally, handle
 
 Following the development steps of automatic amortized analysis for
 functional programs~\cite{Jost03,HoffmannH10}, we deliberately
-restrict our self to linear bounds in the automatic analysis (there
+restrict ourselves to linear bounds in the automatic analysis (there
 are no restrictions for the manually-derived bounds in the logic).
 More specifically, bounds have the form $\sum_{a,b} q_{(a,b)} |[a,b]|$
 where $a$ and $b$ are integer variables or constants.  The reason for
