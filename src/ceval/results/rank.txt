@@ -1,0 +1,103 @@
+** File gcd.c **
+((((1+1)+1)+((-5+(2*y__o'))+(2*x__o')))+(-3+(2*y__o')))+1 
+
+** File kmp.c **
+((((1+1)+(n__o'+(-1*i__o')))+((n__o'+(n__o'*j__o'))+((-1+(-1*j__o'))*i__o')))+((n__o'+(n__o'*j__o'))+((-1+(-1*j__o'))*i__o')))+1
+
+** File qsort.c **
+FAILURE (recursion)
+
+** File speed_pldi09_fig1.c **
+FAILURE
+
+** File speed_pldi09_fig4_2.c **
+((((1+1)+n__o')+(n__o'+(-1*m__o')))+1)+1 
+
+** File speed_pldi09_fig4_4.c **
+((((1+1)+(-1+m__o'))+((1+n__o')+(-1*m__o')))+1)+1 
+
+** File speed_pldi09_fig4_5.c **
+((((1+1)+(-1+n__o'))+m__o')+1)+1 
+
+** File speed_pldi10_ex1.c **
+(((1+1)+n__o')+((-1+((1/2)*n__o'))+((1/2)*(n__o'*n__o'))))+1 
+
+** File speed_pldi10_ex3.c **
+((((1+1)+(-1+n__o'))+(-1+n__o'))+1)+1 
+
+** File speed_pldi10_ex4.c **
+FAILURE
+
+** File speed_popl10_fig2_1.c **
+(((1+1)+((-1*y__o')+m__o'))+((-1*x__o')+n__o'))+1 
+
+** File speed_popl10_fig2_2.c **
+(((1+1)+((-1*x__o')+n__o'))+(((-1+(-1*z__o'))+(-1*x__o'))+(2*n__o')))+1 
+
+** File speed_popl10_nested_multiple.c **
+(((1+1)+((-1*x__o')+n__o'))+(((y__o'*x__o')+((-1*y__o')*n__o'))+(((-1*x__o')+n__o')*m__o')))+1 
+
+** File speed_popl10_nested_single.c **
+((((1+1)+((-1+(-1*x__o'))+n__o'))+((-1+(-1*x__o'))+n__o'))+1)+1 
+
+** File speed_popl10_sequential_single.c **
+(((1+1)+((-1*x__o')+n__o'))+((-1*x__o')+n__o'))+1 
+
+** File speed_popl10_simple_multiple.c **
+(((1+1)+((-1*y__o')+m__o'))+((-1*x__o')+n__o'))+1 
+
+** File speed_popl10_simple_single_2.c **
+FAILURE
+
+** File speed_popl10_simple_single.c **
+(((1+1)+((-1*x__o')+n__o'))+((-1*x__o')+n__o'))+1 
+
+** File t07.c **
+(((1+1)+-1)+x__o')+1 
+
+** File t08.c **
+(((1+1)+-1)+(z__o'+(-1*y__o')))+1 
+
+** File t10.c **
+(((1+1)+((-1*y__o')+x__o'))+((-1*y__o')+x__o'))+1 
+
+** File t11.c **
+(((1+1)+((-1*y__o')+m__o'))+((-1*x__o')+n__o'))+1 
+
+** File t13.c **
+((((1+1)+-1)+(((((-1/2)*y__o')+((1/2)*(y__o'*y__o')))+(((-1/2)+y__o')*x__o'))+((1/2)*(x__o'*x__o'))))+-1)+1 
+
+** File t15.c **
+(((1+1)+(-1+x__o'))+((-1*y__o')+x__o'))+1 
+
+** File t16.c **
+(((1+1)+((-1+(-99*y__o'))+(101*x__o')))+((-1*y__o')+x__o'))+1 
+
+** File t19.c **
+(((1+1)+(151+k__o'))+(-100+i__o'))+1 
+
+** File t20.c **
+((1+1)+((-1*y__o')+x__o'))+1 
+((1+1)+(y__o'+(-1*x__o')))+1 
+
+** File t27.c **
+FAILURE
+
+** File t28.c **
+(((1+1)+-1)+((-1*y__o')+x__o'))+1 
+
+** File t30.c **
+((1+1)+x__o')+1 
+
+** File t37.c **
+FAILURE (recursion)
+
+** File t39.c **
+FAILURE (recursion)
+
+** File t46.c **
+FAILURE (recursion)
+
+** File t47.c **
+(((1+1)+n__o')+1)+1 
+
