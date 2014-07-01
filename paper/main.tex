@@ -1817,35 +1817,41 @@ and a program configuration as
   &\implies \cost' \ge 0.
 \end{align*}
 This predicate is step indexed by an integer $n$ that is used in the
-soundness proof for the function call and loop cases.  The constraint
+soundness proof for the function-call and loop cases.  The constraint
 $\cost' \geq 0$ imposed by the definition ensures that the program does
 not stop because of a resource error (recall that a negative resource
 counter on the right-hand side is a resource failure).  However, it
-does not rule out memory safety errors or assertion failures, this is
+does not rule out memory safety errors or assertion failures. This is
 because our logic does not prove any safety or correctness theorems
 but only focuses on resource usage.
+%
+An interesting detail in the definition is the natural number $m$.  We
+simply use it to ensure that $\safe {n+1} P S \cont \implies \safe n P S
+\cont $.  This would not be the case if we replaced all occurrences of
+$m$ by $n$ in the definition of validity.
 
 The resource safety of a continuation $\cont$ is defined using three
-assertions, one for each of the possible outcome of a program
-statement.  We denote it by $\safeK n B R Q \cont$ and define
-it to be
+assertions, one for each of the possible outcomes of a program
+statement.  We define it as follows.
 \begin{align*}
-& \safe n B {\code{break}} \cont \\
-\land& \safe n {\lambda \state.\,R\,(\state(x))} {\code{return}~x} \cont \\
-\land& \safe n Q {\code{skip}} \cont.
+\safeK n B R Q \cont & := & & \safe n B {\code{break}} \cont \\
+& & \land& \safe n {\lambda \state.\,R\,(\state(x))} {\code{return}~x} \cont \\
+& & \land& \safe n Q {\code{skip}} \cont
 \end{align*}
 %
 We can now define the \emph{semantic validity} of a judgement $B; R
 \vdash \htriple P S Q$ of the quantitative logic without function
-context as follows
+context as $\valid n B R P S Q :=$
 \begin{align*}
-&\valid n B R P S Q := \\
-&\qquad \forall m \, \cont \, x .\, (m \le n \land \safeK m {B+x} {R+x} {Q+x} \cont) \\
-&\qquad \implies \safe m {P+x} S \cont.
+& \forall m \, \cont \, x \geq 0 .\, (m \le n \land \safeK m {B+x} {R+x} {Q+x} \cont) \\
+& \implies \safe m {P+x} S \cont \; .
 \end{align*}
 Note how the validity of a triple embeds the frame rule of
-our logic, this refinement is necessary to have a stronger
+our logic. This refinement is necessary to have a stronger
 induction hypothesis available during the proof.
+%
+We again need to add the auxiliary $m$ to ensure that $\valid {n{+}1} B R P
+S Q$ implies $\valid n B R P S Q$.
 
 Using the semantic validity of triples we can define the validity
 of a function context $\Delta$, written $\validC n \Delta$, as
@@ -1874,7 +1880,7 @@ soundness of the {\sc L:Extend} rule by induction.
 %
 \noindent
 The difference $\delta = 1$ between the index in the triple
-validity and the one in context validity is constrained by
+validity and the one in context validity arises from
 the soundness proofs of {\sc L:Call} and {\sc L:Extend}.  For
 {\sc L:Call}, the language semantics makes one step and
 proceeds with the function body, so we must have
@@ -1892,10 +1898,10 @@ expanding the definitions we see that $\Delta$ is valid
 for every $n$ and that $\Kstop$ is safe for every $n$, so
 we get
 $$
-  \forall n .\, \safe n P S \Kstop.
+\Delta; B; R \vdash \htriple P S Q \implies   \forall n .\, \safe n P S \Kstop.
 $$
 This means that from any starting state $\state$, $P(\state)$
-provides enough resource for any run of the program $S$.  This
+provides enough resources for any run of the program $S$.  This
 setting is actually the main use case of the previous theorem
 which is stated as a stronger result to allow a proof by
 induction.
