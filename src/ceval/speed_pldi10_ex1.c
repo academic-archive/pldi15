@@ -1,8 +1,9 @@
-int nondet(void);
+int nondet();
 
 void start(int n)
 {
-  int i,j;
+  int i;
+  int j;
 
   i=0;
   while (i<n) {

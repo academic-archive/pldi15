@@ -1,10 +1,10 @@
 void start(int n, int m)
 {
-  int va, vb;
+  int va=n;
+  int vb=0;
+
 /* assert(n > 0); */
   assert(m > 0);
-  va = n;
-  vb = 0;
 
   while (va > 0) {
     if (vb < m) { 

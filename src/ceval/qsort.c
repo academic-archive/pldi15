@@ -1,6 +1,6 @@
 /* Quicksort */
 
-int nondet(void);
+int nondet();
 
 void qsort(int *a, int lo, int hi) {
   int m1, m2, n;

@@ -1,4 +1,4 @@
-int nondet(void);
+int nondet();
 
 void start(int x, int y)
 {

@@ -1,8 +1,8 @@
 void start(int n, int m)
 {
-  int i;
+  int i=n;
+
   assert(0 < m);
-  i = n;
 
   while (i > 0) {
     if (i < m)

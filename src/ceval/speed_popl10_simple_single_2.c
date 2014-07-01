@@ -1,6 +1,7 @@
 void start(int n, int m)
 {
-  int x=0, y=0;
+  int x=0;
+  int y=0;
 
   for (;;) {
     if (x<n) {
