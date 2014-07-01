@@ -1,9 +1,0 @@
-
-while n>0 (
-  t = x;
-  n=n-1;
-  while n > 0 (
-    if * break;
-    n=n-1
-  )
-)

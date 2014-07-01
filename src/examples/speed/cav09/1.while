@@ -1,9 +1,0 @@
-x=0;
-while x<n (
-  y=x;
-  while y<n (
-    y=y+1
-  );
-  x=y;
-  x=x+1
-)
