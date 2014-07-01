@@ -95,13 +95,13 @@
   automatic amortized analysis are naturally compositional and can be
   combined to semi-automatically derive global resource bounds.
 
-  The practicability of the analysis framework is demonstrated with an
-  experimental evaluation.  The expressivity of the logic is
-  demonstrated by manually deriving customized bounds that are
-  tailored to specific algorithms.  A comparison of the automatic
-  amortized analysis with other automatic tools on 30 challenging
-  examples from the literature and open-source software shows that the
-  derived bounds are often more precise.
+  An experimental evaluation demonstrates the practicability of the
+  analysis framework.  The expressivity of the logic is shown by
+  manually deriving customized bounds that are tailored to specific
+  algorithms.  A comparison of the automatic amortized analysis with
+  other automatic tools on 30 challenging examples from the literature
+  and open-source software shows that the bounds derived by the
+  automatic amortized analysis are often more precise.
 \end{abstract}
 
 \category{D.2.4}{Software Engineering}
@@ -1922,7 +1922,7 @@ To find derivations in the quantitative Hoare logic automatically, we
 have to focus on bounds that have a certain shape.  The general form
 of \emph{potential functions} (or assertions) that we consider is
 $$
-  \Phi(\state) = q_0 + \sum_{x, y \in \dom\state}
+  \Phi(\state) = q_0 + \sum_{x, y \in \dom\state \land x \neq y}
     q_{(x, y)} \cdot |\inter {\state(x)} {\state(y)}| \, .
 $$
 %
@@ -1978,84 +1978,92 @@ sufficient for the variety of examples we designed and found
 in the literature.
 
 
-\paragraph{Inference Rules.}
+\paragraph{Judgements of the Automatic Analysis.}
 
-The deductive system defined in~\pref{fig:auto} derives
-judgements of the form
+The inference system for the automatic amortized analysis is defined
+in~\pref{fig:auto}.  The inference rules derive judgements of the form
 $$
   (\Gamma_B, Q_B); (\Gamma_R, Q_R);
     (\Gamma, Q) \vdash S \dashv (\Gamma', Q').
 $$
-These judgements are analogous to the logic judgements
-$\Delta; B; R \vdash \htriple P S Q$ where each assertion
-splits in two parts, a logical part $\Gamma$ and a quantitative
-part $Q$.  We left the function context $\Delta$ appart in
-the presentation to avoid cluttering notations, but it is
-implicit on all judgements.  We call precondition the pair
-$(\Gamma, Q)$ and postcondition the pair $(\Gamma', Q')$.
-The correspondence between judgements of the automation
-and the ones of the quantitative logic is made formal by our
-soundness proof of the analysis.
+These judgements correspond to the logic judgements $\Delta; B; R
+\vdash \htriple P S Q$ where each assertion splits in two parts, a
+logical part $\Gamma$ and a quantitative part $Q$.  That means that
+$(\Gamma_B, Q_B)$ is the postcondition of \code{break} statements,
+$(\Gamma_R, Q_R)$ is the postcondition for return statements, and
+$(\Gamma, Q) \vdash S \dashv (\Gamma', Q')$ can be understood as a
+simple Hoare triple.  We leave out the function context $\Delta$ in
+the presentation to avoid cluttering notations.  Instead we assume a
+fixed function context $\Delta$ that is implicit on all judgements.
+Function contexts are treated exactly as in the logic.  We call
+precondition the pair $(\Gamma, Q)$ and postcondition the pair
+$(\Gamma', Q')$.  The correspondence between judgements of the
+automation and the ones of the quantitative logic is made formal by
+our soundness proof of the automatic amortized analysis at the end of
+this section.
 
-Since the different rules of~\pref{fig:auto} manage the
-logical state in exactly the same way as the quantitative
-logic, we will focus on the quantitative annotations in the
-sequel.
-%
-As a convention, if $Q$ is a quantitative annotation we
-will write $q_i$ for its $i$th coordinate.  The notation
-$Q \pm n$ used in many rules defines a new context $Q'$
-such that $q'_0 = q_0 \pm n$ and $\forall i \neq 0 .\,
-q'_i = q_i$.  Finally, if a rule mentions $Q$ and $Q'$
-and leaves the latter undefined at some index $i$ we
-will implicitely assume that $q'_i = q_i$.
+As a convention, if $Q$ and $Q'$ are quantitative annotations then we
+assume that $Q = (q_i)_{i\in I}$ is a family with elements $q_i$, $Q'
+= (q'_i)_{i \in I}$, etc.  The notation $Q \pm n$ used in many rules
+defines a new context $Q'$ such that $q'_0 = q_0 \pm n$ and $\forall i
+\neq 0 .\, q'_i = q_i$.  We have the implicit side condition that all
+rational coefficients are non-negative.  Finally, if a rule mentions
+$Q$ and $Q'$ and leaves the latter undefined at some index $i$ we will
+implicitly assume that $q'_i = q_i$.  As mentioned, we leave the
+logical contexts $\Gamma$ abstract.
 
-%
-% Next paragraph is shit.
-%
+We describe the automatic amortized analysis for a subset of
+expressions of C light.  Assignments must have the form \code{x \gets
+  y} or \code{x \gets x \pm y}.  In the implementation, a Clight
+program is converted into this form prior to analysis without changing
+the resource cost.  This achieved by using a series of \emph{cost-free
+  assignments} that we do not result in additional cost in the
+analysis.  Non-linear operations such as \code{x \gets z*y} are simply
+handled by assigning zero potential to coefficients like $q_{xa}$ and
+$q_{ax}$ that contain $x$.
 
-The {\sc Q:Skip} rule simply reuses its postcondition as
-precondition.  This is a sound choice since evaluating
-a $\code{skip}$ statement never costs any resource and
-does not change the program state.  A similar rule is
-the {\sc Q:Tick} rule which enforces that the quantitative
-annotation of the precondition is at least $M_t(n)$ to
-pay for the resource consumption.  Since the program
-state is also unchanged in this case, the logical part
-$\Gamma$ of the precondition can soundly be reused in
-the postcondition.  A slightly different rule is
-{\sc Q:Break}, in that case the regular control flow is
-broken, so anything that follows \code{break} in the
-program will not be executed.  Thus, the postcondition
-$(\Gamma', Q')$ can be arbitrary, and the precondition
-is taken from the break part of the judgement similarly
-to what is done in the logic.
+\paragraph{Inference Rules.}
 
-From these three examples alone, one can see that our
-automation follows very closely the rules of the logic.
-The case of the update statement is more interesting
-and specific to linear potential functions.
-In the {\sc Q:IncP} rule the program updates a variable
-$x$ to add it $y \ge 0$.  Since $x$ is changed, the
-quantitative annotation must be updated to reflect the
-change of the program state.  We write $x'$ the value
-of $x$ after the assignment ($x + y$). Since $x$ is
-the only variable changed, only intervals of the form
-$\inter u x$ and $\inter x u$ will be resized.
-Note that for any $u$, $\inter x u$ will get smaller
-with the update,  and if $x' \in \inter x u$ 
-we have $|\inter x u| = |\inter x {x'}| + |\inter {x'} u|$.
-But $|\inter x {x'}| = |\inter 0 y|$, this means that
-the potential $q'_{0y}$ in the postcondition can
-be increased by $q_{xu}$ under the guard that
-$x' \in \inter x u$.  Dually, the interval
-$\inter v x$ can get bigger with the update.
-And we know that $|\inter v {x'}| \le y + |\inter v x|$,
-so we decrease the potential of $\inter 0 y$
-by $q_{vx}$ to pay for this change.  Remark that
-the rule forces it only for $v \not\in \mathcal U$,
-because if not, we know that $x \le v$ so
-$|\inter v x| = 0$.
+Most of the rules correspond exactly to the respective rules of the
+quantitative Hoare logic.  For example, the rule {\sc Q:Skip} simply
+reuses its postcondition as precondition.  This is sound since
+evaluating a $\code{skip}$ statement never costs any resources and
+does not change the program state.  Similarly, the rule {\sc Q:Tick}
+enforces that the quantitative annotation of the precondition is at
+least $M_t(n)$ to pay for the resource consumption.  Since the program
+state is also unchanged in this case, the logical part $\Gamma$ of the
+precondition can soundly be reused in the postcondition.  In the rule
+{\sc Q:Break}, where the linear control flow is broken, the
+postcondition $(\Gamma', Q')$ can be arbitrary.  The precondition is
+taken from the break part of the judgement similarly as it is done in
+the quantitative logic.  The rule {\sc Q:Return} exhibits a slight
+difference to the quantitative logic.  While we have a function $\Z
+\to \Assn$ to represent return values in the logic, we assume that a
+special variable $\ret$ is part of the index set of $Q_R$.  The
+substitution $Q[\ret/x]$ denotes an potential annotation $Q'$ with
+$q_{\ret y} = q'_{x y}$ and $q_{y \ret} = q'_{y x}$ for all $y$ and
+$q_i'=q_i$ otherwise.
+
+The most interesting rules are {\sc Q:IncP}, {\sc Q:DecP}, and {\sc
+  Q:Inc}.  
+
+The case of the update statement is more interesting and specific to
+linear potential functions.  In the {\sc Q:IncP} rule the program
+updates a variable $x$ to add it $y \ge 0$.  Since $x$ is changed, the
+quantitative annotation must be updated to reflect the change of the
+program state.  We write $x'$ the value of $x$ after the assignment
+($x + y$). Since $x$ is the only variable changed, only intervals of
+the form $\inter u x$ and $\inter x u$ will be resized.  Note that for
+any $u$, $\inter x u$ will get smaller with the update, and if $x' \in
+\inter x u$ we have $|\inter x u| = |\inter x {x'}| + |\inter {x'}
+u|$.  But $|\inter x {x'}| = |\inter 0 y|$, this means that the
+potential $q'_{0y}$ in the postcondition can be increased by $q_{xu}$
+under the guard that $x' \in \inter x u$.  Dually, the interval
+$\inter v x$ can get bigger with the update.  And we know that
+$|\inter v {x'}| \le y + |\inter v x|$, so we decrease the potential
+of $\inter 0 y$ by $q_{vx}$ to pay for this change.  Remark that the
+rule forces it only for $v \not\in \mathcal U$, because if not, we
+know that $x \le v$ so $|\inter v x| = 0$.
 
 Another very technical rule is {\sc Q:Call}.  It needs to
 account for the stack ``switching'' caused by the function
@@ -2088,6 +2096,10 @@ the substitution $[\Vargs/\vec x]$ is meaningful.
 Symmetrically, we use the unique name $\Vret$ to represent
 the return value in the function postcondition
 $(\Gamma'_f, Q'_f)$.
+
+All rules except of {\sc Q:Weak} and {\sc Q:Relax} are syntax
+directed.  
+
 
 \paragraph{Soundness Proof.}
 
@@ -3809,7 +3821,10 @@ $1 + 2 |\inter 0 {\code{len}}|$
 
 
 \begin{figure*}
-\begin{tabular}{r|cc|cc|c}
+\tiny
+
+\begin{tabular}{r|p{3cm}c|p{3cm}c|c}
+
 
 File &
 \multicolumn{2}{|c|}{Rank} &
@@ -3821,7 +3836,7 @@ Amortized Automation
 %--------------------------------------------
 \texttt{gcd.c} &
 
-$((((1+1)+1)+((-5+(2*y))+(2*x)))+(-3+(2*y)))+1$ &
+$((((1+1)+1)+((-5+(2{\cdot}y))+(2{\cdot}x)))+(-3+(2{\cdot}y)))+1$ &
 $O(n)$ &
 
 Fail &
@@ -3833,10 +3848,10 @@ $|\inter 0 x| + |\inter 0 y|$
 %--------------------------------------------
 \texttt{kmp.c} &
 
-$((((1+1)+(n+(-1*i)))+((n+(n*j))+((-1+(-1*j))*i)))+((n+(n*j))+((-1+(-1*j))*i)))+1$ &
+$((((1+1)+(n+(-1{\cdot}i)))+((n+(n{\cdot}j))+((-1+(-1{\cdot}j)){\cdot}i)))+((n+(n{\cdot}j))+((-1+(-1{\cdot}j)){\cdot}i)))+1$ &
 $O(n^2)$ &
 
-$max(n, 0) + max(0, (1 + max(n, 0))) + max(0, (1 + max(n, 0)))$ &
+$\max(n, 0) + \max(0, (1 + \max(n, 0))) + \max(0, (1 + \max(n, 0)))$ &
 $O(n)$ &
 
 $1 + 2 |\inter 0 n|$
@@ -3860,7 +3875,7 @@ $1 + 2 |\inter 0 {\code{len}}|$
 Fail &
 &
 
-$max(n, 0) + max(n, 0)$ &
+$\max(n, 0) + \max(n, 0)$ &
 $O(n)$ &
 
 $1 + 2 |\inter 0 n|$
@@ -3869,7 +3884,7 @@ $1 + 2 |\inter 0 n|$
 %--------------------------------------------
 \texttt{speed\_pldi09\_fig4\_2.c} &
 
-$((((1+1)+n)+(n+(-1*m)))+1)+1$ &
+$((((1+1)+n)+(n+(-1{\cdot}m)))+1)+1$ &
 $O(n)$ &
 
 Fail &
@@ -3881,7 +3896,7 @@ $1 + 2 |\inter 0 n|$
 %--------------------------------------------
 \texttt{speed\_pldi09\_fig4\_4.c} &
 
-$((((1+1)+(-1+m))+((1+n)+(-1*m)))+1)+1$ &
+$((((1+1)+(-1+m))+((1+n)+(-1{\cdot}m)))+1)+1$ &
 $O(n)$ &
 
 Fail &
@@ -3905,10 +3920,10 @@ Fail
 %--------------------------------------------
 \texttt{speed\_pldi10\_ex1.c} &
 
-$(((1+1)+n)+((-1+((1/2)*n))+((1/2)*(n*n))))+1$ &
+$(((1+1)+n)+((-1+((1/2){\cdot}n))+((1/2){\cdot}(n{\cdot}n))))+1$ &
 $O(n^2)$ &
 
-$max(n, 0) + max(0,  max(n, 0) * max(0, (n + -1)))$ &
+$\max(n, 0) + \max(0,  \max(n, 0) {\cdot} \max(0, (n + -1)))$ &
 $O(n^2)$ &
 
 Fail
@@ -3920,7 +3935,7 @@ Fail
 $((((1+1)+(-1+n))+(-1+n))+1)+1$ &
 $O(n)$ &
 
-$max(n, 0) + max(n, 0)$ &
+$\max(n, 0) + \max(n, 0)$ &
 $O(n)$ &
 
 $|\inter 0 n|$
@@ -3941,10 +3956,10 @@ $1 + 2 |\inter 0 n|$
 %--------------------------------------------
 \texttt{speed\_popl10\_fig2\_1.c} &
 
-$(((1+1)+((-1*y)+m))+((-1*x)+n))+1$ &
+$(((1+1)+((-1{\cdot}y)+m))+((-1{\cdot}x)+n))+1$ &
 $O(n)$ &
 
-$max(0, (n - x)) + max(0, (m - y))$ &
+$\max(0, (n - x)) + \max(0, (m - y))$ &
 $O(n)$ &
 
 $|\inter x n| + |\inter y m|$
@@ -3953,10 +3968,10 @@ $|\inter x n| + |\inter y m|$
 %--------------------------------------------
 \texttt{speed\_popl10\_fig2\_2.c} &
 
-$(((1+1)+((-1*x)+n))+(((-1+(-1*z))+(-1*x))+(2*n)))+1$ &
+$(((1+1)+((-1{\cdot}x)+n))+(((-1+(-1{\cdot}z))+(-1{\cdot}x))+(2{\cdot}n)))+1$ &
 $O(n)$ &
 
-$max(0, (max(0, (x + 1 + -z)) + max(0, (n - x)))) + max(0, (n - x))$ &
+$\max(0, (\max(0, (x + 1 + -z)) + \max(0, (n - x)))) + \max(0, (n - x))$ &
 $O(n)$ &
 
 $|\inter x n| + |\inter z n|$
@@ -3965,10 +3980,10 @@ $|\inter x n| + |\inter z n|$
 %--------------------------------------------
 \texttt{speed\_popl10\_nested\_multiple.c} &
 
-$(((1+1)+((-1*x)+n))+(((y*x)+((-1*y)*n))+(((-1*x)+n)*m)))+1$ &
+$(((1+1)+((-1{\cdot}x)+n))+(((y{\cdot}x)+((-1{\cdot}y){\cdot}n))+(((-1{\cdot}x)+n){\cdot}m)))+1$ &
 $O(n^2)$ &
 
-$max(0, (m - y)) + max(0, (n - x))$ &
+$\max(0, (m - y)) + \max(0, (n - x))$ &
 $O(n)$ &
 
 $|\inter x n| + |\inter y m|$
@@ -3977,10 +3992,10 @@ $|\inter x n| + |\inter y m|$
 %--------------------------------------------
 \texttt{speed\_popl10\_nested\_single.c} &
 
-$((((1+1)+((-1+(-1*x))+n))+((-1+(-1*x))+n))+1)+1$ &
+$((((1+1)+((-1+(-1{\cdot}x))+n))+((-1+(-1{\cdot}x))+n))+1)+1$ &
 $O(n)$ &
 
-$max(0, min(n, (n + -1))) + max(0, min(n, (n + -1)))$ &
+$\max(0, min(n, (n + -1))) + \max(0, min(n, (n + -1)))$ &
 $O(n)$ &
 
 $|\inter 0 n|$
@@ -3989,10 +4004,10 @@ $|\inter 0 n|$
 %--------------------------------------------
 \texttt{speed\_popl10\_sequential\_single.c} &
 
-$(((1+1)+((-1*x)+n))+((-1*x)+n))+1$ &
+$(((1+1)+((-1{\cdot}x)+n))+((-1{\cdot}x)+n))+1$ &
 $O(n)$ &
 
-$max(n, 0) + max(n, 0)$ &
+$\max(n, 0) + \max(n, 0)$ &
 $O(n)$ &
 
 $|\inter 0 n|$
@@ -4001,10 +4016,10 @@ $|\inter 0 n|$
 %--------------------------------------------
 \texttt{speed\_popl10\_simple\_multiple.c} &
 
-$(((1+1)+((-1*y)+m))+((-1*x)+n))+1$ &
+$(((1+1)+((-1{\cdot}y)+m))+((-1{\cdot}x)+n))+1$ &
 $O(n)$ &
 
-$max(n, 0) + max(m, 0)$ &
+$\max(n, 0) + \max(m, 0)$ &
 $O(n)$ &
 
 $|\inter 0 m| + |\inter 0 n|$
@@ -4016,7 +4031,7 @@ $|\inter 0 m| + |\inter 0 n|$
 Fail &
 &
 
-$max(n, 0) + max(m, 0)$ &
+$\max(n, 0) + \max(m, 0)$ &
 $O(n)$ &
 
 $|\inter 0 n| + |\inter 0 m|$
@@ -4025,10 +4040,10 @@ $|\inter 0 n| + |\inter 0 m|$
 %--------------------------------------------
 \texttt{speed\_popl10\_simple\_single.c} &
 
-$(((1+1)+((-1*x)+n))+((-1*x)+n))+1$ &
+$(((1+1)+((-1{\cdot}x)+n))+((-1{\cdot}x)+n))+1$ &
 $O(n)$ &
 
-$max(n, 0)$ &
+$\max(n, 0)$ &
 $O(n)$ &
 
 $|\inter 0 n|$
@@ -4040,7 +4055,7 @@ $|\inter 0 n|$
 $(((1+1)+-1)+x)+1$ &
 $O(n)$ &
 
-$max(x, 0) + max(0, (y +  2 * max(x, 0))) + max(0, ( 2 * max(x, 0) + max(y, 0)))$ &
+$\max(x, 0) + \max(0, (y +  2 {\cdot} \max(x, 0))) + \max(0, ( 2 {\cdot} \max(x, 0) + \max(y, 0)))$ &
 $O(n)$ &
 
 $1 + 3 |\inter 0 x| + |\inter 0 y|$
@@ -4049,10 +4064,10 @@ $1 + 3 |\inter 0 x| + |\inter 0 y|$
 %--------------------------------------------
 \texttt{t08.c} &
 
-$(((1+1)+-1)+(z+(-1*y)))+1$
+$(((1+1)+-1)+(z+(-1{\cdot}y)))+1$ &
 $O(n)$ &
 
-$max(0, (max(0, (y + -9)) + max(0, (z - y)))) + max(0, (z - y))$ &
+$\max(0, (\max(0, (y + -9)) + \max(0, (z - y)))) + \max(0, (z - y))$ &
 $O(n)$ &
 
 $1.1 |\inter y z| + 0.1 |\inter 0 y|$
@@ -4061,10 +4076,10 @@ $1.1 |\inter y z| + 0.1 |\inter 0 y|$
 %--------------------------------------------
 \texttt{t10.c} &
 
-$(((1+1)+((-1*y)+x))+((-1*y)+x))+1$ &
+$(((1+1)+((-1{\cdot}y)+x))+((-1{\cdot}y)+x))+1$ &
 $O(n)$ &
 
-$max(0, (x - y))$ &
+$\max(0, (x - y))$ &
 $O(n)$ &
 
 $|\inter y x|$
@@ -4073,10 +4088,10 @@ $|\inter y x|$
 %--------------------------------------------
 \texttt{t11.c} &
 
-$(((1+1)+((-1*y)+m))+((-1*x)+n))+1$ &
+$(((1+1)+((-1{\cdot}y)+m))+((-1{\cdot}x)+n))+1$ &
 $O(n)$ &
 
-$max(0, (n - x)) + max(0, (m - y))$ &
+$\max(0, (n - x)) + \max(0, (m - y))$ &
 $O(n)$ &
 
 $|\inter x n| + |\inter y m|$
@@ -4085,10 +4100,10 @@ $|\inter x n| + |\inter y m|$
 %--------------------------------------------
 \texttt{t13.c} &
 
-$((((1+1)+-1)+(((((-1/2)*y)+((1/2)*(y*y)))+(((-1/2)+y)*x))+((1/2)*(x*x))))+-1)+1$ &
+$((((1+1)+-1)+(((((-1/2){\cdot}y)+((1/2){\cdot}(y{\cdot}y)))+(((-1/2)+y){\cdot}x))+((1/2){\cdot}(x{\cdot}x))))+-1)+1$ &
 $O(n^2)$ &
 
-$max(x, 0) + max(0, (max(x, 0) + max(y, 0)))$ &
+$\max(x, 0) + \max(0, (\max(x, 0) + \max(y, 0)))$ &
 $O(n)$ &
 
 $2 |\inter 0 x| + |\inter 0 y|$
@@ -4097,7 +4112,7 @@ $2 |\inter 0 x| + |\inter 0 y|$
 %--------------------------------------------
 \texttt{t15.c} &
 
-$(((1+1)+(-1+x))+((-1*y)+x))+1$ &
+$(((1+1)+(-1+x))+((-1{\cdot}y)+x))+1$ &
 $O(n)$ &
 
 Fail &
@@ -4109,7 +4124,7 @@ $|\inter 0 x|$
 %--------------------------------------------
 \texttt{t16.c} &
 
-$(((1+1)+((-1+(-99*y))+(101*x)))+((-1*y)+x))+1$ &
+$(((1+1)+((-1+(-99{\cdot}y))+(101{\cdot}x)))+((-1{\cdot}y)+x))+1$ &
 $O(n)$ &
 
 Fail &
@@ -4124,7 +4139,7 @@ $101 |\inter 0 x|$
 $(((1+1)+(151+k))+(-100+i))+1$ &
 $O(n)$ &
 
-$max(0, (i + -100)) + max(0, (k + i + 51))$ &
+$\max(0, (i + -100)) + \max(0, (k + i + 51))$ &
 $O(n)$ &
 
 $50 + |\inter {-1} i| + |\inter 0 k|$
@@ -4133,10 +4148,10 @@ $50 + |\inter {-1} i| + |\inter 0 k|$
 %--------------------------------------------
 \texttt{t20.c} &
 
-$((1+1)+((-1*y)+x))+1+((1+1)+(y+(-1*x)))+1$ &
+$((1+1)+((-1{\cdot}y)+x))+1+((1+1)+(y+(-1{\cdot}x)))+1$ &
 $O(n)$ &
 
-$max(0, (max(0, (y - x)) + max(0, (x - y)))) + max(0, (y - x))$ &
+$\max(0, (\max(0, (y - x)) + \max(0, (x - y)))) + \max(0, (y - x))$ &
 $O(n)$ &
 
 $|\inter x y| + |\inter y x|$
@@ -4148,7 +4163,7 @@ $|\inter x y| + |\inter y x|$
 Fail &
 &
 
-$max(0, (1000 +  1000 * max(0, -n) + max(0, (y + -99)))) + max(0, -n)$ &
+$\max(0, (1000 +  1000 {\cdot} \max(0, -n) + \max(0, (y + -99)))) + \max(0, -n)$ &
 $O(n)$ &
 
 $0.1|\inter n y| + 11 |\inter n 0|$
@@ -4157,10 +4172,10 @@ $0.1|\inter n y| + 11 |\inter n 0|$
 %--------------------------------------------
 \texttt{t28.c} &
 
-$(((1+1)+-1)+((-1*y)+x))+1$ &
+$(((1+1)+-1)+((-1{\cdot}y)+x))+1$ &
 $O(n)$ &
 
-$max(0, ( 1000 * max(0, (x - y)) + max(y, 0))) + max(0, (x - y)) + max(0, -x)$ &
+$\max(0, ( 1000 {\cdot} \max(0, (x - y)) + \max(y, 0))) + \max(0, (x - y)) + \max(0, -x)$ &
 $O(n)$ &
 
 $|\inter x 0| + |\inter 0 y| + 1002 |\inter y x|$
@@ -4172,7 +4187,7 @@ $|\inter x 0| + |\inter 0 y| + 1002 |\inter y x|$
 $((1+1)+x)+1$ &
 $O(n)$ &
 
-$max(0, (1 + max(x, y, 0)))$ &
+$\max(0, (1 + \max(x, y, 0)))$ &
 $O(n)$ &
 
 $|\inter 0 x| + |\inter 0 y|$
@@ -4220,7 +4235,7 @@ $|\inter 0 y|$
 $(((1+1)+n)+1)+1$ &
 $O(n)$ &
 
-$1 + max(n, 0)$ &
+$1 + \max(n, 0)$ &
 $O(n)$ &
 
 $|\inter 0 n|$
