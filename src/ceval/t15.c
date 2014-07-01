@@ -1,5 +1,7 @@
-void main(int x, int y, int z)
+void main(int x, int y)
 {
+  int z;
+
   assert(y >= 0);
   while (x>y) {
     x-=y+1;
