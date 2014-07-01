@@ -1,4 +1,4 @@
-void main(int y, int z)
+void start(int y, int z)
 {
   while (z > y) {
     y = y + 1;

@@ -1,4 +1,4 @@
-void main(int n, int m)
+void start(int n, int m)
 {
   int va, vb;
 /* assert(n > 0); */

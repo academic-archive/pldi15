@@ -1,6 +1,6 @@
 int nondet(void);
 
-void main(int n)
+void start(int n)
 {
   int x=0;
 

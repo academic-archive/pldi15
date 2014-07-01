@@ -1,4 +1,4 @@
-void main(int n, int y)
+void start(int n, int y)
 {
   while (n<0) {
     n++;

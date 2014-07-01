@@ -1,4 +1,4 @@
-void main(int x, int z, int n)
+void start(int x, int z, int n)
 {
   while (x<n) {
     if (z>x)

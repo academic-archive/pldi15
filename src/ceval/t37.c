@@ -14,7 +14,7 @@ int copy(int x, int y) {
   return y;
 }
 
-void main(int x, int y) {
+void start(int x, int y) {
   y = copy(x, y);
   count_down(y);
 }

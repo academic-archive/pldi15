@@ -1,6 +1,6 @@
 int nondet(void);
 
-void main(int n)
+void start(int n)
 {
   while (n>0) {
     n=n-1;

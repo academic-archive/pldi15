@@ -1,4 +1,4 @@
-void main(int n, int m, int dir)
+void start(int n, int m, int dir)
 {
   int i;
 

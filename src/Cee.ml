@@ -294,8 +294,8 @@ let slice cost {fileName; globals; _} =
       match funs globals with
       | [ f ] -> [], f
       | l ->
-        ( List.filter (fun f -> f.svar.vname <> "main") l
-        , List.find (fun f -> f.svar.vname = "main") l
+        ( List.filter (fun f -> f.svar.vname <> "start") l
+        , List.find (fun f -> f.svar.vname = "start") l
         )
     with Not_found -> E.s (
       E.error "%s: no functions to analyze" fileName

@@ -19,6 +19,6 @@ void qsort(int *a, int lo, int hi) {
   qsort(a, lo, m2);
 }
 
-void main(int *a, int len) {
+void start(int *a, int len) {
   qsort(a, 0, len);
 }

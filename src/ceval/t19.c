@@ -1,4 +1,4 @@
-void main(int i, int k)
+void start(int i, int k)
 {
   while (i > 100)
     i--;

@@ -16,6 +16,6 @@ void count_up(int x, int y)
   }
 }
 
-void main(int y, int z) {
+void start(int y, int z) {
   count_down(y, z);
 }

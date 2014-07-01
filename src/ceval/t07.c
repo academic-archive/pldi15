@@ -1,6 +1,6 @@
 void fish() { return; }
 
-void main(int x, int y)
+void start(int x, int y)
 {
   while (x>0) {
     x=x-1;

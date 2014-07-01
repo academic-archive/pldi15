@@ -1,6 +1,6 @@
 int nondet(void);
 
-void main(int x, int y)
+void start(int x, int y)
 {
   while (x > 0) {
     x = x-1;

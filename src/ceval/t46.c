@@ -12,6 +12,6 @@ void consume() {
   }
 }
 
-void main(int y, int z) {
+void start(int y, int z) {
   consume(); produce(); consume();
 }

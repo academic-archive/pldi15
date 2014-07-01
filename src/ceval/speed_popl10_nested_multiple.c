@@ -1,6 +1,6 @@
 int nondet(void);
 
-void main(int x, int n, int y, int m)
+void start(int x, int n, int y, int m)
 {
   while (x<n) {
     while (y<m) {
