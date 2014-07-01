@@ -2160,7 +2160,7 @@ upper bounds derived automatically.
 { P = Q_R[\Vret/x]  
 \\ \forall i \in \dom{P} . \, p_i = q_i
 }
-{ B; (\Gamma,Q_R); (\Gamma, Q{+} M_r) \vdash \code{return}~x \dashv (\Gamma',Q') }
+{ B; (\Gamma,Q_R); (\Gamma, Q_R{+} M_r) \vdash \code{return}~x \dashv (\Gamma',Q') }
 %
 \and \Rule{Q:Assert}
 {}
@@ -2191,7 +2191,7 @@ upper bounds derived automatically.
   B; R; (\Gamma[x/x {+} y], Q {+} M_u {+} M_e(x {+} y)) \vdash x \gets x + y \dashv (\Gamma, Q')
 }
 %
-\and \Rule{Q:IncM}
+\and \Rule{Q:DecP}
 { \Gamma \models 0 \le y
 \\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
 \\ \textstyle q'_{y0} = q_{y0}
@@ -2253,17 +2253,18 @@ upper bounds derived automatically.
 }
 %
 \and \Rule{Relax}
-{ \mathcal L = \{ xy \mid \exists l_{xy},~\Gamma \models l_{xy} \le |\inter x y| \}
-\and \mathcal U = \{ xy \mid \exists u_{xy},~\Gamma \models |\inter x y| \le u_{xy} \}
-\\ \forall i \in \mathcal U.\, q'_i \ge q_i - p_i
+{ \mathcal L = \{ xy \mid \exists l_{xy} {\in} \N \, . \, \Gamma \models l_{xy} \le |\inter x y| \}
+\and \mathcal U = \{ xy \mid \exists u_{xy}{\in} \N \, . \, \Gamma \models |\inter x y| \le u_{xy} \}
+\\ \forall i \in \mathcal U.\, q'_i \ge q_i - r_i
 \\ \forall i \in \mathcal L.\, q'_i \ge q_i + p_i
-\\ \forall i \not\in \mathcal U \cup \mathcal L.\, q'_i \ge q_i
+\\ \forall i \not\in \mathcal U {\cup} \mathcal L {\cup} \{0\} .\, q'_i \ge q_i
+\\ q'_0 \geq q_0 {\textstyle + \sum_{i \in \mathcal U} u_i r_i - \sum_{i \in \mathcal L} l_i p_i}
 }
-{ Q' + \sum_{i \in \mathcal U} u_i p_i - \sum_{i \in \mathcal L} l_i p_i  \succeq_\Gamma Q }
+{ Q'   \succeq_\Gamma Q }
 %
-\and \Rule{Extend}
+\and \Rule{Q:Extend}
 { \fenv f = (\vec y, S_f)
-\\ B; (\Gamma_f', Q'_f); (\Gamma_f[\Vargs/\vec y], Q_f[\Vargs/ \vec y] ) \vdash S \dashv (\Gamma', Q')
+\\ B; (\Gamma_f', Q'_f); (\Gamma_f[\Vargs/\vec y], Q_f[\Vargs/ \vec y] ) \vdash S_f \dashv (\Gamma', Q')
 }
 { (\Gamma_f, Q_f, \Gamma_f', Q_f') \in \Delta(f) }
 %
