@@ -228,8 +228,17 @@ let slice cost {fileName; globals; _} =
 
       in slice_list slice_instr il
 
-    | Return (expo, loc) ->
-      pay_pre (cost OpReturn) (PReturn (VNum 0, gid ())) (* XXX *)
+    | Return (ropt, _) ->
+      let ret =
+        match ropt with
+        | Some (Lval (Var rv, NoOffset))
+        when is_tracked rv ->
+          VId (rv.vname)
+        | Some (Const c) ->
+          (match int_of_const c with
+          | Some i -> VNum i | _ -> VNum 0)
+        | _ -> VNum 0 in
+      pay_pre (cost OpReturn) (PReturn (ret, gid ()))
 
     | Goto (_, loc)
     | ComputedGoto (_, loc) -> E.s (
@@ -285,8 +294,8 @@ let slice cost {fileName; globals; _} =
       match funs globals with
       | [ f ] -> [], f
       | l ->
-        ( List.filter (fun f -> f.svar.vname <> "main") l
-        , List.find (fun f -> f.svar.vname = "main") l
+        ( List.filter (fun f -> f.svar.vname <> "start") l
+        , List.find (fun f -> f.svar.vname = "start") l
         )
     with Not_found -> E.s (
       E.error "%s: no functions to analyze" fileName

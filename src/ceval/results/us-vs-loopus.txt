@@ -1,0 +1,162 @@
+** File gcd.c **
+1.00 |[0, x]|
+1.00 |[0, y]|
+FAILURE
+
+** File kmp.c **
+1.00
+2.00 |[0, n]|
+Total Bound: max(n, 0) + max(0, (1 + max(n, 0))) + max(0, (1 + max(n, 0)))
+
+** File qsort.c **
+1.00
+2.00 |[0, len]|
+FAILURE
+
+** File speed_pldi09_fig1.c **
+1.00
+2.00 |[0, n]|
+Total Bound: max(n, 0) + max(n, 0)
+
+** File speed_pldi09_fig4_2.c **
+1.00
+2.00 |[0, n]|
+FAILURE
+
+** File speed_pldi09_fig4_4.c **
+1.00 |[0, n]|
+FAILURE
+
+** File speed_pldi09_fig4_5.c **
+Sorry, I could not find a bound.
+FAILURE
+
+** File speed_pldi10_ex1.c **
+NONLINEAR, failure for us
+Total Bound: max(n, 0) + max(0,  max(n, 0) × max(0, (n + -1)))
+
+** File speed_pldi10_ex3.c **
+1.00 |[0, n]|
+Total Bound: max(n, 0) + max(n, 0)
+
+** File speed_pldi10_ex4.c **
+1.00
+2.00 |[0, n]|
+FAILURE
+
+** File speed_popl10_fig2_1.c **
+1.00 |[x, n]|
+1.00 |[y, m]|
+Total Bound: max(0, (n - x)) + max(0, (m - y))
+
+** File speed_popl10_fig2_2.c **
+1.00 |[x, n]|
+1.00 |[z, n]|
+Total Bound: max(0, (max(0, (x + 1 + -z)) + max(0, (n - x)))) + max(0, (n - x))
+
+** File speed_popl10_nested_multiple.c **
+1.00 |[x, n]|
+1.00 |[y, m]|
+Total Bound: max(0, (m - y)) + max(0, (n - x))
+
+** File speed_popl10_nested_single.c **
+1.00 |[0, n]|
+Total Bound: max(0, min(n, (n + -1))) + max(0, min(n, (n + -1)))
+
+** File speed_popl10_sequential_single.c **
+1.00 |[0, n]|
+Total Bound: max(n, 0) + max(n, 0)
+
+** File speed_popl10_simple_multiple.c **
+1.00 |[0, m]|
+1.00 |[0, n]|
+Total Bound: max(n, 0) + max(m, 0)
+
+** File speed_popl10_simple_single_2.c **
+1.00 |[0, m]|
+1.00 |[0, n]|
+Total Bound: max(n, 0) + max(m, 0)
+
+** File speed_popl10_simple_single.c **
+1.00 |[0, n]|
+Total Bound: max(n, 0)
+
+** File t07.c **
+1.00
+3.00 |[0, x]|
+1.00 |[0, y]|
+Total Bound: max(x, 0) + max(0, (y +  2 × max(x, 0))) + max(0, ( 2 × max(x, 0) + max(y, 0)))
+
+** File t08.c **
+1.10 |[y, z]|
+0.10 |[0, y]|
+Total Bound: max(0, (max(0, (y + -9)) + max(0, (z - y)))) + max(0, (z - y))
+
+** File t10.c **
+1.00 |[y, x]|
+Total Bound: max(0, (x - y))
+
+** File t11.c **
+1.00 |[x, n]|
+1.00 |[y, m]|
+Total Bound: max(0, (n - x)) + max(0, (m - y))
+
+** File t13.c **
+2.00 |[0, x]|
+1.00 |[0, y]|
+Total Bound: max(x, 0) + max(0, (max(x, 0) + max(y, 0)))
+
+** File t15.c **
+1.00 |[0, x]|
+FAILURE
+
+** File t16.c **
+101.00 |[0, x]|
+FAILURE
+
+** File t19.c **
+50.00
+1.00 |[-1, i]|
+1.00 |[0, k]|
+Total Bound: max(0, (i + -100)) + max(0, (k + i + 51))
+
+** File t20.c **
+1.00 |[x, y]|
+1.00 |[y, x]|
+Total Bound: max(0, (max(0, (y - x)) + max(0, (x - y)))) + max(0, (y - x))
+
+** File t27.c **
+0.01 |[n, y]|
+11.00 |[n, 0]|
+Total Bound: max(0, (1000 +  1000 × max(0, -n) + max(0, (y + -99)))) + max(0, -n)
+
+** File t28.c **
+1.00 |[x, 0]|
+1002.00 |[y, x]|
+1.00 |[0, y]|
+Total Bound: max(0, ( 1000 × max(0, (x - y)) + max(y, 0))) + max(0, (x - y)) + max(0, -x)
+
+** File t30.c **
+1.00 |[0, x]|
+1.00 |[0, y]|
+Total Bound: max(0, (1 + max(x, y, 0)))
+
+** File t37.c **
+2.00
+2.00 |[0, x]|
+1.00 |[0, y]|
+1.00 |[0, 1]|
+FAILURE (recursion)
+
+** File t39.c **
+1.33
+0.67 |[z, y]|
+FAILURE (recursion)
+
+** File t46.c **
+(negative ticks)
+
+** File t47.c **
+1.00
+1.00 |[0, n]|
+Total Bound: 1 + max(n, 0)

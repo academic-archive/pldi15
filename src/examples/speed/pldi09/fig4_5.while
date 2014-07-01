@@ -1,6 +1,0 @@
-assert (0 < m < n); 
-i := m;
-
-while (0<i<n)
-    if (dir=fwd) i++;
-    else i--;
