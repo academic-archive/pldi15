@@ -208,7 +208,7 @@ authorities~\cite{May2013}.  Our \emph{contributions} are as follows.
 \item We describe an automatic static analysis that computes bounds
   together with derivations in the quantitative Hoare logic.  The
   analysis is inspired by type-based amortized resource analysis for
-  functional programs~\cite{Jost03,HoffmannAH12}.  It computes
+  functional programs~\cite{Jost03,HoffmannAH11}.  It computes
   derivations by generating simple linear constraints that can be
   solved by an off-the-shelf LP solver and does not require any
   fixpoint computations to obtain loop invariants.
@@ -2707,8 +2707,96 @@ t08 (slightly modified) & t19 & t30 & t15
 
 \section{Related Work}
 
+Most closely related to this article is our previous work on
+end-to-end stack-bound verification of Clight
+programs~\cite{veristack14}.  In that work, we have implemented and
+verified a quantitative logic to reason about stack-space usage.  In
+this article, we present a more general quantitative Hoare logic that
+is parametric in the resource of interest.  The main innovation over
+our previous work~\cite{veristack14} is the novel automatic amortized
+analysis for Clight programs that competes logical derivations for
+non-trivial bounds for programs with loops and recursion.
+
+Our work has been inspired by type-based amortized resource analysis
+for functional programs~\cite{Jost03,HoffmannH10,HoffmannAH12}.  There
+are three major improvements over previous work in the current paper,
+which presents the first automatic amortized resource analysis for C.
+First, we solved the long-standing open problem of extending automatic
+amortized resource analysis to compute bounds for programs that loop
+on (possibly negative) integers.  Second, we extended the analysis
+system to deal with non-linear control flow that is introduced by
+\code{break} and \code{return} statements.  Third, for the first time,
+we combined an automatic amortized analysis with a system for
+interactively deriving bounds.
+
+In the development of our quantitative Hoare logic we have drawn
+inspiration from mechanically verified Hoare logics.
+Nipkow's~\cite{Nipkow02} description of his implementations of Hoare
+logics in Isabelle/HOL has been helpful to understand the interaction
+of auxiliary variables with the consequence rule.  The consequence
+rule we use in our Coq implementation is a quantitative version of a
+consequence rule that has been attributed to Martin Hofmann by
+Nipkow~\cite{Nipkow02}.  Appel's separation logic for CompCert
+Clight~\cite{AppelLogic} has been a blueprint for the general
+structure of the quantitative logic.  Since we do not deal with memory
+safety, our logic is much simpler and it would be possible to
+integrate it with Appel's logic.  The continuation passing style that
+we use in the quantitative logic is not only used by
+Appel~\cite{AppelLogic} but also in Hoare logics for low-level
+code~\cite{NiS06,JensenBK13}.
+
+There exist quantitative logics that are integrated into separation
+logic~\cite{Atkey10,HoffmannMZ13} and they are closely related to our
+quantitative logic.  However, the purpose of these logics is slightly
+different since they focus on the verification of bounds that depend
+on the shape of heap data structures and they are not implemented for
+C.  Also closely related to our logic is a VDM-style logic for
+reasoning about resource usage of an abstract fragment of JVM byte
+code by Aspinall et al.~\cite{AspinallBHLM07}.  Their logic is not
+Hoare-style, does not target C code, and has been mainly designed to
+produce certificates for bounds derived for high-level functional
+programs.
+
+There exist many tools that can automatically derive loops and
+recursion bounds for imperative programs such as
+SPEED~\cite{GulwaniMC09,GulwaniZ10}, KoAT~\cite{BrockschmidtEFFG14},
+PUBS~\cite{AlbertAGPZ12}, Rank~\cite{AliasDFG10},
+ABC~\cite{BlancHHK10} and LOOPUS~\cite{Zuleger11,SinnZV14}.  These
+tools are based on abstract interpretation--based invariant generation
+and/or term rewriting techniques, and they derive impressive results
+on realistic software.  The importance of amortization to derive tight
+bounds is well known in the resource analysis
+community~\cite{AlonsoG12,Moser14,SinnZV14}.  Currently, the only
+other available tools that can be directly applied to C code are Rank
+and LOOPUS.  Our analysis framework does not aim to set a new standard
+for automatic bound analysis.  Our contribution is rather a principled
+approach that produces certificates that are proved sound with respect
+to a formal cost semantics.  Moreover, we have a system that enables
+both automatic and interactive bound derivation, a formal soundness
+proof in Coq, and a method that can handle resources that can be
+released (e.g., memory).  However, as we have shown
+in~\pref{sec:exper}, our automatic amortized analysis matches that the
+state of the art in automatic bound analysis for linear bounds and
+sometimes even derives better constant factors than the other tools.
+Since Rank and Loopus do not handle recursion, our automatic amortized
+analysis is also the only available tool that can derive bounds for
+recursive C programs.
+
+We are only aware of two verified quantitative analysis systems.
+Albert et al.~\cite{AlbertBGHR12} rely on the KeY tool to
+automatically verify previously inferred loop invariants, size
+relations, and ranking functions for Java Card programs.  However,
+they do not have a formal cost semantics and do not prove the bounds
+correct with respect to a cost model.  Blazy et al.~\cite{Blazy13}
+have verified a loop bound analysis for CompCert's RTL intermediate
+language.  However, there is no way to interactively derive bounds or
+to deal with resources like memory usage.  Also Blazy et al.'s
+automatic bound analysis does not compute symbolic bounds.
+
+
 \section{Conclusion}
 
+cite flops
 
 % \acks
 
