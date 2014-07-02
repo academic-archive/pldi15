@@ -2782,6 +2782,13 @@ Since Rank and Loopus do not handle recursion, our automatic amortized
 analysis is also the only available tool that can derive bounds for
 recursive C programs.
 
+There are techniques~\cite{Braberman08} that can compute the memory
+requirements of object oriented programs with region based garbage
+collection.  These systems infer invariants and use external tools
+that count the number of integer points in the corresponding polytopes
+to obtain bonds.  The described technique can handle loops but not
+recursive or composed functions.
+
 We are only aware of two verified quantitative analysis systems.
 Albert et al.~\cite{AlbertBGHR12} rely on the KeY tool to
 automatically verify previously inferred loop invariants, size
@@ -2796,7 +2803,27 @@ automatic bound analysis does not compute symbolic bounds.
 
 \section{Conclusion}
 
-cite flops
+We have introduced an novel quantitative analysis system for CompCert
+Clight programs.  To the best of our knowledge, this article presents
+the first resource analysis framework for C that makes it possible to
+combine non-trivial automatically derived bounds with interactively
+derived bounds in a proof system that produces verifiable certificates
+for the bounds.  The main technical innovations are a quantitative
+Hoare logic for reasoning about user-defined resource cost and an
+automatic amortized analysis that derives bounds for programs whose
+resource consumption depends on (possibly negative) integers and
+non-sequential control flow as introduced by \code{break} and
+\code{return} statements.
+
+We will continue to improve our framework with the goal of reasoning
+about resource usage of system software such as the hypervisor kernel
+CertiKOS~\cite{GuVFSC11}, which we are currently developing and
+verifying.  For on thing, we will improve the automation to derive
+\emph{polynomial bounds} and to handle non-linear size changes, as
+already developed for functional programs~\cite{HoffmannS13}.  For
+another thing, we will build on previous work~\cite{HoffmannMZ13}
+the generalize the quantitative Hoare logic to handle \emph{concurrent
+  programs} with locks and lock-free data structures.
 
 % \acks
 
