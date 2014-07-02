@@ -1910,7 +1910,7 @@ induction.
 
 
 
-\section{Automatic Analysis}
+\section{Automatic Amortized Analysis}
 
 In this section we present the automatic amortized analysis that we
 use in our implementation to derive linear resource bounds for C
@@ -2044,43 +2044,54 @@ substitution $Q[\ret/x]$ denotes an potential annotation $Q'$ with
 $q_{\ret y} = q'_{x y}$ and $q_{y \ret} = q'_{y x}$ for all $y$ and
 $q_i'=q_i$ otherwise.
 
-The most interesting rules are {\sc Q:IncP}, {\sc Q:DecP}, and {\sc
-  Q:Inc}.  
+Most interesting are the rules {\sc Q:IncP}, {\sc Q:DecP}, and {\sc
+  Q:Inc} for increments and decrements, which describe how the
+potential is distributed after a size change of the variables.  The
+rule {\sc Q:IncP} is for increments $x \gets x + y$ in which we can
+deduce from the logical context $\Gamma$ that $y$ is not negative.
+Similarly, {\sc Q:DecP} is for increments $x \gets x - y$ in which we
+can deduce that $y \ge 0$.  Of course, we have symmetrical rules {\sc
+  Q:IncN} and {\sc Q:DecN} that can be applied if $y$ is not positive.
+The rules are equivalent in the case where $y=0$.  Finally, the {\sc
+  Q:Inc} can be applied if we cannot deduce any information about $y$.
+In the implementation, the rules for increments and decrements are
+combined into one syntax directed rule where the specialized rules
+take priority over {\sc Q:Inc}.
 
-The case of the update statement is more interesting and specific to
-linear potential functions.  In the {\sc Q:IncP} rule the program
-updates a variable $x$ to add it $y \ge 0$.  Since $x$ is changed, the
+To explain how rules for increment and decrement work, it is
+sufficient to understand the rule {\sc Q:IncP}.  The other follow the
+same idea and are symmetrical.  In {\sc Q:IncP}, the program updates a
+variable $x$ with $x+y$ where $y \ge 0$.  Since $x$ is changed, the
 quantitative annotation must be updated to reflect the change of the
-program state.  We write $x'$ the value of $x$ after the assignment
-($x + y$). Since $x$ is the only variable changed, only intervals of
-the form $\inter u x$ and $\inter x u$ will be resized.  Note that for
-any $u$, $\inter x u$ will get smaller with the update, and if $x' \in
-\inter x u$ we have $|\inter x u| = |\inter x {x'}| + |\inter {x'}
-u|$.  But $|\inter x {x'}| = |\inter 0 y|$, this means that the
-potential $q'_{0y}$ in the postcondition can be increased by $q_{xu}$
-under the guard that $x' \in \inter x u$.  Dually, the interval
-$\inter v x$ can get bigger with the update.  And we know that
-$|\inter v {x'}| \le y + |\inter v x|$, so we decrease the potential
-of $\inter 0 y$ by $q_{vx}$ to pay for this change.  Remark that the
-rule forces it only for $v \not\in \mathcal U$, because if not, we
-know that $x \le v$ so $|\inter v x| = 0$.
+program state.  We write $x'$ the value of $x$ after the assignment.
+Since $x$ is the only variable changed, only intervals of the form
+$\inter u x$ and $\inter x u$ will be resized.  Note that for any $u$,
+$\inter x u$ will get smaller with the update, and if $x' \in \inter x
+u$ we have $|\inter x u| = |\inter x {x'}| + |\inter {x'} u|$.  But
+$|\inter x {x'}| = |\inter 0 y|$ which means that the potential
+$q'_{0y}$ in the postcondition can be increased by $q_{xu}$ under the
+guard that $x' \in \inter x u$.  Dually, the interval $\inter v x$ can
+get bigger with the update.  We know that $|\inter v {x'}| \le y +
+|\inter v x|$.  So we decrease the potential of $\inter 0 y$ by
+$q_{vx}$ to pay for this change.  Remark that the rule insures this
+only for $v \not\in \mathcal U$ because we know that $x \le v$
+otherwise, and thus $|\inter v x| = 0$.
 
-Another very technical rule is {\sc Q:Call}.  It needs to
-account for the stack ``switching'' caused by the function
-call, the argument/return value passing, and the preservation
-of local variables.  We can sum up the requirements for
-this rule as follows,
+Another interesting rule is {\sc Q:Call}.  It needs to account for the
+changes to the stack caused by the function call, the argument/return
+value passing, and the preservation of local variables.  We can sum up
+the main ideas of the rule as follows.
 \begin{itemize}
+\item The potential in the pre- and postconditions of the function
+  specification is equalized to its matching potential in the callee's
+  pre/postcondition.
 \item
-  any potential in the function pre/postcondition is equalized
-  to its matching potential in the call pre/postcondition,
-\item
-  the potential of intervals $|\inter x y|$ is preserved
+  The potential of intervals $|\inter x y|$ is preserved
   if $x$ and $y$ are local variables,
 \item
-  and the unknown potentials after the call (e.g.
+  The unknown potentials after the call (e.g.
   $|\inter x g|$, with $x$ local and $g$ global)
-  are zeroed out in the postcondition.
+  are set to zero in the postcondition.
 \end{itemize}
 If $x$ and $y$ are local variables and $\code{f}(x,y)$ is
 called, the rule takes care to split the potential of
@@ -2097,20 +2108,59 @@ Symmetrically, we use the unique name $\Vret$ to represent
 the return value in the function postcondition
 $(\Gamma'_f, Q'_f)$.
 
-All rules except of {\sc Q:Weak} and {\sc Q:Relax} are syntax
-directed.  
+The rule {\sc Q:Weak} is not syntax directed.  In the implementation
+we apply {\sc Q:Weak} before loops and between the two statements of a
+sequential composition.  We could integrate weakening into every
+syntax directed rule but this simple heuristic helps to make the
+analysis efficient.  The high-level idea of {\sc Q:Weak} is the same
+as in the rule {\sc L:Weak} of the quantitative logic: If we have a
+sound judgement, then it is sound to add more potential to the
+precondition and remove potential from the postcondition.  The concept
+of \emph{more potential} is formalized by the relation $Q'
+\succeq_\Gamma Q$ that is defined in the rule {\sc Relax}.  Here, $Q$
+and $Q'$ are potential annotations and $\Gamma$ is a logical context.
+The relax rule deals also with the important task of transferring
+constant potential (represented by $q_0$) to interval sizes and vise
+versa.  If we can deduce from the logical context that the interval
+size $|\inter x y| \geq l$ is larger then a constant $l$ then we can
+transfer potential $q_{xy} {\cdot} |\inter x y|$ form the interval to
+constant potential $l{\cdot}q_{xy}$ and guarantee that we do not gain
+potential.  Conversely, if $|\inter x y| \leq u$ for a constant $u$
+then we can transfer constant potential $u{\cdot}q_{xy}$ to the
+interval potential $q_{xy} {\cdot} |\inter x y|$ without gaining
+potential.
+
+\paragraph{Automatic Inference via LP Solving.}
+
+We separate the search of a derivation into two steps.  As a first
+step we go through the whole program and apply inductively the
+inference rules of the automatic amortized analysis.  During this
+process our tool uses symbolic names for the coefficients $(q_i)$.
+Every time a linear constraint must be satisfied by these
+coefficients, it is recorded using the symbolic names in a global
+list.  When the list of all constraints that must be satisfied by the
+coefficients is collected, we feed it to an off the shelf
+LP-solver~\footnote{We currently use Coin-Or CLP.}.  If the solver
+successfully finds a solution to the given problem, we know that a
+derivation exists for the considered program.  We can then extract the
+initial $Q$ from the solver and get a resource bound for the program.
+To get a full derivation we simply extract the complete solution from
+the solver, and apply it to the symbolic names $(q_i)$ of the
+coefficients in the derivation.  If the LP-solver fails to find a
+solution, an error is reported to the user.
 
 
 \paragraph{Soundness Proof.}
 
-The soundness of the analysis leverages the quantitative logic.
-We propose to translate judgements of~\pref{fig:auto} into
-quantitative triples.  We define a translation function
-$\tr$, such that if a judgement $J$ in the automatic analysis
-is derivable, $\tr(J)$ is derivable in the quantitative
-logic.  Using this translated judgement and the soundness
-of our logic it is possible to get a certified resource bound
-for the analyzed program.
+The soundness of the analysis builds on the quantitative logic.  We
+translate judgements of the automatic amortized analysis as defined in
+\pref{fig:auto} into quantitative Hoare triples.  We define a
+translation function $\tr$, such that if a judgement $J$ in the
+automatic analysis is derivable, $\tr(J)$ is derivable in the
+quantitative logic.  By using $\tr$ to translate derivations of the
+automatic analysis to derivations in the quantitative logic we can
+automatically obtain a certified resource bound for the analyzed
+program.
 
 The translation of an assertion $(\Gamma, Q)$ in the automatic
 analysis is defined by
@@ -2120,7 +2170,7 @@ $$
 where we write $\Phi_Q$ for the unique linear potential function
 defined by the quantitative annotation $Q$.  We also need to
 translate the assumptions in function contexts of the automatic
-analysis, this is done as follows
+analysis.  This is done as follows.
 %
 \begin{align*}
 \tr(\Gamma_f, Q_f, \Gamma'_f, Q'_f) :=
@@ -2128,7 +2178,7 @@ analysis, this is done as follows
   \lambda \_ \, \vec v \, \state .\, \tr(\Gamma_f, Q_f)(\state[\Vargs \mapsto \vec v]), \\
 &\phantom{\forall z \, \vec v \, v . (}
   \lambda \_ \, v \, \state .\, \tr(\Gamma'_f, Q'_f)(\state[\Vret \mapsto v])
-  ).
+  )
 \end{align*}
 %
 These definitions let us translate the judgement $J = B; R; P \vdash
@@ -2149,12 +2199,42 @@ formally with the following theorem.
 \end{theorem}
 %
 \noindent
-The proof of this theorem is constructive and basically
-maps each rule of the automatic analysis directly to
-its counterpart in the quantitative logic.  With the
-computational content of the proof, we have an
-effective algorithm to construct proof objects for
-upper bounds derived automatically.
+The proof of this theorem is constructive and basically maps each rule
+of the automatic analysis directly to its counterpart in the
+quantitative logic.  The most tricky parts are the translations of the
+rules for increments and decrements and the rule {\sc Q:Weak} for
+weakening because we have to show that the preconditions of the rules
+{\sc L:Weak} or {\sc L:Update}, respectively, are met.  For instance
+we prove the following lemma to show the soundness of the translation
+of {\sc Q:Weak}.
+
+\begin{lemma}[Relax]
+  If $Q' \succeq_\Gamma Q$ and $\state$ is a program state such that
+  $\state \models \Gamma$ then we have $\Phi_{Q'}(\state) \ge \Phi_Q(\state)$.
+\end{lemma}
+\begin{proof}
+We observe the following inequations.
+\begin{align*}
+\Phi_{Q'}(\state) &= \sum_i q'_i f_i(H) \\
+&\ge q_0 + \sum_{i\in\mathcal U} u_i p_i - \sum_{i\in\mathcal L} l_i p_i
+  + \sum_{i\in\mathcal U} (q_i - p_i) f_i(bH)  \\ & \;\;\;\;\;\;\;\; + \sum_{i\in\mathcal L} (q_i + p_i) f_i(H)
+  + \sum_{i\not\in \mathcal U \cup \mathcal L} q_i \\
+ &\ge \Phi_Q(\state)
+  + \sum_{i\in\mathcal U} (u_i - f_i(H)) p_i
+  + \sum_{i\in\mathcal L} (f_i(H) - l_i) p_i \\
+ &\ge \Phi_Q(\state).
+\end{align*}
+Since $H \models \Gamma$, using the transitivity of $\models$ and
+the definition of $\mathcal U$ and $\mathcal L$ we get
+$\forall i\in\mathcal L.\, l_i \le f_i(H)$ and
+$\forall i\in\mathcal U.\, f_i(H)\le u_i$.
+These two inequalities justify the last step.
+\end{proof}
+%
+\noindent
+We prove similar lemmas for the rules that deal with assignment.  With
+the computational content of the proof, we have an effective algorithm
+to construct certificates for upper bounds derived automatically.
 
 
 \begin{figure*}[t]
@@ -2193,7 +2273,7 @@ upper bounds derived automatically.
 { B; R; (\Gamma[x/y], Q {+} M_u {+} M_e(y)) \vdash x \gets y \dashv (\Gamma, Q') }
 %
 \and \Rule{Q:IncP}
-{ \Gamma \models 0 \le y
+{ \Gamma \models y \ge 0
 \\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\}
 \\ \textstyle q'_{0y} = q_{0y}
       + \sum_{u \in \mathcal U} q_{xu}
@@ -2204,7 +2284,7 @@ upper bounds derived automatically.
 }
 %
 \and \Rule{Q:DecP}
-{ \Gamma \models 0 \le y
+{ \Gamma \models y \ge 0
 \\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
 \\ \textstyle q'_{y0} = q_{y0}
       + \sum_{u \in \mathcal U} q_{ux}
@@ -2264,6 +2344,12 @@ upper bounds derived automatically.
   (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c {-} M_r)
 }
 %
+\and \Rule{Q:Extend}
+{ \fenv f = (\vec y, S_f)
+\\ B; (\Gamma_f', Q'_f); (\Gamma_f[\Vargs/\vec y], Q_f[\Vargs/ \vec y] ) \vdash S_f \dashv (\Gamma', Q')
+}
+{ (\Gamma_f, Q_f, \Gamma_f', Q_f') \in \Delta(f) }
+%
 \and \Rule{Relax}
 { \mathcal L = \{ xy \mid \exists l_{xy} {\in} \N \, . \, \Gamma \models l_{xy} \le |\inter x y| \}
 \and \mathcal U = \{ xy \mid \exists u_{xy}{\in} \N \, . \, \Gamma \models |\inter x y| \le u_{xy} \}
@@ -2273,304 +2359,144 @@ upper bounds derived automatically.
 \\ q'_0 \geq q_0 {\textstyle + \sum_{i \in \mathcal U} u_i r_i - \sum_{i \in \mathcal L} l_i p_i}
 }
 { Q'   \succeq_\Gamma Q }
-%
-\and \Rule{Q:Extend}
-{ \fenv f = (\vec y, S_f)
-\\ B; (\Gamma_f', Q'_f); (\Gamma_f[\Vargs/\vec y], Q_f[\Vargs/ \vec y] ) \vdash S_f \dashv (\Gamma', Q')
-}
-{ (\Gamma_f, Q_f, \Gamma_f', Q_f') \in \Delta(f) }
-%
+
 \end{mathpar}
 \caption{Inference rules of the quantitative analysis}
 \label{fig:auto}
 \end{figure*}
 
 
-\section{Soundness Theorems}
 
-The soundness of a judgement relates the cost semantics with the potential
-functions derived using our proof system.  Depending on the outcome of
-the semantics, we give different soundness statements.
-But, before tackling the issue of soundness let us remind and define some
-convenient notations.
-\begin{itemize}
-\item $H \mapsto \Phi_H(Q)$ for $Q$ a quantitative context, is the
-unique linear potential function that has $Q(i)$ as a coefficient for the
-base function $f_i$.
-\item $H \models \Gamma$ is true if and only if all the assertions in
-$\Gamma$ are true on the heap $H$.
-\end{itemize}
+% \section{Implementation}
 
-Ideally we would
-like our judgements to be meaningful even in the case of a program
-crash.  More precisely, we want the first potential function to be enough
-to pay for the execution of the program up to the crash point.  This is
-formally stated in the following theorem.
+% \subsection{Logical Annotations Generation}
 
-\begin{theorem}[Busy case]
-For any $S$, $H$, $q$, $q'$, $\Gamma$, $\Gamma'$, $Q$ and $Q'$
-such that $H \models \Gamma$, $\Gamma; Q \vdash S \dashv Q'; \Gamma'$,
-  and $(H, S) \Downarrow_{(q,q')} \circ$,
-we have $q \le \Phi_H(Q)$.
-\end{theorem}
-\begin{proof}
-Simple application of the terminating case proved afterwards.
-\end{proof}
+% \paragraph{Program conditions.}
+% The first pass in our OCaml implementation generates the
+% logical annotations $\Gamma$ around all program statements.
+% These annotations are used later on by the quantitative
+% analysis to generate contraints.
+% %
+% The first design choice we had to make is to give a fixed form
+% to program conditions.  Because of their generality and because
+% they are closed under negation, we decided to consider
+% inequalities over linear combinations as program conditions.
+% \begin{mathpar}
+% C := L < L \mid L > L \mid L \le L \mid L \ge L
+% \and
+% L := x \mid k \mid k * L \mid L + L \mid L - L
+% \end{mathpar}
+% A Condition is represented internally as a pair of one constant
+% $k \in \mathbb N$ and one map $m : V \rightarrow \mathbb N$.
+% Its intended semantics is
+% $$
+% \llbracket m \rrbracket(H) = k + \sum_v m_v \cdot H(v) \le 0.
+% $$
+% Note that conditions of this shape are closed by negation, as showed
+% by the following equivalence
+% $$
+% \neg (k + \sum_v m_v \cdot H(v) \le 0)
+% \Leftrightarrow (1-k) + \sum_v -m_v \cdot H(v) \le 0
+% $$
+% We can also note that all the ``questions'' asked to the logic
+% assertions during a proof derivation can be described using
+% linear combinations.  Conveniently enough, this language of
+% assertions is exactly Presburger's arithmetic.  This means that
+% we have a sound and complete decision procedure to answer
+% all the questions asked during the analysis.
 
-In order to prove the harder case for terminating programs, need to first
-focus on the only structural rule of the proof system: {\sc Q:Weak}.  This
-rule can be applied anywhere in the derivation, it is not syntax directed.
-To prove the soundness of this rule, we need a lemma that gives a
-semantic explanation of the $\succeq_\Gamma$ relation.
+% \paragraph{Logical contexts.}
+% The second problem related to the logic is how to figure out
+% the logical contexts $\Gamma$ for each program statement.
+% This is a question that is answered by abstract interpretation
+% but, to show that our work really does not need the full power
+% of abstract interpretation, we designed and implemented a very
+% simple top-down approach: starting from a statement $S$ and
+% a pre-condition $\Gamma$ (given as a list of inequalities), we
+% generate $\mathcal P(S, \Gamma)$ a postcondition for $S$ using the
+% following equations:
 
-\begin{lemma}[Relax]
-If $Q' \succeq_\Gamma Q$, for any heap $H$ such that $H \models \Gamma$,
-we have $\Phi_H(Q') \ge \Phi_H(Q)$.
-\end{lemma}
-\begin{proof}
-We observe the following inequations.
-\begin{align*}
-\Phi_H(Q') &= \sum_i q'_i f_i(H) \\
-&\ge q_0 + \sum_{i\in\mathcal U} u_i p_i - \sum_{i\in\mathcal L} l_i p_i
-  + \sum_{i\in\mathcal U} (q_i - p_i) f_i(H) + \sum_{i\in\mathcal L} (q_i + p_i) f_i(H)
-  + \sum_{i\not\in \mathcal U \cup \mathcal L} q_i \\
- &\ge \Phi_H(Q)
-  + \sum_{i\in\mathcal U} (u_i - f_i(H)) p_i
-  + \sum_{i\in\mathcal L} (f_i(H) - l_i) p_i \\
- &\ge \Phi_H(Q).
-\end{align*}
-Since $H \models \Gamma$, using the transitivity of $\models$ and
-the definition of $\mathcal U$ and $\mathcal L$ we get
-$\forall i\in\mathcal L.\, l_i \le f_i(H)$ and
-$\forall i\in\mathcal U.\, f_i(H)\le u_i$.
-These two inequalities justify the last step.
-\end{proof}
+% \begin{align*}
+% \mathcal P(\code{skip}, \Gamma) &:= \Gamma \\
+% \mathcal P(x \gets y, \Gamma) &:= \{ e \le 0 \mid (e \le 0) \in \Gamma \land \{x\} \# e \} \\
+% \mathcal P(x \gets x + y, \Gamma) &:= \Gamma[x / x - y] \\
+% \mathcal P(x \gets x - y, \Gamma) &:= \Gamma[x / x + y] \\
+% \mathcal P(\code{assert}(C), \Gamma) &:= \Gamma,C \\
+% \mathcal P(S_1; S_2, \Gamma) &:= \mathcal P(S_2, \mathcal P(S_1, \Gamma)) \\
+% \mathcal P(\code{if} (C)~S_1~\code{else}~S_2) &:=
+%   \mathcal P(S_1, \Gamma,C) \lor \mathcal P(S_2, \Gamma,\neg C) \\
+% \mathcal P(\code{while}(C)~S, \Gamma) &:=
+%   \Gamma \lor (\neg C, \mathcal P(S, (C, \{ e \le 0 \mid (e \le 0) \in \Gamma \land {\rm set}(S) \# e \})))
+% \end{align*}
+% We used the notation ${\rm set}(S)$ to designate the set of variables
+% assigned to in the statement $S$ and $s\#e$ to mean that variables
+% in $s$ do not appear in the linear combination $e$.  Because contexts
+% are simply conjunction of conditions we must define $\Gamma \lor \Delta$
+% as a function on contexts:
+% $$
+% \Gamma \lor \Delta := \{ e \le 0 \mid (e \le 0) \in \Gamma \cup \Delta \land \Gamma \models (e \le 0) \land \Delta \models (e \le 0) \}.
+% $$
+% It is important to note that the $\mathcal P$ function defined above
+% is not performing any fixpoint computation.  Despite this flagrant
+% lack of sophistication our complete analysis is still able to figure out some
+% tricky invariants as exemplified earlier.
+% Finally, to generate annotations for the whole program $S$,
+% we run $\mathcal P(S,\bullet)$ (where $\bullet$ is the empty context)
+% and memorize all the intermediate results.  In practice, these results are stored in
+% a table that can be referenced at any time during the analysis to get the
+% pre and post-condition of any statement in the program.
 
-Using this lemma, we can tackle the hardest theorem of soundness.  This theorem
-needs a strong statement to make the proof by induction go through and defines
-the complete meaning of a judgement $\Gamma; Q \vdash S \dashv Q'; \Gamma'$.
-In a similar fashion than the busy case, the initial quantitative context is enough
-to perform the whole computation: $q \le \Phi_H(Q)$.  But additionally, the
-two quantitative contexts are also related to the resource consumption $q - q'$
-of the piece of program executed.  This second requirement exactly matches
-the semantic condition described in the overview section: it says that the
-initial potential $\Phi_H(Q)$ is enough to both pay for the resource
-consumption of the program $q - q'$ and pay for the potential of the resulting
-heap $\Phi_{H'}(Q')$.
+% \paragraph{Decision procedure.}
+% To decide logical entailment $\Gamma \models \Delta$ we use
+% Presburger's decision procedure.  But what this procedure gives us
+% is in fact only an answer the the question: Is there any heap $H$
+% such that $H \models \Gamma$.  While this sentence is existential
+% the question $\Gamma \models \Delta$ is universal.  To use the
+% decision procedure, we use the well known trick of double negation.
+% \begin{align*}
+% \Gamma \models C
+% &\Leftrightarrow \neg\neg (\Gamma \models C) \\
+% &\Leftrightarrow \neg\neg (\forall H.\, H\models\Gamma \implies H\models C) \\
+% &\Leftrightarrow \neg \exists H, H\models\Gamma \land \neg H\models C \\
+% &\Leftrightarrow \neg \exists H, H\models\Gamma \land H\models \neg C \\
+% &\Leftrightarrow \neg \exists H, H\models (\Gamma, \neg C)
+% \end{align*}
+% Thus, to know if $\Gamma \models C$ we ask the decision
+% procedure if $\Gamma, \neg C$ is satisfiable and negate the result.
+% When we want to know about $\Gamma \models \Delta$ we simply ask
+% one question for each of the conjuncts of $\Delta$.
 
-The proof of this result if very technical but basically goes through by induction
-on the big-step evaluation.  Only a representative subset of all the cases
-is present in the following proof.
+% \subsection{Linear Contraints Generation}
 
+% \paragraph{Generating a linear program.}
+% Because figuring out the coefficents that are in $Q$ right away is a hard
+% problem, we separate the search of a derivation in two steps.  As a first
+% step we go through the whole program and apply inductively the rules
+% given in the proof system section.  During this process our tool uses
+% symbolic names for the coefficients $(q_i)$.  Every time a side condition
+% must be satisfied by these coefficients, it is recorded using the symbolic
+% names in a global list.  When
+% the list of all constraints that must be satisfied by the coefficients is
+% collected, we feed it to an off the shelf LP-solver.  If the solver successfully
+% finds a solution to the given problem, we know that a derivation
+% exists for the considered program.  We can even ask the solver
+% for the initial $Q$ and get a resource bound for the program.
+% If the LP-solver fails to find a solution, an error is reported to the
+% user.
 
-\begin{theorem}[Terminating case]
-For any $S$, $H$, $H'$, $q$, $q'$, $\Gamma$, $\Gamma'$, $Q$ and $Q'$ such
-that $\Gamma; Q \vdash S \dashv Q'; \Gamma'$ and $H \models \Gamma$ and
-$(H,s) \Downarrow_{(q,q')} H'$, we have
-$H' \models \Gamma'$ and
-$q \le \Phi_H(Q)$ and
-$\Phi_H(Q) - \Phi_{H'}(Q') \ge q - q'$.
-\end{theorem}
-
-\begin{proof} By nested induction on the big step semantics and on the
-judgement derivation (to account for the structural rule {\sc Q:Weak}).
-
-\begin{itemize}
-
-\item Case {\sc S:Skip}.
-  We have $(H, \code{skip}) \Downarrow_{M_k} H$.
-  By assumption, $H \models \Gamma$. \\
-  Since $\Phi_H(Q + M_k) = \Phi_H(Q) + M_k$,
-  \begin{itemize}[topsep=0pt]
-  \item
-    if $M_k \ge 0$ we have,
-      $M_k \le \Phi_H(Q + M_k)$ and
-      $\Phi_H(Q + M_k) - \Phi_H(Q) \ge M_k - 0$;
-  \item
-    if $M_k < 0$ we have,
-      $0 \le \Phi_H(Q + M_k)$ and
-      $\Phi_H(Q + M_k) - \Phi_H(Q) \ge 0 - (-M_k)$.
-  \end{itemize}
-
-\item Case {\sc S:Seq}.
-  By transitivity and induction hypothesis, it is
-  easy to get $H'' \models \Gamma''$.  Now we prove
-  the quantitative part of the theorem.  We have
-  $(q, q') = M_s^1 \cdot (q_1, q'_1) \cdot M_s^2 \cdot (q_2, q'_2)$.
-  We assume $\forall i \in \{1, 2\}.\, M_s^i \ge 0$, the other cases
-  are similar.
-  \begin{itemize}[topsep=0pt]
-  \item
-    The first case is when $q'_1 > M_s^2 + q_2$ then $q = M_s^1 + q_1$
-    and since $q_1 \le \Phi_H(Q - M_s^1)$ (by induction) we have
-    $q \le \Phi_H(Q)$.
-  \item
-    The second case is when $q'_1 \le M_s^2 + q_2$ then $q = M_s^1 + q_1 + M_s^2 + q_2 - q'_1$. \\
-    Since $\Phi_H(Q - M_s^1) - \Phi_{H'}(Q') \ge q_1 - q'_1$
-    and $q_2 \le \Phi_{H'}(Q' - M_s^2)$ we have:
-    \begin{align*}
-    q &\le M_s^1 + \Phi_H(Q - M_s^1) - \Phi_{H'}(Q') + M_s^2 + q_2 \\
-      &= \Phi_H(Q) + (q_2 - \Phi_{H'}(Q' - M_s^2)) \le \Phi_H(Q).
-   \end{align*}
-  \end{itemize}
-  We obtain $\Phi_H(Q) - \Phi_{H''}(Q'') \ge q - q'$ by simply chaining
-  the two induction hypothesis and using the fact that $q - q' =
-  (q_1 + M_s^1 - q'_1) + (q_2 + M_s^2 - q'_2)$.
-
-\item Case {\sc S:WhileStop}.
-  This proof goes just like in the {\sc S:Skip} case.
-
-\item Case {\sc S:WhileStep}.
-  Here again we assume $\forall i \in \{1, 2, 3\}.\, M_w^i \ge 0$.
-  \begin{itemize}[topsep=0pt]
-  \item
-    If $q'_1 > M_w^2 + q_2$ then $q = M_w^1 + q_1$ and by induction
-    we get $q_1 \le \Phi_H(Q - M_w^1)$, so $q \le \Phi_H(Q)$.
-  \item
-    If $q'_1 \le M_w^2 + q_2$ then $q = M_w^1 + q_1 + M_w^2 + q_2 - q'_1$.
-    And we proceed like in the sequence case.
-  \end{itemize}
-  We obtain $\Phi_H(Q) - \Phi_{H''}(Q - M_w^3) \ge q - q'$ using the identity
-  $q - q' = (M_w^1 + M_w^2 + q_1 - q'_1) + q_2 - q'_2$ and the two
-  induction hypothesis
-  \begin{itemize}[topsep=0pt]
-  \item $\Phi_H(Q - M_w^1) - \Phi_{H'}(Q + M_w^2) \ge q_1 - q'_1$ and
-  \item $\Phi_{H'}(Q) - \Phi_{H''}(Q - M_w^3) \ge q_2 - q'_2.$
-  \end{itemize}
-
-\end{itemize}
-\end{proof}
-
-\section{Implementation}
-
-\subsection{Logical Annotations Generation}
-
-\paragraph{Program conditions.}
-The first pass in our OCaml implementation generates the
-logical annotations $\Gamma$ around all program statements.
-These annotations are used later on by the quantitative
-analysis to generate contraints.
-%
-The first design choice we had to make is to give a fixed form
-to program conditions.  Because of their generality and because
-they are closed under negation, we decided to consider
-inequalities over linear combinations as program conditions.
-\begin{mathpar}
-C := L < L \mid L > L \mid L \le L \mid L \ge L
-\and
-L := x \mid k \mid k * L \mid L + L \mid L - L
-\end{mathpar}
-A Condition is represented internally as a pair of one constant
-$k \in \mathbb N$ and one map $m : V \rightarrow \mathbb N$.
-Its intended semantics is
-$$
-\llbracket m \rrbracket(H) = k + \sum_v m_v \cdot H(v) \le 0.
-$$
-Note that conditions of this shape are closed by negation, as showed
-by the following equivalence
-$$
-\neg (k + \sum_v m_v \cdot H(v) \le 0)
-\Leftrightarrow (1-k) + \sum_v -m_v \cdot H(v) \le 0
-$$
-We can also note that all the ``questions'' asked to the logic
-assertions during a proof derivation can be described using
-linear combinations.  Conveniently enough, this language of
-assertions is exactly Presburger's arithmetic.  This means that
-we have a sound and complete decision procedure to answer
-all the questions asked during the analysis.
-
-\paragraph{Logical contexts.}
-The second problem related to the logic is how to figure out
-the logical contexts $\Gamma$ for each program statement.
-This is a question that is answered by abstract interpretation
-but, to show that our work really does not need the full power
-of abstract interpretation, we designed and implemented a very
-simple top-down approach: starting from a statement $S$ and
-a pre-condition $\Gamma$ (given as a list of inequalities), we
-generate $\mathcal P(S, \Gamma)$ a postcondition for $S$ using the
-following equations:
-
-\begin{align*}
-\mathcal P(\code{skip}, \Gamma) &:= \Gamma \\
-\mathcal P(x \gets y, \Gamma) &:= \{ e \le 0 \mid (e \le 0) \in \Gamma \land \{x\} \# e \} \\
-\mathcal P(x \gets x + y, \Gamma) &:= \Gamma[x / x - y] \\
-\mathcal P(x \gets x - y, \Gamma) &:= \Gamma[x / x + y] \\
-\mathcal P(\code{assert}(C), \Gamma) &:= \Gamma,C \\
-\mathcal P(S_1; S_2, \Gamma) &:= \mathcal P(S_2, \mathcal P(S_1, \Gamma)) \\
-\mathcal P(\code{if} (C)~S_1~\code{else}~S_2) &:=
-  \mathcal P(S_1, \Gamma,C) \lor \mathcal P(S_2, \Gamma,\neg C) \\
-\mathcal P(\code{while}(C)~S, \Gamma) &:=
-  \Gamma \lor (\neg C, \mathcal P(S, (C, \{ e \le 0 \mid (e \le 0) \in \Gamma \land {\rm set}(S) \# e \})))
-\end{align*}
-We used the notation ${\rm set}(S)$ to designate the set of variables
-assigned to in the statement $S$ and $s\#e$ to mean that variables
-in $s$ do not appear in the linear combination $e$.  Because contexts
-are simply conjunction of conditions we must define $\Gamma \lor \Delta$
-as a function on contexts:
-$$
-\Gamma \lor \Delta := \{ e \le 0 \mid (e \le 0) \in \Gamma \cup \Delta \land \Gamma \models (e \le 0) \land \Delta \models (e \le 0) \}.
-$$
-It is important to note that the $\mathcal P$ function defined above
-is not performing any fixpoint computation.  Despite this flagrant
-lack of sophistication our complete analysis is still able to figure out some
-tricky invariants as exemplified earlier.
-Finally, to generate annotations for the whole program $S$,
-we run $\mathcal P(S,\bullet)$ (where $\bullet$ is the empty context)
-and memorize all the intermediate results.  In practice, these results are stored in
-a table that can be referenced at any time during the analysis to get the
-pre and post-condition of any statement in the program.
-
-\paragraph{Decision procedure.}
-To decide logical entailment $\Gamma \models \Delta$ we use
-Presburger's decision procedure.  But what this procedure gives us
-is in fact only an answer the the question: Is there any heap $H$
-such that $H \models \Gamma$.  While this sentence is existential
-the question $\Gamma \models \Delta$ is universal.  To use the
-decision procedure, we use the well known trick of double negation.
-\begin{align*}
-\Gamma \models C
-&\Leftrightarrow \neg\neg (\Gamma \models C) \\
-&\Leftrightarrow \neg\neg (\forall H.\, H\models\Gamma \implies H\models C) \\
-&\Leftrightarrow \neg \exists H, H\models\Gamma \land \neg H\models C \\
-&\Leftrightarrow \neg \exists H, H\models\Gamma \land H\models \neg C \\
-&\Leftrightarrow \neg \exists H, H\models (\Gamma, \neg C)
-\end{align*}
-Thus, to know if $\Gamma \models C$ we ask the decision
-procedure if $\Gamma, \neg C$ is satisfiable and negate the result.
-When we want to know about $\Gamma \models \Delta$ we simply ask
-one question for each of the conjuncts of $\Delta$.
-
-\subsection{Linear Contraints Generation}
-
-\paragraph{Generating a linear program.}
-Because figuring out the coefficents that are in $Q$ right away is a hard
-problem, we separate the search of a derivation in two steps.  As a first
-step we go through the whole program and apply inductively the rules
-given in the proof system section.  During this process our tool uses
-symbolic names for the coefficients $(q_i)$.  Every time a side condition
-must be satisfied by these coefficients, it is recorded using the symbolic
-names in a global list.  When
-the list of all constraints that must be satisfied by the coefficients is
-collected, we feed it to an off the shelf LP-solver.  If the solver successfully
-finds a solution to the given problem, we know that a derivation
-exists for the considered program.  We can even ask the solver
-for the initial $Q$ and get a resource bound for the program.
-If the LP-solver fails to find a solution, an error is reported to the
-user.
-
-\paragraph{Making the proof system algorithmic.}
-One problem with the proof system as described is that it is not
-fully syntax directed.  The rule {\sc Q:Weak} can be applied at
-all times.  However, if we apply this weakening rule at every step
-of the derivation, the number of generated constraints and
-the number of queries to the logic system explode.  This blowup
-causes efficiency problems.  To avoid these performance problems
-our implementation only applies the weakening rules at some
-strategic points in the derivation.  More specifically, at sequence
-points, at the beginning of while loops and around conditional
-statements.  So far, this selection of weakening spots has been
-driven by practice but it might be possible to prove that these
-program points are the only ones where weakening is needed.
+% \paragraph{Making the proof system algorithmic.}
+% One problem with the proof system as described is that it is not
+% fully syntax directed.  The rule {\sc Q:Weak} can be applied at
+% all times.  However, if we apply this weakening rule at every step
+% of the derivation, the number of generated constraints and
+% the number of queries to the logic system explode.  This blowup
+% causes efficiency problems.  To avoid these performance problems
+% our implementation only applies the weakening rules at some
+% strategic points in the derivation.  More specifically, at sequence
+% points, at the beginning of while loops and around conditional
+% statements.  So far, this selection of weakening spots has been
+% driven by practice but it might be possible to prove that these
+% program points are the only ones where weakening is needed.
 
 
 % \section{Polynomial Potential}
@@ -2722,8 +2648,6 @@ program points are the only ones where weakening is needed.
 % \end{lemma}
 
 
-
-
 %%
 % Note: Later we need to shift in many directions at once like 
 %   Q' = shift_{x,y} (shift_{x,u} (Q))
@@ -2731,6 +2655,12 @@ program points are the only ones where weakening is needed.
 %%
 
 
+
+\section{Experimental Evaluation}
+
+\section{Related Work}
+
+\section{Conclusion}
 
 
 % \acks
