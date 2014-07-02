@@ -2658,6 +2658,53 @@ to construct certificates for upper bounds derived automatically.
 
 \section{Experimental Evaluation}
 
+\begin{figure*}
+\centering
+\begin{tabular}{c|c|c|c}
+%
+\begin{lstlisting}
+while (z > y)
+  y++;
+while (y > 2)
+  y -= 3;
+\end{lstlisting}
+&
+\begin{lstlisting}
+while (i > 100)
+  i--;
+i += k+50;
+while (i >= 0)
+  i--;
+\end{lstlisting}
+&
+\begin{lstlisting}
+while (x > 0) {
+  x--;
+  t=x, x=y, y=t;
+}
+\end{lstlisting}
+&
+\begin{lstlisting}
+assert(y >= 0);
+while (x>y) {
+  x -= y+1;
+  for (z=y; z > 0; z--)
+    /* skip */;
+}
+\end{lstlisting}
+\\
+%
+\hline
+t08 (slightly modified) & t19 & t30 & t15
+%
+\end{tabular}
+\caption{
+  Comparison of the bounds given by different tools on
+  linear examples.
+}
+\label{fig:compar}
+\end{figure*}
+
 \section{Related Work}
 
 \section{Conclusion}
@@ -2743,7 +2790,7 @@ $|[y,x]|$
       y=y+1;
     else {
       while (y>0)
-	y=y-1;
+        y=y-1;
     }
   }
    \end{lstlisting}
@@ -3338,8 +3385,8 @@ $---$
     j=i+1;
     while (j<n) {
       if (*) {
-	_tick(1);
-	j=j-1; n=n-1;
+        _tick(1);
+        j=j-1; n=n-1;
       }
       j=j+1;
     }
@@ -3662,8 +3709,8 @@ $x$ and $y$, and the interaction between \code{consume} and
     \begin{center}
    \begin{lstlisting}
 int srch(
-  int t[], int n,
-  int p[], int m,
+  int t[], int n,  /* haystack */
+  int p[], int m,  /* needle */
   int b[]
 ) {
   int i=0, j=0, k=-1;
@@ -4264,8 +4311,8 @@ $|\inter x 0| + |\inter 0 y| + 1002 |\inter y x|$
 ? &
 &
 
-$((1+1)+x)+1$ &
-$O(n)$ &
+Fail &
+&
 
 $\max(0, (1 + \max(x, y, 0)))$ &
 $O(n)$ &
