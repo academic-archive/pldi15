@@ -3823,12 +3823,13 @@ $1 + 2 |\inter 0 {\code{len}}|$
 \begin{figure*}
 \tiny
 
-\begin{tabular}{r|p{3cm}c|p{3cm}c|c}
+\begin{tabular}{r|p{3cm}c|p{3cm}c|p{1.8cm}|c}
 
 
 File &
 \multicolumn{2}{|c|}{Rank} &
 \multicolumn{2}{|c|}{Loopus} &
+Speed &
 Amortized Automation
 \\
 \hline
@@ -3842,6 +3843,8 @@ $O(n)$ &
 Fail &
 &
 
+? &
+
 $|\inter 0 x| + |\inter 0 y|$
 \\
 
@@ -3853,6 +3856,8 @@ $O(n^2)$ &
 
 $\max(n, 0) + \max(0, (1 + \max(n, 0))) + \max(0, (1 + \max(n, 0)))$ &
 $O(n)$ &
+
+? &
 
 $1 + 2 |\inter 0 n|$
 \\
@@ -3866,6 +3871,8 @@ Fail &
 Fail &
 &
 
+? &
+
 $1 + 2 |\inter 0 {\code{len}}|$
 \\
 
@@ -3877,6 +3884,8 @@ Fail &
 
 $\max(n, 0) + \max(n, 0)$ &
 $O(n)$ &
+
+God damn it &
 
 $1 + 2 |\inter 0 n|$
 \\
@@ -3890,6 +3899,8 @@ $O(n)$ &
 Fail &
 &
 
+$\frac n m + n$ &
+
 $1 + 2 |\inter 0 n|$
 \\
 
@@ -3901,6 +3912,8 @@ $O(n)$ &
 
 Fail &
 &
+
+$\frac n m + n$ &
 
 $|\inter 0 n|$
 \\
@@ -3914,19 +3927,23 @@ $O(n)$ &
 Fail &
 &
 
+$\max(n, n-m)$ &
+
 Fail
 \\
 
 %--------------------------------------------
 \texttt{speed\_pldi10\_ex1.c} &
 
-$(((1+1)+n)+((-1+((1/2){\cdot}n))+((1/2){\cdot}(n{\cdot}n))))+1$ &
-$O(n^2)$ &
+Fail &
+&
 
-$\max(n, 0) + \max(0,  \max(n, 0) {\cdot} \max(0, (n + -1)))$ &
-$O(n^2)$ &
+Fail &
+&
 
-Fail
+$n$ &
+
+$|\inter 0 n|$
 \\
 
 %--------------------------------------------
@@ -3937,6 +3954,8 @@ $O(n)$ &
 
 $\max(n, 0) + \max(n, 0)$ &
 $O(n)$ &
+
+$n$ &
 
 $|\inter 0 n|$
 \\
@@ -3950,6 +3969,8 @@ Fail &
 Fail &
 &
 
+$n + 1$ &
+
 $1 + 2 |\inter 0 n|$
 \\
 
@@ -3961,6 +3982,8 @@ $O(n)$ &
 
 $\max(0, (n - x)) + \max(0, (m - y))$ &
 $O(n)$ &
+
+$\max(0, n-x) + \max(0, m-y)$ &
 
 $|\inter x n| + |\inter y m|$
 \\
@@ -3974,6 +3997,8 @@ $O(n)$ &
 $\max(0, (\max(0, (x + 1 + -z)) + \max(0, (n - x)))) + \max(0, (n - x))$ &
 $O(n)$ &
 
+$\max(0, n-x) + \max(0, n-z)$ &
+
 $|\inter x n| + |\inter z n|$
 \\
 
@@ -3985,6 +4010,8 @@ $O(n^2)$ &
 
 $\max(0, (m - y)) + \max(0, (n - x))$ &
 $O(n)$ &
+
+$\max(0, m-y) + \max(0, n-x)$ &
 
 $|\inter x n| + |\inter y m|$
 \\
@@ -3998,6 +4025,8 @@ $O(n)$ &
 $\max(0, min(n, (n + -1))) + \max(0, min(n, (n + -1)))$ &
 $O(n)$ &
 
+$n$ &
+
 $|\inter 0 n|$
 \\
 
@@ -4009,6 +4038,8 @@ $O(n)$ &
 
 $\max(n, 0) + \max(n, 0)$ &
 $O(n)$ &
+
+$n$ &
 
 $|\inter 0 n|$
 \\
@@ -4022,6 +4053,8 @@ $O(n)$ &
 $\max(n, 0) + \max(m, 0)$ &
 $O(n)$ &
 
+$n + m$ &
+
 $|\inter 0 m| + |\inter 0 n|$
 \\
 
@@ -4033,6 +4066,8 @@ Fail &
 
 $\max(n, 0) + \max(m, 0)$ &
 $O(n)$ &
+
+$n + m$ &
 
 $|\inter 0 n| + |\inter 0 m|$
 \\
@@ -4046,6 +4081,8 @@ $O(n)$ &
 $\max(n, 0)$ &
 $O(n)$ &
 
+$n$ &
+
 $|\inter 0 n|$
 \\
 
@@ -4057,6 +4094,8 @@ $O(n)$ &
 
 $\max(x, 0) + \max(0, (y +  2 {\cdot} \max(x, 0))) + \max(0, ( 2 {\cdot} \max(x, 0) + \max(y, 0)))$ &
 $O(n)$ &
+
+? &
 
 $1 + 3 |\inter 0 x| + |\inter 0 y|$
 \\
@@ -4070,6 +4109,8 @@ $O(n)$ &
 $\max(0, (\max(0, (y + -9)) + \max(0, (z - y)))) + \max(0, (z - y))$ &
 $O(n)$ &
 
+? &
+
 $1.1 |\inter y z| + 0.1 |\inter 0 y|$
 \\
 
@@ -4081,6 +4122,8 @@ $O(n)$ &
 
 $\max(0, (x - y))$ &
 $O(n)$ &
+
+? &
 
 $|\inter y x|$
 \\
@@ -4094,6 +4137,8 @@ $O(n)$ &
 $\max(0, (n - x)) + \max(0, (m - y))$ &
 $O(n)$ &
 
+? &
+
 $|\inter x n| + |\inter y m|$
 \\
 
@@ -4105,6 +4150,8 @@ $O(n^2)$ &
 
 $\max(x, 0) + \max(0, (\max(x, 0) + \max(y, 0)))$ &
 $O(n)$ &
+
+? &
 
 $2 |\inter 0 x| + |\inter 0 y|$
 \\
@@ -4118,6 +4165,8 @@ $O(n)$ &
 Fail &
 &
 
+? &
+
 $|\inter 0 x|$
 \\
 
@@ -4129,6 +4178,8 @@ $O(n)$ &
 
 Fail &
 &
+
+? &
 
 $101 |\inter 0 x|$
 \\
@@ -4142,6 +4193,8 @@ $O(n)$ &
 $\max(0, (i + -100)) + \max(0, (k + i + 51))$ &
 $O(n)$ &
 
+? &
+
 $50 + |\inter {-1} i| + |\inter 0 k|$
 \\
 
@@ -4153,6 +4206,8 @@ $O(n)$ &
 
 $\max(0, (\max(0, (y - x)) + \max(0, (x - y)))) + \max(0, (y - x))$ &
 $O(n)$ &
+
+? &
 
 $|\inter x y| + |\inter y x|$
 \\
@@ -4166,6 +4221,8 @@ Fail &
 $\max(0, (1000 +  1000 {\cdot} \max(0, -n) + \max(0, (y + -99)))) + \max(0, -n)$ &
 $O(n)$ &
 
+? &
+
 $0.1|\inter n y| + 11 |\inter n 0|$
 \\
 
@@ -4177,6 +4234,8 @@ $O(n)$ &
 
 $\max(0, ( 1000 {\cdot} \max(0, (x - y)) + \max(y, 0))) + \max(0, (x - y)) + \max(0, -x)$ &
 $O(n)$ &
+
+? &
 
 $|\inter x 0| + |\inter 0 y| + 1002 |\inter y x|$
 \\
@@ -4190,6 +4249,8 @@ $O(n)$ &
 $\max(0, (1 + \max(x, y, 0)))$ &
 $O(n)$ &
 
+? &
+
 $|\inter 0 x| + |\inter 0 y|$
 \\
 
@@ -4201,6 +4262,8 @@ Fail &
 
 Fail &
 &
+
+? &
 
 $3 + 2 |\inter 0 x| + |\inter 0 y|$
 \\
@@ -4214,6 +4277,8 @@ Fail &
 Fail &
 &
 
+? &
+
 $1.33 + 0.67 |\inter z y|$
 \\
 
@@ -4226,6 +4291,8 @@ Fail &
 Fail &
 &
 
+? &
+
 $|\inter 0 y|$
 \\
 
@@ -4237,6 +4304,8 @@ $O(n)$ &
 
 $1 + \max(n, 0)$ &
 $O(n)$ &
+
+? &
 
 $|\inter 0 n|$
 \\
