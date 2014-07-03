@@ -2733,17 +2733,18 @@ AAA
 \label{fig:3d}
 \end{figure}
 
-\begin{figure*}
+\begin{figure}
 \centering
 \begin{tabular}{r|c|c|c|c|c}
 & KoAT & Rank & LOOPUS & SPEED & AAA \\
 \hline
-\#bounds &
+\#bounds & 9 & 24 & 20 & 14 & 32
 \\
-\#lin.\ bounds &
+\#lin.\ bounds & 9 & 21 & 20 & 14 & 32
 \\
-\#best bounds &
-
+\#best bounds & 0 & 0 & 11 & 14 & 29
+\\
+\#tested & 14 & 33 & 33 & 14 & 33
 \end{tabular}
 \caption{Comparison of our automatic amortized analysis with other
   automatic tools.  We have not been able to obtain a version of
@@ -2752,7 +2753,7 @@ AAA
   does currently not work on C programs and we use the bounds that
   have been reported in the author's experimental evaluation.}
 \label{fig:compar}
-\end{figure*}
+\end{figure}
 
 
 
@@ -3978,8 +3979,8 @@ $1 + 2 |\inter 0 {\code{len}}|$
 File &
 \multicolumn{2}{|c|}{KoAT} &
 \multicolumn{2}{|c|}{Rank} &
-\multicolumn{2}{|c|}{Loopus} &
-Speed &
+\multicolumn{2}{|c|}{LOOPUS} &
+SPEED &
 AAA
 \\
 \hline
@@ -4086,7 +4087,7 @@ $O(n)$ &
 --- &
 &
 
-$\frac n m + n$ &
+$\frac n m + m$ &
 
 $|\inter 0 n|$
 \\
@@ -4515,8 +4516,8 @@ $|\inter x 0| {+} |\inter 0 y| \discretionary{}{}{} {+} 1002 |\inter y x|$
 --- &
 &
 
-$1 + \max(x, y)$ &
-$O(n)$ &
+--- &
+&
 
 ? &
 
