@@ -8,9 +8,9 @@ func f(x, y) local (a)
         x = x + 1;
 { x - y + z ≤ 0 /\ -z ≤ 0 }
         a = x;
-{ a - y + z ≤ 0 /\ x - y + z ≤ 0 /\ -z ≤ 0 }
+{ -a + x ≤ 0 /\ a - x ≤ 0 /\ a - y + z ≤ 0 /\ x - y + z ≤ 0 /\ -z ≤ 0 }
         a = a + z;
-{ a - y ≤ 0 /\ x - y + z ≤ 0 /\ -z ≤ 0 }
+{ -a + x + z ≤ 0 /\ a - x - z ≤ 0 /\ a - y ≤ 0 /\ x - y + z ≤ 0 /\ -z ≤ 0 }
         f(x, a);
 { T }
         f(a, y);

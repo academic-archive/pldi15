@@ -2,10 +2,10 @@ func swap() local (t)
   (
 { T }
     t = x;
-{ T }
+{ -t + x ≤ 0 /\ t - x ≤ 0 }
     x = y;
     y = t
-{ T }
+{ t - y ≤ 0 /\ -t + y ≤ 0 }
   )
 
 { T }

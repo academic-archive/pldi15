@@ -4,7 +4,7 @@ func count_down(x, y) local (a)
     a = x;
     if a > y
       (
-{ -a + y + 1 ≤ 0 }
+{ -a + y + 1 ≤ 0 /\ -a + x ≤ 0 /\ a - x ≤ 0 }
         a = a - 1;
         count_down(a, y)
 { T }

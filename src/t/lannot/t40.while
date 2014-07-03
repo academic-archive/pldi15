@@ -4,15 +4,15 @@ func count_down(x, y) local (a)
     a = x;
     if a > y
       (
-{ -a + y + 1 ≤ 0 }
+{ -a + y + 1 ≤ 0 /\ -a + x ≤ 0 /\ a - x ≤ 0 }
         a = a - 1;
-{ -a + y ≤ 0 }
+{ -a + y ≤ 0 /\ -a + x - 1 ≤ 0 /\ a - x + 1 ≤ 0 }
         a = count_up(a, y);
         return a
 { 1 ≤ 0 }
       )
     else
-{ a - y ≤ 0 }
+{ a - y ≤ 0 /\ -a + x ≤ 0 /\ a - x ≤ 0 }
       return a
 { 1 ≤ 0 }
   )
@@ -22,15 +22,15 @@ func count_up(x, y) local (a)
     a = y;
     if a + 1 < x
       (
-{ a - x + 2 ≤ 0 }
+{ a - x + 2 ≤ 0 /\ -a + y ≤ 0 /\ a - y ≤ 0 }
         a = a + 2;
-{ a - x ≤ 0 }
+{ a - x ≤ 0 /\ -a + y + 2 ≤ 0 /\ a - y - 2 ≤ 0 }
         a = count_down(x, a);
         return a
 { 1 ≤ 0 }
       )
     else
-{ -a + x - 1 ≤ 0 }
+{ -a + x - 1 ≤ 0 /\ -a + y ≤ 0 /\ a - y ≤ 0 }
       return a
 { 1 ≤ 0 }
   )
