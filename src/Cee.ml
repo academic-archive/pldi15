@@ -117,7 +117,7 @@ type prog_op =
   | OpSet | OpTest
   | OpBreak | OpLoop
   | OpCall | OpReturn
-  | OpSeq
+  | OpSeq | OpTick of int
 
 
 (* compile a CIL program into a [Parse.prog] program *)
@@ -188,6 +188,16 @@ let slice cost {fileName; globals; _} =
           | Some v -> pay_pre (cost OpSet) (PSet (v, None, gid ()))
           | None -> E.s (
               E.error "%s:%d unsupported non-deterministic assignment"
+                loc.file loc.line
+            )
+          )
+
+        | Call (None, Lval (Var ftick, NoOffset), [Const c], loc)
+        when ftick.vname = "tick" ->
+          (match int_of_const c with
+          | Some n -> PTick (cost (OpTick n), gid ())
+          | None -> E.s (
+              E.error "%s:%d invalid tick call"
                 loc.file loc.line
             )
           )
@@ -319,12 +329,19 @@ let slice cost {fileName; globals; _} =
 
 
 let _ =
-  (* if Array.length Sys.argv > 2 && Sys.argv.(1) = "-tcee" then *)
-  let file = Frontc.parse Sys.argv.(1) () in
-  let cflow = function
-    | OpLoop -> 1 | OpCall -> 1
-    | _ -> 0 in
-  let file = Tools.clean_file (slice cflow file) in
+  let iscfile f =
+    let l = String.length f in
+    l >= 2 && f.[l-2] = '.' && f.[l-1] = 'c' in
+  let metric, fname =
+    match Sys.argv with
+    | [| _; "-tick"; f |] when iscfile f ->
+      (function OpTick n -> n | _ -> 0), f
+    | [| _; f |] when iscfile f ->
+      (function OpLoop|OpCall -> 1 | _ -> 0), f
+    | _ -> (fun _ -> 0), "" in
+  if fname <> "" then
+  let file = Frontc.parse fname () in
+  let file = Tools.clean_file (slice metric file) in
   print_string "Sliced program:\n";
   pp_file file;
   print_newline ();
