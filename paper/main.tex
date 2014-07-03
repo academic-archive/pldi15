@@ -2659,15 +2659,17 @@ to construct certificates for upper bounds derived automatically.
 
 \section{Experimental Evaluation}
 
+
+
 \begin{figure*}
 \centering
 \begin{tabular}{c|c|c|c}
 %
 \begin{lstlisting}
-while (z > y)
-  y++;
-while (y > 2)
-  y -= 3;
+while (y > x) {
+  x++; tick(1) }
+while (x > 2) {
+  x -= 3; tick(1) }
 \end{lstlisting}
 &
 \begin{lstlisting}
@@ -2696,7 +2698,7 @@ while (x>y) {
 \\
 %
 \hline
-t08 (slightly modified) & t19 & t30 & t15
+t08a (slightly modified t08) & t19 & t30 & t15
 %
 \end{tabular}
 \caption{
@@ -2708,7 +2710,9 @@ t08 (slightly modified) & t19 & t30 & t15
 
 \begin{figure}
 \includegraphics[width=\linewidth]{fig/bound3d}
-\caption{Please, Jan, find a caption for this}
+\caption{The automatically derived bound $1.33|[x,y]| + 0.33 |[0,x]|$
+  (blue lines) and the measured runtime cost (red crosses) for example
+  \emph{t8a}. For $x\ge 0$ the derived bound is tight.}
 \label{fig:3d}
 \end{figure}
 
@@ -2740,15 +2744,12 @@ In the development of our quantitative Hoare logic we have drawn
 inspiration from mechanically verified Hoare logics.
 Nipkow's~\cite{Nipkow02} description of his implementations of Hoare
 logics in Isabelle/HOL has been helpful to understand the interaction
-of auxiliary variables with the consequence rule.  The consequence
-rule we use in our Coq implementation is a quantitative version of a
-consequence rule that has been attributed to Martin Hofmann by
-Nipkow~\cite{Nipkow02}.  Appel's separation logic for CompCert
-Clight~\cite{AppelLogic} has been a blueprint for the general
-structure of the quantitative logic.  Since we do not deal with memory
-safety, our logic is much simpler and it would be possible to
-integrate it with Appel's logic.  The continuation passing style that
-we use in the quantitative logic is not only used by
+of auxiliary variables with the consequence rule.  Appel's separation
+logic for CompCert Clight~\cite{AppelLogic} has been a blueprint for
+the general structure of the quantitative logic.  Since we do not deal
+with memory safety, our logic is much simpler and it would be possible
+to integrate it with Appel's logic.  The continuation passing style
+that we use in the quantitative logic is not only used by
 Appel~\cite{AppelLogic} but also in Hoare logics for low-level
 code~\cite{NiS06,JensenBK13}.
 
