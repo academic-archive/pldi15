@@ -407,45 +407,42 @@ factor.
 % evaluation and \pref{sec:related} describes related research.
 
 
-\section{Informal Account}
+\section{Overview and Examples}
 \label{sec:inform}
 
 In this section, we informally introduce the quantitative program
 logic and the automatic amortized analysis for for Clight programs.
 The purpose of this section is to build some intuition that should
-make the following sections, which contain more details, easy to read.
+make the following sections easy to read.
 
 \subsection{Quantitative Hoare Logic}
 
-The idea that drives the design of our system is amortized
-analysis~\cite{Tarjan-amort}.  Assume that a program $S$
-executes on a starting state $\state_0$ and consumes $n$ resource units
-of some quantity we are interested in.  We denote that by writing $(S,
-\state_0) \Downarrow_n$.  The basic idea of amortized analysis is to
-define a potential function $\Phi$ that maps program states to
-non-negative numbers and to show that $\Phi(\state) \geq n$ if
-$\state$ is a program state such that such that $(S, \state)
-\Downarrow_n$.
+The idea that drives the design of our framework is amortized
+analysis~\cite{Tarjan-amort}.  Assume that a program $S$ executes on a
+starting state $\state$ and consumes $n$ resource units of some
+quantity we are interested in.  We denote that by writing $(S, \state)
+\Downarrow_n \state'$ where $\state'$ the program state after the
+execution.  The basic idea of amortized analysis is to define a
+\emph{potential function} $\Phi$ that maps program states to non-negative
+numbers and to show that $\Phi(\state) \geq n$ if $\state$ is a
+program state such that such that $(S, \state) \Downarrow_n \state'$.
 
-Since programs can be composed we must enrich the evaluation judgement
-$(S, \state) \Downarrow_{n}$ to talk about the state resulting from
-the program execution.  We write $(S, \state) \Downarrow_n \state'$ to
-say that $\state'$ is the program state after the execution of $S$ in
-starting state $\sigma$.  We now use two potential functions, one that
-applies before the execution, and one that applies after.  The two
-functions must respect the relation $\Phi(\state) \ge n +
-\Phi'(\state')$ for all states $\state$ and $\state'$ such that $(S,
-\state) \Downarrow_n \state'$.  Intuitively, $\Phi(\state)$ must
-provide enough \emph{potential} for both, paying for resource cost of
-the computation and paying for the potential $\Phi'(\state')$ on the
-resulting state $\state'$. That way, if $(\state, S_1) \Downarrow_n
-\state'$ and $(\state', S_2) \Downarrow_m \state''$, we get
-$\Phi(\state) \ge n + \Phi'(\state')$ and $\Phi'(\state') \ge m +
-\Phi''(\state'')$.  This can be composed to $\Phi(\state) \ge (n + m)
-+ \Phi''(\state'')$.  Note that the initial potential function $\Phi$
-provides an upper bound on the resource consumption of the whole
-program.  What we have observed is that, if we define $\htriple{\Phi}
-{S}{\Phi'}$ to mean
+To obtain a compositional analysis we also have to take into account
+the state resulting from the program execution.  We thus use two
+potential functions, one that applies before the execution, and one
+that applies after.  The two functions must respect the relation
+$\Phi(\state) \ge n + \Phi'(\state')$ for all states $\state$ and
+$\state'$ such that $(S, \state) \Downarrow_n \state'$.  Intuitively,
+$\Phi(\state)$ must provide enough \emph{potential} for both, paying
+for resource cost of the computation and paying for the potential
+$\Phi'(\state')$ on the resulting state $\state'$. That way, if
+$(\state, S_1) \Downarrow_n \state'$ and $(\state', S_2) \Downarrow_m
+\state''$, we get $\Phi(\state) \ge n + \Phi'(\state')$ and
+$\Phi'(\state') \ge m + \Phi''(\state'')$.  This can be composed to
+$\Phi(\state) \ge (n + m) + \Phi''(\state'')$.  Note that the initial
+potential function $\Phi$ provides an upper bound on the resource
+consumption of the whole program.  What we have observed is that, if
+we define $\htriple{\Phi} {S}{\Phi'}$ to mean
 $$
 \forall \state\, n\, \state'.\, (\state, p) \Downarrow_n \state' \implies \Phi(\state) \ge
 n + \Phi'(\state')
@@ -458,23 +455,23 @@ $$
 $$
 %
 Similarly, other language constructs lead to rules for the potential
-functions that look very similar to Hoare logic or effect systems
+functions that look very similar to Hoare logic or effect system
 rules.  These rules enable interactive reasoning about resource usage
 in a flexible and compositional way, which, as a side effect, produces
 a certificate for the derived resource bound.
 
-We have implemented and proved sound such a quantitative Hoare for
-CompCert Clight in the Coq Proof Assistant.  Because we use a shallow
-embedding in Coq, every function that can be expressed in Coq can in
-principle be used as a resource bound.  We can use the logic to prove
-a concrete bound for a given resource metric, or a bound that is
-parametric in a set of resource metrics.  It is also possible to
-incorporate boolean preconditions into the bounds to express that the
-bound is only valid for a certain class of inputs.  To this end, we
-allow the potential function $\Phi$ in the pre and post conditions to
-take non-negative number or $\infty$ (infinity) as values.  Infinity,
-plays the same role as $\mathit{false}$ in Hoare logic.  Boolean assertions can
-be embedded into potential functions by mapping $\mathit{false}$ to $\infty$ and
+% We have implemented and proved sound such a quantitative Hoare for
+% CompCert Clight in the Coq Proof Assistant.  Because we use a shallow
+% embedding in Coq, every function that can be expressed in Coq can in
+% principle be used as a resource bound.    
+
+It is also possible to incorporate boolean preconditions into the
+bounds to express that the bound is only valid for a certain class of
+inputs.  To this end, we allow the potential function $\Phi$ in the
+pre and post conditions to take non-negative number or $\infty$
+(infinity) as values.  Infinity, plays the same role as
+$\mathit{false}$ in Hoare logic.  Boolean assertions can be embedded
+into potential functions by mapping $\mathit{false}$ to $\infty$ and
 $\mathit{true}$ to $0$.
 
 \begin{figure}
@@ -518,42 +515,41 @@ while (k > 0) {
 
 \caption{Example derivation using amortized reasoning.  We write
   $\#_1(a)$ for $\# \{ i \mid 0 \le i < N \land a[i] = 1 \}$ and use the
-  tick metric that assigns cost $n$ to \lstinline{tick(n)} statements and
-  0 to other operations.
+  tick metric that assigns cost $n$ to the statement \lstinline{tick(n)} and
+  0 to all other operations.
   }
 \label{fig:xmplinc}
 \end{figure}
 
-
-
-
-It is for instance possible to derive the following quantitative
-triple for a binary-search that holds for all stack metrics $M$.  A
-stack metric assigns cost $0$ to all evaluation steps except function
-calls.  Before a call $f(x)$, we consume $M_f > 0$ resources and
-after the call we return $M_f$ resources that can be used in
-subsequent function calls.  So $M_f$ corresponds to the stack-frame
-size of the function $f$.
+We can use the logic to prove a concrete bound for a given resource
+metric, or a bound that is parametric in a set of resource metrics.
+For example, it is possible to derive the following quantitative
+triple for a binary-search function \code{bsearch} that holds for all
+stack metrics $M$.  
 %
 \begin{center}
 ${ \{ (Z = \log_2(h-l)) + Z{\cdot}M_\code{bsearch} \} }$
 \code{bsearch(x,l,h)}
 ${ \{ Z{\cdot}M_\code{bsearch} \} }$
-  
 \end{center}
 %
-In the pre and post condition, the logical variable $Z$ is used to
-relate the size of the input with the potential that is left after the
-function call.  The logical part $Z = \log_2(h-l)$ of the precondition
-is $0$ if $Z = \log_2(\state_0(h)-\state_0(l))$ in the initial state
-$\state_0$ and $\infty$ otherwise.
+A stack metric assigns cost $0$ to all evaluation steps except
+function calls.  Before a call $f(x)$, we consume $M_f > 0$ resources
+and after the call we return $M_f$ resources that can be used in
+subsequent function calls.  So $M_f$ corresponds to the stack-frame
+size of the function $f$.  In the pre- and postcondition, the logical
+variable $Z$ is used to relate the size of the input with the
+potential that is left after the function call.  The logical part $Z =
+\log_2(h-l)$ of the precondition is $0$ if $Z =
+\log_2(\state_0(h)-\state_0(l))$ in the initial state $\state_0$ and
+$\infty$ otherwise.
 
-Assume for the remainder of this section that we are interested in
-bounding the number of \emph{ticks} in a program.  In other words, we
-use a resource metric that assigns cost $n$ to the function call
-\code{tick(n)} and cost $0$ to all other operations.  The argument $n$
-is an integer and a negative number means that $-n$ resources are
-returned.
+For simplicity, assume for the remainder of this section that we are
+interested in bounding the number of \emph{ticks} in a program.  In
+other words, we use a resource metric that assigns cost $n$ to the
+function call \code{tick(n)} and cost $0$ to all other operations.
+The argument $n$ is an integer and a negative number means that $-n$
+resources are returned.
 
 We say that the analysis is amortized because the use of a potential
 function $\Phi$ enables us to amortize the cost of operations like in
@@ -566,7 +562,9 @@ executed by the program are bounded by $\#_1(a) + 2k$.  Here, $k$ is
 the number of increments to the counter that are performed by the
 program and $ \#_1(a) = \# \{ i \mid 0 \le i < N \land a[i] = 1 \}$ is
 the number of $1$'s in the array $a$.  We have inserted the statement
-\code{tick(1)} into the program whenever we update the array $a$.
+\code{tick(1)} into the program whenever we update the array $a$.  A
+naive analysis of the algorithm would lead to a quadratic bound since
+there can be a linear number of updates in the inner loop.
 
 To derive the bound for the program in~\pref{fig:xmplinc} in the
 quantitative Hoare logic, we follow the textbook
@@ -584,7 +582,7 @@ statement $\code{tick(1)}$, we are left with the potential $\#_1(a) +
 2(k - 1)$.  But since we increment $k$ at the end of the outer loop,
 we can establish again our loop invariant $\#_1(a) + 2k$.
 
-See Section XXX for more a formal definition of the logic and
+See \pref{sec:logic} for more a formal definition of the logic and
 additional example derivation.
 
 % For example we have the following judgement (provided that initially
@@ -617,8 +615,9 @@ triples for common C programs.
 
 To this end, we fix the shape of the potential functions $\Phi$ so
 that it becomes possible to use \emph{linear programming} (LP) to
-compute a derivation in the logic.  If we assume that a program state
-$\state$ simply maps variable to integers then we require
+compute a derivation in the logic.  If we assume for now that a
+program state $\state$ simply maps variable to integers then we
+require
 $$
 \Phi(\state) = q_0 + \sum_{x,y \in \dom{\state}} q_{(x,y)} {\cdot} |[\state(x),\state(y)]|
 $$
@@ -645,9 +644,10 @@ loop invariant.  For the loop body we then (like in Hoare logic) have
 to derive a triple like
 $\htriple{\Phi_0}{\code{x=x+1;tick(1)}}{\Phi_0}$.  However, we can
 only do so if we utilize the fact that $x<y$ at the beginning of the
-loop body.  The reasoning then works as follows.  We start with the
-potential $|[x,y]|$ and the fact that $|[x,y]| > 0$ before the
-assignment.  If we denote the updated version of $x$ after the
+loop body.  % The reasoning then works as follows. We start with the
+% potential $|[x,y]|$ and the fact that $|[x,y]| > 0$ before the
+% assignment.  
+If we denote the updated version of $x$ after the
 assignment by $x'$ then the relation $|[x,y]| = |[x',y]| + 1$ between
 the potential before and after the assignment \code{x=x+1} holds.
 This means that we have the potential $|[x,y]| + 1$ before the
@@ -655,6 +655,26 @@ statement \code{tick(1)}.  Since \code{tick(1)} consumes one resource unit,
 we end up with potential $|[x,y]|$ after the loop body and have
 established the loop invariant again.
 
+Note that our notion of a potential function is a generalization of the
+concept of a ranking function.  A potential function can be used like
+a ranking function if we use the tick metric and add the statement
+\code{tick(1)} to every back edge of the program (loops and function
+calls).  However, a potential function is more flexible.  For example,
+we can use a potential function to prove that Example~2 does not
+consume any resources in the tick metric.
+\begin{lstlisting}
+  while (x<y) {tick(-1); x=x+1; tick(1);} #\hfill \textnormal{(Example 2)}#
+\end{lstlisting}
+Similarly we can prove that Example~3 can be bounded by $10|[x,y]|$.
+In both cases, we reason exactly like in the first version of the
+while loop to prove the bound.  Of course, such loops with different
+tick annotations can be seamlessly combined in a larger program.
+\begin{lstlisting}
+  while (x<y) {x=x+1; tick(10);} #\hfill \textnormal{(Example 3)}#
+\end{lstlisting}
+%
+Also note that there are no restrictions on the signs of the input
+variables in the examples.
 
 \begin{figure}[t]
   \centering
@@ -681,125 +701,7 @@ ${\color{blue}%
     $T$.}
   \label{fig:ex1}
 \end{figure}
-More formally, we develop (in section XXX) a judgement 
-$$
-\Gamma; Q \vdash S \dashv Q'; \Gamma'
-$$
-such that $\Gamma$ contains logical assertions like $x<y$ that we
-collect along the conditional branches of the program and $Q$ is a
-family of coefficents $Q = (q_{(a,b)})_{a,b \in \text{scope}}$ that is
-indexed by the variables that are currently in scope.  The logical
-context $\Gamma$ is simply a conjunction of inequalities between
-linear combinations variables.  It is used to determine at the
-assignment if we can extract constant potential to pay for future
-cost.  It is important to note that the reasoning about assertions in
-$\Gamma$ are very basic.  We do not perform any fixpoint computations
-and only derive trivial loop invariants about variables that are
-unchanged in the loop body.
-
-Note that our notion of a potential function is a refinement of the
-concept of a ranking function.  A potential function can be used like
-a ranking function if we use the tick metric and add the statement
-\code{tick(1)} to every back edge of the program (loops and function
-calls).  However, a potential function is more flexible.  For example,
-we can use a potential function to prove that Example~2 does not
-consume any resources in the tick metric.
-\begin{lstlisting}
-  while (x<y) {tick(-1); x=x+1; tick(1);} #\hfill \textnormal{(Example 2)}#
-\end{lstlisting}
-Similarly we can prove that Example~3 can be bounded by $10|[x,y]|$.
-In both cases, we reason exactly like in the first version of the
-while loop to prove the bound.  Of course, such loops with different
-tick annotations can be seamlessly combined in a larger program.
-\begin{lstlisting}
-  while (x<y) {x=x+1; tick(10);} #\hfill \textnormal{(Example 3)}#
-\end{lstlisting}
 %
-\pref{fig:ex1} shows a derivation of the bound
-$\frac{T}{K}{\cdot}|[x,y]|$ on the number of ticks for a generalized
-version of Example~1 in which increment $x$ be a constant $K>0$ and
-consume $T>0$ resources in each iteration.  The reasoning is similar
-to the description of Example~1 except that we obtain the potential
-$K{\cdot}\frac{T}{K}$ after the assignment.  Note that the logical
-assertions in $\Gamma$ are only used in rule for the assignment
-\code{x=x+K}.  To the best of our knowledge, no other tool is
-currently capable of deriving a tight bound on the cost of such a
-loop.  For $T=1$ (many systems focus on the number of loop iterations
-without a cost model) and $K=10$, KoAT~\cite{BrockschmidtEFFG14}
-computes the bound $x + y + 10$, PUBS~\cite{AlbertAGPZ12} computes
-the tight bound $0.1(y-x)$, Rank~\cite{AliasDFG10} computes the bound XXX, and
-LOOPUS~\cite{SinnZV14} computes the bound $y-(x+9)$.
-
-It might be surprising that we only track simple linear relations in
-the logical context $\Gamma$.  It would of course be possible to keep
-track more sophisticated assertions.  However, this simple form is
-sufficient for the examples we considered and we can efficiently
-decide queries such as $\Gamma \implies x<y \; ?$ that we make in the
-assignment rule.  Nevertheless, this logical part of our analysis
-system is orthogonal to the quantitative part and can be easily
-extended if necessary.
-
-To understand the capabilities of the automatic analysis, it is
-instructive to study more involved examples.  \pref{fig:ex_list}
-contains Examples \emph{speed\_1} and \emph{speed\_2} that are taken
-from previous work on bound analysis~\cite{GulwaniMC09}.  The SPEED
-tool~\cite{GulwaniMC09} derives the bounds as our analysis but
-requires inference of a \emph{disjunctive invariant}.  In the abstract
-interpretation community, these invariants are known to be notoriously
-difficult to handle.
-%
-In example \emph{speed\_1} we have one loop that first increments
-variable $y$ up to $m$ and then increments variable $x$ up to $n$.  We
-derive the tight bound $|[x, n]| + |[y, m]|$.
-%
-Example \emph{speed\_2} is more tricky and trying to understand how it
-works may be challenging.  However, with the amortized analysis in
-mind, using the potential transfer reasoning, it is almost trivial to
-prove a bound.  While the SPEED tool has to find a fairly
-involved invariant for the loop, our tool is simply reasoning locally
-and works without any clever tricks. We obtain the tight bound $|[x,
-n]| + |[z, n]|$.
-
-Example \emph{t08a} shows the ability of the analysis to handle
-negative and non-negative numbers.  Note that there are no
-restrictions on the signs of $z$ and $y$.  We also see that we can
-accurately track the size change of $y$ in the first loop.
-Furthermore, \emph{t08a} shows that we do not handle the constants $1$
-or $0$ in any special way.  In all examples you could replace $0$ and
-$1$ with other constants like we did in the second loop and still
-derive a tight bound.  The only information, that the analyzer needs
-is $y \geq c$ before assigning $y = y - c$.
-
-Example \emph{t27} shows how amortization can be used to handle tricky
-nested loops.  The outer loop we increment the variable $n$ till $n =
-0$.  In each of the $|[n,0]|$ iterations, we increment the variable
-$y$ by $1000$.  We then non-deterministically execute an inner loop
-that decrements $y$ by $100$ until $y<100$.  The analysis can derive
-that only the first execution of the inner loop depends on the initial
-value of $y$.  We again derive tight constant factors.
-
-As mentioned, the analysis naturally handles advanced control flow
-like \code{break} and \code{return} statements, and mutual recursion.
-\pref{fig:ex_rec} contains two mutually-recursive functions with their
-automatically derived tick bounds.  The function \code{count\_down}
-decrements its first argument $x$ until it reaches the second argument
-$y$. It then recursively calls the function \code{count\_up}.  The
-function \code{count\_up} is dual to \code{count\_down}.  Here, we
-count up $y$ by $2$ and recursively call \code{count\_down}.  Our
-analysis system can compute a tight bound.  On this example, the
-analysis amounts to computing the meeting point of two trains that
-approach each other with different speeds.
-% This is comparable to the
-% determination of the point at which to trains meet if they approach
-% each other with different speeds.
-
-We only show a very small selections of the programs that we can
-handle automatically here.  In \pref{app:cat} you find a list of more
-than $30$ classes of challenging programs that we can automatically
-analyze.  We hope that this gives you an impression of the
-capabilities of the analysis but we also point out that this list is
-far from being exhaustive.
-
 \newlength{\progwidth}
 
 \begin{figure*}[t!]
@@ -955,6 +857,108 @@ $59|[n,0]| {+} 0.05|[0,y]|$
     {+} 0.05|[0,y]|$.}
   \label{fig:ex_list}
 \end{figure*}
+%
+%
+More formally, we develop (\pref{sec:AAA}) a judgement 
+$$
+\Gamma; Q \vdash S \dashv Q'; \Gamma'
+$$
+such that $\Gamma$ contains logical assertions like $x<y$ that we
+collect along the conditional branches of the program and $Q$ is a
+family of coefficents $Q = (q_{(a,b)})_{a,b \in \text{scope}}$ that is
+indexed by the variables that are currently in scope.  The logical
+context $\Gamma$ is simply a conjunction of inequalities between
+linear combinations variables.  It is used to determine at the
+assignment if we can extract constant potential to pay for future
+cost.  It is important to note that the reasoning about assertions in
+$\Gamma$ is very basic.  We do not perform any fixpoint computations
+and only derive trivial loop invariants about variables that are
+unchanged in the loop body.
+
+\pref{fig:ex1} shows a derivation of the bound
+$\frac{T}{K}{\cdot}|[x,y]|$ on the number of ticks for a generalized
+version of Example~1 in which increment $x$ be a constant $K>0$ and
+consume $T>0$ resources in each iteration.  The reasoning is similar
+to the description of Example~1 except that we obtain the potential
+$K{\cdot}\frac{T}{K}$ after the assignment.  Note that the logical
+assertions in $\Gamma$ are only used in rule for the assignment
+\code{x=x+K}.  To the best of our knowledge, no other tool for C is
+currently capable of deriving a tight bound on the cost of such a
+loop.  For $T=1$ (many systems focus on the number of loop iterations
+without a cost model) and $K=10$, KoAT~\cite{BrockschmidtEFFG14}
+computes the bound $x + y + 10$, Rank~\cite{AliasDFG10} computes the
+bound $y-x-7$, and LOOPUS~\cite{SinnZV14} computes the bound
+$y-(x+9)$.  Only PUBS~\cite{AlbertAGPZ12} computes the tight bound
+$0.1(y-x)$ if we translate the program into a term-rewriting system by
+hand.
+
+It might be surprising that we only track simple linear relations in
+the logical context $\Gamma$.  It would of course be possible to keep
+track more sophisticated assertions.  However, this simple form is
+sufficient for the examples we considered and we can efficiently
+decide queries such as $\Gamma \implies x<y \; ?$ that we make in the
+assignment rule.  Nevertheless, this logical part of our analysis
+system is orthogonal to the quantitative part and can be easily
+extended if necessary.
+
+As mentioned, the automatic analysis can handle challenging example
+programs without special tricks or techniques.  Examples
+\emph{speed\_1} and \emph{speed\_2} that are taken from previous work
+on bound analysis~\cite{GulwaniMC09} and demonstrate the our method
+can handle \emph{tricky iteration patterns}.  The SPEED
+tool~\cite{GulwaniMC09} derives the same bounds as our analysis but
+requires inference of \emph{disjunctive invariants}.  In the abstract
+interpretation community, these invariants are known to be notoriously
+difficult to handle.
+%
+In example \emph{speed\_1} we have one loop that first increments
+variable $y$ up to $m$ and then increments variable $x$ up to $n$.  We
+derive the tight bound $|[x, n]| + |[y, m]|$.
+%
+Example \emph{speed\_2} is more tricky and we found it hard to
+manually find a bound.  However, with the amortized analysis in mind,
+using the potential transfer reasoning, it is almost trivial to prove
+the tight bound $|[x, n]| + |[z, n]|$.
+
+Example \emph{t08a} shows the ability of the analysis to discover
+interaction between \emph{sequential loops or function calls} through
+size changes of variables.  We accurately track the size change of $y$
+in the first loop by transferring the potential $0.1$ form $|[y,z]| to
+|[0,y]|$.  Furthermore, \emph{t08a} shows that we do not handle the
+constants $1$ or $0$ in any special way.  In all examples you could
+replace $0$ and $1$ with other constants like we did in the second
+loop and still derive a tight bound.  The only information, that the
+analyzer needs is $y \geq c$ before assigning $y = y - c$.
+
+Example \emph{t27} shows how amortization can be used to handle
+\emph{interacting nested loops}.  The outer loop we increment the variable $n$
+till $n = 0$.  In each of the $|[n,0]|$ iterations, we increment the
+variable $y$ by $1000$.  We then non-deterministically execute an
+inner loop that decrements $y$ by $100$ until $y<100$.  The analysis
+can derive that only the first execution of the inner loop depends on
+the initial value of $y$.  We again derive tight constant factors.
+%
+
+As mentioned, the analysis also handles advanced control flow like
+\code{break} and \code{return} statements, and mutual recursion.
+\pref{fig:ex_rec} contains two mutually-recursive functions with their
+automatically derived tick bounds.  The function \code{count\_down}
+decrements its first argument $x$ until it reaches the second argument
+$y$. It then recursively calls the function \code{count\_up}.  The
+function \code{count\_up} is dual to \code{count\_down}.  Here, we
+count up $y$ by $2$ and recursively call \code{count\_down}.  Our
+analysis system is the only available system that can compute a tight
+bound on this example.  The analysis amounts to computing the meeting
+point of two trains that approach each other with different speeds.
+% This is comparable to the
+% determination of the point at which to trains meet if they approach
+% each other with different speeds.
+
+We only show a small selections of the programs that we can handle
+automatically here.  In \pref{app:cat} is a list of more than $30$
+classes of challenging programs that we can automatically analyze.
+\pref{sec:exper} contains a more detailed comparison with other tools
+for automatic bound derivation.
 
 
 \begin{figure}[t]
@@ -1310,6 +1314,7 @@ termination.  This is formalized by \pref{lem:sem_term}.
 
 
 \section{Quantitative Hoare Logic}
+\label{sec:logic}
 
 In this section we describe a simplified version of the quantitative
 Hoare logic that we use in Coq to interactively prove resource bounds.
@@ -1914,6 +1919,7 @@ induction.
 
 
 \section{Automatic Amortized Analysis}
+\label{sec:AAA}
 
 In this section we present the automatic amortized analysis that we
 use in our implementation to derive linear resource bounds for C
@@ -2661,6 +2667,7 @@ to construct certificates for upper bounds derived automatically.
 
 
 \section{Experimental Evaluation}
+\label{sec:exper}
 
 We have experimentally evaluated the practicability of our automatic
 amortized analysis with more than 30 challenging loop and recursion
