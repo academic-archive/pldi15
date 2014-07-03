@@ -81,8 +81,8 @@ Sorry, I could not find a bound.
 1.00 |[0, y]|
 
 ** File t08.c **
-1.10 |[y, z]|
-0.10 |[0, y]|
+1.33 |[y, z]|
+0.33 |[0, y]|
 
 ** File t10.c **
 1.00 |[y, x]|

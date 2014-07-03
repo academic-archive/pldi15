@@ -88,9 +88,9 @@ Total Bound: max(n, 0)
 Total Bound: max(x, 0) + max(0, (y +  2 × max(x, 0))) + max(0, ( 2 × max(x, 0) + max(y, 0)))
 
 ** File t08.c **
-1.10 |[y, z]|
-0.10 |[0, y]|
-Total Bound: max(0, (max(0, (y + -9)) + max(0, (z - y)))) + max(0, (z - y))
+1.33 |[y, z]|
+0.33 |[0, y]|
+Total Bound: max(0, (max(0, (y + -2)) + max(0, (z - y)))) + max(0, (z - y))
 
 ** File t10.c **
 1.00 |[y, x]|
