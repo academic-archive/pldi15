@@ -2203,19 +2203,20 @@ of {\sc Q:Weak}.
 \begin{proof}
 We observe the following inequations.
 \begin{align*}
-\Phi_{Q'}(\state) &= \sum_i q'_i f_i(H) \\
+\Phi_{Q'}(\state) &= \sum_i q'_i f_i(\state) \\
 &\ge q_0 + \sum_{i\in\mathcal U} u_i p_i - \sum_{i\in\mathcal L} l_i p_i
-  + \sum_{i\in\mathcal U} (q_i - p_i) f_i(bH)  \\ & \;\;\;\;\;\;\;\; + \sum_{i\in\mathcal L} (q_i + p_i) f_i(H)
+  + \sum_{i\in\mathcal U} (q_i - p_i) f_i(\state)  \\ &
+  \;\;\;\;\;\;\;\; + \sum_{i\in\mathcal L} (q_i + p_i) f_i(\state)
   + \sum_{i\not\in \mathcal U \cup \mathcal L} q_i \\
  &\ge \Phi_Q(\state)
-  + \sum_{i\in\mathcal U} (u_i - f_i(H)) p_i
-  + \sum_{i\in\mathcal L} (f_i(H) - l_i) p_i \\
+  + \sum_{i\in\mathcal U} (u_i - f_i(\state)) p_i
+  + \sum_{i\in\mathcal L} (f_i(\state) - l_i) p_i \\
  &\ge \Phi_Q(\state).
 \end{align*}
-Since $H \models \Gamma$, using the transitivity of $\models$ and
+Since $\state \models \Gamma$, using the transitivity of $\models$ and
 the definition of $\mathcal U$ and $\mathcal L$ we get
-$\forall i\in\mathcal L.\, l_i \le f_i(H)$ and
-$\forall i\in\mathcal U.\, f_i(H)\le u_i$.
+$\forall i\in\mathcal L.\, l_i \le f_i(\state)$ and
+$\forall i\in\mathcal U.\, f_i(\state)\le u_i$.
 These two inequalities justify the last step.
 \end{proof}
 %
