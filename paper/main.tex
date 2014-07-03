@@ -965,19 +965,6 @@ $\;\;\;\;\;\;\,0.67 |[y,x]|\;\;$ (\code{count\_up(x,y)})
   \label{fig:ex_rec}
 \end{figure}
 
-\subsection{Implementation}
-
-We implemented the new automatic amortized analysis using CIL [XXX].
-CIL is a subset of C that is very similar to CompCert Clight but
-provides tool support that facilitated the implementation.  The
-implementation is publically available at XXX.  More details can be
-found in section XXX.
-
-We do not yet generate certificates in the program logic that are
-checkable in Coq.  This is substantial additional engineering effort
-but is conceptually straightforward as we describe in detail in
-Section XXX.
-
 
 \section{Syntax and Semantics}
 \label{sec:sem}
@@ -2668,23 +2655,24 @@ to construct certificates for upper bounds derived automatically.
 &
 \begin{lstlisting}
 while (y > x) {
-  x++; tick(1) }
+  x++; tick(1); }
 while (x > 2) {
-  x -= 3; tick(1) }
+  x -= 3; tick(1); }
 \end{lstlisting}
 &
 \begin{lstlisting}
-while (i > 100)
-  i--;
+while (i > 100) {
+  i--; tick(1) }
 i += k+50;
-while (i >= 0)
-  i--;
+while (i >= 0) {
+  i--; tick(1); }
 \end{lstlisting}
 &
 \begin{lstlisting}
 while (x > 0) {
   x--;
   t=x, x=y, y=t;
+  tick(1);
 }
 \end{lstlisting}
 &
@@ -2693,7 +2681,8 @@ assert(y >= 0);
 while (x>y) {
   x -= y+1;
   for (z=y; z > 0; z--)
-    /* skip */;
+    tick(1);
+  tick(1);
 }
 \end{lstlisting}
 \\
@@ -2703,9 +2692,31 @@ while (x>y) {
 %
 \\
 \hline
-LOOPUS \\
-Rank \\
-AAA
+LOOPUS &
+{\small XXX} &
+{\small $\max(0, \! i{-}10^2) \!+ \max(0, \! k {+} i {+} 51)$} &
+{\small % $1 + \max(x, y)$ (???)
+---
+} &
+---
+\\
+%
+%
+%
+%
+Rank &
+{\small $2 {+} y {-} x (???)$ } &
+{\small $54+k+i$ } &
+--- &
+{\small $2+2x-y$ }
+\\
+%
+%
+AAA 
+  & {\small $1.33|[x,y]| {+} 0.33 |[0,x]|$ }
+  & $50 {+} |\inter {-1} i| {+} |\inter 0 k|$ 
+  & $|\inter 0 x| {+} |\inter 0 y|$
+  & $|\inter 0 x|$
 \end{tabular}
 \caption{ Comparison of resource bounds derived by different tools on
   several examples with linear bounds.  AAA stands for our automatic
