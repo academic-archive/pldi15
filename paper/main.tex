@@ -2663,8 +2663,9 @@ to construct certificates for upper bounds derived automatically.
 
 \begin{figure*}
 \centering
-\begin{tabular}{c|c|c|c}
+\begin{tabular}{t|c|c|c|c}
 %
+&
 \begin{lstlisting}
 while (y > x) {
   x++; tick(1) }
@@ -2698,13 +2699,18 @@ while (x>y) {
 \\
 %
 \hline
-t08a (slightly modified t08) & t19 & t30 & t15
+& t08a (slightly modified t08) & t19 & t30 & t15
 %
+\\
+\hline
+LOOPUS \\
+Rank \\
+AAA
 \end{tabular}
-\caption{
-  Comparison of the bounds given by different tools on
-  linear examples.
-}
+\caption{ Comparison of resource bounds derived by different tools on
+  several examples with linear bounds.  AAA stands for our automatic
+  amortized analysis for Clight.  The output of Rank has been manually
+  simplified to fit the table.  }
 \label{fig:compar}
 \end{figure*}
 
@@ -2712,7 +2718,7 @@ t08a (slightly modified t08) & t19 & t30 & t15
 \includegraphics[width=\linewidth]{fig/bound3d}
 \caption{The automatically derived bound $1.33|[x,y]| + 0.33 |[0,x]|$
   (blue lines) and the measured runtime cost (red crosses) for example
-  \emph{t8a}. For $x\ge 0$ the derived bound is tight.}
+  \emph{t08a}. For $x\ge 0$ the derived bound is tight.}
 \label{fig:3d}
 \end{figure}
 
