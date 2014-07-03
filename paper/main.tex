@@ -2695,7 +2695,36 @@ translated into a term-rewriting to be analyzed by these tools.  For
 Rank it is not totally clear how the computed bound relates to the C
 program since the computed bound is for transitions in an automaton
 that is derived from the C code.  For instance, the bound $2+y-x$ that
-is derived for \emph{t08}.
+is derived for \emph{t08} only applies to the first loop in the
+program.
+
+\pref{tab:compar} summarizes the results of our experiments.  It shows
+for each tool the number of derived bounds (\#bounds), the number of
+asymptotically tight bounds (\#lin. bounds), the number of bounds with
+the best constant factors in comparison with the other tools (\#best
+bounds), and the number of examples that we were able to test with the
+tool (\#tested).  Since we were not able to run the exponents for KoAT
+and SPEED, we simply used the bounds the have been reported by the
+authors of the respective tools.  The results show that our automatic
+amortized analysis outperforms the existing tools on our example
+programs.  However, this experimental evaluation has to be taken with
+a grain of salt.  Our goal in this work is not to set a new standard
+for automatic bound analysis but only to show that our approach has
+advantages on certain types of examples.  Overall the existing tools
+are more powerful since they can derive polynomial bounds and support
+more features of C.  We were particularly impressed by LOOPUS which is
+very robust, works on large C files, and derives very precise bounds.
+We did not include the running times of the tools in the table since
+all the tested tools work very efficiently and need less then a second
+on all tested examples.
+
+Since we have a formal cost semantics, we can run our examples with
+this semantics for different inputs and measure the cost to compare it
+to our derived bound.  \pref{fig:3d} shows such a comparison for
+example \emph{t08}.  One can see the derived constant factors are the
+best possible if the input variable $x$ is non-negative.  If $x$ is
+negative then the bound is only slightly off.
+
 
 
 \begin{figure*}
@@ -2783,7 +2812,7 @@ AAA
 \label{fig:3d}
 \end{figure}
 
-\begin{figure}
+\begin{table}
 \centering
 \begin{tabular}{r|c|c|c|c|c}
 & KoAT & Rank & LOOPUS & SPEED & AAA \\
@@ -2802,8 +2831,8 @@ AAA
   reported by the authors. Similarly, KoAT~\cite{BrockschmidtEFFG14}
   does currently not work on C programs and we use the bounds that
   have been reported in the author's experimental evaluation.}
-\label{fig:compar}
-\end{figure}
+\label{tab:compar}
+\end{table}
 
 
 
@@ -4011,7 +4040,7 @@ $1 + 2 |\inter 0 {\code{len}}|$
 
 
 
-\begin{figure*}
+\begin{table*}
 \small
 
 \newcommand{\dir}[2]{\texttt{#1} \\ \texttt{#2}}
@@ -4655,7 +4684,7 @@ $1 {+} |\inter 0 n|$
   marked with --- mean that the tool failed to produce a result.
 }
 \label{fig:eval}
-\end{figure*}
+\end{table*}
 
 
 
