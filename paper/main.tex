@@ -2646,6 +2646,56 @@ to construct certificates for upper bounds derived automatically.
 
 \section{Experimental Evaluation}
 
+We have experimentally evaluated the practicability of our automatic
+amortized analysis with more than 30 challenging loop and recursion
+patterns from open-source code and the
+literature~\cite{GulwaniMC09,GulwaniJK09,GulwaniZ10}.  A full list of
+examples together with the derived bounds is given in \pref{app:cat}.
+
+\pref{fig:compar} shows four representative examples from the
+evaluation.  Example \emph{t08} is a slightly modified version of
+\emph{t08a} which is described in the introduction.  Example
+\emph{t19} demonstrates the compositionaliy of the analysis.  The
+program consists of two loops that decrement a variable $i$.  In the
+first loop, $i$ is decremented down to 100 and in the second loop $i$
+is increment further down to $-1$.  However, between the loops we
+assign $i=i+k+50$.  So in total the program performs $52 + |[-1,i]| +
+|[0,k]|$ increments.  Our analysis finds this tight bound because our
+amortized analysis naturally takes into account the relation between
+the two loops.  Other techniques derive a more conservative bound.
+
+At first sight, example \emph{t30} appears to be a simple loop that
+decrements the variable $x$ down to zero.  However, a closer look
+reveals that the loop actually decrements both input variables $x$ and
+$y$ down to zero before terminating.  In the loop body, first $x$ is
+decremented by one.  Then the values of the variables $x$ and $y$ are
+switched using the local variable $t$ as a buffer.  Our analysis
+infers the tight bound $|[0,x]|+|[0,y]|$.  Sometimes we need some
+assumptions on the inputs in order to derive a bound.  Example
+\emph{t15} is such a case.  We assume here that the input variable $y$
+is non-negative and write \code{assert(y>=0)}.  If we enter the loop
+then we know that $x>0$ and we can obtain constant potential from the
+assignment \code{x=x-1}.  After the assignment we know that $x\geq y$
+and $y\geq 0$.  As a consequence, we can share the potential
+$|[0,x]|$ before the assignment \code{x=x-y} between $|[0,x]|$ and
+$|0,y|$ after the assignment.  In this way, we derive a tight linear
+bound.
+
+To compare our tool with existing work, we focused on loop bounds and
+use a simple metric that counts the number of back edges (i.e., number
+of loop iterations) that are follows in the execution of the program
+because most other tools only bound this specific cost. In
+\pref{fig:compar}, we show the bounds we derived (AAA) together with
+the bounds derived by LOOPUS~\cite{SinnZV14} and
+Rank~\cite{AliasDFG10}.  We also contacted the authors of SPEED but
+have not been able to obtain this tool.
+KoAT~\cite{BrockschmidtEFFG14} and PUBS~\cite{AlbertAGPZ12} currently
+cannot operate on C code and the examples would need to be manually
+translated into a term-rewriting to be analyzed by these tools.  For
+Rank it is not totally clear how the computed bound relates to the C
+program since the computed bound is for transitions in an automaton
+that is derived from the C code.  For instance, the bound $2+y-x$ that
+is derived for \emph{t08}.
 
 
 \begin{figure*}
@@ -2688,7 +2738,7 @@ while (x>y) {
 \\
 %
 \hline
-& t08a (slightly modified t08) & t19 & t30 & t15
+& t08 (slightly modified t08a) & t19 & t30 & t15
 %
 \\
 \hline
@@ -2705,7 +2755,7 @@ LOOPUS &
 %
 %
 Rank &
-{\small $2 {+} y {-} x (???)$ } &
+{\small $2 {+} y {-} x (?)$ } &
 {\small $54+k+i$ } &
 --- &
 {\small $2+2x-y$ }
