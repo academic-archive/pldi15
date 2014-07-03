@@ -105,16 +105,16 @@
   automatic amortized analysis are often more precise.
 \end{abstract}
 
-\category{D.2.4}{Software Engineering}
-{Software/Program Verification}
-\category{F.3.1}{Logics and Meanings of Programs}
-{Specifying and Verifying and Reasoning about Programs}
+% \category{D.2.4}{Software Engineering}
+% {Software/Program Verification}
+% \category{F.3.1}{Logics and Meanings of Programs}
+% {Specifying and Verifying and Reasoning about Programs}
 
-\terms Verification, Reliability
+% \terms Verification, Reliability
 
 
-\keywords Formal Verification, Compiler Construction, Program Logics,
-Stack-Space Bounds, Quantitative Verification
+% \keywords Formal Verification, Compiler Construction, Program Logics,
+% Stack-Space Bounds, Quantitative Verification
 
 \section{Introduction}
 \label{sec:intro}
@@ -156,7 +156,7 @@ of the existing techniques in practice.
   bounds (for a single (nested) loop) that are difficult to combine to
   global whole program bounds.
 \item Existing techniques often rely on complex external tools such as
-  abstract interpretation based invariant
+  abstract interpretation--based invariant
   generation~\cite{GulwaniMC09} or translation of the program into a
   term-rewriting system~\cite{BrockschmidtEFFG14, SinnZV14} without
   providing \emph{verifiable certificates} for the correctness of the
@@ -215,13 +215,28 @@ authorities~\cite{May2013}.  Our \emph{contributions} are as follows.
   fixpoint computations to obtain loop invariants.
 \item We show with a publically available prototype implementation and
   an experimental evaluation that our novel amortized resource
-  analysis works precisely and efficiently for common loop and
+  analysis works precisely and efficiently for challenging loop and
   recursion patterns, and that the derived constant factors in the
   bounds are close to or identical with the optimal ones.
 % \item We prove the completeness of the program logic
 %   with respect to the operational cost semantics.
 \end{enumerate}
 %
+To the best of our knowledge, this article presents the first resource
+analysis framework for C that makes it possible to combine non-trivial
+automatically derived bounds with interactively derived bounds in a
+proof system that produces verifiable certificates for the bounds.
+Our approach complements existing work since it provides a semantic
+foundation for the computation of bounds while still providing support
+for automation that sometimes goes beyond the capabilities of existing
+techniques.  Both the automatic amortized analysis and the
+quantitative logic are naturally compositional and describe the
+resource behavior of code fragments without referring to the source
+code.  As a result, we directly derive global bounds that are
+functions of the input parameters of the program.  Another unique
+feature of our system is, that it can handle resources like memory
+that may become available during the execution.
+
 Our starting point is a recent work~\cite{veristack14} in which we
 have formally verified bounds on the stack usage of C programs.  A key
 part of this stack-bound verification is based on a quantitative Hoare
@@ -229,20 +244,22 @@ logic for deriving abstract stack bounds for CompCert Clight programs
 that depend on the depth of (recursive) function calls.  % For
 % non-recursive programs it is possible to compute derivations for such
 % stack bounds in the quantitative Hoare logic automatically.  
-By compiling these bounds together with the C program, we have derived
-verified stack bounds for x86 assembly code.
-
+% By compiling these bounds together with the C program, we have derived
+% verified stack bounds for x86 assembly code.
+%
 Our \emph{first contribution} is a generalization of the quantitative
 Hoare logic for CompCert Clight that enables us to derive resource
-bounds that are parametric in the resource of interest.  The
-quantitative logic is implemented in Coq and proved sound with respect
-to a small-step operational cost semantics for Clight that counts a
-constant resource consumption for each atomic execution step.  The
-resource consumption at each step is parametric in a user-definable cost
-metric and can be negative to express the release of resources (as
-needed, e.g., to reason about memory usage).  Furthermore, a specific
-\emph{tick} function can be inserted in the source code to further
-customize the cost model.  In the implementation of the logic, we use
+bounds that are parametric in the resource of interest.  % The
+% quantitative logic is implemented in Coq and proved sound with respect
+% to a small-step operational cost semantics for Clight.
+% that counts a
+% constant resource consumption for each atomic execution step.  The
+% resource consumption at each step is parametric in a user-definable cost
+% metric and can be negative to express the release of resources (as
+% needed, e.g., to reason about memory usage).  Furthermore, a specific
+% \emph{tick} function can be inserted in the source code to further
+% customize the cost model.
+In the implementation of the logic, we use
 a shallow embedding in Coq which makes the logic very flexible.  There
 is practically no limitation on the format of the derived resource
 bounds since they can be any function that is definable in Coq.  The
@@ -251,10 +268,11 @@ specifically apply to one fixed cost metric.
 
 The precision and expressivity of the quantitative Hoare logic provide
 an ample foundation for reasoning about resource consumption of Clight
-programs.  The logic is naturally compositional and the derived
-\emph{quantitative Hoare triples} can be used to specify the resource
-consumption of library functions or to describe resource contracts
-between different functions.  However, reasoning about quantitative
+programs.  % The logic is naturally compositional and the derived
+% \emph{quantitative Hoare triples} can be used to specify the resource
+% consumption of library functions or to describe resource contracts
+% between different functions. 
+However, reasoning about quantitative
 properties can often be more tedious than reasoning about intentional
 properties.  Consequently, automation is inevitable to derive resource
 bounds for large code bases like CertiKOS.  Such an automation was
@@ -268,7 +286,7 @@ For functional programs, there exist resource analysis systems---based
 on type-based amortized resource analysis~\cite{Jost03,
   HoffmannAH12}---that can automatically derive complex polynomial
 bounds with tight constant factors.  This type-based amortized
-resource analysis has been our main inspiration in the design of the
+resource analysis has been an inspiration in the design of the
 quantitative Hoare logic and is therefore a natural candidate to
 automate the reasoning.  However, it is a well-known problem that
 type-based amortized resource analysis works well for functional
@@ -282,27 +300,39 @@ Unfortunately, these are the functions with non-constant resource
 consumption that are most common in CertiKOS and other system
 software.
 
-Our \emph{second contribution} is an automatic amortized resource
+Our \emph{main contribution} is an automatic amortized resource
 analysis for CompCert Clight that computes derivations in the
 quantitative Hoare logic.  It is the first automatic amortized
 resource analysis that can derive bounds that depend on negative
-integers and handles programs with mutually recursive functions as well as
-\code{break} and \code{return} statements.  It targets programs that
-are common in system software, that is, programs whose resource
+integers and handles programs with mutually recursive functions as
+well as \code{break} and \code{return} statements.  Using
+potential-based approach of amortized analysis allows us to
+automatically handle programs that are need special treatment in other
+techniques such as
+\begin{itemize}
+\item interaction between \emph{sequential loops or function calls} through
+  size changes of variables,
+\item \emph{nested loops} that influence each others number of iterations,
+\item and \emph{tricky iteration patterns} as found for instance in
+  the Knuth-Morris-Pratt algorithm for string search.
+\end{itemize}
+%
+The main innovation that makes the analysis practical for C is the use
+of interval sizes in potential functions instead of the sizes of
+variables.  This leads to precise bounds of programs whose resource
 consumption can be described as a function of sizes $|[x,y]| =
 \max(0,y-x)$ of intervals of integer variables.  Such bounds arise for
 instance from standard \emph{for loops} \code{for (i = x; i+K \leq y;
   i=i+K)} where the step-size $K>0$ is a constant.
 %
-The use of interval sizes in potential functions (an therefore in
-resource bounds) is the main innovation that makes the analysis
-practical for C.
 
 Despite the apparent simplicity of the new analysis system, it is able
 to reproduce results from the literature (e.g,
 SPEED~\cite{GulwaniMC09}) that have been obtained using sophisticated
-abstract-interpretation based methods.  In contrast with abstract-interpretation
-based methods, our technique does not require any
+abstract interpretation--based methods such as disjunctive invariant
+generation~\cite{GulwaniMC09} and symbolic backward
+execution~\cite{GulwaniZ10}.  In contrast with abstract
+interpretation--based methods, our technique does not require any
 fixpoint computations to obtain loop invariants.  The mechanism we
 designed is able to leverage local assertions such as $x < y$ that we
 collect along the branching points of the program to obtain global
@@ -326,21 +356,6 @@ polynomials~\cite{HoffmannAH11,HoffmannS13} but this would make the inference
 rules considerably more involved and should better be described
 separately.  However, we developed the linear inference system so that
 the extension to polynomial bounds shall work smoothly.
-
-To the best of our knowledge, this article presents the first resource
-analysis framework for C that makes it possible to combine non-trivial
-automatically derived bounds with interactively derived bounds in a
-proof system that produces verifiable certificates for the bounds.
-Our approach complements existing work since it provides a semantic
-foundation for the computation of bounds while still providing support
-for automation that sometimes goes beyond the capabilities of existing
-techniques.  Both the automatic amortized analysis and the
-quantitative logic are naturally compositional and describe the
-resource behavior of code fragments without referring to the source
-code.  As a result, we naturally derive global bounds that are
-functions of the input parameters of the program.  Another unique
-feature of our system is, that it can handle resources like
-memory that may become available during the execution.
 
 We have evaluated the automatic analysis with system code and examples
 from the literature.  \pref{app:cat} contains more than $30$
