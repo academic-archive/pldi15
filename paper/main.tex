@@ -18,6 +18,7 @@
 \usepackage{xcolor} %for colors
 \usepackage{url}
 \usepackage{enumitem}
+\usepackage{array} %for stupid tables
 
 %----------------------------------------------------
 
@@ -3913,11 +3914,20 @@ $1 + 2 |\inter 0 {\code{len}}|$
 
 
 \begin{figure*}
-\tiny
+\small
 
-\begin{tabular}{r|p{2cm}c|p{2cm}c|p{2cm}c|p{1.8cm}|c}
+\newcommand{\dir}[2]{\texttt{#1} \\ \texttt{#2}}
+\newcommand{\file}[2][c]{%
+  \begin{tabular}[#1]{@{}r@{}}#2\end{tabular}}
+\renewcommand{\max}[0]{{\rm mx}}
+\renewcommand{\min}[0]{{\rm mn}}
 
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 
+\centering
+\begin{tabular}{r|C{1.1cm}c|C{1.8cm}c|C{1.9cm}c|C{1.8cm}|C{2.65cm}}
+
+ 
 File &
 \multicolumn{2}{|c|}{KoAT} &
 \multicolumn{2}{|c|}{Rank} &
@@ -3933,15 +3943,16 @@ Amortized Automation
 ? &
 &
 
-$((((1+1)+1)+((-5+(2{\cdot}y))+(2{\cdot}x)))+(-3+(2{\cdot}y)))+1$ &
+% $((((1+1)+1)+((-5+(2{\cdot}y))+(2{\cdot}x)))+(-3+(2{\cdot}y)))+1$ &
+$(((2{+}1)\dots$ &
 $O(n)$ &
 
-Fail &
+--- &
 &
 
 ? &
 
-$|\inter 0 x| + |\inter 0 y|$
+$|\inter 0 x| {+} |\inter 0 y|$
 \\
 
 %--------------------------------------------
@@ -3950,15 +3961,17 @@ $|\inter 0 x| + |\inter 0 y|$
 ? &
 &
 
-$((((1+1)+(n+(-1{\cdot}i)))+((n+(n{\cdot}j))+((-1+(-1{\cdot}j)){\cdot}i)))+((n+(n{\cdot}j))+((-1+(-1{\cdot}j)){\cdot}i)))+1$ &
+% $((((1+1)+(n+(-1{\cdot}i)))+((n+(n{\cdot}j))+((-1+(-1{\cdot}j)){\cdot}i)))+((n+(n{\cdot}j))+((-1+(-1{\cdot}j)){\cdot}i)))+1$ &
+$(((2{+}(n{+} \dots$ &
 $O(n^2)$ &
 
-$\max(n, 0) + \max(0, (1 + \max(n, 0))) + \max(0, (1 + \max(n, 0)))$ &
+% $\max(n, 0) + \max(0, (1 + \max(n, 0))) + \max(0, (1 + \max(n, 0)))$ &
+$\max(n, 0) \dots$ &
 $O(n)$ &
 
 ? &
 
-$1 + 2 |\inter 0 n|$
+$1 {+} 2 |\inter 0 n|$
 \\
 
 %--------------------------------------------
@@ -3967,61 +3980,63 @@ $1 + 2 |\inter 0 n|$
 ? &
 &
 
-Fail &
+--- &
 &
 
-Fail &
+--- &
 &
 
 ? &
 
-$1 + 2 |\inter 0 {\code{len}}|$
+$1 {+} 2 |\inter 0 {\code{len}}|$
 \\
 
 %--------------------------------------------
-\hline \texttt{speed\_pldi09\_fig1.c} &
-
-? &
-&
-
-Fail &
-&
-
-$\max(n, 0) + \max(n, 0)$ &
-$O(n)$ &
-
-God damn it &
-
-$1 + 2 |\inter 0 n|$
-\\
+% \hline \file{\dir{speed\_pldi09}{fig1.c}} &
+% 
+% ? &
+% &
+% 
+% --- &
+% &
+% 
+% $2 \max(n, 0)$ &
+% $O(n)$ &
+% 
+% God damn it &
+% 
+% $1 + 2 |\inter 0 n|$
+% \\
 
 %--------------------------------------------
-\hline \texttt{speed\_pldi09\_fig4\_2.c} &
+\hline \file{\dir{speed\_pldi09}{fig4\_2.c}} &
 
-Fail &
+--- &
 &
 
-$((((1+1)+n)+(n+(-1{\cdot}m)))+1)+1$ &
+% $((((1+1)+n)+(n+(-1{\cdot}m)))+1)+1$ &
+$(((2{+}n)\dots$ &
 $O(n)$ &
 
-Fail &
+--- &
 &
 
 $\frac n m + n$ &
 
-$1 + 2 |\inter 0 n|$
+$1 {+} 2 |\inter 0 n|$
 \\
 
 %--------------------------------------------
-\hline \texttt{speed\_pldi09\_fig4\_4.c} &
+\hline \file{\dir{speed\_pldi09}{fig4\_4.c}} &
 
-Fail &
+--- &
 &
 
-$((((1+1)+(-1+m))+((1+n)+(-1{\cdot}m)))+1)+1$ &
+% $((((1+1)+(-1+m))+((1+n)+(-1{\cdot}m)))+1)+1$ &
+$(((2{+}(-1\dots$ &
 $O(n)$ &
 
-Fail &
+--- &
 &
 
 $\frac n m + n$ &
@@ -4030,32 +4045,33 @@ $|\inter 0 n|$
 \\
 
 %--------------------------------------------
-\hline \texttt{speed\_pldi09\_fig4\_5.c} &
+\hline \file{\dir{speed\_pldi09}{fig4\_5.c}} &
 
 $28d + 7g + 27$ &
 $O(n)$ &
 
-$((((1+1)+(-1+n))+m)+1)+1$ &
+% $((((1+1)+(-1+n))+m)+1)+1$ &
+$(((2{+}(-1\dots$ &
 $O(n)$ &
 
-Fail &
+--- &
 &
 
 $\max(n, n-m)$ &
 
-Fail
+---
 \\
 
 %--------------------------------------------
-\hline \texttt{speed\_pldi10\_ex1.c} &
+\hline \file{\dir{speed\_pldi10}{ex1.c}} &
 
-Fail &
+--- &
 &
 
-Fail &
+--- &
 &
 
-Fail &
+--- &
 &
 
 $n$ &
@@ -4064,15 +4080,16 @@ $|\inter 0 n|$
 \\
 
 %--------------------------------------------
-\hline \texttt{speed\_pldi10\_ex3.c} &
+\hline \file{\dir{speed\_pldi10}{ex3.c}} &
 
-Fail &
+--- &
 &
 
-$((((1+1)+(-1+n))+(-1+n))+1)+1$ &
+% $((((1+1)+(-1+n))+(-1+n))+1)+1$ &
+$(((2{+}(-1\dots$ &
 $O(n)$ &
 
-$\max(n, 0) + \max(n, 0)$ &
+$2{\cdot}\max(n, 0)$ &
 $O(n)$ &
 
 $n$ &
@@ -4081,83 +4098,88 @@ $|\inter 0 n|$
 \\
 
 %--------------------------------------------
-\hline \texttt{speed\_pldi10\_ex4.c} &
+\hline \file{\dir{speed\_pldi10}{ex4.c}} &
 
-$110 A + 33$ &
+$110 a + 33$ &
 $O(n)$ &
 
-Fail &
+--- &
 &
 
-Fail &
+--- &
 &
 
 $n + 1$ &
 
-$1 + 2 |\inter 0 n|$
+$1 {+} 2 |\inter 0 n|$
 \\
 
 %--------------------------------------------
-\hline \texttt{speed\_popl10\_fig2\_1.c} &
+\hline \file{\dir{speed\_popl10}{fig2\_1.c}} &
 
-$9a + 9b + 10c + 10d + 7$ &
+$9a + 9b + \dots$ &
 $O(n)$ &
 
-$(((1+1)+((-1{\cdot}y)+m))+((-1{\cdot}x)+n))+1$ &
+% $(((1+1)+((-1{\cdot}y)+m))+((-1{\cdot}x)+n))+1$ &
+$((2{+}((-y\dots$ &
 $O(n)$ &
 
-$\max(0, (n - x)) + \max(0, (m - y))$ &
+$\max(0, n {-} x) + \max(0, m {-} y)$ &
 $O(n)$ &
 
-$\max(0, n-x) + \max(0, m-y)$ &
+$\max(0, n{-}x) + \max(0, m{-}y)$ &
 
-$|\inter x n| + |\inter y m|$
+$|\inter x n| {+} |\inter y m|$
 \\
 
 %--------------------------------------------
-\hline \texttt{speed\_popl10\_fig2\_2.c} &
+\hline \file{\dir{speed\_popl10}{fig2\_2.c}} &
 
 $6a + 9b + 3c + 5$ &
 $O(n)$ &
 
-$(((1+1)+((-1{\cdot}x)+n))+(((-1+(-1{\cdot}z))+(-1{\cdot}x))+(2{\cdot}n)))+1$ &
+% $(((1+1)+((-1{\cdot}x)+n))+(((-1+(-1{\cdot}z))+(-1{\cdot}x))+(2{\cdot}n)))+1$ &
+$((2{-}x\dots$ &
 $O(n)$ &
 
-$\max(0, (\max(0, (x + 1 + -z)) + \max(0, (n - x)))) + \max(0, (n - x))$ &
+% $\max(0, (\max(0, (x {+} 1 {+} -z)) + \max(0, (n - x)))) + \max(0, (n - x))$ &
+$\max(0, (x + 1 {-}z)\dots$ &
 $O(n)$ &
 
-$\max(0, n-x) + \max(0, n-z)$ &
+$\max(0, n{-}x) + \max(0, n{-}z)$ &
 
-$|\inter x n| + |\inter z n|$
+$|\inter x n| {+} |\inter z n|$
 \\
 
 %--------------------------------------------
-\hline \texttt{speed\_popl10\_nested\_multiple.c} &
+\hline \file{\dir{speed\_popl10}{nstd\_multiple.c}} &
 
-Fail &
+--- &
 &
 
-$(((1+1)+((-1{\cdot}x)+n))+(((y{\cdot}x)+((-1{\cdot}y){\cdot}n))+(((-1{\cdot}x)+n){\cdot}m)))+1$ &
+% $(((1+1)+((-1{\cdot}x)+n))+(((y{\cdot}x)+((-1{\cdot}y){\cdot}n))+(((-1{\cdot}x)+n){\cdot}m)))+1$ &
+$((2{-}x{+}n\dots$ &
 $O(n^2)$ &
 
-$\max(0, (m - y)) + \max(0, (n - x))$ &
+$\max(0, m {-} y) + \max(0, n {-} x)$ &
 $O(n)$ &
 
-$\max(0, m-y) + \max(0, n-x)$ &
+$\max(0, m{-}y) + \max(0, n{-}x)$ &
 
-$|\inter x n| + |\inter y m|$
+$|\inter x n| {+} |\inter y m|$
 \\
 
 %--------------------------------------------
-\hline \texttt{speed\_popl10\_nested\_single.c} &
+\hline \file{\dir{speed\_popl10}{nstd\_single.c}} &
 
-$48 B + 16$ &
+$48 b + 16$ &
 $O(n)$ &
 
-$((((1+1)+((-1+(-1{\cdot}x))+n))+((-1+(-1{\cdot}x))+n))+1)+1$ &
+% $((((1+1)+((-1+(-1{\cdot}x))+n))+((-1+(-1{\cdot}x))+n))+1)+1$ &
+$(((1{-}x{+}n\dots$ &
 $O(n)$ &
 
-$\max(0, min(n, (n + -1))) + \max(0, min(n, (n + -1)))$ &
+$\max(0, \! n {-} 1)\dots$ &
 $O(n)$ &
 
 $n$ &
@@ -4166,15 +4188,16 @@ $|\inter 0 n|$
 \\
 
 %--------------------------------------------
-\hline \texttt{speed\_popl10\_sequential\_single.c} &
+\hline \file{\dir{speed\_popl10}{sqntl\_single.c}} &
 
-$21 B + 6$ &
+$21 b + 6$ &
 $O(n)$ &
 
-$(((1+1)+((-1{\cdot}x)+n))+((-1{\cdot}x)+n))+1$ &
+% $(((1+1)+((-1{\cdot}x)+n))+((-1{\cdot}x)+n))+1$ &
+$((2{}-x{+}n\dots$ &
 $O(n)$ &
 
-$\max(n, 0) + \max(n, 0)$ &
+$2{\cdot}\max(n, 0)$ &
 $O(n)$ &
 
 $n$ &
@@ -4183,12 +4206,13 @@ $|\inter 0 n|$
 \\
 
 %--------------------------------------------
-\hline \texttt{speed\_popl10\_simple\_multiple.c} &
+\hline \file{\dir{speed\_popl10}{smpl\_multiple.c}} &
 
-$9 C + 10 D + 7$ &
+$9 c + 10 d + 7$ &
 $O(n)$ &
 
-$(((1+1)+((-1{\cdot}y)+m))+((-1{\cdot}x)+n))+1$ &
+% $(((1+1)+((-1{\cdot}y)+m))+((-1{\cdot}x)+n))+1$ &
+$((2{-}y{+}m\dots$ &
 $O(n)$ &
 
 $\max(n, 0) + \max(m, 0)$ &
@@ -4196,16 +4220,16 @@ $O(n)$ &
 
 $n + m$ &
 
-$|\inter 0 m| + |\inter 0 n|$
+$|\inter 0 m| {+} |\inter 0 n|$
 \\
 
 %--------------------------------------------
-\hline \texttt{speed\_popl10\_simple\_single\_2.c} &
+\hline \file{\dir{speed\_popl10}{smpl\_single2.c}} &
 
-$20 D + 12 C + 17$ &
+$20 d + 12 c + 17$ &
 $O(n)$ &
 
-Fail &
+--- &
 &
 
 $\max(n, 0) + \max(m, 0)$ &
@@ -4213,16 +4237,17 @@ $O(n)$ &
 
 $n + m$ &
 
-$|\inter 0 n| + |\inter 0 m|$
+$|\inter 0 n| {+} |\inter 0 m|$
 \\
 
 %--------------------------------------------
-\hline \texttt{speed\_popl10\_simple\_single.c} &
+\hline \file{\dir{speed\_popl10}{smpl\_single.c}} &
 
-$4 B + 6$ &
+$4 b + 6$ &
 $O(n)$ &
 
-$(((1+1)+((-1{\cdot}x)+n))+((-1{\cdot}x)+n))+1$ &
+% $(((1+1)+((-1{\cdot}x)+n))+((-1{\cdot}x)+n))+1$ &
+$((2{-}x{+}n\dots$ &
 $O(n)$ &
 
 $\max(n, 0)$ &
@@ -4234,20 +4259,21 @@ $|\inter 0 n|$
 \\
 
 %--------------------------------------------
-\hline \texttt{t07.c} &
+\hline \file{\texttt{t07.c}} &
 
 ? &
 &
 
-$(((1+1)+-1)+x)+1$ &
+$2+x$ &
 $O(n)$ &
 
-$\max(x, 0) + \max(0, (y +  2 {\cdot} \max(x, 0))) + \max(0, ( 2 {\cdot} \max(x, 0) + \max(y, 0)))$ &
+% $\max(x, 0) + \max(0, (y +  2 {\cdot} \max(x, 0))) + \max(0, ( 2 {\cdot} \max(x, 0) + \max(y, 0)))$ &
+$\max(x, 0)\dots$ &
 $O(n)$ &
 
 ? &
 
-$1 + 3 |\inter 0 x| + |\inter 0 y|$
+$1 {+} 3 |\inter 0 x| {+} |\inter 0 y|$
 \\
 
 %--------------------------------------------
@@ -4256,15 +4282,17 @@ $1 + 3 |\inter 0 x| + |\inter 0 y|$
 ? &
 &
 
-$(((1+1)+-1)+(z+(-1{\cdot}y)))+1$ &
+% $(((1+1)+-1)+(z+(-1{\cdot}y)))+1$ &
+$((2{+}z{-}y\dots$ &
 $O(n)$ &
 
-$\max(0, (\max(0, (y + -9)) + \max(0, (z - y)))) + \max(0, (z - y))$ &
+% $\max(0, (\max(0, (y + -9)) + \max(0, (z - y)))) + \max(0, (z - y))$ &
+$\max(0, \! y{-}9)\dots$ &
 $O(n)$ &
 
 ? &
 
-$1.1 |\inter y z| + 0.1 |\inter 0 y|$
+$1.1 |\inter y z| {+} 0.1 |\inter 0 y|$
 \\
 
 %--------------------------------------------
@@ -4273,10 +4301,11 @@ $1.1 |\inter y z| + 0.1 |\inter 0 y|$
 ? &
 &
 
-$(((1+1)+((-1{\cdot}y)+x))+((-1{\cdot}y)+x))+1$ &
+% $(((1+1)+((-1{\cdot}y)+x))+((-1{\cdot}y)+x))+1$ &
+$((2{-}y{+}x\dots$ &
 $O(n)$ &
 
-$\max(0, (x - y))$ &
+$\max(0, x {-} y)$ &
 $O(n)$ &
 
 ? &
@@ -4290,15 +4319,16 @@ $|\inter y x|$
 ? &
 &
 
-$(((1+1)+((-1{\cdot}y)+m))+((-1{\cdot}x)+n))+1$ &
+% $(((1+1)+((-1{\cdot}y)+m))+((-1{\cdot}x)+n))+1$ &
+$((2{-}y{+}m\dots$ &
 $O(n)$ &
 
-$\max(0, (n - x)) + \max(0, (m - y))$ &
+$\max(0, n {-} x)) + \max(0, m {-} y)$ &
 $O(n)$ &
 
 ? &
 
-$|\inter x n| + |\inter y m|$
+$|\inter x n| {+} |\inter y m|$
 \\
 
 %--------------------------------------------
@@ -4307,15 +4337,16 @@ $|\inter x n| + |\inter y m|$
 ? &
 &
 
-$((((1+1)+-1)+(((((-1/2){\cdot}y)+((1/2){\cdot}(y{\cdot}y)))+(((-1/2)+y){\cdot}x))+((1/2){\cdot}(x{\cdot}x))))+-1)+1$ &
+% $((((1+1)+-1)+(((((-1/2){\cdot}y)+((1/2){\cdot}(y{\cdot}y)))+(((-1/2)+y){\cdot}x))+((1/2){\cdot}(x{\cdot}x))))+-1)+1$ &
+$(((1{+}y^2/2\dots$ &
 $O(n^2)$ &
 
-$\max(x, 0) + \max(0, (\max(x, 0) + \max(y, 0)))$ &
+$2{\cdot}\max(x, 0) + \max(y, 0)$ &
 $O(n)$ &
 
 ? &
 
-$2 |\inter 0 x| + |\inter 0 y|$
+$2 |\inter 0 x| {+} |\inter 0 y|$
 \\
 
 %--------------------------------------------
@@ -4324,10 +4355,11 @@ $2 |\inter 0 x| + |\inter 0 y|$
 ? &
 &
 
-$(((1+1)+(-1+x))+((-1{\cdot}y)+x))+1$ &
+% $(((1+1)+(-1+x))+((-1{\cdot}y)+x))+1$ &
+$((1{+}x\dots$ &
 $O(n)$ &
 
-Fail &
+--- &
 &
 
 ? &
@@ -4341,10 +4373,11 @@ $|\inter 0 x|$
 ? &
 &
 
-$(((1+1)+((-1+(-99{\cdot}y))+(101{\cdot}x)))+((-1{\cdot}y)+x))+1$ &
+% $(((1+1)+((-1+(-99{\cdot}y))+(101{\cdot}x)))+((-1{\cdot}y)+x))+1$ &
+$((-99{\cdot}y\dots$ &
 $O(n)$ &
 
-Fail &
+--- &
 &
 
 ? &
@@ -4358,15 +4391,16 @@ $101 |\inter 0 x|$
 ? &
 &
 
-$(((1+1)+(151+k))+(-100+i))+1$ &
+% $(((1+1)+(151+k))+(-100+i))+1$ &
+$((153{+}k\dots$ &
 $O(n)$ &
 
-$\max(0, (i + -100)) + \max(0, (k + i + 51))$ &
+$\max(0, \! i{-}10^2) \!+ \max(0, \! k {+} i {+} 51)$ &
 $O(n)$ &
 
 ? &
 
-$50 + |\inter {-1} i| + |\inter 0 k|$
+$50 {+} |\inter {-1} i| {+} |\inter 0 k|$
 \\
 
 %--------------------------------------------
@@ -4375,15 +4409,17 @@ $50 + |\inter {-1} i| + |\inter 0 k|$
 ? &
 &
 
-$((1+1)+((-1{\cdot}y)+x))+1+((1+1)+(y+(-1{\cdot}x)))+1$ &
+% $((1+1)+((-1{\cdot}y)+x))+1+((1+1)+(y+(-1{\cdot}x)))+1$ &
+$(2{-}y{+}x\dots$ &
 $O(n)$ &
 
-$\max(0, (\max(0, (y - x)) + \max(0, (x - y)))) + \max(0, (y - x))$ &
+% $\max(0, (\max(0, (y - x)) + \max(0, (x - y)))) + \max(0, (y - x))$ &
+$2 {\cdot} \max(0, \! y {-} x) \! + \max(0, \! x {-} y)$ &
 $O(n)$ &
 
 ? &
 
-$|\inter x y| + |\inter y x|$
+$|\inter x y| {+} |\inter y x|$
 \\
 
 %--------------------------------------------
@@ -4392,15 +4428,16 @@ $|\inter x y| + |\inter y x|$
 ? &
 &
 
-Fail &
+--- &
 &
 
-$\max(0, (1000 +  1000 {\cdot} \max(0, -n) + \max(0, (y + -99)))) + \max(0, -n)$ &
+% $\max(0, (1000 +  1000 {\cdot} \max(0, -n) + \max(0, (y + -99)))) + \max(0, -n)$ &
+$10^3 \max(0, \discretionary{}{}{} -n) \! \dots$ &
 $O(n)$ &
 
 ? &
 
-$0.1|\inter n y| + 11 |\inter n 0|$
+$0.1|\inter n y| {+} 11 |\inter n 0|$
 \\
 
 %--------------------------------------------
@@ -4409,15 +4446,17 @@ $0.1|\inter n y| + 11 |\inter n 0|$
 ? &
 &
 
-$(((1+1)+-1)+((-1{\cdot}y)+x))+1$ &
+% $(((1+1)+-1)+((-1{\cdot}y)+x))+1$ &
+$((1{-}y{+}x\dots$ &
 $O(n)$ &
 
-$\max(0, ( 1000 {\cdot} \max(0, (x - y)) + \max(y, 0))) + \max(0, (x - y)) + \max(0, -x)$ &
+% $\max(0, ( 1000 {\cdot} \max(0, (x - y)) + \max(y, 0))) + \max(0, (x - y)) + \max(0, -x)$ &
+$10^3 \,\max(0, x - y)\dots$ &
 $O(n)$ &
 
 ? &
 
-$|\inter x 0| + |\inter 0 y| + 1002 |\inter y x|$
+$|\inter x 0| {+} |\inter 0 y| \discretionary{}{}{} {+} 1002 |\inter y x|$
 \\
 
 %--------------------------------------------
@@ -4426,15 +4465,15 @@ $|\inter x 0| + |\inter 0 y| + 1002 |\inter y x|$
 ? &
 &
 
-Fail &
+--- &
 &
 
-$\max(0, (1 + \max(x, y, 0)))$ &
+$1 + \max(x, y)$ &
 $O(n)$ &
 
 ? &
 
-$|\inter 0 x| + |\inter 0 y|$
+$|\inter 0 x| {+} |\inter 0 y|$
 \\
 
 %--------------------------------------------
@@ -4443,15 +4482,15 @@ $|\inter 0 x| + |\inter 0 y|$
 ? &
 &
 
-Fail &
+--- &
 &
 
-Fail &
+--- &
 &
 
 ? &
 
-$3 + 2 |\inter 0 x| + |\inter 0 y|$
+$3 {+} 2 |\inter 0 x| {+} |\inter 0 y|$
 \\
 
 %--------------------------------------------
@@ -4460,15 +4499,15 @@ $3 + 2 |\inter 0 x| + |\inter 0 y|$
 ? &
 &
 
-Fail &
+--- &
 &
 
-Fail &
+--- &
 &
 
 ? &
 
-$1.33 + 0.67 |\inter z y|$
+$1.33 {+} 0.67 |\inter z y|$
 \\
 
 %--------------------------------------------
@@ -4477,10 +4516,10 @@ $1.33 + 0.67 |\inter z y|$
 ? &
 &
 
-Fail &
+--- &
 &
 
-Fail &
+--- &
 &
 
 ? &
@@ -4494,7 +4533,7 @@ $|\inter 0 y|$
 ? &
 &
 
-$(((1+1)+n)+1)+1$ &
+$4+n$ &
 $O(n)$ &
 
 $1 + \max(n, 0)$ &
@@ -4503,12 +4542,20 @@ $O(n)$ &
 
 ? &
 
-$1 + |\inter 0 n|$
+$1 {+} |\inter 0 n|$
 \\
 
 %--------------------------------------------
 \end{tabular}
-\caption{That big ugly table}
+\caption{
+  Experimental evaluation comparing the bounds generated KoAT, Rank,
+  Loopus, Speed, and our automatic amortized analysis on several
+  challenging linear examples. Results for KoAT and Speed were extracted
+  from older publications because KoAT cannot take C programs as 
+  input in its current version and Speed is not publically available.
+  Entries marked with ? signal that we cannot test the tool. Entries
+  marked with --- mean that the tool failed to produce a result.
+}
 \label{fig:eval}
 \end{figure*}
 
