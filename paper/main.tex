@@ -321,7 +321,7 @@ More specifically, bounds have the form $\sum_{a,b} q_{(a,b)} |[a,b]|$
 where $a$ and $b$ are integer variables or constants.  The reason for
 our focus on linear bounds is mainly clarity of presentation.  We
 already experimented with an extension to multivariate resource
-polynomials~\cite{HoffmannAH11} but this would make the inference
+polynomials~\cite{HoffmannAH11,HoffmannS13} but this would make the inference
 rules considerably more involved and should better be described
 separately.  However, we developed the linear inference system so that
 the extension to polynomial bounds shall work smoothly.
@@ -338,7 +338,7 @@ quantitative logic are naturally compositional and describe the
 resource behavior of code fragments without referring to the source
 code.  As a result, we naturally derive global bounds that are
 functions of the input parameters of the program.  Another unique
-feature of our system is, that it can naturally handle resources like
+feature of our system is, that it can handle resources like
 memory that may become available during the execution.
 
 We have evaluated the automatic analysis with system code and examples
@@ -352,7 +352,7 @@ with the tools KoAT~\cite{BrockschmidtEFFG14},
 PUBS~\cite{AlbertAGPZ12}, Rank~\cite{AliasDFG10}, and
 LOOPUS~\cite{SinnZV14}.  We also contacted the authors of
 SPEED~\cite{GulwaniMC09} but were able to obtain a tool to perform a
-comparison.  Our experiments shows that the bounds that we derive are
+comparison.  Our experiments show that the bounds that we derive are
 often more precise than those derived by existing tools.  Only
 LOOPUS~\cite{SinnZV14}, which also uses amortization techniques, is
 able to achieve a similar precision.
