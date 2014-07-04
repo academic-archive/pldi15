@@ -1,6 +1,3 @@
-% Some notes:
-%  1) Use Appel's SHA-256 implementation as an example
-%
 
 \documentclass[nocopyrightspace,preprint]{sigplanconf}
 
@@ -4061,7 +4058,21 @@ $1 + 2 |\inter 0 {\code{len}}|$
 
 \paragraph{Well-Known Algorithms}
 
+\pref{fig:cat3} shows well-known algorithms that can be automatically
+analyzed in our framework.  Example \emph{Knuth-Morris-Pratt} shows
+the search function of the Knuth-Morris-Pratt algorithm for string
+search.  To derive a bound for this algorithm we have add an assertion
+that indicates the bounds of the values that are stored in the array
+\code{b}.  Using this information we derive a tight linear bound.
 
+Example \emph{Greatest Common Divisor} is the usual implementation of
+the GCD algorithm.  We automatically derive a linear bound.  Note that
+the two tests at the beginning that check if the inputs are positive
+are essential.  Finally, example \emph{Quick Sort} shows a skeleton of
+the quick sort sorting algorithm.  Since we can only derive linear
+bounds we left out the inner loop that swaps the array elements and
+determines the position \code{n+lo} of the pivot.  We only assert that
+\code{lo < n+lo <= hi}.  We then derive a tight linear bound.
 
 \begin{table*}
 \small
