@@ -405,8 +405,8 @@ separately.  However, we developed the linear inference system so that
 the extension to polynomial bounds shall work smoothly.
 
 We have evaluated the automatic analysis with system code and examples
-from the literature.  \pref{app:cat} \ifshort{in the extended version
-  of this article\cite{anon_extended}}{} contains more than $30$
+from the literature.  \iffull{\pref{app:cat}}{The extended version
+  of this article~\cite{anon_extended}}{} contains more than $30$
 challenging loop and recursion patterns that we collected from open
 source software and the literature.  Our analysis can find
 asymptotically tight bounds for all but 3 of these patterns and in
@@ -1127,7 +1127,7 @@ negative).
 (\state, \code{skip}, \cont, \cost {-} M_b)
 }
 %
-\and
+\iffull{\and
 \Rule{S:RetSeq}
 {}
 { (\state, \code{return}~x, \Kseq S \cont, \cost)
@@ -1152,7 +1152,7 @@ negative).
 { (\state, \code{return}~x, \Kcall r \theta \cont, \cost)
 \smallstep{M}
 (\state', \code{skip}, \cont, \cost {-} M_r)
-}
+}}{}
 %
 \and
 \Rule{S:Update}
@@ -1162,7 +1162,7 @@ negative).
 (\state', \code{skip}, \cont, \cost {-} M_u {-} M_e(e))
 }
 %
-\and
+\iffull{\and
 \Rule{S:Call}
 { \fenv f = (\vec x, S_f) \\
   \state = (\theta, \gamma) \\
@@ -1171,7 +1171,7 @@ negative).
 { (\state, r \gets f(\vec y), \cont, \cost)
 \smallstep{M}
 (\state', S_f, \Kcall r \theta \cont, \cost {-} M_f)
-}
+}}{}
 %
 \and
 \Rule{S:Loop}
@@ -1189,7 +1189,7 @@ negative).
 (\state, \code{loop}~S, \cont, \cost {-} M_l)
 }
 %
-\and
+\iffull{\and
 \Rule{S:IfTrue}
 { \code{istrue}~\sem{e}_\sigma
 \\ \cost' = \cost {-} M_c^1 {-} M_e(e)
@@ -1207,7 +1207,7 @@ negative).
 { (\state, \code{if}(e)~S_1~\code{else}~S_2, \cont, \cost)
 \smallstep{M}
 (\state, S_2, \cont, \cost')
-}
+}}{}
 %
 \and
 \Rule{S:Seq}
@@ -1225,13 +1225,13 @@ negative).
 (\state, S, \cont, \cost {-} M_s)
 }
 %
-\and
+\iffull{\and
 \Rule{S:Tick}
 { }
 { (\state, \code{tick}(n), \cont, \cost)
 \smallstep{M}
 (\state, \code{skip}, \cont, \cost {-} M_t(n))
-}
+}}{}
 
 \end{mathpar}
 \caption{\iffull{Rules}{Selected rules} of the operational semantics of statements.}
@@ -1381,7 +1381,11 @@ termination.  This is formalized by \pref{lem:sem_term}.
  \smallstep{M}^n (\state'', S', \cont', d')$ for some $n$, $d$, $d'$
  and $\state''$ implies $n \le B$.
 \end{lemma}
-}{}
+} 
+{
+The extended version of this article~\cite{anon_extended} contains all rules lemmas 
+that state the main properties of the cost semantics.
+}
 
 \sectskip
 \section{Quantitative Hoare Logic}
@@ -1442,7 +1446,7 @@ The assertion $P_f \, z \, \vec v$ is the precondition of the function
 $f$ and the assertion $Q_f \, z \, v$ is its postcondition.  They are
 both parameterized by an arbitary logical variable $z$ (which can be a
 tuple) that relates the function arguments with the return value.  The
-precondition also depends on $\vec v$, the value of all the arguments
+precondition also depends on $\vec v$, the values of the arguments
 at the function invocation.  Similarly, the postcondition depends on
 the return value $v$ of the function.  The use of logical variables to
 express relations between different states of an execution is a
@@ -1457,18 +1461,11 @@ For two assertions $P,Q : \Assn$, we write $P \models Q$ to if for all
 program state $\state$ $P(\state) \ge Q(\state)$.
 
 \begin{figure*}[t]
+%SHORT
+\small
+%SHORT
 \begin{mathpar}
 %
-\Rule{L:Assert}
-{ }
-{ \Delta; B; R \vdash
-\htriple
-  { \code{istrue}~\sem{e}_\state \implies Q + M_a }
-  { \code{assert}~e }
-  { Q }
-}
-%
-\and
 \Rule{L:Skip}
 { }
 { \Delta; B; R \vdash
@@ -1493,11 +1490,23 @@ program state $\state$ $P(\state) \ge Q(\state)$.
 }
 %
 \and
-\Rule{L:Update}
+\Rule[leftskip=.0cm,rightskip=.0cm]{L:Update}
 { }
 { \Delta; B; R \vdash
 \htriple
   { \lambda \state.\,M_u + M_e(e) + Q\,\state[x \mapsto \sem{e}_\state] }{ x \gets e }{ Q }
+}
+%
+\and
+\Rule[leftskip=.0cm,rightskip=.0cm]{L:Seq}
+{ \Delta; B; R \vdash
+\htriple{ P }{ S_1 }{ Q' + M_s }
+\\
+\!\!  \Delta; B; R \vdash
+\htriple{ Q' }{ S_2 }{ Q }
+}
+{ \Delta; B; R \vdash
+\htriple{ P }{ S_1;S_2 }{ Q }
 }
 %
 \and
@@ -1515,6 +1524,26 @@ program state $\state$ $P(\state) \ge Q(\state)$.
 }
 %
 \and
+\Rule{L:Assert}
+{ }
+{ \Delta; B; R \vdash
+\htriple
+  { \code{istrue}~\sem{e}_\state \implies Q + M_a }
+  { \code{assert}~e }
+  { Q }
+}
+%
+\and
+\Rule{L:Tick}
+{ }
+{ \Delta; B; R \vdash
+\htriple
+  { Q + M_t(n) }
+  { \code{tick}(n) }
+  { Q }
+}
+%
+\and
 \Rule{L:Loop}
 { \Delta; Q; R \vdash
 \htriple
@@ -1523,18 +1552,6 @@ program state $\state$ $P(\state) \ge Q(\state)$.
 { \Delta; B; R \vdash
 \htriple
   { I }{ \code{loop}~S }{ Q }
-}
-%
-\and
-\Rule{L:Seq}
-{ \Delta; B; R \vdash
-\htriple{ P }{ S_1 }{ Q' + M_s }
-\\
-  \Delta; B; R \vdash
-\htriple{ Q' }{ S_2 }{ Q }
-}
-{ \Delta; B; R \vdash
-\htriple{ P }{ S_1;S_2 }{ Q }
 }
 %
 \and
@@ -1555,24 +1572,14 @@ program state $\state$ $P(\state) \ge Q(\state)$.
 }
 %
 \and
-\Rule{L:Tick}
-{ }
-{ \Delta; B; R \vdash
-\htriple
-  { Q + M_t(n) }
-  { \code{tick}(n) }
-  { Q }
-}
-%
-\and
 \Rule{L:Weaken}
 {
-  P \models P' \\
-  \Delta; B'; R' \vdash
-  \htriple{ P' }{ S }{ Q' } \\
-  Q' \models Q \\
-  B' \models B \\
-  \forall v.\, (R'\,v \models R\,v)
+  \!\! P \models P' \!\! \\
+  \!\! \Delta; B'; R' \vdash
+  \htriple{ P' }{ S }{ Q' } \!\! \\
+  \!\! Q' \models Q \!\! \\
+  \!\! B' \models B \!\! \\
+  \!\! \forall v.\, (R'\,v \models R\,v) \!\!
 }
 { \Delta; B; R \vdash
 \htriple{ P }{ S }{ Q }
@@ -1584,8 +1591,8 @@ program state $\state$ $P(\state) \ge Q(\state)$.
 \htriple{ P }{ S }{ Q } \\
   x \in \Qplusz
 }
-{ \Delta; B + x; R + x \vdash
-\htriple{ P + x }{ S }{ Q + x }
+{ \!\! \Delta; B + x; R + x \vdash
+\htriple{ P + x }{ S }{ Q + x } \!\!
 }
 %
 \and
@@ -1643,7 +1650,7 @@ cost of \code{break} and $B$ to pay for the potential after the
 $R$ in the precondition to pay for the potential after the
 \code{return}.  The reason is that we found it to be more convenient
 to account for the execution cost $M_r$ of the return in rule {\sc
-  L:Call} for function calls.
+  L:Call}\iffull{ for function calls.}{.}
 
 The rule {\sc L:Update} is the standard assignment rule of Hoare
 logic.  With the substitution $\state[x \mapsto \sem{e}_\state]$ in
@@ -1651,30 +1658,29 @@ the precondition we ensure that $Q$ evaluates to the same number as in
 the postcondition.  We also require that have we the constant
 potential $M_u + M_e(e)$ available in the precondition to pay for the
 cost of the evaluation of $e$ and the update.
+\iffull{
+}{}
+The rule {\sc L:Seq} rule is crucial to understand how the
+quantitative Hoare logic works.  To account for early exits of
+statements, we must ensure in the \code{break} part $B$ of $S_1$'s
+judgement that the \code{break} part $B$ of of $S_1;S_2$ holds. The
+same is true for the return part $R$ of the judgements for $S_1$ and
+$S_2$.  The interaction between the actual pre- and postconditions is
+analogous to standard Hoare logic.  In the postcondition of $S_1$ we
+account for the cost $M_s$ of the execution of the sequence.
 
-Despite its seemingly simplicity, the {\sc L:Seq} rule is important to
-understand how the quantitative Hoare logic works.  We have to define
-it in such a way that it accounts for early exits in statements. For
-instance, if $S_1$ contains a \code{break} statement then $S_2$ will
-never be executed so we must ensure in the \code{break} part $B$ of
-$S_1$'s judgement that the \code{break} part $B$ of of $S_1;S_2$
-holds. The same is true for the return part $R$ of the judgements for
-$S_1$ and $S_2$.  The interaction between the actual pre- and
-postconditions is analogous to standard Hoare logic.  In the
-postcondition of $S_1$ we account for the cost $M_s$ of the execution
-of the sequence.
-
-In the rule {\sc L:Loop}, we ensure that the \code{break} part of the
+In the rule {\sc L:Loop}, the \code{break} part of the
 loop body $S$ becomes the postcondition of the loop statement. We use
 an arbitrary $B$ as the \code{break} part of the judgement for
-$\code{loop}\, S$ since its operational semantics prevents it from
-terminating differently than by a \code{skip} or a \code{return}.  The
+$\code{loop}\, S$ since its operational semantics ensures that it can
+only terminate with a \code{skip} or a \code{return}.  The
 precondition $I$ of the loop is the loop invariant.  That is why we
 require to have potential $I$ available in the precondition of the
-loop body $S$.  In the post condition of $S$, the potential must be
+loop body $S$.  In the postcondition of $S$, the potential must be
 sufficient to pay for the invariant $I$ and the cost $M_l$ of the loop
 iteration.
 
+\iffull{
 The {\sc L:If} is similar to the rule for the conditional in classic
 Hoare logic.  In the preconditions of the judgments for the two
 branches $S_1$ and $S_2$ we lift the boolean assertions
@@ -1682,6 +1688,7 @@ $\code{isfalse}~\sem{e}_\state$ and $\code{isfalse}~\sem{e}_\state$ to
 quantitative assertions.  In the precondition of the rule {\sc L:Tick}
 we account for the execution cost $M_t(n)$ of the \code{tick}
 statement that depends on the integer $n$.
+}{}
 
 In the rule {\sc L:Call}, accounts for the execution cost of both
 $M_f$ for function calls and $M_r$ for \code{return} statements.  This
@@ -1692,17 +1699,18 @@ parametric with respect to both the function argument value and the
 return value. This allows to specify a bound for a function whose
 resource consumption depends on an input parameter.  The argument
 parameter is instantiated by the call rule using the result of the
-evaluation of the argument variables in the current state.  Recall
-that we require that $P_f$ and $Q_f$ do not depend on the local
-variables on the call stack, that is, $\forall z \, \vec v \, \theta
-\, \theta' \, \gamma . \, P_f \, z \, \vec v \, (\theta,\gamma) = P_f
-\, z \, \vec v \, (\theta',\gamma)$.  To transfer potential that
-depends on local variables of the callee from the precondition $P$ to
-the postcondition $Q$, we use an assertion $A : \Assn$ that is
-independent of global variables, that is, $\forall \theta \, \gamma \,
-\gamma' . \, A (\theta,\gamma) = A(\theta,\gamma')$.  It is still
-possible to express relations between global and local variables using
-logical variables (see the following paragraph).
+evaluation of the argument variables in the current state.
+\iffull{Recall that we require that $P_f$ and $Q_f$ do not depend on
+  the local variables on the call stack, that is, $\forall z \, \vec v
+  \, \theta \, \theta' \, \gamma . \, P_f \, z \, \vec v \,
+  (\theta,\gamma) = P_f \, z \, \vec v \, (\theta',\gamma)$.}{} To
+transfer potential that depends on local variables of the callee from
+the precondition $P$ to the postcondition $Q$, we use an assertion $A
+: \Assn$ that is independent of global variables, that is, $\forall
+\theta \, \gamma \, \gamma' . \, A (\theta,\gamma) =
+A(\theta,\gamma')$.  It is still possible to express relations between
+global and local variables using logical variables (see the
+\iffull{following paragraph}{extended version} for details).
 
 Finally, we describe the rules which are not syntax directed.  There
 are two weakening rules available in the quantitative Hoare logic.
@@ -1717,7 +1725,7 @@ rule indeed weakens the statement since it requires more resource to
 run the statement and yields less than what has been proved to be
 available after its termination.
 
-
+\iffull{
 \paragraph{Logical Variables and Shallow Embedding.}
 
 When specifying a program, it is often necessary to relate certain
@@ -1760,7 +1768,7 @@ with this problem, assumptions in the function context $\Delta$ are
 universally quantified over logical variables.  The {\sc L:Extend}
 rule uses the host proof assistant to require that the triple on $f$'s
 body is proved for every possible logical variable $y$.
-
+}{}
 
 \paragraph{Using the Quantitative Logic.}
 
@@ -1780,7 +1788,7 @@ $$
  A(i) =  \# \{ k \mid i \le k < N \land \forall\, 0 \le j < k.\, a[j] < a[k] \} \, .
 $$
 where we write $\# S$ for the cardinal of the set $S$.  $A(1)$ is
-obviously bounded by $N$, the size of the array.  So any automated tool
+bounded by $N$, the size of the array.  So any automated tool
 available would derive the linear bound $2 \cdot N$ for that program.
 But with the expressivity of our logic it is possible to use the
 previous set cardinal directly and precisely tie the bound to the
@@ -2061,6 +2069,141 @@ sufficient for the variety of examples we designed and found
 in the literature.
 
 
+
+\begin{figure*}[t]
+%SHORT
+\small
+%SHORT
+\begin{mathpar}
+%
+\Rule[leftskip=.4cm,rightskip=.3cm]{Q:Skip}
+{ }
+{ \!\! B; R; (\Gamma, Q) \vdash \code{skip} \dashv (\Gamma, Q) \!!}
+%
+\and
+\Rule{Q:Break}
+{ }
+{\!\!  (\Gamma, Q_B); R; (\Gamma, Q_B {+} M_b) \vdash \code{break} \dashv (\Gamma', Q') \!\!}
+%
+\and
+\Rule[leftskip=.3cm,rightskip=.4cm]{Q:Tick}
+{ }
+{ \!\! B; R; (\Gamma, Q{+}M_t(n)) \vdash \code{tick}(n) \dashv (\Gamma, Q) \!\!}
+%
+\and \Rule{Q:Return}
+{ P = Q_R[\Vret/x]  
+\\ \forall i \in \dom{P} . \, p_i = q_i
+}
+{ B; (\Gamma,Q_R); (\Gamma, Q_R{+} M_r) \vdash \code{return}~x \dashv (\Gamma',Q') }
+%
+\and \Rule{Q:Update}
+{ q'_{xy}, q'_{yx} \in \Qplusz
+\\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
+}
+{ B; R; (\Gamma[x/y], Q {+} M_u {+} M_e(y)) \vdash x \gets y \dashv (\Gamma, Q') }
+%
+\\ \Rule[leftskip=.1cm,rightskip=.1cm]{Q:Loop}
+{ (\Gamma', Q'); R; (\Gamma,Q) \vdash S \dashv (\Gamma,  Q {+} M_l) }
+{ B; R; (\Gamma, Q) \vdash \code{loop}~S \dashv (\Gamma', Q') }
+%
+\and \Rule[leftskip=.2cm,rightskip=.1cm]{Q:IncP}
+{ \Gamma \models y \ge 0 \!
+\\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\} \!
+\\ \textstyle q'_{0y} = q_{0y} 
+      + \sum_{u \in \mathcal U} q_{xu}
+      - \sum_{v \not\in \mathcal U} q_{vx} \!
+}
+{ \textstyle
+  B; R; (\Gamma[x/x {+} y], Q {+} M_u {+} M_e(x {+} y)) \vdash x \gets x + y \dashv (\Gamma, Q')
+}
+%
+\and \Rule{Q:DecP}
+{ \Gamma \models y \ge 0
+\\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
+\\\\ \textstyle q'_{y0} = q_{y0}
+      + \sum_{u \in \mathcal U} q_{ux}
+      - \sum_{v \not\in \mathcal U} q_{xv}
+}
+{ \textstyle
+  B; R; (\Gamma[x/x {-} y],Q {+} M_u {+} M_e(x {-} y)) \vdash x \gets x - y \dashv (\Gamma, Q')
+}
+%
+\and \Rule{Q:Inc}
+{ M = M_u + M_e(x {\pm} y)
+\\\\ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
+\\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
+}
+{ \textstyle
+  B; R; (\Gamma[x/x {\pm} y], Q {+} M) \vdash x \gets x \pm y \dashv (\Gamma, Q')
+}
+%
+\and \Rule{Q:If}
+{ B; R; (\Gamma \land e, Q {-} M_c^1) \vdash S_1 \dashv (\Gamma',Q')
+\\\\ B; R; (\Gamma \land \neg e, Q {-} M_c^2) \vdash S_2 \dashv (\Gamma',Q')
+}
+{ B; R; (\Gamma, Q{+}M_e(e)) \vdash \code{if}(e)~S_1~\code{else}~S_2 \dashv (\Gamma',Q') }
+%
+\and\Rule{Q:Seq}
+{  B; R; (\Gamma, Q) \vdash S_1 \dashv (\Gamma', Q' {+} M_s)
+\\\\ B; R; (\Gamma', Q') \vdash S_2 \dashv (\Gamma'',Q'')
+}
+{ B; R; (\Gamma, Q) \vdash S_1;S_2 \dashv (\Gamma'',Q'') }
+%
+\and\Rule{Q:Call}
+{ (\Gamma_f, Q_f,  \Gamma_f', Q_f') \in \Delta(f) \!
+\\ \text{Loc} = \text{Locals}(Q) \!
+\\ \forall i \neq j . \, x_i \neq x_j \!
+\\ c \in \Qplusz \!
+\\ Q = P + S \!
+\\ Q' = P' + S
+\\ U = Q_f[\Vargs / \vec x]
+\\ U' = Q'_f[\Vret/r]
+\\ \forall i \in \dom{U} . \, p_i = u_i
+\\ \forall i \in \dom{U'} .\, p'_i = u'_i 
+\\ \forall i \not\in \dom{U'} .\, p'_i = 0
+\\ \forall i \not\in \text{Loc}
+  .\, s_i = 0
+}
+{ B; R; (\Gamma_f[\Vargs / \vec x] \land \Gamma_{\text{Loc}}, Q {+} c {+} M_f)
+  \vdash r \gets f(\vec x) \dashv
+  (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c {-} M_r)
+}
+%
+\and 
+\Rule[leftskip=.2cm,rightskip=.2cm]{Q:Assert}
+{ }
+{ B; R; (\Gamma, Q {+} M_a) \vdash \code{assert}~e \dashv (\Gamma \land e, Q) }
+%
+\and \Rule[leftskip=.2cm,rightskip=.2cm]{Q:Extend}
+{ \fenv f = (\vec y, S_f)
+\\ B; (\Gamma_f', Q'_f); (\Gamma_f[\Vargs/\vec y], Q_f[\Vargs/ \vec y] ) \vdash S_f \dashv (\Gamma', Q')
+}
+{ (\Gamma_f, Q_f, \Gamma_f', Q_f') \in \Delta(f) }
+%
+\and \Rule{Q:Weak}
+{ B; R; (\Gamma_2,Q_2) \vdash S \dashv (\Gamma'_2, Q'_2)
+\\ \!\! \Gamma_1 \models \Gamma_2
+\\ Q_1 \succeq_{\Gamma_1} Q_2 
+\\ \Gamma'_2 \models \Gamma'_1 
+\\ Q'_2 \succeq_{\Gamma_2'} Q'_1 
+}
+{ B; R; (\Gamma_1,Q_1) \vdash S \dashv (\Gamma'_1, Q'_1) }
+%
+\and \Rule{Relax}
+{ \mathcal L = \{ xy \mid \exists l_{xy} {\in} \N \, . \, \Gamma \models l_{xy} \le |\inter x y| \}
+\\ \mathcal U = \{ xy \mid \exists u_{xy}{\in} \N \, . \, \Gamma \models |\inter x y| \le u_{xy} \}
+\\\\ \forall i \in \mathcal U.\, q'_i \ge q_i - r_i
+\\ \forall i \in \mathcal L.\, q'_i \ge q_i + p_i
+\\ \forall i \not\in \mathcal U {\cup} \mathcal L {\cup} \{0\} .\, q'_i \ge q_i
+\\ q'_0 \geq q_0 {\textstyle + \sum_{i \in \mathcal U} u_i r_i - \sum_{i \in \mathcal L} l_i p_i}
+}
+{ Q' \succeq_\Gamma Q }
+
+\end{mathpar}
+\caption{Inference rules of the quantitative analysis.}
+\label{fig:auto}
+\end{figure*}
+
 \paragraph{Judgements of the Automatic Analysis.}
 
 The inference system for the automatic amortized analysis is defined
@@ -2291,7 +2434,7 @@ of the automatic analysis directly to its counterpart in the
 quantitative logic.  The most tricky parts are the translations of the
 rules for increments and decrements and the rule {\sc Q:Weak} for
 weakening because we have to show that the preconditions of the rules
-{\sc L:Weak} or {\sc L:Update}, respectively, are met.  For instance
+{\sc L:Weak} or {\sc L:Update}, respectively, are met.  \iffull{ For instance
 we prove the following lemma to show the soundness of the translation
 of {\sc Q:Weak}.
 
@@ -2323,136 +2466,7 @@ These two inequalities justify the last step.
 We prove similar lemmas for the rules that deal with assignment.  With
 the computational content of the proof, we have an effective algorithm
 to construct certificates for upper bounds derived automatically.
-
-
-\begin{figure*}[t]
-\begin{mathpar}
-%
-\Rule{Q:Skip}
-{}
-{ B; R; (\Gamma, Q) \vdash \code{skip} \dashv (\Gamma, Q) }
-%
-\and \Rule{Q:Break}
-{}
-{  (\Gamma, Q_B); R; (\Gamma, Q_B {+} M_b) \vdash \code{break} \dashv (\Gamma', Q') }
-%
-\and \Rule{Q:Return}
-{ P = Q_R[\Vret/x]  
-\\ \forall i \in \dom{P} . \, p_i = q_i
-}
-{ B; (\Gamma,Q_R); (\Gamma, Q_R{+} M_r) \vdash \code{return}~x \dashv (\Gamma',Q') }
-%
-\and \Rule{Q:Assert}
-{}
-{ B; R; (\Gamma, Q {+} M_a) \vdash \code{assert}~e \dashv (\Gamma \land e, Q) }
-%
-\and \Rule{Q:Tick}
-{}
-{ B; R; (\Gamma, Q{+}M_t(n)) \vdash \code{tick}(n) \dashv (\Gamma, Q) }
-%
-\\ \Rule{Q:Loop}
-{ (\Gamma', Q'); R; (\Gamma,Q) \vdash S \dashv (\Gamma,  Q {+} M_l) }
-{ B; R; (\Gamma, Q) \vdash \code{loop}~S \dashv (\Gamma', Q') }
-%
-\and \Rule{Q:Update}
-{ q'_{xy}, q'_{yx} \in \Qplusz
-\\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
-}
-{ B; R; (\Gamma[x/y], Q {+} M_u {+} M_e(y)) \vdash x \gets y \dashv (\Gamma, Q') }
-%
-\and \Rule{Q:IncP}
-{ \Gamma \models y \ge 0
-\\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\}
-\\ \textstyle q'_{0y} = q_{0y}
-      + \sum_{u \in \mathcal U} q_{xu}
-      - \sum_{v \not\in \mathcal U} q_{vx}
-}
-{ \textstyle
-  B; R; (\Gamma[x/x {+} y], Q {+} M_u {+} M_e(x {+} y)) \vdash x \gets x + y \dashv (\Gamma, Q')
-}
-%
-\and \Rule{Q:DecP}
-{ \Gamma \models y \ge 0
-\\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
-\\ \textstyle q'_{y0} = q_{y0}
-      + \sum_{u \in \mathcal U} q_{ux}
-      - \sum_{v \not\in \mathcal U} q_{xv}
-}
-{ \textstyle
-  B; R; (\Gamma[x/x {-} y],Q {+} M_u {+} M_e(x {-} y)) \vdash x \gets x - y \dashv (\Gamma, Q')
-}
-%
-\and \Rule{Q:Inc}
-{ M = M_u + M_e(x {\pm} y)
-\\\\ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
-\\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
-}
-{ \textstyle
-  B; R; (\Gamma[x/x {\pm} y], Q {+} M) \vdash x \gets x \pm y \dashv (\Gamma, Q')
-}
-%
-\and \Rule{Q:If}
-{ B; R; (\Gamma \land e, Q {-} M_c^1) \vdash S_1 \dashv (\Gamma',Q')
-\\\\ B; R; (\Gamma \land \neg e, Q {-} M_c^2) \vdash S_2 \dashv (\Gamma',Q')
-}
-{ B; R; (\Gamma, Q{+}M_e(e)) \vdash \code{if}(e)~S_1~\code{else}~S_2 \dashv (\Gamma',Q') }
-%
-\and\Rule{Q:Seq}
-{  B; R; (\Gamma, Q) \vdash S_1 \dashv (\Gamma', Q' {+} M_s)
-\\\\ B; R; (\Gamma', Q') \vdash S_2 \dashv (\Gamma'',Q'')
-}
-{ B; R; (\Gamma, Q) \vdash S_1;S_2 \dashv (\Gamma'',Q'') }
-%
-\and \Rule{Q:Weak}
-{ B; R; (\Gamma_2,Q_2) \vdash S \dashv (\Gamma'_2, Q'_2)
-\\\\ \Gamma_1 \models \Gamma_2
-\\ Q_1 \succeq_{\Gamma_1} Q_2
-\\ \Gamma'_2 \models \Gamma'_1
-\\ Q'_2 \succeq_{\Gamma_2'} Q'_1
-}
-{ B; R; (\Gamma_1,Q_1) \vdash S \dashv (\Gamma'_1, Q'_1) }
-%
-\and\Rule{Q:Call}
-{ (\Gamma_f, Q_f,  \Gamma_f', Q_f') \in \Delta(f)
-\and \text{Loc} = \text{Locals}(Q)
-\and \forall i \neq j . \, x_i \neq x_j
-\and c \in \Qplusz
-\\ Q = P + S
-\and Q' = P' + S
-\and U = Q_f[\Vargs / \vec x]
-\and U' = Q'_f[\Vret/r]
-\\ \forall i \in \dom{U} . \, p_i = u_i
-\and \forall i \in \dom{U'} .\, p'_i = u'_i 
-\and \forall i \not\in \dom{U'} .\, p'_i = 0
-\and \forall i \not\in \text{Loc}
-  .\, s_i = 0
-}
-{ B; R; (\Gamma_f[\Vargs / \vec x] \land \Gamma_{\text{Loc}}, Q {+} c {+} M_f)
-  \vdash r \gets f(\vec x) \dashv
-  (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c {-} M_r)
-}
-%
-\and \Rule{Q:Extend}
-{ \fenv f = (\vec y, S_f)
-\\ B; (\Gamma_f', Q'_f); (\Gamma_f[\Vargs/\vec y], Q_f[\Vargs/ \vec y] ) \vdash S_f \dashv (\Gamma', Q')
-}
-{ (\Gamma_f, Q_f, \Gamma_f', Q_f') \in \Delta(f) }
-%
-\and \Rule{Relax}
-{ \mathcal L = \{ xy \mid \exists l_{xy} {\in} \N \, . \, \Gamma \models l_{xy} \le |\inter x y| \}
-\and \mathcal U = \{ xy \mid \exists u_{xy}{\in} \N \, . \, \Gamma \models |\inter x y| \le u_{xy} \}
-\\ \forall i \in \mathcal U.\, q'_i \ge q_i - r_i
-\\ \forall i \in \mathcal L.\, q'_i \ge q_i + p_i
-\\ \forall i \not\in \mathcal U {\cup} \mathcal L {\cup} \{0\} .\, q'_i \ge q_i
-\\ q'_0 \geq q_0 {\textstyle + \sum_{i \in \mathcal U} u_i r_i - \sum_{i \in \mathcal L} l_i p_i}
-}
-{ Q'   \succeq_\Gamma Q }
-
-\end{mathpar}
-\caption{Inference rules of the quantitative analysis}
-\label{fig:auto}
-\end{figure*}
-
+}{}
 
 
 % \sectskip
@@ -2946,15 +2960,15 @@ AAA
 \label{sec:related}
 \aftersectskip
 
-Most closely related to this article is our previous work on
-end-to-end stack-bound verification of Clight
-programs~\cite{veristack14}.  In that work, we have implemented and
-verified a quantitative logic to reason about stack-space usage.  In
-this article, we present a more general quantitative Hoare logic that
-is parametric in the resource of interest.  The main innovation over
-our previous work~\cite{veristack14} is the novel automatic amortized
-analysis for Clight programs that competes logical derivations for
-non-trivial bounds for programs with loops and recursion.
+Most closely related to this article is \iffull{our}{a} previous work
+on end-to-end stack-bound verification of Clight
+programs~\cite{veristack14}.  In that work, \iffull{we}{the authors}
+have implemented and verified a quantitative logic to reason about
+stack-space usage.  In this article, we present a more general
+quantitative Hoare logic that is parametric in the resource of
+interest.  The main innovation is the novel automatic amortized analysis for
+Clight programs that competes logical derivations for non-trivial
+bounds for programs with loops and recursion.
 
 Our work has been inspired by type-based amortized resource analysis
 for functional programs~\cite{Jost03,HoffmannH10,HoffmannAH12}.  There
@@ -3071,6 +3085,9 @@ the generalize the quantitative Hoare logic to handle \emph{concurrent
 % Any opinions, findings, and conclusions contained in this document are
 % those of the authors and do not reflect the views of these agencies.
 
+
+
+\iffull{
 \clearpage
 \appendix
 
@@ -4811,7 +4828,7 @@ $1 {+} |\inter 0 n|$
 }
 \label{fig:eval}
 \end{table*}
-
+}{}
 
 
 \sectskip
