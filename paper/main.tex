@@ -1,7 +1,9 @@
-%Comment for anonymization
+% Comment for anonymization
+% Also look for "SHORT" comments
+
 %\def\fullversion{}
 
-\documentclass[nocopyrightspace]{sigplanconf}
+\documentclass[nocopyrightspace,preprint]{sigplanconf}
 
 \newcommand{\iffull}[2]{\ifx\fullversion\undefined{#2}\else{#1}\fi}
 \newcommand{\ifshort}[2]{\ifx\fullversion\undefined{#1}\else{#2}\fi}
@@ -14,12 +16,12 @@
 \newcommand{\aftersectskip}[0]{\ifshort{\vspace{-1pt}}{}}
 \newcommand{\subsectskip}[0]{\ifshort{\vspace{-1pt}}{}}
 
-
- % \usepackage[normal,belowskip=-11pt,aboveskip=1pt]{caption} %Remove extra space around captiosn
- %  \DeclareCaptionFormat{myformat}{#1#2#3\vspace{-4pt}\hrulefill}
- %  \captionsetup[figure]{format=myformat}
- % \renewcommand{\captionlabelfont}{\bf}
-
+%SHORT
+\usepackage[normal,belowskip=-11pt,aboveskip=1pt]{caption} %Remove extra space around captiosn
+\DeclareCaptionFormat{myformat}{#1#2#3\vspace{-4pt}\hrulefill}
+\captionsetup[figure]{format=myformat}
+\renewcommand{\captionlabelfont}{\bf}
+%SHORT
 
 \usepackage[numbers]{natbib}
 
@@ -60,14 +62,15 @@
 %----------------------------------------------------
 
 \input{definitions}
-
 \begin{document}
 
-% \abovedisplayskip=4pt
-% \belowdisplayskip=4pt
-% \abovedisplayshortskip=4pt
-% \belowdisplayshortskip=4pt
-
+%SHORT
+\lstset{basicstyle=\tt\scriptsize}
+\abovedisplayskip=3pt
+\belowdisplayskip=3pt
+\abovedisplayshortskip=3pt
+\belowdisplayshortskip=3pt
+%SHORT
 
 \conferenceinfo{POPL} {January XX-XX, 2014, CITY, STATE, India.}
 \copyrightyear{2014}
@@ -452,8 +455,8 @@ counter.
 
 In this section, we informally introduce the quantitative program
 logic and the automatic amortized analysis for for Clight programs.
-The purpose of this section is to build some intuition that should
-make the following sections easy to read.
+% The purpose of this section is to build some intuition that should
+% make the following sections easy to read.
 
 \subsection{Quantitative Hoare Logic}
 
@@ -468,7 +471,7 @@ numbers and to show that $\Phi(\state) \geq n$ if $\state$ is a
 program state such that such that $(S, \state) \Downarrow_n \state'$.
 
 To obtain a compositional analysis we also have to take into account
-the state resulting from the program execution.  We thus use two
+the state resulting from a program's execution.  We thus use two
 potential functions, one that applies before the execution, and one
 that applies after.  The two functions must respect the relation
 $\Phi(\state) \ge n + \Phi'(\state')$ for all states $\state$ and
@@ -513,7 +516,7 @@ pre and post conditions to take non-negative number or $\infty$
 $\mathit{false}$ in Hoare logic.  Boolean assertions can be embedded
 into potential functions by mapping $\mathit{false}$ to $\infty$ and
 $\mathit{true}$ to $0$.
-
+%
 \begin{figure}
 \center
 \begin{minipage}[b]{0.8\linewidth}
@@ -560,7 +563,9 @@ while (k > 0) {
   }
 \label{fig:xmplinc}
 \end{figure}
-
+%
+\iffull{
+}{}
 We can use the logic to prove a concrete bound for a given resource
 metric, or a bound that is parametric in a set of resource metrics.
 For example, it is possible to derive the following quantitative
@@ -568,7 +573,7 @@ triple for a binary-search function \code{bsearch} that holds for all
 stack metrics $M$.  
 %
 \begin{center}
-${ \{ (Z = \log_2(h-l)) + Z{\cdot}M_\code{bsearch} \} }$
+${ \{ (Z = \log_2(h-\ell)) + Z{\cdot}M_\code{bsearch} \} }$
 \code{bsearch(x,l,h)}
 ${ \{ Z{\cdot}M_\code{bsearch} \} }$
 \end{center}
@@ -580,16 +585,16 @@ subsequent function calls.  So $M_f$ corresponds to the stack-frame
 size of the function $f$.  In the pre- and postcondition, the logical
 variable $Z$ is used to relate the size of the input with the
 potential that is left after the function call.  The logical part $Z =
-\log_2(h-l)$ of the precondition is $0$ if $Z =
-\log_2(\state_0(h)-\state_0(l))$ in the initial state $\state_0$ and
+\log_2(h-\ell)$ of the precondition is $0$ if $Z =
+\log_2(\state_0(h)-\state_0(\ell))$ in the initial state $\state_0$ and
 $\infty$ otherwise.
 
 For simplicity, assume for the remainder of this section that we are
-interested in bounding the number of \emph{ticks} in a program.  In
-other words, we use a resource metric that assigns cost $n$ to the
-function call \code{tick(n)} and cost $0$ to all other operations.
-The argument $n$ is an integer and a negative number means that $-n$
-resources are returned.
+interested in bounding the number of \emph{ticks} in a program.  Thus,
+we use a resource metric that assigns cost $n$ to the function call
+\code{tick(n)} and cost $0$ to all other operations.  The argument $n$
+is an integer and a negative number means that $-n$ resources are
+returned.
 
 We say that the analysis is amortized because the use of a potential
 function $\Phi$ enables us to amortize the cost of operations like in
@@ -643,79 +648,6 @@ additional example derivation.
 % potential motions allows us to design an automatic analysis to
 % discover linear invariants for surprisingly convoluted programs.
 
-
-
-\subsection{Automatic Amortized Analysis}
-
-A program logic provides a principled foundation for statically
-analyzing programs.  However, program logics need to be supported by
-automatic methods to be useful in practice.  That is why we developed a
-new automatic amortized analysis for deriving quantitative Hoare
-triples for common C programs.
-
-To this end, we fix the shape of the potential functions $\Phi$ so
-that it becomes possible to use \emph{linear programming} (LP) to
-compute a derivation in the logic.  If we assume for now that a
-program state $\state$ simply maps variable to integers then we
-require
-$$
-\Phi(\state) = q_0 + \sum_{x,y \in \dom{\state}} q_{(x,y)} {\cdot} |[\state(x),\state(y)]|
-$$
-where $q_{(x,y)} \in \Qplusz$ and $|[a,b]| = \max(b-a,0)$.  Note that
-$q_0$ is the constant potential and that we treat constants as program
-variables.  For instance, we always have $q_{(0,x)}|[0,x]|$ as a
-component of $\Phi(\state)$ if $x \in \dom{\state}$.
-%
-We then develop an inference rule for each syntactic construct that
-derives sound triples $\htriple{\Phi}P{\Phi'}$ in the quantitative
-logic but enables inference by using an LP solver.  
-
-This idea is best explained by example.  If we again use the
-\emph{ticks} metric that assigns cost $n$ to the function call
-\code{tick(n)} and cost $0$ to all other operations then the cost of
-the following example can be bounded by $|[x,y]|$.
-\begin{lstlisting}
-while (x<y) {x=x+1; tick(1);} #\hfill \textnormal{(Example 1)}#
-\end{lstlisting}
-To derive this bound in our automatic amortized analysis, we start
-with the initial potential $\Phi_0 = |[x,y]|$ (short for
-$\Phi_0(\state) = |[\state(x),\state(y)]|$) which we also use as the
-loop invariant.  For the loop body we then (like in Hoare logic) have
-to derive a triple like
-$\htriple{\Phi_0}{\code{x=x+1;tick(1)}}{\Phi_0}$.  However, we can
-only do so if we utilize the fact that $x<y$ at the beginning of the
-loop body.  % The reasoning then works as follows. We start with the
-% potential $|[x,y]|$ and the fact that $|[x,y]| > 0$ before the
-% assignment.  
-If we denote the updated version of $x$ after the
-assignment by $x'$ then the relation $|[x,y]| = |[x',y]| + 1$ between
-the potential before and after the assignment \code{x=x+1} holds.
-This means that we have the potential $|[x,y]| + 1$ before the
-statement \code{tick(1)}.  Since \code{tick(1)} consumes one resource unit,
-we end up with potential $|[x,y]|$ after the loop body and have
-established the loop invariant again.
-
-Note that our notion of a potential function is a generalization of the
-concept of a ranking function.  A potential function can be used like
-a ranking function if we use the tick metric and add the statement
-\code{tick(1)} to every back edge of the program (loops and function
-calls).  However, a potential function is more flexible.  For example,
-we can use a potential function to prove that Example~2 does not
-consume any resources in the tick metric.
-\begin{lstlisting}
-  while (x<y) {tick(-1); x=x+1; tick(1);} #\hfill \textnormal{(Example 2)}#
-\end{lstlisting}
-Similarly we can prove that Example~3 can be bounded by $10|[x,y]|$.
-In both cases, we reason exactly like in the first version of the
-while loop to prove the bound.  Of course, such loops with different
-tick annotations can be seamlessly combined in a larger program.
-\begin{lstlisting}
-  while (x<y) {x=x+1; tick(10);} #\hfill \textnormal{(Example 3)}#
-\end{lstlisting}
-%
-Also note that there are no restrictions on the signs of the input
-variables in the examples.
-
 \begin{figure}[t]
   \centering
 \begin{lstlisting}[mathescape]
@@ -741,6 +673,8 @@ ${\color{blue}%
     $T$.}
   \label{fig:ex1}
 \end{figure}
+
+
 %
 \newlength{\progwidth}
 
@@ -899,6 +833,78 @@ $59|[n,0]| {+} 0.05|[0,y]|$
 \end{figure*}
 %
 %
+
+\subsection{Automatic Amortized Analysis}
+
+A program logic provides a principled foundation for statically
+analyzing programs.  However, program logics need to be supported by
+automatic methods to be useful in practice.  That is why we developed a
+new automatic amortized analysis for deriving quantitative Hoare
+triples for common C programs.
+
+To this end, we fix the shape of the potential functions $\Phi$ so
+that it becomes possible to use \emph{linear programming} (LP) to
+compute a derivation in the logic.  If we assume for now that a
+program state $\state$ simply maps variable to integers then we
+require
+$$
+\Phi(\state) = q_0 + \sum_{x,y \in \dom{\state}} q_{(x,y)} {\cdot} |[\state(x),\state(y)]|
+$$
+where $q_{(x,y)} \in \Qplusz$ and $|[a,b]| = \max(b-a,0)$.  Note that
+$q_0$ is the constant potential and that we treat constants as program
+variables.  For instance, we always have $q_{(0,x)}|[0,x]|$ as a
+component of $\Phi(\state)$ if $x \in \dom{\state}$.
+%
+We then develop an inference rule for each syntactic construct that
+derives sound triples $\htriple{\Phi}P{\Phi'}$ in the quantitative
+logic but enables inference by using an LP solver.  
+
+This idea is best explained by example.  If we again use the
+\emph{ticks} metric that assigns cost $n$ to the function call
+\code{tick(n)} and cost $0$ to all other operations then the cost of
+the following example can be bounded by $|[x,y]|$.
+\begin{lstlisting}
+while (x<y) {x=x+1; tick(1);} #\hfill \textnormal{(Example 1)}#
+\end{lstlisting}
+To derive this bound in our automatic amortized analysis, we start
+with the initial potential $\Phi_0 = |[x,y]|$ (short for
+$\Phi_0(\state) = |[\state(x),\state(y)]|$) which we also use as the
+loop invariant.  For the loop body we then (like in Hoare logic) have
+to derive a triple like
+$\htriple{\Phi_0}{\code{x=x+1;tick(1)}}{\Phi_0}$.  However, we can
+only do so if we utilize the fact that $x<y$ at the beginning of the
+loop body.  % The reasoning then works as follows. We start with the
+% potential $|[x,y]|$ and the fact that $|[x,y]| > 0$ before the
+% assignment.  
+If we denote the updated version of $x$ after the
+assignment by $x'$ then the relation $|[x,y]| = |[x',y]| + 1$ between
+the potential before and after the assignment \code{x=x+1} holds.
+This means that we have the potential $|[x,y]| + 1$ before the
+statement \code{tick(1)}.  Since \code{tick(1)} consumes one resource unit,
+we end up with potential $|[x,y]|$ after the loop body and have
+established the loop invariant again.
+
+Note that our notion of a potential function is a generalization of the
+concept of a ranking function.  A potential function can be used like
+a ranking function if we use the tick metric and add the statement
+\code{tick(1)} to every back edge of the program (loops and function
+calls).  However, a potential function is more flexible.  For example,
+we can use a potential function to prove that Example~2 does not
+consume any resources in the tick metric.
+\begin{lstlisting}
+  while (x<y) {tick(-1); x=x+1; tick(1);} #\hfill \textnormal{(Example 2)}#
+\end{lstlisting}
+Similarly we can prove that Example~3 can be bounded by $10|[x,y]|$.
+In both cases, we reason exactly like in the first version of the
+while loop to prove the bound.  Of course, such loops with different
+tick annotations can be seamlessly combined in a larger program.
+\begin{lstlisting}
+  while (x<y) {x=x+1; tick(10);} #\hfill \textnormal{(Example 3)}#
+\end{lstlisting}
+%
+Also note that there are no restrictions on the signs of the input
+variables in the examples.
+
 More formally, we develop (\pref{sec:AAA}) a judgement 
 $$
 \Gamma; Q \vdash S \dashv Q'; \Gamma'
