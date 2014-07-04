@@ -1,5 +1,25 @@
+%Comment for anonymization
+%\def\fullversion{}
 
-\documentclass[nocopyrightspace,preprint]{sigplanconf}
+\documentclass[nocopyrightspace]{sigplanconf}
+
+\newcommand{\iffull}[2]{\ifx\fullversion\undefined{#2}\else{#1}\fi}
+\newcommand{\ifshort}[2]{\ifx\fullversion\undefined{#1}\else{#2}\fi}
+
+\newcommand{\itemskip}[0]{\ifshort{\vspace{-3pt}}{}}
+\newcommand{\itemskipIn}[0]{\ifshort{\vspace{-1pt}}{}}
+\newcommand{\sectskip}[0]{\ifshort{\vspace{-3pt}}{}}
+\newcommand{\paraskip}[0]{\ifshort{\vspace{-2pt}}{}}
+\newcommand{\lstskip}[0]{\ifshort{\vspace{-2pt}}{}}
+\newcommand{\aftersectskip}[0]{\ifshort{\vspace{-1pt}}{}}
+\newcommand{\subsectskip}[0]{\ifshort{\vspace{-1pt}}{}}
+
+
+ % \usepackage[normal,belowskip=-11pt,aboveskip=1pt]{caption} %Remove extra space around captiosn
+ %  \DeclareCaptionFormat{myformat}{#1#2#3\vspace{-4pt}\hrulefill}
+ %  \captionsetup[figure]{format=myformat}
+ % \renewcommand{\captionlabelfont}{\bf}
+
 
 \usepackage[numbers]{natbib}
 
@@ -43,6 +63,12 @@
 
 \begin{document}
 
+% \abovedisplayskip=4pt
+% \belowdisplayskip=4pt
+% \abovedisplayshortskip=4pt
+% \belowdisplayshortskip=4pt
+
+
 \conferenceinfo{POPL} {January XX-XX, 2014, CITY, STATE, India.}
 \copyrightyear{2014}
 \copyrightdata{XXX-X-XXXX-XXXX-X/XX/XX}
@@ -53,15 +79,15 @@
 \titlebanner{Draft -- Do not distribute}        % These are ignored unless
 \preprintfooter{Draft}   % 'preprint' option specified.
 
-\title{Compositional Certified Resource Bounds}
+\title{Compositional Certified Resource Bounds\ifshort{\vspace{-.15cm}}{}}
 % Certified Resource Bounds for C
 % Compositional Certified Resource Bounds for C
 % Compositional Quantitative Resource Analysis of C Programs
 % Compositional Resource-Bound Certification for C Programs
 
 \authorinfo
-{Quentin Carbonneaux \and Jan Hoffmann \and Zhong Shao}
-{Yale University}
+{\iffull{Quentin Carbonneaux \and Jan Hoffmann \and Zhong Shao}{\vspace{-1cm}}}
+{\iffull{Yale University}{\vspace{-1cm}}}
 
 
 \maketitle
@@ -92,7 +118,7 @@
   typical systems code.  Both, the quantitative logic and the
   automatic amortized analysis are naturally compositional and can be
   combined to semi-automatically derive global resource bounds.
-
+  %
   An experimental evaluation demonstrates the practicability of the
   analysis framework.  The expressivity of the logic is shown by
   manually deriving customized bounds that are tailored to specific
@@ -113,8 +139,11 @@
 % \keywords Formal Verification, Compiler Construction, Program Logics,
 % Stack-Space Bounds, Quantitative Verification
 
+
+\sectskip
 \section{Introduction}
 \label{sec:intro}
+\aftersectskip
 
 In software engineering and software verification, we often would like
 to have static information about the quantitative behavior of
@@ -143,15 +172,18 @@ PUBS~\cite{AlbertAGPZ12}, Rank~\cite{AliasDFG10}, and LOOPUS~\cite{SinnZV14}.
 %
 While the these tools can derive impressive results for realistic
 software, there still exist shortcomings that hamper the application
-of the existing techniques in practice.
+of existing techniques in practice.
+\itemskip
 \begin{itemize}
-\item Analysis tools are black boxes that either deliver a result or fail
+\item Analysis tools are black boxes that \iffull{either}{} deliver a result or fail
   without enabling \emph{user interaction} to manually or
   semi-automatically derive bounds for challenging parts of the
   program.
+\itemskipIn
 \item The computed bounds are often \emph{non-compositional} local
   bounds (for a single (nested) loop) that are difficult to combine to
   global whole program bounds.
+\itemskipIn
 \item Existing techniques often rely on complex external tools such as
   abstract interpretation--based invariant
   generation~\cite{GulwaniMC09} or translation of the program into a
@@ -159,12 +191,14 @@ of the existing techniques in practice.
   providing \emph{verifiable certificates} for the correctness of the
   derived bound.
 \end{itemize}
+\itemskip
 %
 While there has been much progress in static quantitative analysis,
 Knuth correctly points out in a recent interview~\cite{KnuthInter}
 that the state-of-the-art in formal quantitative methods still falls
 short in comparison with semantic techniques.
 %
+\itemskip
 \begin{quote}
   % Consider, for example, a computer program that sorts a list of
   % numbers into order. 
@@ -177,15 +211,16 @@ short in comparison with semantic techniques.
   with me that the recurrence is "obviously" valid. Yet I have no
   formal tools by which I can prove that my recurrence is right. I
   don't really understand my reasoning processes at all!
-  \vspace{-3ex}
+  \vspace{-4ex}
   \begin{flushright}
     -- Donald E. Knuth, 2014
   \end{flushright}
 \end{quote}
+\itemskip
 %
 In this work, we develop a resource analysis framework for C programs
 that is based on a solid semantic foundation.  The choice of C is
-primarily motivated by our ongoing work on the formally verified
+primarily motivated by \iffull{our}{the} ongoing work on the formally verified
 hypervisor kernel CertiKOS~\cite{GuVFSC11}.  CertiKOS is mainly
 developed in C and is supposed to provide verified guaranties on
 timing and memory usage.  Moreover, C is a natural choice because it
@@ -194,15 +229,18 @@ particular in safety-critical embedded and real-time systems where
 resource bound analyses are often required by regulatory
 authorities~\cite{May2013}.  Our \emph{contributions} are as follows.
 %
+\itemskip
 \begin{enumerate}
 \item We define a operational cost semantics for CompCert Clight that
   defines the resource consumption of terminating and diverging
   executions.  The cost is parametric in a user-definable cost metric
   and can be negative if resources are released during an execution.
+
 \item We develop a quantitative Hoare logic for interactively deriving
   resource bounds for Clight programs.  The logic is implemented and
   proved sound in the Coq Proof Assistant with respect to the cost
   semantics of Clight.
+\itemskipIn
 \item We describe an automatic static analysis that computes bounds
   together with derivations in the quantitative Hoare logic.  The
   analysis is inspired by type-based amortized resource analysis for
@@ -210,6 +248,7 @@ authorities~\cite{May2013}.  Our \emph{contributions} are as follows.
   derivations by generating simple linear constraints that can be
   solved by an off-the-shelf LP solver and does not require any
   fixpoint computations to obtain loop invariants.
+\itemskipIn
 \item We show with a publically available prototype implementation and
   an experimental evaluation that our novel amortized resource
   analysis works precisely and efficiently for challenging loop and
@@ -218,6 +257,7 @@ authorities~\cite{May2013}.  Our \emph{contributions} are as follows.
 % \item We prove the completeness of the program logic
 %   with respect to the operational cost semantics.
 \end{enumerate}
+\itemskip
 %
 To the best of our knowledge, this article presents the first resource
 analysis framework for C that makes it possible to combine non-trivial
@@ -234,11 +274,12 @@ functions of the input parameters of the program.  Another unique
 feature of our system is, that it can handle resources like memory
 that may become available during the execution.
 
-Our starting point is a recent work~\cite{veristack14} in which we
-have formally verified bounds on the stack usage of C programs.  A key
-part of this stack-bound verification is based on a quantitative Hoare
-logic for deriving abstract stack bounds for CompCert Clight programs
-that depend on the depth of (recursive) function calls.  % For
+Our starting point is a recent work~\cite{veristack14} \iffull{in
+  which we have}{that has} formally verified bounds on the stack usage
+of C programs.  A key part of this stack-bound verification is based
+on a quantitative Hoare logic for deriving abstract \emph{stack
+  bounds} for CompCert Clight programs\ifshort{.}{ that depend on the
+  depth of (recursive) function calls.}  % For
 % non-recursive programs it is possible to compute derivations for such
 % stack bounds in the quantitative Hoare logic automatically.  
 % By compiling these bounds together with the C program, we have derived
@@ -293,26 +334,30 @@ long-time open problem how to use type-based amortized analysis to
 derive bounds for functions whose resource consumption depends on
 (possibly negative) integers and non-sequential control flow as
 introduced by \code{break} and \code{return} statements.
-Unfortunately, these are the functions with non-constant resource
-consumption that are most common in CertiKOS and other system
+Unfortunately, these are the functions \iffull{with non-constant resource
+consumption}{} that are most common in CertiKOS and other system
 software.
 
 Our \emph{main contribution} is an automatic amortized resource
 analysis for CompCert Clight that computes derivations in the
 quantitative Hoare logic.  It is the first automatic amortized
 resource analysis that can derive bounds that depend on negative
-integers and handles programs with mutually recursive functions as
-well as \code{break} and \code{return} statements.  Using
+integers. It also handles programs with mutually recursive functions as
+well as \code{break} and \code{return} statements.  Using the
 potential-based approach of amortized analysis allows us to
-automatically handle programs that are need special treatment in other
-techniques such as
+use a single mechanism to analyze programs that need special treatment in other
+techniques.  For instance, we can naturally handle
+\itemskip
 \begin{itemize}
 \item interaction between \emph{sequential loops or function calls} through
   size changes of variables,
+\itemskipIn
 \item \emph{nested loops} that influence each others number of iterations,
+\itemskipIn
 \item and \emph{tricky iteration patterns} as found for instance in
   the Knuth-Morris-Pratt algorithm for string search.
 \end{itemize}
+\itemskip
 %
 The main innovation that makes the analysis practical for C is the use
 of interval sizes in potential functions instead of the sizes of
@@ -403,9 +448,10 @@ factor.
 % bounds.  \pref{sec:exper} contains the results of the experimental
 % evaluation and \pref{sec:related} describes related research.
 
-
+\sectskip
 \section{Overview and Examples}
 \label{sec:inform}
+\aftersectskip
 
 In this section, we informally introduce the quantitative program
 logic and the automatic amortized analysis for for Clight programs.
@@ -982,8 +1028,10 @@ $\;\;\;\;\;\;\,0.67 |[y,x]|\;\;$ (\code{count\_up(x,y)})
 \end{figure}
 
 
+\sectskip
 \section{Syntax and Semantics}
 \label{sec:sem}
+\aftersectskip
 
 We implemented our cost semantics and the quantitative Hoare logic in
 Coq for \emph{CompCert Clight}.  Clight is the most abstract
@@ -1284,14 +1332,17 @@ counter of the semantics.  It can be proved by induction on the number
 of steps.
 \begin{lemma}
 \label{lem:sem1}
+\itemskip
   \begin{enumerate}
   \item If $(\state, S, \cont, \cost) \smallstep{M}^k (\state', S',
     \cont', \cost')$ and $n\ge 0$ then $(\state, S, \cont, \cost {+} n)
     \smallstep{M}^k (\state', S', \cont', \cost' {+} n)$.
+\itemskipIn
   \item If $(\state, S, \cont, \cost) \smallstep{M}^k (\state', S',
     \cont', \cost')$ and $(\state, S, \cont, d) \smallstep{M}^k (\state', S',
     \cont', d')$ then $\cost - \cost' = d - d'$.
   \end{enumerate}
+\itemskip
 \end{lemma}
 %
 If we assume that we have a \emph{positive resource metric}, that is,
@@ -1310,8 +1361,10 @@ termination.  This is formalized by \pref{lem:sem_term}.
 \end{lemma}
 
 
+\sectskip
 \section{Quantitative Hoare Logic}
 \label{sec:logic}
+\aftersectskip
 
 In this section we describe a simplified version of the quantitative
 Hoare logic that we use in Coq to interactively prove resource bounds.
@@ -1915,8 +1968,10 @@ induction.
 
 
 
+\sectskip
 \section{Automatic Amortized Analysis}
 \label{sec:AAA}
+\aftersectskip
 
 In this section we present the automatic amortized analysis that we
 use in our implementation to derive linear resource bounds for C
@@ -2087,18 +2142,22 @@ Another interesting rule is {\sc Q:Call}.  It needs to account for the
 changes to the stack caused by the function call, the argument/return
 value passing, and the preservation of local variables.  We can sum up
 the main ideas of the rule as follows.
+\itemskip
 \begin{itemize}
 \item The potential in the pre- and postconditions of the function
   specification is equalized to its matching potential in the callee's
   pre/postcondition.
+\itemskipIn
 \item
   The potential of intervals $|\inter x y|$ is preserved
   if $x$ and $y$ are local variables,
+\itemskipIn
 \item
   The unknown potentials after the call (e.g.
   $|\inter x g|$, with $x$ local and $g$ global)
   are set to zero in the postcondition.
 \end{itemize}
+\itemskip
 If $x$ and $y$ are local variables and $\code{f}(x,y)$ is
 called, the rule takes care to split the potential of
 $|\inter x y|$ in two parts, one part to perform the
@@ -2374,6 +2433,7 @@ to construct certificates for upper bounds derived automatically.
 
 
 
+% \sectskip
 % \section{Implementation}
 
 % \subsection{Logical Annotations Generation}
@@ -2506,6 +2566,7 @@ to construct certificates for upper bounds derived automatically.
 % program points are the only ones where weakening is needed.
 
 
+% \sectskip
 % \section{Polynomial Potential}
 
 % \paragraph{Index Sets}
@@ -2663,8 +2724,10 @@ to construct certificates for upper bounds derived automatically.
 
 
 
+\sectskip
 \section{Experimental Evaluation}
 \label{sec:exper}
+\aftersectskip
 
 We have experimentally evaluated the practicability of our automatic
 amortized analysis with more than 30 challenging loop and recursion
@@ -2856,7 +2919,10 @@ AAA
 
 
 
+\sectskip
 \section{Related Work}
+\label{sec:related}
+\aftersectskip
 
 Most closely related to this article is our previous work on
 end-to-end stack-bound verification of Clight
@@ -2949,7 +3015,10 @@ to deal with resources like memory usage.  Also Blazy et al.'s
 automatic bound analysis does not compute symbolic bounds.
 
 
+\sectskip
 \section{Conclusion}
+\label{sec:concl}
+\aftersectskip
 
 We have introduced an novel quantitative analysis system for CompCert
 Clight programs.  To the best of our knowledge, this article presents
@@ -2982,6 +3051,7 @@ the generalize the quantitative Hoare logic to handle \emph{concurrent
 
 \clearpage
 \appendix
+
 
 \section{Catalog of Automatically Analyzed Programs}
 \label{app:cat}
@@ -4722,7 +4792,7 @@ $1 {+} |\inter 0 n|$
 
 
 
-
+\sectskip
 \bibliographystyle{abbrvnat}
 \bibliography{lit}
 
