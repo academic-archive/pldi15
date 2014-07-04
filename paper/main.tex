@@ -326,27 +326,29 @@ on type-based amortized resource analysis~\cite{Jost03,
 bounds with tight constant factors.  This type-based amortized
 resource analysis has been an inspiration in the design of the
 quantitative Hoare logic and is therefore a natural candidate to
-automate the reasoning.  However, it is a well-known problem that
-type-based amortized resource analysis works well for functional
-programs with pattern matching but not for C-like programs with
-control flow that depends integer arithmetic.  For example, it is a
-long-time open problem how to use type-based amortized analysis to
-derive bounds for functions whose resource consumption depends on
-(possibly negative) integers and non-sequential control flow as
-introduced by \code{break} and \code{return} statements.
-Unfortunately, these are the functions \iffull{with non-constant resource
-consumption}{} that are most common in CertiKOS and other system
-software.
+automate the reasoning.  Type-based amortized resource analysis works
+well for functional programs with pattern matching but it has been a
+long-time open problem to apply it to C-like programs with control
+flow that depends integer arithmetic, negative numbers, and non-linear
+control flow.
+% example, it is a
+% long-time open problem how to use type-based amortized analysis to
+% derive bounds for functions whose resource consumption depends on
+% (possibly negative) integers and non-sequential control flow as
+% introduced by \code{break} and \code{return} statements.
+% Unfortunately, these are the functions \iffull{with non-constant resource
+% consumption}{} that are most common in CertiKOS and other system
+% software.
 
 Our \emph{main contribution} is an automatic amortized resource
 analysis for CompCert Clight that computes derivations in the
 quantitative Hoare logic.  It is the first automatic amortized
 resource analysis that can derive bounds that depend on negative
-integers. It also handles programs with mutually recursive functions as
-well as \code{break} and \code{return} statements.  Using the
-potential-based approach of amortized analysis allows us to
-use a single mechanism to analyze programs that need special treatment in other
-techniques.  For instance, we can naturally handle
+integers. It also handles programs with mutually recursive functions
+as well as \code{break} and \code{return} statements.  The
+potential-based approach of amortized analysis provides a single
+mechanism for analyzing programs that need special treatment in other
+techniques; including
 \itemskip
 \begin{itemize}
 \item interaction between \emph{sequential loops or function calls} through
@@ -400,31 +402,26 @@ separately.  However, we developed the linear inference system so that
 the extension to polynomial bounds shall work smoothly.
 
 We have evaluated the automatic analysis with system code and examples
-from the literature.  \pref{app:cat} contains more than $30$
+from the literature.  \pref{app:cat} \ifshort{in the extended version
+  of this article\cite{anon_extended}}{} contains more than $30$
 challenging loop and recursion patterns that we collected from open
 source software and the literature.  Our analysis can find
-asymptotically tight bounds for $30$ all but 3 of these patterns and
-in most cases the derived constant factors are tight.  To compare our
+asymptotically tight bounds for all but 3 of these patterns and in
+most cases the derived constant factors are tight.  To compare our
 automatic analyzer with existing techniques, we tested our examples
-with the tools KoAT~\cite{BrockschmidtEFFG14},
-PUBS~\cite{AlbertAGPZ12}, Rank~\cite{AliasDFG10}, and
-LOOPUS~\cite{SinnZV14}.  We also contacted the authors of
-SPEED~\cite{GulwaniMC09} but were able to obtain a tool to perform a
-comparison.  Our experiments show that the bounds that we derive are
-often more precise than those derived by existing tools.  Only
-LOOPUS~\cite{SinnZV14}, which also uses amortization techniques, is
-able to achieve a similar precision.
-
+with the tools such as KoAT~\cite{BrockschmidtEFFG14},
+Rank~\cite{AliasDFG10}, and LOOPUS~\cite{SinnZV14}.  Our experiments
+show that the bounds that we derive are often more precise than those
+derived by existing tools.  Only LOOPUS~\cite{SinnZV14}, which also
+uses amortization techniques, is able to achieve a similar precision.
+%
 Several micro benchmarks demonstrate the practicability and
 expressiveness of the quantitative Hoare logic.  For example, we
 derive a logarithmic bound for a binary search function, a bound that
 depends on the contents of an array to describe the exact cost of a
 function that finds the maximal element in an array, and a linear
 bound that amortizes the cost of $n$ successive increments to a binary
-counter.  XXX In a larger case study, we show how the quantitative
-logic can be used to derive the amortized cost for data-structure
-operations for a table that expands or shrinks depending on the load
-factor.
+counter.
 
 % To show the practicability of our approach we developed a case study
 % with different real-time schedulers implemented in C.  To perform a
