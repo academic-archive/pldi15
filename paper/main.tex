@@ -709,7 +709,7 @@ while (n>x) {
    \end{lstlisting}
 
 $|[x, n]| + |[y, m]|$
-\\[.7\baselineskip]
+\\[.4\baselineskip]
       {\bf speed\_1}
     \end{center}
   \end{minipage}
@@ -744,7 +744,7 @@ while (x<n) {
    \end{lstlisting}
 
 $|[x, n]| + |[z, n]|$
-\\[.7\baselineskip]
+\\[.4\baselineskip]
       {\bf speed\_2}
     \end{center}
   \end{minipage}
@@ -779,7 +779,7 @@ while (y>9) {
    \end{lstlisting}
 
 $3.1|[y,z]| + 0.1|[0,y]|$
-\\[.7\baselineskip] 
+\\[.4\baselineskip] 
       {\bf t08a}
     \end{center}
   \end{minipage}
@@ -818,17 +818,21 @@ while (n<0) {
 }
    \end{lstlisting}
 $59|[n,0]| {+} 0.05|[0,y]|$
-\\[.7\baselineskip]
+\\[.4\baselineskip]
       {\bf t27}
     \end{center}
   \end{minipage}
-
-  \caption{Derivations of bounds on the number of ticks for
-    challenging examples.  In the potential functions, we only mention
-    the non-zero terms and in the logical context $\Gamma$ we only
-    mention assertions that we actually use in the reasoning. In
-    Example \emph{t27}, we use the abbreviation $P(n,y) := 59|[n,0]|
-    {+} 0.05|[0,y]|$.}
+\vspace{1ex}
+\caption{Derivations of bounds on the number of ticks for challenging
+  examples.  Examples \emph{speed\_1} and \emph{speed\_2}
+  (from~\cite{GulwaniMC09}) use \emph{tricky iteration patterns},
+  \emph{t08a} contains \emph{sequential loops} so that the iterations
+  of the second loop depend on the first, and \emph{t27} contains
+  interacting \emph{nested loops}. In the potential functions, we only
+  mention the non-zero terms and in the logical context $\Gamma$ we
+  only mention assertions that we actually use in the reasoning. In
+  Example \emph{t27}, we use the abbreviation $P(n,y) := 59|[n,0]| {+}
+  0.05|[0,y]|$.}
   \label{fig:ex_list}
 \end{figure*}
 %
@@ -842,10 +846,10 @@ automatic methods to be useful in practice.  That is why we developed a
 new automatic amortized analysis for deriving quantitative Hoare
 triples for common C programs.
 
-To this end, we fix the shape of the potential functions $\Phi$ so
-that it becomes possible to use \emph{linear programming} (LP) to
-compute a derivation in the logic.  If we assume for now that a
-program state $\state$ simply maps variable to integers then we
+To enable automation, we fix the shape of the potential functions
+$\Phi$ so that it becomes possible to use \emph{linear programming}
+(LP) to compute a derivation in the logic.  If we assume for now that
+a program state $\state$ simply maps variable to integers then we
 require
 $$
 \Phi(\state) = q_0 + \sum_{x,y \in \dom{\state}} q_{(x,y)} {\cdot} |[\state(x),\state(y)]|
@@ -861,9 +865,11 @@ logic but enables inference by using an LP solver.
 
 This idea is best explained by example.  If we again use the
 \emph{ticks} metric that assigns cost $n$ to the function call
-\code{tick(n)} and cost $0$ to all other operations then the cost of
-the following example can be bounded by $|[x,y]|$.
-\begin{lstlisting}
+\code{tick(n)} \iffull{and cost $0$ to all other operations}{} then
+the cost of the following example can be bounded by $|[x,y]|$. Note
+that there are no restrictions on the signs of the input variables in
+the examples.
+\begin{lstlisting}[basicstyle=\tt\small]
 while (x<y) {x=x+1; tick(1);} #\hfill \textnormal{(Example 1)}#
 \end{lstlisting}
 To derive this bound in our automatic amortized analysis, we start
@@ -891,20 +897,17 @@ a ranking function if we use the tick metric and add the statement
 calls).  However, a potential function is more flexible.  For example,
 we can use a potential function to prove that Example~2 does not
 consume any resources in the tick metric.
-\begin{lstlisting}
+\begin{lstlisting}[basicstyle=\tt\small]
   while (x<y) {tick(-1); x=x+1; tick(1);} #\hfill \textnormal{(Example 2)}#
 \end{lstlisting}
 Similarly we can prove that Example~3 can be bounded by $10|[x,y]|$.
 In both cases, we reason exactly like in the first version of the
 while loop to prove the bound.  Of course, such loops with different
 tick annotations can be seamlessly combined in a larger program.
-\begin{lstlisting}
+\begin{lstlisting}[basicstyle=\tt\small]
   while (x<y) {x=x+1; tick(10);} #\hfill \textnormal{(Example 3)}#
 \end{lstlisting}
 %
-Also note that there are no restrictions on the signs of the input
-variables in the examples.
-
 More formally, we develop (\pref{sec:AAA}) a judgement 
 $$
 \Gamma; Q \vdash S \dashv Q'; \Gamma'
@@ -928,17 +931,28 @@ consume $T>0$ resources in each iteration.  The reasoning is similar
 to the description of Example~1 except that we obtain the potential
 $K{\cdot}\frac{T}{K}$ after the assignment.  Note that the logical
 assertions in $\Gamma$ are only used in rule for the assignment
-\code{x=x+K}.  To the best of our knowledge, no other tool for C is
-currently capable of deriving a tight bound on the cost of such a
-loop.  For $T=1$ (many systems focus on the number of loop iterations
-without a cost model) and $K=10$, KoAT~\cite{BrockschmidtEFFG14}
-computes the bound $x + y + 10$, Rank~\cite{AliasDFG10} computes the
-bound $y-x-7$, and LOOPUS~\cite{SinnZV14} computes the bound
-$y-(x+9)$.  Only PUBS~\cite{AlbertAGPZ12} computes the tight bound
-$0.1(y-x)$ if we translate the program into a term-rewriting system by
-hand.
+\code{x=x+K}.  To the best of our knowledge, no other implemented tool
+for C is currently capable of deriving a tight bound on the cost of
+such a loop.  For $T=1$ (many systems focus on the number of loop
+iterations without a cost model) and $K=10$,
+KoAT~\cite{BrockschmidtEFFG14} computes the bound $x + y + 10$,
+Rank~\cite{AliasDFG10} computes the bound $y-x-7$, and
+LOOPUS~\cite{SinnZV14} computes the bound $y-(x+9)$.  Only
+PUBS~\cite{AlbertAGPZ12} computes the tight bound $0.1(y-x)$ if we
+translate the program into a term-rewriting system by hand.
 
-It might be surprising that we only track simple linear relations in
+To automate the reasoning, we first introduce an unknown rational
+variables for each factor in the potential functions.  We then use our
+inference rules (see \pref{sec:AAA}) to emit linear inequalities on
+these variables that enforce that the potential annotations are sound.
+For instance if $K = 1$ in \pref{fig:ex1} then we would have the
+annotation $q_0 + q_{(x,y)} {\cdot} |[x,y]| + q_{(y,x)} {\cdot}
+|[y,x]|$ before the assignment and $p_0 + p_{(x,y)} {\cdot} |[x,y]| +
+p_{(y,x)} {\cdot} |[y,x]|$ after the assignment where $q_i$ and $p_i$
+are unknown and must satisfy constraints like $p_{(x,y)} = q_{(x,y)}$,
+$p_{(y,x)} = q_{(y,x)}$, and $p_0 = q_0 + q_{(x,y)} - q_{(y,x)}$.
+
+\iffull{It might be surprising that we}{We} only track simple linear relations in
 the logical context $\Gamma$.  It would of course be possible to keep
 track more sophisticated assertions.  However, this simple form is
 sufficient for the examples we considered and we can efficiently
@@ -949,40 +963,41 @@ extended if necessary.
 
 As mentioned, the automatic analysis can handle challenging example
 programs without special tricks or techniques.  Examples
-\emph{speed\_1} and \emph{speed\_2} that are taken from previous work
-on bound analysis~\cite{GulwaniMC09} and demonstrate the our method
-can handle \emph{tricky iteration patterns}.  The SPEED
-tool~\cite{GulwaniMC09} derives the same bounds as our analysis but
-requires inference of \emph{disjunctive invariants}.  In the abstract
-interpretation community, these invariants are known to be notoriously
-difficult to handle.
+\emph{speed\_1} and \emph{speed\_2} that are taken from previous
+work~\cite{GulwaniMC09} and demonstrate the our method can handle
+\emph{tricky iteration patterns}.  The SPEED tool~\cite{GulwaniMC09}
+derives the same bounds as our analysis but requires inference of
+\emph{disjunctive invariants}.  In the abstract interpretation
+community, these invariants are known to be notoriously difficult to
+handle.
 %
 In example \emph{speed\_1} we have one loop that first increments
 variable $y$ up to $m$ and then increments variable $x$ up to $n$.  We
 derive the tight bound $|[x, n]| + |[y, m]|$.
 %
 Example \emph{speed\_2} is more tricky and we found it hard to
-manually find a bound.  However, with the amortized analysis in mind,
-using the potential transfer reasoning, it is almost trivial to prove
-the tight bound $|[x, n]| + |[z, n]|$.
+manually find a bound.  However, using potential transfer reasoning of
+amortized analysis, it is straightforward to prove the tight bound
+$|[x, n]| + |[z, n]|$.
 
 Example \emph{t08a} shows the ability of the analysis to discover
-interaction between \emph{sequential loops or function calls} through
-size changes of variables.  We accurately track the size change of $y$
-in the first loop by transferring the potential $0.1$ form $|[y,z]| to
-|[0,y]|$.  Furthermore, \emph{t08a} shows that we do not handle the
-constants $1$ or $0$ in any special way.  In all examples you could
-replace $0$ and $1$ with other constants like we did in the second
-loop and still derive a tight bound.  The only information, that the
-analyzer needs is $y \geq c$ before assigning $y = y - c$.
-
+interaction between \emph{sequential loops} through size changes of
+variables.  We accurately track the size change of $y$ in the first
+loop by transferring the potential $0.1$ form $|[y,z]|$ to $|[0,y]|$.
+Furthermore, \emph{t08a} shows again that we do not handle the
+constants $1$ or $0$ in any special way.  In all examples we could
+replace $0$ and $1$ with other constants like in the second loop and
+still derive a tight bound.  \iffull{The only information, that the analyzer
+needs is $y \geq c$ before assigning $y = y - c$.}{}
+%
 Example \emph{t27} shows how amortization can be used to handle
-\emph{interacting nested loops}.  The outer loop we increment the variable $n$
-till $n = 0$.  In each of the $|[n,0]|$ iterations, we increment the
-variable $y$ by $1000$.  We then non-deterministically execute an
-inner loop that decrements $y$ by $100$ until $y<100$.  The analysis
-can derive that only the first execution of the inner loop depends on
-the initial value of $y$.  We again derive tight constant factors.
+\emph{interacting nested loops}.  In the outer loop we increment the
+variable $n$ till $n = 0$.  In each of the $|[n,0]|$ iterations, we
+increment the variable $y$ by $1000$.  We then non-deterministically
+(expressed by \code{*}) execute an inner loop that decrements $y$ by
+$100$ until $y<100$.  The analysis discovers that only the first
+execution of the inner loop depends on the initial value of $y$.  We
+again derive tight constant factors.
 %
 
 As mentioned, the analysis also handles advanced control flow like
@@ -993,18 +1008,18 @@ decrements its first argument $x$ until it reaches the second argument
 $y$. It then recursively calls the function \code{count\_up}.  The
 function \code{count\_up} is dual to \code{count\_down}.  Here, we
 count up $y$ by $2$ and recursively call \code{count\_down}.  Our
-analysis system is the only available system that can compute a tight
-bound on this example.  The analysis amounts to computing the meeting
-point of two trains that approach each other with different speeds.
+analysis is the only available system that computes a tight
+bound on this example.  \iffull{The analysis amounts to computing the meeting
+point of two trains that approach each other with different speeds.}{}
 % This is comparable to the
 % determination of the point at which to trains meet if they approach
 % each other with different speeds.
 
-We only show a small selections of the programs that we can handle
-automatically here.  In \pref{app:cat} is a list of more than $30$
+\iffull{We only show a small selections of the programs that we can handle
+automatically here.}{}  In \pref{app:cat} is a list of more than $30$
 classes of challenging programs that we can automatically analyze.
 \pref{sec:exper} contains a more detailed comparison with other tools
-for automatic bound derivation.
+for \iffull{automatic}{} bound derivation.
 
 
 \begin{figure}[t]
@@ -1013,20 +1028,22 @@ for automatic bound derivation.
     \begin{center}
    \begin{lstlisting}
 void count_down (int x,int y) {
-  if (x>y) { tick(1); count_up(x-1,y); }
-}
+  if (x>y) { tick(1); count_up(x-1,y); } }
+
 void count_up (int x, int y) {
-  if (y+1<x) { tick(1); count_down(x,y+2); }
-}
+  if (y+1<x) { tick(1); count_down(x,y+2); } }
+
    \end{lstlisting}
 
 $0.33 + 0.67 |[y,x]|\;\;$ (\code{count\_down(x,y)})\\
 $\;\;\;\;\;\;\,0.67 |[y,x]|\;\;$ (\code{count\_up(x,y)})
-\\[.7\baselineskip]
+\\[.4\baselineskip]
       {\bf t39}
     \end{center}
   \end{minipage}
-  \caption{Two mutually-recursive functions with the computed tick bounds.}
+\vspace{-1.5ex}
+
+  \caption{Two mutually-recursive functions with the computed tick bounds.  The derived constant factors are tight.}
   \label{fig:ex_rec}
 \end{figure}
 
@@ -1082,71 +1099,6 @@ $\code{tick}(n)$ that can be called with a constant integer $n$ as a
 flexible way to model resource consumption or release (if $n$ is
 negative).
 
-
-\paragraph{Semantics.}
-
-CompCert Clight's operational semantics is based on small-step
-transitions and continuations.  Expressions---which do not have side
-effects---are evaluated in a big-step fashion.  Here, we describe a
-simplified version of Clight's semantics that is sufficient for the
-subset that we are describing.
-
-A program state $\state = (\theta, \gamma)$ composed of two maps from
-variable names to integers. The first map $\theta : \text{Locals} \to
-\Z$ assigns integers to local variables of a function and the second
-map $\gamma : \text{Globals} \to \Z$ gives values to global variables
-of the program.  In this article, we assume that all values are
-integers but in the implementation we support all data types of
-Clight.
-%
-The evaluation function \evalE{\cdot}{} that maps an expression $e \in
-E$ to a value $\evalE{e}{\state} \in \Z$ in program state $\state$.
-
-For simplicity, we assume that local variables and global variables
-are always disjoint.  We just write $\state(x)$ to obtain the value of
-$x$ in program state $\state$.  Such a lookup is defined as
-$$
-(\theta, \gamma)(x) =
-\left\{
-\begin{array}{lr}
-\theta(x) & \mbox{ if } x \in \dom \theta \\
-\gamma(x) & \mbox{ if } x \in \dom \gamma
-\end{array}
-\right..
-$$
-For a program state $\state$, we similarly write $\state[x \mapsto v]$
-for the program state that maps $x$ to $v$ and behaves as $\state$ for
-all other variables, regardless whether $x \in \dom \theta$ or $x \in
-\dom \gamma$.
-
-The small-step semantics is standard, except that it tracks the
-resource consumption of a program.  The semantics is oblivious to the
-resource of interest for the user of our system.  We achieve this
-independence by parameterizing evaluations with a resource
-\emph{metric} $M$; a tuple of nine rational numbers, one map $M_e :
-\text{Expr} \to \Q$ from expressions to rational numbers, and one map
-$M_t : \Z \to \Q$ from integers to rational numbers.
-$$
-M = (
-M_a,
-M_b,
-M_r,
-M_u,
-M_f,
-M_l,
-M_c^1,
-M_c^2,
-M_s,
-M_e(E),
-M_t(n)
-)
-$$
-Each of these rational numbers indicates the amount of resource
-consumed by a corresponding operation.  If the assigned resource cost
-is negative then it means that resources are released.  The metric
-that we use in the implementation can also depend on other information
-that is statically available such as the name of the called function
-or the number of arguments.
 
 
 \begin{figure}[t!]
@@ -1282,12 +1234,76 @@ or the number of arguments.
 }
 
 \end{mathpar}
-\caption{Operational semantics of statements}
+\caption{\iffull{Rules}{Selected rules} of the operational semantics of statements.}
 \label{fig:opsem}
 \end{figure}
 
+\paragraph{Semantics.}
 
-\pref{fig:opsem} contains the reduction rules of the semantics.  The
+CompCert Clight's operational semantics is based on small-step
+transitions and continuations.  Expressions---which do not have side
+effects---are evaluated in a big-step fashion.  Here, we describe a
+simplified version of Clight's semantics that is sufficient for the
+subset that we are describing.
+
+A program state $\state = (\theta, \gamma)$ composed of two maps from
+variable names to integers. The first map $\theta : \text{Locals} \to
+\Z$ assigns integers to local variables of a function and the second
+map $\gamma : \text{Globals} \to \Z$ gives values to global variables
+of the program.  In this article, we assume that all values are
+integers but in the implementation we support all data types of
+Clight.
+%
+The evaluation function \evalE{\cdot}{} maps an expression $e \in
+E$ to a value $\evalE{e}{\state} \in \Z$ in program state $\state$.
+
+For simplicity, we assume that local variables and global variables
+are always disjoint.  We just write $\state(x)$ to obtain the value of
+$x$ in program state $\state$. \iffull{Such a lookup is defined as
+$$
+(\theta, \gamma)(x) =
+\left\{
+\begin{array}{lr}
+\theta(x) & \mbox{ if } x \in \dom \theta \\
+\gamma(x) & \mbox{ if } x \in \dom \gamma
+\end{array}
+\right..
+$$}{}
+\iffull{For a program state $\state$, we}{We} similarly write $\state[x \mapsto v]$
+for the program state that maps $x$ to $v$ and behaves as $\state$ for
+all other variables, regardless whether $x \in \dom \theta$ or $x \in
+\dom \gamma$.
+
+The small-step semantics is standard, except that it tracks the
+resource consumption of a program.  The semantics is oblivious to the
+resource of interest for the user of our system.  We achieve this
+independence by parameterizing evaluations with a resource
+\emph{metric} $M$; a tuple of nine rational numbers, one map $M_e :
+\text{Expr} \to \Q$ from expressions to rational numbers, and one map
+$M_t : \Z \to \Q$ from integers to rational numbers.
+$$
+M = (
+M_a,
+M_b,
+M_r,
+M_u,
+M_f,
+M_l,
+M_c^1,
+M_c^2,
+M_s,
+M_e(E),
+M_t(n)
+)
+$$
+Each of these rational numbers indicates the amount of resource
+consumed by a corresponding operation.  If the assigned resource cost
+is negative then it means that resources are released.  The metric
+that we use in the implementation can also depend on other information
+that is statically available such as the name of the called function
+or the number of arguments.
+
+\pref{fig:opsem} contains \ifshort{selected}{} the reduction rules of the semantics.  The
 rules define a rewrite system for program configurations of the form
 $(\state, S, \cont, \cost)$, where $\state$ is the program state, $S$
 is the statement being executed, $\cont$ is a continuation that
@@ -1301,6 +1317,7 @@ transition relation $\smallstep{M}^*$ to indicate that the execution
 ran out of reassesses.  However, every execution that reaches such a
 state is stuck.
 
+\iffull{
 A continuation $\cont$ represents the context of the execution of a
 given statement.  A continuation can be the empty continuation
 $\Kstop$ (used to start a program), a sequenced computation $\Kseq S
@@ -1316,9 +1333,10 @@ $$
 During the execution we assume a fixed function context $\fenv$ that
 maps function names to a list of variables and the statement that
 defines the function body.  It is used in the rule \textsc{S:Call}.
+}{}
 
-The intuitive meaning of an evaluation judgement $(\state, S, \cont,
-\cost) \smallstep{M}^* (\state', S', \cont', \cost')$ is the
+The intuitive meaning of an evaluation \iffull{judgement}{} $(\state,
+S, \cont, \cost) \smallstep{M}^* (\state', S', \cont', \cost')$ is the
 following.  If the statement $S$ is executed in program state
 $\state$, with continuation $\cont$, and with $\cost$ resources
 available then---after a finite number of steps---the evaluation will
@@ -1330,6 +1348,7 @@ then resource became available during the execution.  If however
 $\cost' < 0$ then the execution ran out of resources and is stuck.
 The cost of the execution is then $\cost \ge 0$.
 
+\iffull{
 \pref{lem:sem1} summarizes the main properties of the resource
 counter of the semantics.  It can be proved by induction on the number
 of steps.
@@ -1362,7 +1381,7 @@ termination.  This is formalized by \pref{lem:sem_term}.
  \smallstep{M}^n (\state'', S', \cont', d')$ for some $n$, $d$, $d'$
  and $\state''$ implies $n \le B$.
 \end{lemma}
-
+}{}
 
 \sectskip
 \section{Quantitative Hoare Logic}
@@ -1371,7 +1390,7 @@ termination.  This is formalized by \pref{lem:sem_term}.
 
 In this section we describe a simplified version of the quantitative
 Hoare logic that we use in Coq to interactively prove resource bounds.
-
+%
 We generalize classic Hoare logic to express not only classical
 boolean-valued assertions but also assertions that talk about the
 future resource usage.  Instead of the usual assertions $P : \State
