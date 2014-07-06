@@ -1,7 +1,6 @@
 % Comment for anonymization
 % Also look for "SHORT" comments
-
-%\def\fullversion{}
+% \def\fullversion{}
 
 \documentclass[nocopyrightspace,preprint]{sigplanconf}
 
@@ -1727,7 +1726,7 @@ rule indeed weakens the statement since it requires more resource to
 run the statement and yields less than what has been proved to be
 available after its termination.
 
-\iffull{
+\ifx\fullversion\undefined{}\else{
 \paragraph{Logical Variables and Shallow Embedding.}
 
 When specifying a program, it is often necessary to relate certain
@@ -1770,7 +1769,7 @@ with this problem, assumptions in the function context $\Delta$ are
 universally quantified over logical variables.  The {\sc L:Extend}
 rule uses the host proof assistant to require that the triple on $f$'s
 body is proved for every possible logical variable $y$.
-}{}
+}\fi
 
 \paragraph{Using the Quantitative Logic.}
 
@@ -2271,14 +2270,17 @@ $q_{ax}$ that contain $x$ after the assignment.
 &
 \begin{lstlisting}
 while (y > x) {
-  x++; tick(1); }
+  x++; tick(1); 
+}
 while (x > 2) {
-  x -= 3; tick(1); }
+  x -= 3; tick(1); 
+}
 \end{lstlisting}
 &
 \begin{lstlisting}
 while (i > 100) {
-  i--; tick(1) }
+  i--; tick(1) 
+}
 i += k+50;
 while (i >= 0) {
   i--; tick(1); }
@@ -3106,7 +3108,7 @@ the generalize the quantitative Hoare logic to handle \emph{concurrent
 
 
 
-\iffull{
+\ifx\fullversion\undefined{}\else{
 \clearpage
 \appendix
 
@@ -4847,7 +4849,7 @@ $1 {+} |\inter 0 n|$
 }
 \label{fig:eval}
 \end{table*}
-}{}
+}\fi
 
 \bibliographystyle{abbrvnat}
 \iffull{
