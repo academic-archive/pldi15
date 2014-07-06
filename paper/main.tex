@@ -1,6 +1,6 @@
 % Comment for anonymization
 % Also look for "SHORT" comments
-% \def\fullversion{}
+\def\fullversion{}
 
 \documentclass[nocopyrightspace,preprint]{sigplanconf}
 
@@ -4144,7 +4144,7 @@ $---$
     j=i+1;
     while (j<n) {
       if (*) {
-        _tick(1);
+        tick(1);
         j=j-1; n=n-1;
       }
       j=j+1;
@@ -4307,7 +4307,7 @@ tool.
 
 Example \emph{ex1} from [GulwaniPLDI10] specifically focusses on the
 code in the \emph{if} statement.  So we use the \emph{tick metric} and
-insert \code{_tick(1)} inside the if statement to derive a bound on
+insert \code{tick(1)} inside the if statement to derive a bound on
 the number of times the code in the if statement is executed.  Note
 that we cannot derive a bound for the whole program since the outer
 loop is executed a quadratic number of times.  Nevertheless it is
@@ -4347,7 +4347,7 @@ int copy (int x, int y) {
   };
   return y;
 }
-void _main (int x,int y) {
+void main (int x,int y) {
   y = copy (x,y);
   count_down(y);
 }
@@ -4379,7 +4379,7 @@ void count_up (int x, int y)
   }
 }
 
-void _main (int y, int z) {
+void main (int y, int z) {
   count_down(y,z);
 }
    \end{lstlisting}
@@ -4396,15 +4396,15 @@ $1.67 + 1.33 |[z,y]|$
    \begin{lstlisting}
 void produce () {
   while (x>0) {
-    _tick(-1); x=x-1; y=y+1;
+    tick(-1); x=x-1; y=y+1;
   }
 }
 void consume () {
   while (y>0) {
-    y=y-1; x=x+1; _tick(1);
+    y=y-1; x=x+1; tick(1);
   }
 }
-void _main (int y, int z) {
+void main (int y, int z) {
   consume(); produce(); consume();
 }
    \end{lstlisting}
@@ -4433,7 +4433,7 @@ argument $x$ to the argument $y$ if $x$ is positive.  However, this
 addition is done in steps of $1$ in each recursive call.  The function
 \code{count\_down} recursively decrements its argument down to $0$.
 The derived bound $1 + 4|[0, x]| + 2|[0, y]|$ is for the function
-\code{\_main} in which we first add $x$ to $y$ using the function
+\code{\main} in which we first add $x$ to $y$ using the function
 \code{copy} and then count down the variable $y$ using the function
 \code{count\_down}.  The derived bound is tight.
 
@@ -4443,17 +4443,17 @@ example \emph{t37}.  However, we do not count down to $0$ but to a
 variable $y$ that is passed as an argument and we call the function
 \code{count\_up} afterwards.  The function \code{count\_up} is dual to
 \code{count\_down}.  Here, we count up $y$ by $2$ and recursively call
-\code{count\_down}.  For the function $\_main$, which calls
+\code{count\_down}.  For the function $\main$, which calls
 \code{count\_down(y,z)}, the analyzer computes the tight bound $1.67 +
 1.33 |[z,y]|$.
 
 Example \emph{t46} shows a program that uses and returns resources.
-Again, we use the \emph{tick metric} and the function \code{\_tick} to
+Again, we use the \emph{tick metric} and the function \code{\tick} to
 describe the resource usage.  The function \code{produce} produces
 $|[0,x]|$ resources, that is, in each of the $|[0,x]|$ iterations, it
 receives one resource unit.  Similarly, the function \code{consume}
 consumes $|[0,y]|$ resources.  The analyzer computes the tight bound
-$|[0,y]|$ for the function \code{\_main}.  This is only possible since
+$|[0,y]|$ for the function \code{\main}.  This is only possible since
 amortized analysis naturally tracks the size changes to the variables
 $x$ and $y$, and the interaction between \code{consume} and
 \code{produce}.
