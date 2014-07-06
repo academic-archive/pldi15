@@ -20,6 +20,7 @@
 \usepackage[normal,belowskip=-11pt,aboveskip=1pt]{caption} %Remove extra space around captiosn
 \DeclareCaptionFormat{myformat}{#1#2#3\vspace{-4pt}\hrulefill}
 \captionsetup[figure]{format=myformat}
+\captionsetup[table]{format=myformat}
 \renewcommand{\captionlabelfont}{\bf}
 %SHORT
 
@@ -1015,11 +1016,12 @@ point of two trains that approach each other with different speeds.}{}
 % determination of the point at which to trains meet if they approach
 % each other with different speeds.
 
-\iffull{We only show a small selections of the programs that we can handle
-automatically here.}{}  In \pref{app:cat} is a list of more than $30$
+\iffull{We only show a small selections of the programs that we can
+  handle automatically here.}{} \iffull{In \pref{app:cat}}{In the
+  extended version~\cite{anon_extended}} is a list of more than $30$
 classes of challenging programs that we can automatically analyze.
-\pref{sec:exper} contains a more detailed comparison with other tools
-for \iffull{automatic}{} bound derivation.
+\pref{sec:exper} contains a more detailed comparison with other
+tools\iffull{for automatic bound derivation.}{.}
 
 
 \begin{figure}[t]
@@ -2032,20 +2034,20 @@ references to the linear coefficients $q_i$, we introduce an \emph{index
 $f_i$ in the potential function: $0$ corresponds to the constant
 function $\state \mapsto 1$, and $(x,y)$ corresponds to $\state \mapsto
 |\inter {\state(x)} {\state(y)}|$.  Using these notations we can
-rewrite the above equality as
+rewrite the above equality as\iffull{
 $$
   \Phi = \sum_{i \in I} q_i f_i.
-$$
-We often write $xy$ to denote the index $(x,y)$.  The family
-$(f_i)_{i\in I}$ is actually a basis (in the linear algebra sense) for
-potential functions.  This allows us to uniquely represent any linear
-potential function $\Phi$ as a \emph{quantitative annotation} $Q =
-(q_i)_{i \in I}$, that is, a family of rational numbers where only a
-finite number of elements are not zero.
-%
-For soundness, we require that potential functions always give
-non-negative results.  This is acheived by restricting coefficients
-in a quantitative annotation to be always non-negative.
+$$}
+{ $\Phi = \sum_{i \in I} q_i f_i$.}  We often write $xy$ to denote the
+index $(x,y)$.  The family $(f_i)_{i\in I}$ is actually a basis (in
+the linear-algebra sense) for potential functions.  This allows us to
+uniquely represent any linear potential function
+$\Phi$ as a \emph{quantitative annotation} $Q = (q_i)_{i \in I}$, that
+is, a family of \ifshort{non-negative}{} rational numbers where only
+a finite number of elements are not zero. \iffull{ For soundness, we
+  require that potential functions always give non-negative results.
+  This is acheived by restricting coefficients in a quantitative
+  annotation to be always non-negative.}{}
 
 In the potential functions, we treat constants as global variables
 that can not be assigned to.  For example, if the program contains the
@@ -2060,7 +2062,7 @@ analysis needs to maintain a minimal logical state to justify certain
 operations on quantitative annotations.  For example when analyzing
 the code $x \gets x + y$, it is helpful to know the sign of $y$ to
 determine which intervals will increase or decrease.  The knowledge
-needed by our rules can often be inferred by local reasoning (i.e., in
+needed by our rules can be inferred by local reasoning (i.e., in
 basic blocks without recursion and loops) within usual theories
 (e.g. Presburger arithmetic or bit vectors).
 
@@ -2071,7 +2073,7 @@ simpler rules and leaves room for future improvements.
 Our implementation uses conjunctions of linear inequalities as
 logical state.  We never compute fixpoints and take $\top$
 as pre- and postconditions for functions. It has proved to be
-sufficient for the variety of examples we designed and found
+sufficient for the variety of examples we are interested in or found 
 in the literature.
 
 
@@ -2081,6 +2083,7 @@ in the literature.
 \small
 %SHORT
 \begin{mathpar}
+\iffull{
 %
 \Rule[leftskip=.4cm,rightskip=.3cm]{Q:Skip}
 { }
@@ -2096,7 +2099,8 @@ in the literature.
 { }
 { \!\! B; R; (\Gamma, Q{+}M_t(n)) \vdash \code{tick}(n) \dashv (\Gamma, Q) \!\!}
 %
-\and \Rule{Q:Return}
+\and }{}
+\Rule{Q:Return}
 { P = Q_R[\Vret/x]  
 \\ \forall i \in \dom{P} . \, p_i = q_i
 }
@@ -2175,21 +2179,23 @@ in the literature.
   (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c {-} M_r)
 }
 %
-\and 
+\iffull{\and 
 \Rule[leftskip=.2cm,rightskip=.2cm]{Q:Assert}
 { }
 { B; R; (\Gamma, Q {+} M_a) \vdash \code{assert}~e \dashv (\Gamma \land e, Q) }
+}{}
 %
-\and \Rule[leftskip=.2cm,rightskip=.2cm]{Q:Extend}
+\and
+\Rule[leftskip=.2cm,rightskip=.2cm]{Q:Extend}
 { \fenv f = (\vec y, S_f)
-\\ B; (\Gamma_f', Q'_f); (\Gamma_f[\Vargs/\vec y], Q_f[\Vargs/ \vec y] ) \vdash S_f \dashv (\Gamma', Q')
+\\\\ B; (\Gamma_f', Q'_f); (\Gamma_f[\Vargs/\vec y], Q_f[\Vargs/ \vec y] ) \vdash S_f \dashv (\Gamma', Q')
 }
 { (\Gamma_f, Q_f, \Gamma_f', Q_f') \in \Delta(f) }
 %
 \and \Rule{Q:Weak}
 { B; R; (\Gamma_2,Q_2) \vdash S \dashv (\Gamma'_2, Q'_2)
 \\ \!\! \Gamma_1 \models \Gamma_2
-\\ Q_1 \succeq_{\Gamma_1} Q_2 
+\\\\ Q_1 \succeq_{\Gamma_1} Q_2 
 \\ \Gamma'_2 \models \Gamma'_1 
 \\ Q'_2 \succeq_{\Gamma_2'} Q'_1 
 }
@@ -2206,7 +2212,7 @@ in the literature.
 { Q' \succeq_\Gamma Q }
 
 \end{mathpar}
-\caption{Inference rules of the quantitative analysis.}
+\caption{\iffull{Inference rules}{Selected inference rules} of the quantitative analysis.}
 \label{fig:auto}
 \end{figure*}
 
@@ -2227,9 +2233,10 @@ $(\Gamma, Q) \vdash S \dashv (\Gamma', Q')$ can be understood as a
 simple Hoare triple.  We leave out the function context $\Delta$ in
 the presentation to avoid cluttering notations.  Instead we assume a
 fixed function context $\Delta$ that is implicit on all judgements.
-Function contexts are treated exactly as in the logic.  We call
-precondition the pair $(\Gamma, Q)$ and postcondition the pair
-$(\Gamma', Q')$.  The correspondence between judgements of the
+Function contexts are treated exactly as in the logic.  % We call
+% precondition the pair $(\Gamma, Q)$ and postcondition the pair
+% $(\Gamma', Q')$.  
+The correspondence between judgements of the
 automation and the ones of the quantitative logic is made formal by
 our soundness proof of the automatic amortized analysis at the end of
 this section.
@@ -2249,26 +2256,113 @@ expressions of C light.  Assignments must have the form \code{x \gets
   y} or \code{x \gets x \pm y}.  In the implementation, a Clight
 program is converted into this form prior to analysis without changing
 the resource cost.  This achieved by using a series of \emph{cost-free
-  assignments} that we do not result in additional cost in the
+  assignments} that do not result in additional cost in the
 analysis.  Non-linear operations such as \code{x \gets z*y} are simply
 handled by assigning zero potential to coefficients like $q_{xa}$ and
-$q_{ax}$ that contain $x$.
+$q_{ax}$ that contain $x$ after the assignment.
+
+\begin{figure*}
+\centering
+\begin{tabular}{r|c|c|c|c}
+%
+& t08 (slightly modified t08a) & t19 & t30 & t15\\
+%
+\hline
+&
+\begin{lstlisting}
+while (y > x) {
+  x++; tick(1); }
+while (x > 2) {
+  x -= 3; tick(1); }
+\end{lstlisting}
+&
+\begin{lstlisting}
+while (i > 100) {
+  i--; tick(1) }
+i += k+50;
+while (i >= 0) {
+  i--; tick(1); }
+\end{lstlisting}
+&
+\begin{lstlisting}
+while (x > 0) {
+  x--;
+  t=x, x=y, y=t;
+  tick(1);
+}
+\end{lstlisting}
+&
+\begin{lstlisting}
+assert(y >= 0);
+while (x>y) {
+  x -= y+1;
+  for (z=y; z > 0; z--)
+    tick(1);
+  tick(1);
+}
+\end{lstlisting}
+%
+\\
+\hline
+LOOPUS &
+{\small $\max(0, x{-}2) {+} 2\max(0, y {-} x)$} &
+{\small $\max(0, \! i{-}10^2) \!+ \max(0, \! k {+} i {+} 51)$} &
+{\small % $1 + \max(x, y)$ (???)
+---
+} &
+---
+\\
+%
+%
+%
+%
+Rank &
+{\small $2 {+} y {-} x (?)$ } &
+{\small $54+k+i$ } &
+--- &
+{\small $2+2x-y$ }
+\\
+%
+%
+AAA 
+  & {\small $1.33|[x,y]| {+} 0.33 |[0,x]|$ }
+  & $50 {+} |\inter {-1} i| {+} |\inter 0 k|$ 
+  & $|\inter 0 x| {+} |\inter 0 y|$
+  & $|\inter 0 x|$
+\end{tabular}
+\vspace{.1cm}
+\caption{ Comparison of resource bounds derived by different tools on
+  several examples with linear bounds.  AAA stands for our automatic
+  amortized analysis for Clight.  The output of Rank has been manually
+  simplified to fit the table.  }
+\label{fig:compar}
+\end{figure*}
 
 \paragraph{Inference Rules.}
 
 Most of the rules correspond exactly to the respective rules of the
-quantitative Hoare logic.  For example, the rule {\sc Q:Skip} simply
-reuses its postcondition as precondition.  This is sound since
-evaluating a $\code{skip}$ statement never costs any resources and
-does not change the program state.  Similarly, the rule {\sc Q:Tick}
-enforces that the quantitative annotation of the precondition is at
-least $M_t(n)$ to pay for the resource consumption.  Since the program
-state is also unchanged in this case, the logical part $\Gamma$ of the
-precondition can soundly be reused in the postcondition.  In the rule
-{\sc Q:Break}, where the linear control flow is broken, the
-postcondition $(\Gamma', Q')$ can be arbitrary.  The precondition is
-taken from the break part of the judgement similarly as it is done in
-the quantitative logic.  The rule {\sc Q:Return} exhibits a slight
+quantitative Hoare logic.  
+\iffull{
+  For example, the rule {\sc Q:Skip} simply reuses its postcondition
+  as precondition.  This is sound since evaluating a $\code{skip}$
+  statement never costs any resources and does not change the program
+  state.  Similarly, the rule {\sc Q:Tick} enforces that the
+  quantitative annotation of the precondition is at least $M_t(n)$ to
+  pay for the resource consumption.  Since the program state is also
+  unchanged in this case, the logical part $\Gamma$ of the
+  precondition can soundly be reused in the postcondition.  In the
+  rule {\sc Q:Break}, where the linear control flow is broken, the
+  postcondition $(\Gamma', Q')$ can be arbitrary.  The precondition is
+  taken from the break part of the judgement similarly as it is done
+  in the quantitative logic.
+}
+%
+{ Examples include {\sc Q:Skip, Q:Tick, Q:Break, Q:Seq, Q:Assert}, and
+  {\sc Q:Loop}.  We only show {\sc Q:Seq} and {\sc Q:Loop}.  The other
+  rules can be found in the extended version.
+}
+%
+The rule {\sc Q:Return} exhibits a slight
 difference to the quantitative logic.  While we have a function $\Z
 \to \Assn$ to represent return values in the logic, we assume that a
 special variable $\ret$ is part of the index set of $Q_R$.  The
@@ -2278,16 +2372,16 @@ $q_i'=q_i$ otherwise.
 
 Most interesting are the rules {\sc Q:IncP}, {\sc Q:DecP}, and {\sc
   Q:Inc} for increments and decrements, which describe how the
-potential is distributed after a size change of the variables.  The
-rule {\sc Q:IncP} is for increments $x \gets x + y$ in which we can
-deduce from the logical context $\Gamma$ that $y$ is not negative.
+potential is distributed after a size change of a variable.  The rule
+{\sc Q:IncP} is for increments $x \gets x + y$ in which we can deduce
+from the logical context $\Gamma$ that $y$ is not negative.
 Similarly, {\sc Q:DecP} is for increments $x \gets x - y$ in which we
 can deduce that $y \ge 0$.  Of course, we have symmetrical rules {\sc
   Q:IncN} and {\sc Q:DecN} that can be applied if $y$ is not positive.
-The rules are equivalent in the case where $y=0$.  Finally, the {\sc
-  Q:Inc} can be applied if we cannot deduce any information about $y$.
-In the implementation, the rules for increments and decrements are
-combined into one syntax directed rule where the specialized rules
+The rules are equivalent in the case where $y=0$.  Finally, the rule
+{\sc Q:Inc} can be applied if we cannot deduce any information about
+$y$.  In the implementation, the rules for increments and decrements
+are combined into one syntax directed rule where the specialized rules
 take priority over {\sc Q:Inc}.
 
 To explain how rules for increment and decrement work, it is
@@ -2295,7 +2389,7 @@ sufficient to understand the rule {\sc Q:IncP}.  The other follow the
 same idea and are symmetrical.  In {\sc Q:IncP}, the program updates a
 variable $x$ with $x+y$ where $y \ge 0$.  Since $x$ is changed, the
 quantitative annotation must be updated to reflect the change of the
-program state.  We write $x'$ the value of $x$ after the assignment.
+program state.  We write $x'$ for the value of $x$ after the assignment.
 Since $x$ is the only variable changed, only intervals of the form
 $\inter u x$ and $\inter x u$ will be resized.  Note that for any $u$,
 $\inter x u$ will get smaller with the update, and if $x' \in \inter x
@@ -2305,7 +2399,7 @@ $q'_{0y}$ in the postcondition can be increased by $q_{xu}$ under the
 guard that $x' \in \inter x u$.  Dually, the interval $\inter v x$ can
 get bigger with the update.  We know that $|\inter v {x'}| \le y +
 |\inter v x|$.  So we decrease the potential of $\inter 0 y$ by
-$q_{vx}$ to pay for this change.  Remark that the rule insures this
+$q_{vx}$ to pay for this change.  The rule insures this
 only for $v \not\in \mathcal U$ because we know that $x \le v$
 otherwise, and thus $|\inter v x| = 0$.
 
@@ -2317,12 +2411,11 @@ the main ideas of the rule as follows.
 \begin{itemize}
 \item The potential in the pre- and postconditions of the function
   specification is equalized to its matching potential in the callee's
-  pre/postcondition.
+  pre- and postcondition.
 \itemskipIn
 \item
-  The potential of intervals $|\inter x y|$ is preserved
-  if $x$ and $y$ are local variables,
-\itemskipIn
+  $\!$The potential of intervals $|\inter x y|$ is preserved
+  if $x$ and $y$ are local\iffull{ variables,}{,}
 \item
   The unknown potentials after the call (e.g.
   $|\inter x g|$, with $x$ local and $g$ global)
@@ -2330,32 +2423,32 @@ the main ideas of the rule as follows.
 \end{itemize}
 \itemskip
 If $x$ and $y$ are local variables and $\code{f}(x,y)$ is
-called, the rule takes care to split the potential of
+called, {\sc Q:Call} splits the potential of
 $|\inter x y|$ in two parts, one part to perform the
 computation in the function $f$ and one part to keep for
 later use after the function call.  This splitting is
-realized by the equations $Q = P + S$ and $Q' =
-P' + S'$.  Arguments in the function precondition
+realized by the equations $Q = P {+} S$ and $Q' =
+P' {+} S'$.  Arguments in the function precondition
 $(\Gamma_f, Q_f)$ are named using a fixed vector $\Vargs$
 of names different from all program variables.  This
 prevents name conflicts from happening and ensures that
 the substitution $[\Vargs/\vec x]$ is meaningful.
 Symmetrically, we use the unique name $\Vret$ to represent
-the return value in the function postcondition
+the return value in the function's postcondition
 $(\Gamma'_f, Q'_f)$.
 
 The rule {\sc Q:Weak} is not syntax directed.  In the implementation
 we apply {\sc Q:Weak} before loops and between the two statements of a
-sequential composition.  We could integrate weakening into every
+sequential composition.  \iffull{We could integrate weakening into every
 syntax directed rule but this simple heuristic helps to make the
-analysis efficient.  The high-level idea of {\sc Q:Weak} is the same
+analysis efficient.}{}  The high-level idea of {\sc Q:Weak} is the same
 as in the rule {\sc L:Weak} of the quantitative logic: If we have a
 sound judgement, then it is sound to add more potential to the
 precondition and remove potential from the postcondition.  The concept
 of \emph{more potential} is formalized by the relation $Q'
 \succeq_\Gamma Q$ that is defined in the rule {\sc Relax}.  Here, $Q$
 and $Q'$ are potential annotations and $\Gamma$ is a logical context.
-The relax rule deals also with the important task of transferring
+The rule {\sc Q:Relax} deals also with the important task of transferring
 constant potential (represented by $q_0$) to interval sizes and vise
 versa.  If we can deduce from the logical context that the interval
 size $|\inter x y| \geq l$ is larger then a constant $l$ then we can
@@ -2371,19 +2464,18 @@ potential.
 We separate the search of a derivation into two steps.  As a first
 step we go through the whole program and apply inductively the
 inference rules of the automatic amortized analysis.  During this
-process our tool uses symbolic names for the coefficients $(q_i)$.
-Every time a linear constraint must be satisfied by these
-coefficients, it is recorded using the symbolic names in a global
-list.  When the list of all constraints that must be satisfied by the
-coefficients is collected, we feed it to an off the shelf
-LP-solver~\footnote{We currently use Coin-Or CLP.}.  If the solver
-successfully finds a solution to the given problem, we know that a
-derivation exists for the considered program.  We can then extract the
-initial $Q$ from the solver and get a resource bound for the program.
-To get a full derivation we simply extract the complete solution from
-the solver, and apply it to the symbolic names $(q_i)$ of the
-coefficients in the derivation.  If the LP-solver fails to find a
-solution, an error is reported to the user.
+process our tool uses symbolic names for the rational coefficients
+$(q_i)$ in the rules.  Every time a linear constraint must be
+satisfied by these coefficients, it is recorded in a global list using
+the symbolic names.  When then feed the collected constraints to an
+off the shelf LP-solver~\footnote{We currently use Coin-Or's CLP.}.
+If the solver successfully finds a solution, we know that a derivation
+exists for the considered program.  We can then extract the initial
+$Q$ from the solver and get a resource bound for the program.  To get
+a full derivation we simply extract the complete solution from the
+solver, and apply it to the symbolic names $(q_i)$ of the coefficients
+in the derivation.  If the LP-solver fails to find a solution, an
+error is reported to the user.
 
 
 \paragraph{Soundness Proof.}
@@ -2406,16 +2498,14 @@ $$
 where we write $\Phi_Q$ for the unique linear potential function
 defined by the quantitative annotation $Q$.  We also need to
 translate the assumptions in function contexts of the automatic
-analysis.  This is done as follows.
+analysis.  We define $\tr(\Gamma_f, Q_f, \Gamma'_f, Q'_f) := \forall z \, \vec v \, v . $
 %
-\begin{align*}
-\tr(\Gamma_f, Q_f, \Gamma'_f, Q'_f) :=
-&\forall z \, \vec v \, v . (
-  \lambda \_ \, \vec v \, \state .\, \tr(\Gamma_f, Q_f)(\state[\Vargs \mapsto \vec v]), \\
-&\phantom{\forall z \, \vec v \, v . (}
-  \lambda \_ \, v \, \state .\, \tr(\Gamma'_f, Q'_f)(\state[\Vret \mapsto v])
+$$
+(
+  \lambda \_ \, \vec v \, \state .\, \tr(\Gamma_f, Q_f)(\state[\Vargs {\mapsto} \vec v]),
+  \lambda \_ \, v \, \state .\, \tr(\Gamma'_f, Q'_f)(\state[\Vret {\mapsto} v])
   )
-\end{align*}
+$$
 %
 These definitions let us translate the judgement $J = B; R; P \vdash
 S \dashv P'$ in the context $\Delta$ by
@@ -2427,7 +2517,7 @@ $$
 The soundness of the automatic analysis can now be stated
 formally with the following theorem.
 %
-\begin{theorem}[Soundness of the analysis]
+\begin{theorem}[Soundness of the automatic analysis]
   If $J$ is a judgement derived with the rules of
   \pref{fig:auto}, then $\tr(J)$ is a quantitative
   Hoare triple derivable with the rules of
@@ -2775,7 +2865,9 @@ We have experimentally evaluated the practicability of our automatic
 amortized analysis with more than 30 challenging loop and recursion
 patterns from open-source code and the
 literature~\cite{GulwaniMC09,GulwaniJK09,GulwaniZ10}.  A full list of
-examples together with the derived bounds is given in \pref{app:cat}.
+examples \iffull{together with the derived bounds is given in
+  \pref{app:cat}.}{is given in the extended
+  version~\cite{anon_extended}.}
 
 \pref{fig:compar} shows four representative examples from the
 evaluation.  Example \emph{t08} is a slightly modified version of
@@ -2823,6 +2915,30 @@ that is derived from the C code.  For instance, the bound $2+y-x$ that
 is derived for \emph{t08} only applies to the first loop in the
 program.
 
+\begin{table}[h]
+\centering
+\begin{tabular}{r|c|c|c|c|c}
+& KoAT & Rank & LOOPUS & SPEED & AAA \\
+\hline
+\#bounds & 9 & 24 & 20 & 14 & 32
+\\
+\#lin.\ bounds & 9 & 21 & 20 & 14 & 32
+\\
+\#best bounds & 0 & 0 & 11 & 14 & 29
+\\
+\#tested & 14 & 33 & 33 & 14 & 33
+\end{tabular}
+\vspace{.1cm}
+\caption{Comparison of our automatic amortized analysis with other
+  automatic tools.  We have not been able to obtain a version of
+  SPEED~\cite{GulwaniMC09} and just use the bounds that have been
+  reported by the authors. Similarly, KoAT~\cite{BrockschmidtEFFG14}
+  does currently not work on C programs and we use the bounds that
+  have been reported in the author's experimental evaluation.}
+\label{tab:compar}
+\end{table}
+
+
 \pref{tab:compar} summarizes the results of our experiments.  It shows
 for each tool the number of derived bounds (\#bounds), the number of
 asymptotically tight bounds (\#lin. bounds), the number of bounds with
@@ -2849,117 +2965,6 @@ to our derived bound.  \pref{fig:3d} shows such a comparison for
 example \emph{t08}.  One can see the derived constant factors are the
 best possible if the input variable $x$ is non-negative.  If $x$ is
 negative then the bound is only slightly off.
-
-
-
-\begin{figure*}
-\centering
-\begin{tabular}{r|c|c|c|c}
-%
-&
-\begin{lstlisting}
-while (y > x) {
-  x++; tick(1); }
-while (x > 2) {
-  x -= 3; tick(1); }
-\end{lstlisting}
-&
-\begin{lstlisting}
-while (i > 100) {
-  i--; tick(1) }
-i += k+50;
-while (i >= 0) {
-  i--; tick(1); }
-\end{lstlisting}
-&
-\begin{lstlisting}
-while (x > 0) {
-  x--;
-  t=x, x=y, y=t;
-  tick(1);
-}
-\end{lstlisting}
-&
-\begin{lstlisting}
-assert(y >= 0);
-while (x>y) {
-  x -= y+1;
-  for (z=y; z > 0; z--)
-    tick(1);
-  tick(1);
-}
-\end{lstlisting}
-\\
-%
-\hline
-& t08 (slightly modified t08a) & t19 & t30 & t15
-%
-\\
-\hline
-LOOPUS &
-{\small $\max(0, x{-}2) {+} 2\max(0, y {-} x)$} &
-{\small $\max(0, \! i{-}10^2) \!+ \max(0, \! k {+} i {+} 51)$} &
-{\small % $1 + \max(x, y)$ (???)
----
-} &
----
-\\
-%
-%
-%
-%
-Rank &
-{\small $2 {+} y {-} x (?)$ } &
-{\small $54+k+i$ } &
---- &
-{\small $2+2x-y$ }
-\\
-%
-%
-AAA 
-  & {\small $1.33|[x,y]| {+} 0.33 |[0,x]|$ }
-  & $50 {+} |\inter {-1} i| {+} |\inter 0 k|$ 
-  & $|\inter 0 x| {+} |\inter 0 y|$
-  & $|\inter 0 x|$
-\end{tabular}
-\caption{ Comparison of resource bounds derived by different tools on
-  several examples with linear bounds.  AAA stands for our automatic
-  amortized analysis for Clight.  The output of Rank has been manually
-  simplified to fit the table.  }
-\label{fig:compar}
-\end{figure*}
-
-\begin{figure}
-\includegraphics[width=\linewidth]{fig/bound3d}
-\caption{The automatically derived bound $1.33|[x,y]| + 0.33 |[0,x]|$
-  (blue lines) and the measured runtime cost (red crosses) for example
-  \emph{t08}. For $x\ge 0$ the derived bound is tight.}
-\label{fig:3d}
-\end{figure}
-
-\begin{table}
-\centering
-\begin{tabular}{r|c|c|c|c|c}
-& KoAT & Rank & LOOPUS & SPEED & AAA \\
-\hline
-\#bounds & 9 & 24 & 20 & 14 & 32
-\\
-\#lin.\ bounds & 9 & 21 & 20 & 14 & 32
-\\
-\#best bounds & 0 & 0 & 11 & 14 & 29
-\\
-\#tested & 14 & 33 & 33 & 14 & 33
-\end{tabular}
-\caption{Comparison of our automatic amortized analysis with other
-  automatic tools.  We have not been able to obtain a version of
-  SPEED~\cite{GulwaniMC09} and just use the bounds that have been
-  reported by the authors. Similarly, KoAT~\cite{BrockschmidtEFFG14}
-  does currently not work on C programs and we use the bounds that
-  have been reported in the author's experimental evaluation.}
-\label{tab:compar}
-\end{table}
-
-
 
 \sectskip
 \section{Related Work}
@@ -3012,6 +3017,14 @@ code by Aspinall et al.~\cite{AspinallBHLM07}.  Their logic is not
 Hoare-style, does not target C code, and has been mainly designed to
 produce certificates for bounds derived for high-level functional
 programs.
+
+\begin{figure}[t]
+\includegraphics[width=\linewidth]{fig/bound3d}
+\caption{The automatically derived bound $1.33|[x,y]| + 0.33 |[0,x]|$
+  (blue lines) and the measured runtime cost (red crosses) for example
+  \emph{t08}. For $x\ge 0$ the derived bound is tight.}
+\label{fig:3d}
+\end{figure}
 
 There exist many tools that can automatically derive loops and
 recursion bounds for imperative programs such as
@@ -4842,7 +4855,7 @@ $1 {+} |\inter 0 n|$
 }
 {
 \sectskip
-\footnotesize
+\scriptsize
 \bibliography{lit}
 }
 
