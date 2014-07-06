@@ -1778,31 +1778,30 @@ derivations.
 In the example in~\pref{fig:xmplmax} we derive a precise runtime
 bound on a program that searches a maximal element in an array.  The
 cost metric that we use simply counts the assignments performed by the
-program.  Hence, the resource consumption is closely related to the
-number $A(1)$ of times the test \lstinline{a[i] > m} is true during the
+program.  Hence, the resource cost is closely related to the
+number of times the test \lstinline{a[i] > m} is true during the
 execution.
 %
-We observe that $A(1)+1$ is the count of ``maximum candidates'' in the
-array \lstinline{a} seen by the algorithm. We define
+If we define
 $$
  A(i) =  \# \{ k \mid i \le k < N \land \forall\, 0 \le j < k.\, a[j] < a[k] \} \, .
 $$
-where we write $\# S$ for the cardinal of the set $S$.  $A(1)$ is
-bounded by $N$, the size of the array.  So any automated tool
-available would derive the linear bound $2 \cdot N$ for that program.
-But with the expressivity of our logic it is possible to use the
-previous set cardinal directly and precisely tie the bound to the
-initial contents of the array.
-
-The non-trivial part of this derivation is finding the loop
-invariant for the while loop. To this end
-it is necessary to define the number $A(i)$ of ``maximum candidates so far
-starting from $i$ in the array \lstinline{a}.''  When the condition
-\lstinline{a[i] > m} is true, we know that we encountered a ``maximum
-so far'' because $m$ is a maximal element of \lstinline{a[$0 \dots i$]},
-thus $A(i) = 1 + A(i+1)$ and we get one potential unit to pay for the
-assignment.  In the other case, no maximum so far is encountered so
-$A(i) = A(i+1)$.  % As a side remark, if $K \ge 0$, it is possible to
+where we write $\# S$ for the cardinal of the set $S$ then $A(1)+1$ is
+the number of ``maximum candidates'' in the array \lstinline{a} seen
+by the algorithm. $A(1)$ is bounded by $N$, the size of the array.
+So any automated tool would at best derive the linear bound $2 \cdot
+N$ for that program.  But with the expressivity of our logic it is
+possible to use the previous set cardinal directly and precisely tie
+the bound to the initial contents of the array.
+%
+The non-trivial part of this derivation is finding the loop invariant
+$(m = \max_{k \in [0, i-1]} a[k]) + A(i) + (N-i)$ for the while loop.
+When the condition \lstinline{a[i] > m} is true, we know that we
+encountered a ``maximum so far'' because $m$ is a maximal element of
+\lstinline{a[$0 \dots i$]}, thus $A(i) = 1 + A(i+1)$ and we get one
+potential unit to pay for the assignment.  In the other case, no
+maximum so far is encountered so $A(i) = A(i+1)$.
+% As a side remark, if $K \ge 0$, it is possible to
 % have $\{ A(0) + N + K \}$ and $\{ K \}$ as pre- and postcondition
 % of the same program.  It can be done either by adapting the proof or by
 % applying the {\sc L:Frame} rule one top of the triple already derived.
@@ -1816,25 +1815,24 @@ is returned after the call ($M_r = -M_f <0$).  All other resource cost
 are $0$.  We are interested in showing that a binary search function
 $\code{bsearch}$ has logarithmic stack consumption.  We use a logical
 variable $Z$ in the function specification $\htriple{(Z = \log_2(h-l))
-  + Z \cdot F}{}{Z \cdot F}$ to express that the stack required by the
-function is fully returned afterwards.
-
-The critical step in this proof is the application of the
-{\sc L:Call} rule to prove the recursive call.  At this point
-the context $\Delta$ contains the following specification
-for the function \code{bsearch}
-$$
+  + Z \cdot M_\code{bsearch}}{}{Z \cdot M_\code{bsearch}}$ to express that the stack required by the
+function is returned after the call.
+%
+The critical step in the proof is the application of the
+{\sc L:Call} rule to the recursive call.  At this point
+the context $\Delta$ contains the specification
+$
   \forall y \, (x,l,h) \, \_.
-  ( (\lambda y \, (\_, l, h) .\, (y {=} \log_2(h {-} l)) + y {\cdot} F)
-  , (\lambda y \, \_ .\, y {\cdot} F)
-  ).
-$$
-Using the {\sc L:Call} rule it is possible to instantiate
-$y$ with $Z - 1$, and because $M_f = F$ and $M_r = -F$ in
-the stack resource metric, the appropriate triple can be
-derived on the call site.  The rest of the proof does not
-involve any resource manipulation and is just bookkeeping
-of logical assertions.
+  ( (\lambda y \, (\_, l, h) .\, (y = \log_2(h {-} l)) {+} y {\cdot} M_\code{bsearch})
+  , (\lambda y \, \_ .\, y {\cdot} M_\code{bsearch})
+  )
+$.
+%
+Using the rule {\sc L:Call} it is possible to instantiate $y$ with $Z
+- 1$, and because $M_f = M_\code{bsearch}$ and $M_r =
+-M_\code{bsearch}$ in the stack metric.  The rest of the proof does
+not involve any resource manipulation and is just bookkeeping of
+logical assertions.
 
 
 
@@ -1867,27 +1865,27 @@ while (i < N) {
 \begin{figure}
 \begin{lstlisting}
 ${\color{blue}%
-  \{ (Z = \log_2(h-l)) + Z \cdot F \} }$
+  \{ (Z = \log_2(h-l)) + Z \cdot M_\code{bsearch} \} }$
 bsearch(x,l,h) {
   if (h-l > 1) {
     ${\color{blue}%
-      \{ (Z \ge 1 \land Z = \log_2(h-l)) + Z \cdot F \} }$
+      \{ (Z \ge 1 \land Z = \log_2(h-l)) + Z \cdot M_\code{bsearch} \} }$
     m = h + (h-l)/2;
     ${\color{blue}%
-      \{ (m = \frac{h+l}{2} \land Z \ge 1 \land Z = \log_2(h-l)) + Z \cdot F \} }$
+      \{ (m = \frac{h+l}{2} \land Z \ge 1 \land Z = \log_2(h-l)) + Z \cdot M_\code{bsearch} \} }$
     if (a[m]>x) h=m; else l=m;
     ${\color{blue}%
-      \{ (Z - 1 = \log_2(h-l)) + (Z-1) \cdot F + F \} }$
+      \{ (Z - 1 = \log_2(h-l)) + (Z-1) \cdot M_\code{bsearch} + M_\code{bsearch} \} }$
     l = bsearch(x,l,h); }
   ${\color{blue}%
-    \{ (Z-1) \cdot F - (-F) \} }$
+    \{ (Z-1) \cdot M_\code{bsearch} - (-M_\code{bsearch}) \} }$
   return l;
-} ${\color{blue} \{ Z \cdot F \} }$
+} ${\color{blue} \{ Z \cdot M_\code{bsearch} \} }$
 \end{lstlisting}
 \caption{Example derivation of a stack usage bound for a binary
-  search program.  The metric used sets a cost of $F$ before
-  to function call and $-F$ after the call, $F$ is the stack
-  frame size of the function $\code{bsearch}$.  We use $Z$ as
+  search program.  The used resource metric defines the cost $M_\code{bsearch}$ before
+  the function call and $-M_\code{bsearch}$ after the call.  $M_\code{bsearch}$ is the stack
+  frame size of the function $\code{bsearch}$.  $Z$ is a
   logical variable.
   }
 \label{fig:xmplbs}
@@ -1899,35 +1897,41 @@ bsearch(x,l,h) {
 We already gave an intuition of the meaning of judgements
 derived in the logic.  To make it formal, we define the
 \emph{resource safety} $\safe n P S \cont$ of an assertion
-and a program configuration as
+and a program configuration as $\forall \state \, \cost \, m \, \cost' .$
 \begin{align*}
-  \forall \state \, \cost \, m \, \cost' .\,&
-  (m \le n \land P(\state) \le \cost \land
-    (\state, S, \cont, \cost) \smallstep{M}^m (\_, \_, \_, \cost')) \\
-  &\implies \cost' \ge 0.
+  (m {\le} n \land P(\state) {\le} \cost \land
+    (\state, S, \cont, \cost) \smallstep{M}^m (\_, \_, \_, \cost'))
+  \implies \cost' {\ge} 0.
 \end{align*}
-This predicate is step indexed by an integer $n$ that is used in the
-soundness proof for the function-call and loop cases.  The constraint
-$\cost' \geq 0$ imposed by the definition ensures that the program does
-not stop because of a resource error (recall that a negative resource
-counter on the right-hand side is a resource failure).  However, it
-does not rule out memory safety errors or assertion failures. This is
-because our logic does not prove any safety or correctness theorems
-but only focuses on resource usage.
+This predicate is step indexed by an integer $n$ that is used for
+induction in the soundness proof for the function-call and loop cases.
+The constraint $\cost' \geq 0$ imposed by the definition ensures that
+the program does not stop because of a resource error (recall that a
+negative resource counter on the right-hand side is a resource
+failure).  However, it does not rule out memory safety errors or
+assertion failures. This is because our logic does not prove any
+safety or correctness theorems but only focuses on resource usage.
 %
 An interesting detail in the definition is the natural number $m$.  We
 simply use it to ensure that $\safe {n+1} P S \cont \implies \safe n P S
 \cont $.  This would not be the case if we replaced all occurrences of
-$m$ by $n$ in the definition of validity.
+$m$ by $n$ in the definition\iffull{ of validity.}{.}
 
 The resource safety of a continuation $\cont$ is defined using three
 assertions, one for each of the possible outcomes of a program
-statement.  We define it as follows.
+statement.  \iffull{We define it as follows.
 \begin{align*}
 \safeK n B R Q \cont & := & & \safe n B {\code{break}} \cont \\
 & & \land& \safe n {\lambda \state.\,R\,(\state(x))} {\code{return}~x} \cont \\
 & & \land& \safe n Q {\code{skip}} \cont
-\end{align*}
+\end{align*}}
+{
+We define $\safeK n B R Q \cont \mathop{:=}
+\safe n B {\code{break}} \cont \, \land \, 
+\safe n Q {\code{skip}} \cont \, \land \, 
+\safe n {\lambda \state.\,R\,(\state(x))} {\code{return}~x} \cont$.
+
+}
 %
 We can now define the \emph{semantic validity} of a judgement $B; R
 \vdash \htriple P S Q$ of the quantitative logic without function
@@ -1943,7 +1947,7 @@ induction hypothesis available during the proof.
 We again need to add the auxiliary $m$ to ensure that $\valid {n{+}1} B R P
 S Q$ implies $\valid n B R P S Q$.
 
-Using the semantic validity of triples we can define the validity
+Using the semantic validity of triples we define the validity
 of a function context $\Delta$, written $\validC n \Delta$, as
 \begin{align*}
   &\forall f .\, \Delta(f) =
@@ -1952,20 +1956,22 @@ of a function context $\Delta$, written $\validC n \Delta$, as
   &\qquad \forall z \, \vec v .\,
   \valid n \bot {Q_f \, z} {P_f \, z \, \vec v} {S_f} \bot ,
 \end{align*}
-where $S_f$ is the body of the function $f$.  A full
+where $S_f$ is the body of the function $f$. \iffull{A full
 judgement that mentions a non-empty function context
 $\Delta$ is in fact a guarded statement: it makes
-assumptions on some functions' behavior.  The predicate
+assumptions on some functions' behavior.}{}  The predicate
 $\validC n \Delta$ gives the precise meaning of the
 assumptions made.  It is also step-indexed to prove the
 soundness of the {\sc L:Extend} rule by induction.
 %
+We are now able to state the soundness of the quantitative logic.
+%
 \begin{theorem}[Soundness of the logic]
-  If $\Delta; B; R \vdash \htriple P S Q$ is derivable, then
-  $$
+  If $\Delta; B; R \vdash \htriple P S Q$ is derivable then
+  $
     \forall n .\, \validC n \Delta
       \implies \valid {n {+} 1} B R P S Q.
-  $$
+  $
 \end{theorem}
 %
 \noindent
@@ -1983,18 +1989,18 @@ So if we want to solve this goal by induction, it is
 necessary that $\delta \ge 1$.  These two contraints force
 $\delta$ to be exactly one in the theorem statement.
 
-If $S$ is a complete program and $\Delta$ is empty, by
+Assume that $S$ is a complete program and $\Delta$ is empty.  By
 expanding the definitions we see that $\Delta$ is valid
-for every $n$ and that $\Kstop$ is safe for every $n$, so
-we get
+for every $n$ and that $\Kstop$ is safe for every $n$. So
+we derive
 $$
 \Delta; B; R \vdash \htriple P S Q \implies   \forall n .\, \safe n P S \Kstop.
 $$
 This means that from any starting state $\state$, $P(\state)$
-provides enough resources for any run of the program $S$.  This
+provides enough resources for any run of the program $S$.  \iffull{This
 setting is actually the main use case of the previous theorem
 which is stated as a stronger result to allow a proof by
-induction.
+induction.}{}
 
 
 
@@ -2004,7 +2010,7 @@ induction.
 \aftersectskip
 
 In this section we present the automatic amortized analysis that we
-use in our implementation to derive linear resource bounds for C
+use in our implementation to derive resource bounds for C
 programs.
 
 \paragraph{Linear Potential Functions.}
@@ -4830,11 +4836,15 @@ $1 {+} |\inter 0 n|$
 \end{table*}
 }{}
 
-
-\sectskip
 \bibliographystyle{abbrvnat}
+\iffull{
 \bibliography{lit}
-
+}
+{
+\sectskip
+\footnotesize
+\bibliography{lit}
+}
 
 
 
