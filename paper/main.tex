@@ -1101,7 +1101,7 @@ flexible way to model resource consumption or release (if $n$ is
 negative).
 
 
-
+\iffull{
 \begin{figure}[t!]
 \begin{mathpar}
 %
@@ -1128,7 +1128,7 @@ negative).
 (\state, \code{skip}, \cont, \cost {-} M_b)
 }
 %
-\iffull{\and
+\and
 \Rule{S:RetSeq}
 {}
 { (\state, \code{return}~x, \Kseq S \cont, \cost)
@@ -1153,7 +1153,7 @@ negative).
 { (\state, \code{return}~x, \Kcall r \theta \cont, \cost)
 \smallstep{M}
 (\state', \code{skip}, \cont, \cost {-} M_r)
-}}{}
+}
 %
 \and
 \Rule{S:Update}
@@ -1163,7 +1163,7 @@ negative).
 (\state', \code{skip}, \cont, \cost {-} M_u {-} M_e(e))
 }
 %
-\iffull{\and
+\and
 \Rule{S:Call}
 { \fenv f = (\vec x, S_f) \\
   \state = (\theta, \gamma) \\
@@ -1172,7 +1172,7 @@ negative).
 { (\state, r \gets f(\vec y), \cont, \cost)
 \smallstep{M}
 (\state', S_f, \Kcall r \theta \cont, \cost {-} M_f)
-}}{}
+}
 %
 \and
 \Rule{S:Loop}
@@ -1190,7 +1190,7 @@ negative).
 (\state, \code{loop}~S, \cont, \cost {-} M_l)
 }
 %
-\iffull{\and
+\and
 \Rule{S:IfTrue}
 { \code{istrue}~\sem{e}_\sigma
 \\ \cost' = \cost {-} M_c^1 {-} M_e(e)
@@ -1208,7 +1208,7 @@ negative).
 { (\state, \code{if}(e)~S_1~\code{else}~S_2, \cont, \cost)
 \smallstep{M}
 (\state, S_2, \cont, \cost')
-}}{}
+}
 %
 \and
 \Rule{S:Seq}
@@ -1226,18 +1226,92 @@ negative).
 (\state, S, \cont, \cost {-} M_s)
 }
 %
-\iffull{\and
+\and
 \Rule{S:Tick}
 { }
 { (\state, \code{tick}(n), \cont, \cost)
 \smallstep{M}
 (\state, \code{skip}, \cont, \cost {-} M_t(n))
-}}{}
+}
 
 \end{mathpar}
 \caption{\iffull{Rules}{Selected rules} of the operational semantics of statements.}
 \label{fig:opsem}
 \end{figure}
+}{}
+
+\ifshort{
+\begin{figure}[t!]
+\small
+\begin{mathpar}
+%
+\Rule{S:Assert}
+{ \code{istrue}~\sem{e}_\state }
+{ (\state, \code{assert}~e, \cont, \cost)
+\smallstep{M}
+(\state, \code{skip}, \cont, \cost {-} M_a)
+}
+%
+\and
+\Rule{S:BrkSeq}
+{}
+{ (\state, \code{break}, \Kseq S \cont, \cost)
+\smallstep{M}
+(\state, \code{break}, \cont, \cost)
+}
+%
+\and
+\Rule{S:BrkLoop}
+{}
+{ (\state, \code{break}, \Kloop S \cont, \cost)
+\smallstep{M}
+(\state, \code{skip}, \cont, \cost {-} M_b)
+}
+%
+\and
+\Rule{S:Update}
+{ \state' = \state[x \mapsto \sem{e}_\state] }
+{ (\state, x \gets e, \cont, \cost)
+\smallstep{M}
+(\state', \code{skip}, \cont, \cost {-} M_u {-} M_e(e))
+}
+%
+\and
+\Rule{S:Loop}
+{}
+{ (\state, \code{loop}~S, \cont, \cost)
+\smallstep{M}
+(\state, S, \Kloop S \cont, \cost)
+}
+%
+\and
+\Rule{S:SkipLoop}
+{}
+{ (\state, \code{skip}, \Kloop S \cont, \cost)
+\smallstep{M}
+(\state, \code{loop}~S, \cont, \cost {-} M_l)
+}
+%
+\and
+\Rule{S:Seq}
+{ }
+{ (\state, S_1; S_2, \cont, \cost)
+\smallstep{M}
+(\state, S_1, \Kseq {S_2} \cont, \cost)
+}
+%
+\and
+\Rule{S:SkipSeq}
+{}
+{ (\state, \code{skip}, \Kseq S \cont, \cost)
+\smallstep{M}
+(\state, S, \cont, \cost {-} M_s)
+}
+\end{mathpar}
+\caption{\iffull{Rules}{Selected rules} of the operational semantics of statements.}
+\label{fig:opsem}
+\end{figure}
+}{}
 
 \paragraph{Semantics.}
 
@@ -1461,10 +1535,8 @@ the local variables on the call stack, that is, $\forall z \, \vec v
 For two assertions $P,Q : \Assn$, we write $P \models Q$ to if for all
 program state $\state$ $P(\state) \ge Q(\state)$.
 
+\iffull{
 \begin{figure*}[t]
-%SHORT
-\small
-%SHORT
 \begin{mathpar}
 %
 \Rule{L:Skip}
@@ -1617,6 +1689,164 @@ program state $\state$ $P(\state) \ge Q(\state)$.
 \caption{Rules of the Quantitative Hoare Logic}
 \label{fig:logic}
 \end{figure*}
+}{}
+
+\ifshort{
+\begin{figure*}[t]
+\small
+\begin{mathpar}
+%
+\Rule{L:Skip}
+{ }
+{ \Delta; B; R \vdash
+\htriple
+  { Q }{ \code{skip} }{ Q }
+}
+%
+\and
+\Rule{L:Break}
+{ }
+{ \Delta; B; R \vdash
+\htriple
+  { M_b + B }{ \code{break} }{ Q }
+}
+%
+\and
+\Rule{L:Return}
+{ }
+{ \Delta; B; R \vdash
+\htriple
+  { R\,(\state(x)) }{ \code{return}~x }{ Q }
+}
+%
+\and
+\Rule[leftskip=.0cm,rightskip=.0cm]{L:Update}
+{ }
+{ \Delta; B; R \vdash
+\htriple
+  { \lambda \state.\,M_u + M_e(e) + Q\,\state[x \mapsto \sem{e}_\state] }{ x \gets e }{ Q }
+}
+%
+\and
+\Rule[leftskip=.0cm,rightskip=.0cm]{L:Seq}
+{ \Delta; B; R \vdash
+\htriple{ P }{ S_1 }{ Q' + M_s }
+\\
+\!\!  \Delta; B; R \vdash
+\htriple{ Q' }{ S_2 }{ Q }
+}
+{ \Delta; B; R \vdash
+\htriple{ P }{ S_1;S_2 }{ Q }
+}
+%
+\and
+\Rule{L:Call}
+{
+  \Delta(f) = \forall z\,\vec v\,v.(P_f\,z\,\vec v, Q_f\,z\,v) \\
+  P \models P_f \, y \, (\state(\vec x)) \land A \\
+  \forall v.\, (Q_f \, y \, v \land A \models \lambda \state.\, Q \, \state[r \mapsto v])
+}
+{ \Delta; B; R \vdash
+\htriple
+  { M_f + P }
+  { r \gets f(\vec x) }
+  { Q - M_r }
+}
+%
+\and
+\Rule{L:Assert}
+{ }
+{ \Delta; B; R \vdash
+\htriple
+  { \code{istrue}~\sem{e}_\state \implies Q + M_a }
+  { \code{assert}~e }
+  { Q }
+}
+%
+\and
+\Rule{L:Tick}
+{ }
+{ \Delta; B; R \vdash
+\htriple
+  { Q + M_t(n) }
+  { \code{tick}(n) }
+  { Q }
+}
+%
+\and
+\Rule{L:Loop}
+{ \Delta; Q; R \vdash
+\htriple
+  { I }{ S }{ I + M_l }
+}
+{ \Delta; B; R \vdash
+\htriple
+  { I }{ \code{loop}~S }{ Q }
+}
+%
+\and
+\Rule{L:If}
+{ \Delta; B; R \vdash
+\htriple
+  { \code{istrue}~\sem{e}_\state + P - M_c^1}
+  { S_1 }{ Q }
+\\
+  \Delta; B; R \vdash
+\htriple
+  { \code{isfalse}~\sem{e}_\state + P - M_c^2 }
+  { S_2 }{ Q }
+}
+{ \Delta; B; R \vdash
+\htriple
+  { P + M_e(e) }{ \code{if}(e)~S_1~\code{else}~S_2 }{ Q }
+}
+%
+\and
+\Rule{L:Weaken}
+{
+  \!\! P \models P' \!\! \\
+  \!\! \Delta; B'; R' \vdash
+  \htriple{ P' }{ S }{ Q' } \!\! \\
+  \!\! Q' \models Q \!\! \\
+  \!\! B' \models B \!\! \\
+  \!\! \forall v.\, (R'\,v \models R\,v) \!\!
+}
+{ \Delta; B; R \vdash
+\htriple{ P }{ S }{ Q }
+}
+%
+\and
+\Rule{L:Frame}
+{ \Delta; B; R \vdash
+\htriple{ P }{ S }{ Q } \\
+  x \in \Qplusz
+}
+{ \!\! \Delta; B + x; R + x \vdash
+\htriple{ P + x }{ S }{ Q + x } \!\!
+}
+%
+\and
+\Rule{L:Extend}
+{ \Delta \cup \Delta'; B; R \vdash
+  \htriple{ P }{ S }{ Q }
+\\
+  \forall f\,P_f\,Q_f.\,
+  \Delta'(f) = \forall z\,\vec v\,v.(P_f\,z\,\vec v, Q_f\,z\,v)
+  \rightarrow
+  \forall y\,\vec v.\,
+  (\Delta \cup \Delta'; \bot; Q_f\,y \vdash
+    \htriple{ P_f\,y\,\vec v }{ S_f }{ \bot })
+}
+{ \Delta; B; R \vdash
+\htriple{ P }{ S }{ Q }
+}
+%
+\end{mathpar}
+
+\caption{Rules of the Quantitative Hoare Logic}
+\label{fig:logic}
+\end{figure*}
+}{}
 
 \paragraph{Rules of the Quantitative Logic.}
 
@@ -2076,11 +2306,146 @@ sufficient for the variety of examples we are interested in or found
 in the literature.
 
 
-
+\iffull{
 \begin{figure*}[t]
-%SHORT
+\begin{mathpar}
+%
+\Rule[leftskip=.4cm,rightskip=.3cm]{Q:Skip}
+{ }
+{ \!\! B; R; (\Gamma, Q) \vdash \code{skip} \dashv (\Gamma, Q) \!!}
+%
+\and
+\Rule{Q:Break}
+{ }
+{\!\!  (\Gamma, Q_B); R; (\Gamma, Q_B {+} M_b) \vdash \code{break} \dashv (\Gamma', Q') \!\!}
+%
+\and
+\Rule[leftskip=.3cm,rightskip=.4cm]{Q:Tick}
+{ }
+{ \!\! B; R; (\Gamma, Q{+}M_t(n)) \vdash \code{tick}(n) \dashv (\Gamma, Q) \!\!}
+%
+\and
+\Rule{Q:Return}
+{ P = Q_R[\Vret/x]  
+\\ \forall i \in \dom{P} . \, p_i = q_i
+}
+{ B; (\Gamma,Q_R); (\Gamma, Q_R{+} M_r) \vdash \code{return}~x \dashv (\Gamma',Q') }
+%
+\and \Rule{Q:Update}
+{ q'_{xy}, q'_{yx} \in \Qplusz
+\\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
+}
+{ B; R; (\Gamma[x/y], Q {+} M_u {+} M_e(y)) \vdash x \gets y \dashv (\Gamma, Q') }
+%
+\\ \Rule[leftskip=.1cm,rightskip=.1cm]{Q:Loop}
+{ (\Gamma', Q'); R; (\Gamma,Q) \vdash S \dashv (\Gamma,  Q {+} M_l) }
+{ B; R; (\Gamma, Q) \vdash \code{loop}~S \dashv (\Gamma', Q') }
+%
+\and \Rule[leftskip=.2cm,rightskip=.1cm]{Q:IncP}
+{ \Gamma \models y \ge 0 \!
+\\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\} \!
+\\ \textstyle q'_{0y} = q_{0y} 
+      + \sum_{u \in \mathcal U} q_{xu}
+      - \sum_{v \not\in \mathcal U} q_{vx} \!
+}
+{ \textstyle
+  B; R; (\Gamma[x/x {+} y], Q {+} M_u {+} M_e(x {+} y)) \vdash x \gets x + y \dashv (\Gamma, Q')
+}
+%
+\and \Rule{Q:DecP}
+{ \Gamma \models y \ge 0
+\\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
+\\\\ \textstyle q'_{y0} = q_{y0}
+      + \sum_{u \in \mathcal U} q_{ux}
+      - \sum_{v \not\in \mathcal U} q_{xv}
+}
+{ \textstyle
+  B; R; (\Gamma[x/x {-} y],Q {+} M_u {+} M_e(x {-} y)) \vdash x \gets x - y \dashv (\Gamma, Q')
+}
+%
+\and \Rule{Q:Inc}
+{ M = M_u + M_e(x {\pm} y)
+\\\\ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
+\\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
+}
+{ \textstyle
+  B; R; (\Gamma[x/x {\pm} y], Q {+} M) \vdash x \gets x \pm y \dashv (\Gamma, Q')
+}
+%
+\and \Rule{Q:If}
+{ B; R; (\Gamma \land e, Q {-} M_c^1) \vdash S_1 \dashv (\Gamma',Q')
+\\\\ B; R; (\Gamma \land \neg e, Q {-} M_c^2) \vdash S_2 \dashv (\Gamma',Q')
+}
+{ B; R; (\Gamma, Q{+}M_e(e)) \vdash \code{if}(e)~S_1~\code{else}~S_2 \dashv (\Gamma',Q') }
+%
+\and\Rule{Q:Seq}
+{  B; R; (\Gamma, Q) \vdash S_1 \dashv (\Gamma', Q' {+} M_s)
+\\\\ B; R; (\Gamma', Q') \vdash S_2 \dashv (\Gamma'',Q'')
+}
+{ B; R; (\Gamma, Q) \vdash S_1;S_2 \dashv (\Gamma'',Q'') }
+%
+\and\Rule{Q:Call}
+{ (\Gamma_f, Q_f,  \Gamma_f', Q_f') \in \Delta(f) \!
+\\ \text{Loc} = \text{Locals}(Q) \!
+\\ \forall i \neq j . \, x_i \neq x_j \!
+\\ c \in \Qplusz \!
+\\ Q = P + S \!
+\\ Q' = P' + S
+\\ U = Q_f[\Vargs / \vec x]
+\\ U' = Q'_f[\Vret/r]
+\\ \forall i \in \dom{U} . \, p_i = u_i
+\\ \forall i \in \dom{U'} .\, p'_i = u'_i 
+\\ \forall i \not\in \dom{U'} .\, p'_i = 0
+\\ \forall i \not\in \text{Loc}
+  .\, s_i = 0
+}
+{ B; R; (\Gamma_f[\Vargs / \vec x] \land \Gamma_{\text{Loc}}, Q {+} c {+} M_f)
+  \vdash r \gets f(\vec x) \dashv
+  (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c {-} M_r)
+}
+%
+\and 
+\Rule[leftskip=.2cm,rightskip=.2cm]{Q:Assert}
+{ }
+{ B; R; (\Gamma, Q {+} M_a) \vdash \code{assert}~e \dashv (\Gamma \land e, Q) }
+%
+\and
+\Rule[leftskip=.2cm,rightskip=.2cm]{Q:Extend}
+{ \fenv f = (\vec y, S_f)
+\\\\ B; (\Gamma_f', Q'_f); (\Gamma_f[\Vargs/\vec y], Q_f[\Vargs/ \vec y] ) \vdash S_f \dashv (\Gamma', Q')
+}
+{ (\Gamma_f, Q_f, \Gamma_f', Q_f') \in \Delta(f) }
+%
+\and \Rule{Q:Weak}
+{ B; R; (\Gamma_2,Q_2) \vdash S \dashv (\Gamma'_2, Q'_2)
+\\ \!\! \Gamma_1 \models \Gamma_2
+\\\\ Q_1 \succeq_{\Gamma_1} Q_2 
+\\ \Gamma'_2 \models \Gamma'_1 
+\\ Q'_2 \succeq_{\Gamma_2'} Q'_1 
+}
+{ B; R; (\Gamma_1,Q_1) \vdash S \dashv (\Gamma'_1, Q'_1) }
+%
+\and \Rule{Relax}
+{ \mathcal L = \{ xy \mid \exists l_{xy} {\in} \N \, . \, \Gamma \models l_{xy} \le |\inter x y| \}
+\\ \mathcal U = \{ xy \mid \exists u_{xy}{\in} \N \, . \, \Gamma \models |\inter x y| \le u_{xy} \}
+\\\\ \forall i \in \mathcal U.\, q'_i \ge q_i - r_i
+\\ \forall i \in \mathcal L.\, q'_i \ge q_i + p_i
+\\ \forall i \not\in \mathcal U {\cup} \mathcal L {\cup} \{0\} .\, q'_i \ge q_i
+\\ q'_0 \geq q_0 {\textstyle + \sum_{i \in \mathcal U} u_i r_i - \sum_{i \in \mathcal L} l_i p_i}
+}
+{ Q' \succeq_\Gamma Q }
+
+\end{mathpar}
+\caption{\iffull{Inference rules}{Selected inference rules} of the quantitative analysis.}
+\label{fig:auto}
+\end{figure*}
+}{}
+
+
+
+\ifshort{
+\begin{figure*}[t]
 \small
-%SHORT
 \begin{mathpar}
 \iffull{
 %
@@ -2214,6 +2579,7 @@ in the literature.
 \caption{\iffull{Inference rules}{Selected inference rules} of the quantitative analysis.}
 \label{fig:auto}
 \end{figure*}
+}{}
 
 \paragraph{Judgements of the Automatic Analysis.}
 
@@ -2917,7 +3283,7 @@ that is derived from the C code.  For instance, the bound $2+y-x$ that
 is derived for \emph{t08} only applies to the first loop in the
 program.
 
-\begin{table}[h]
+\begin{table}[t]
 \centering
 \begin{tabular}{r|c|c|c|c|c}
 & KoAT & Rank & LOOPUS & SPEED & AAA \\
@@ -3109,7 +3475,7 @@ the generalize the quantitative Hoare logic to handle \emph{concurrent
 
 
 \ifx\fullversion\undefined{}\else{
-\clearpage
+%\clearpage
 \appendix
 
 
