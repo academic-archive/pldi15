@@ -1,6 +1,6 @@
 % Comment for anonymization
 % Also look for "SHORT" comments
-\def\fullversion{}
+% \def\fullversion{}
 
 \documentclass[nocopyrightspace,preprint]{sigplanconf}
 
@@ -2168,7 +2168,7 @@ We can now define the \emph{semantic validity} of a judgement $B; R
 \vdash \htriple P S Q$ of the quantitative logic without function
 context as $\valid n B R P S Q :=$
 \begin{align*}
-& \forall m \, \cont \, x \geq 0 .\, (m \le n \land \safeK m {B+x} {R+x} {Q+x} \cont) \\
+& \forall m \, \cont \, x \geq 0 .\, (m \le n \land \safeK m {B{+}M_b{+}x} {R{+}x} {Q{+}x} \cont) \\
 & \implies \safe m {P+x} S \cont \; .
 \end{align*}
 Note how the validity of a triple embeds the frame rule of
@@ -2628,9 +2628,9 @@ $q_{ax}$ that contain $x$ after the assignment.
 
 \begin{figure*}
 \centering
-\begin{tabular}{r|c|c|c|c}
+\begin{tabular}{r|c|c|c|c|c}
 %
-& t08 (slightly modified t08a) & t19 & t30 & t15\\
+& t08 (modified t08a) & t19 & t30 & t15 & t13\\
 %
 \hline
 &
@@ -2669,34 +2669,55 @@ while (x>y) {
   tick(1);
 }
 \end{lstlisting}
+&
+\begin{lstlisting}
+  while (x>0) {
+    x=x-1;
+    if (*) y=y+1;
+    else
+      while (y>0) {
+        y=y-1; tick(1); }
+    tick(1); }
+\end{lstlisting}
 %
 \\
 \hline
-LOOPUS &
-{\small $\max(0, x{-}2) {+} 2\max(0, y {-} x)$} &
-{\small $\max(0, \! i{-}10^2) \!+ \max(0, \! k {+} i {+} 51)$} &
-{\small % $1 + \max(x, y)$ (???)
----
-} &
----
-\\
 %
-%
-%
-%
-Rank &
-{\small $2 {+} y {-} x (?)$ } &
-{\small $54+k+i$ } &
---- &
-{\small $2+2x-y$ }
-\\
 %
 %
 AAA 
   & {\small $1.33|[x,y]| {+} 0.33 |[0,x]|$ }
-  & $50 {+} |\inter {-1} i| {+} |\inter 0 k|$ 
-  & $|\inter 0 x| {+} |\inter 0 y|$
-  & $|\inter 0 x|$
+  & {\small $50 {+} |\inter {-1} i| {+} |\inter 0 k|$ }
+  & {\small $|\inter 0 x| {+} |\inter 0 y|$}
+  & {\small $|\inter 0 x|$}
+  & {\small $2 |\inter 0 x| {+} |\inter 0 y|$}
+\\
+%
+Rank &
+{\small $2 {+} y {-} x (?)$ } &
+{\small $54+k+i$ } &
+{\small ---} &
+{\small $2+2x-y$ } &
+{\small $0.5{\cdot}y^2 {+} yx +0.5{\cdot}x^2\ldots$} % + 1{-}0.5{\cdot}y){-}0.5{\cdot}x $}
+\\
+%
+LOOPUS &
+{\small 
+  \begin{tabular}{c}
+    $\max(0, x{-}2)$\\ $+ 2\max(0, y {-} x)$
+  \end{tabular}
+} &
+{\small 
+  \begin{tabular}{c}
+    $\max(0, i{-}100)$ \\
+    $+ \max(0, k {+} i {+} 51)$
+  \end{tabular}
+ } &
+{\small ---}% $1 + \max(x, y)$ (???) 
+&
+{\small ---}
+&
+{\small $2\max(x, 0) {+} \max(y, 0)$}
 \end{tabular}
 \vspace{.1cm}
 \caption{ Comparison of resource bounds derived by different tools on
@@ -3237,17 +3258,17 @@ examples \iffull{together with the derived bounds is given in
   \pref{app:cat}.}{is given in the extended
   version~\cite{anon_extended}.}
 
-\pref{fig:compar} shows four representative examples from the
+\pref{fig:compar} shows five representative loop patterns from the
 evaluation.  Example \emph{t08} is a slightly modified version of
 \emph{t08a} which is described in the introduction.  Example
 \emph{t19} demonstrates the compositionaliy of the analysis.  The
 program consists of two loops that decrement a variable $i$.  In the
 first loop, $i$ is decremented down to 100 and in the second loop $i$
 is increment further down to $-1$.  However, between the loops we
-assign $i=i+k+50$.  So in total the program performs $52 + |[-1,i]| +
+assign \code{i=i+k+50}.  So in total the program performs $52 + |[-1,i]| +
 |[0,k]|$ increments.  Our analysis finds this tight bound because our
 amortized analysis naturally takes into account the relation between
-the two loops.  Other techniques derive a more conservative bound.
+the two loops.
 
 At first sight, example \emph{t30} appears to be a simple loop that
 decrements the variable $x$ down to zero.  However, a closer look
@@ -3266,6 +3287,16 @@ $|[0,x]|$ before the assignment \code{x=x-y} between $|[0,x]|$ and
 $|0,y|$ after the assignment.  In this way, we derive a tight linear
 bound.
 
+Example \emph{t13} shows how amortization can be used to find linear
+bounds for nested loops.  The outer loop is iterated $|[0,x]|$ times.
+In the conditional, we either (the branching condition is arbitrary)
+increment the variable $y$ or we execute an inner loop in which $y$ is
+counted back to $0$.  The analysis computes a tight bound.
+\iffull{Again, the constants $0$ and $1$ in the
+  inner loop can as well be replace by something more interesting, say
+  $9$ and $10$ like in example \emph{t08}.  Then we still obtain a
+  tight linear bound.}{}
+
 To compare our tool with existing work, we focused on loop bounds and
 use a simple metric that counts the number of back edges (i.e., number
 of loop iterations) that are follows in the execution of the program
@@ -3276,7 +3307,7 @@ Rank~\cite{AliasDFG10}.  We also contacted the authors of SPEED but
 have not been able to obtain this tool.
 KoAT~\cite{BrockschmidtEFFG14} and PUBS~\cite{AlbertAGPZ12} currently
 cannot operate on C code and the examples would need to be manually
-translated into a term-rewriting to be analyzed by these tools.  For
+translated into a term-rewriting system to be analyzed by these tools.  For
 Rank it is not totally clear how the computed bound relates to the C
 program since the computed bound is for transitions in an automaton
 that is derived from the C code.  For instance, the bound $2+y-x$ that
@@ -3312,20 +3343,20 @@ for each tool the number of derived bounds (\#bounds), the number of
 asymptotically tight bounds (\#lin. bounds), the number of bounds with
 the best constant factors in comparison with the other tools (\#best
 bounds), and the number of examples that we were able to test with the
-tool (\#tested).  Since we were not able to run the exponents for KoAT
+tool (\#tested).  Since we were not able to run the experiments for KoAT
 and SPEED, we simply used the bounds the have been reported by the
 authors of the respective tools.  The results show that our automatic
 amortized analysis outperforms the existing tools on our example
 programs.  However, this experimental evaluation has to be taken with
 a grain of salt.  Our goal in this work is not to set a new standard
 for automatic bound analysis but only to show that our approach has
-advantages on certain types of examples.  Overall the existing tools
+advantages on examples with linear bounds.  Overall the existing tools
 are more powerful since they can derive polynomial bounds and support
 more features of C.  We were particularly impressed by LOOPUS which is
 very robust, works on large C files, and derives very precise bounds.
 We did not include the running times of the tools in the table since
-all the tested tools work very efficiently and need less then a second
-on all tested examples.
+all tested tools work very efficiently and need less then a second
+on every tested example.
 
 Since we have a formal cost semantics, we can run our examples with
 this semantics for different inputs and measure the cost to compare it
@@ -3346,7 +3377,7 @@ have implemented and verified a quantitative logic to reason about
 stack-space usage.  In this article, we present a more general
 quantitative Hoare logic that is parametric in the resource of
 interest.  The main innovation is the novel automatic amortized analysis for
-Clight programs that competes logical derivations for non-trivial
+Clight programs that computes logical derivations for non-trivial
 bounds for programs with loops and recursion.
 
 Our work has been inspired by type-based amortized resource analysis
@@ -3358,7 +3389,7 @@ amortized resource analysis to compute bounds for programs that loop
 on (possibly negative) integers.  Second, we extended the analysis
 system to deal with non-linear control flow that is introduced by
 \code{break} and \code{return} statements.  Third, for the first time,
-we combined an automatic amortized analysis with a system for
+we have combined an automatic amortized analysis with a system for
 interactively deriving bounds.
 
 In the development of our quantitative Hoare logic we have drawn
@@ -3367,9 +3398,9 @@ Nipkow's~\cite{Nipkow02} description of his implementations of Hoare
 logics in Isabelle/HOL has been helpful to understand the interaction
 of auxiliary variables with the consequence rule.  Appel's separation
 logic for CompCert Clight~\cite{AppelLogic} has been a blueprint for
-the general structure of the quantitative logic.  Since we do not deal
+the general structure of the quantitative logic.  \iffull{Since we do not deal
 with memory safety, our logic is much simpler and it would be possible
-to integrate it with Appel's logic.  The continuation passing style
+to integrate it with Appel's logic.}{}  The continuation passing style
 that we use in the quantitative logic is not only used by
 Appel~\cite{AppelLogic} but also in Hoare logics for low-level
 code~\cite{NiS06,JensenBK13}.
@@ -3382,12 +3413,13 @@ on the shape of heap data structures and they are not implemented for
 C.  Also closely related to our logic is a VDM-style logic for
 reasoning about resource usage of an abstract fragment of JVM byte
 code by Aspinall et al.~\cite{AspinallBHLM07}.  Their logic is not
-Hoare-style, does not target C code, and has been mainly designed to
-produce certificates for bounds derived for high-level functional
-programs.
+Hoare-style, does not target C code, and is not designed for
+interactive bound development but to produce certificates for bounds
+derived for high-level functional programs.
 
 \begin{figure}[t]
-\includegraphics[width=\linewidth]{fig/bound3d}
+\center
+\includegraphics[width=.9\linewidth]{fig/bound3d}
 \caption{The automatically derived bound $1.33|[x,y]| + 0.33 |[0,x]|$
   (blue lines) and the measured runtime cost (red crosses) for example
   \emph{t08}. For $x\ge 0$ the derived bound is tight.}
@@ -3434,8 +3466,8 @@ they do not have a formal cost semantics and do not prove the bounds
 correct with respect to a cost model.  Blazy et al.~\cite{Blazy13}
 have verified a loop bound analysis for CompCert's RTL intermediate
 language.  However, there is no way to interactively derive bounds or
-to deal with resources like memory usage.  Also Blazy et al.'s
-automatic bound analysis does not compute symbolic bounds.
+to deal with resources like memory usage.  Blazy et al.'s automatic
+bound analysis does also not compute symbolic bounds.
 
 
 \sectskip
@@ -3455,15 +3487,16 @@ resource consumption depends on (possibly negative) integers and
 non-sequential control flow as introduced by \code{break} and
 \code{return} statements.
 
-We will continue to improve our framework with the goal of reasoning
+We will continue to improve our framework to reasoning more precisely
 about resource usage of system software such as the hypervisor kernel
-CertiKOS~\cite{GuVFSC11}, which we are currently developing and
-verifying.  For on thing, we will improve the automation to derive
-\emph{polynomial bounds} and to handle non-linear size changes, as
-already developed for functional programs~\cite{HoffmannS13}.  For
-another thing, we will build on previous work~\cite{HoffmannMZ13}
-the generalize the quantitative Hoare logic to handle \emph{concurrent
-  programs} with locks and lock-free data structures.
+CertiKOS~\cite{GuVFSC11}, which \iffull{we are currently developing
+  and verifying}{is currently developed and verified}.  For on thing,
+we will improve the automation to derive \emph{polynomial bounds} and
+to handle non-linear size changes, as already developed for functional
+programs~\cite{HoffmannS13}.  For another thing, we will build on
+previous work~\cite{HoffmannMZ13} to generalize the quantitative
+Hoare logic to handle \emph{concurrent programs}\iffull{ with locks and
+lock-free data structures.}{.}
 
 % \acks
 
