@@ -462,12 +462,13 @@ logic and the automatic amortized analysis for Clight programs.
 The idea that drives the design of our framework is amortized
 analysis~\cite{Tarjan-amort}.  Assume that a program $S$ executes on a
 starting state $\state$ and consumes $n$ resource units of some
-quantity we are interested in.  We denote that by writing $(S, \state)
+user-defined quantity.  We denote that by writing $(S, \state)
 \Downarrow_n \state'$ where $\state'$ is the program state after the
 execution.  The basic idea of amortized analysis is to define a
 \emph{potential function} $\Phi$ that maps program states to non-negative
 numbers and to show that $\Phi(\state) \geq n$ if $\state$ is a
-program state such that $(S, \state) \Downarrow_n \state'$.
+program state such that $(S, \state) \Downarrow_n \state'$ to prove 
+a bound on the resource usage.
 
 To obtain a compositional reasnoning we also have to take into account
 the state resulting from a program's execution.  We thus use two
@@ -565,11 +566,11 @@ while (k > 0) {
 %
 \iffull{
 }{}
-We can use the logic to prove a concrete bound for a given resource
+We can then use the logic to prove a concrete bound for a given resource
 metric, or a bound that is parametric in a set of resource metrics.
-For example, it is possible to derive the following quantitative
-triple for a binary-search function \code{bsearch}.% that holds for all
-%stack metrics $M$.  
+For example, we can derive the following quantitative
+triple for a binary-search function \code{bsearch} that holds for all
+stack metrics $M$.  
 %
 \begin{center}
 ${ \{ (Z = \log_2(h-\ell)) + Z{\cdot}M_\code{bsearch} \} }$
@@ -577,7 +578,6 @@ ${ \{ (Z = \log_2(h-\ell)) + Z{\cdot}M_\code{bsearch} \} }$
 ${ \{ Z{\cdot}M_\code{bsearch} \} }$
 \end{center}
 %
-It holds for all stack metrics $M$.
 A stack metric assigns cost $0$ to all evaluation steps except
 function calls.  Before a call $f(x)$, we consume $M_f > 0$ resources
 and after the call we return $M_f$ resources that can be used in
@@ -842,9 +842,9 @@ $59|[n,0]| {+} 0.05|[0,y]|$
 
 A program logic provides a principled foundation for statically
 analyzing programs.  However, program logics need to be supported by
-automatic methods to be useful in practice.  That is why we developed a
-new automatic amortized analysis for deriving quantitative Hoare
-triples for common C programs.
+automatic methods to be useful in practice.  % That is why we developed a
+% new automatic amortized analysis for deriving quantitative Hoare
+% triples for common C programs.
 
 To enable automation, we fix the shape of the potential functions
 $\Phi$ so that it becomes possible to use \emph{linear programming}
@@ -866,9 +866,9 @@ logic but enables inference using an LP solver.
 This idea is best explained by example.  If we again use the
 \emph{ticks} metric that assigns cost $n$ to the function call
 \code{tick(n)}\iffull{ and cost $0$ to all other operations}{} then
-the cost of the following example can be bounded by $|[x,y]|$. Note
+the cost of the following example can be bounded by $|[x,y]|$.\footnote{Note
 that there are no restrictions on the signs of the input variables in
-the examples.
+the examples.}
 \begin{lstlisting}[basicstyle=\tt\small]
 while (x<y) { x=x+1; tick(1); } #\hfill \textnormal{(Example 1)}#
 \end{lstlisting}
@@ -918,7 +918,7 @@ family of coefficents $Q = (q_{(a,b)})_{a,b \in \text{scope}}$ that is
 indexed by the variables currently in scope.  The logical
 context $\Gamma$ is simply a conjunction of inequalities between
 linear combinations of variables.  It is used, for example, to determine
-at the assignment if we can extract constant potential to pay for future
+at variable assignments if we can extract constant potential to pay for future
 cost.  It is important to note that the reasoning about assertions in
 $\Gamma$ is very basic.  We do not perform any fixpoint computations
 and only derive trivial loop invariants about variables that are
@@ -926,8 +926,8 @@ unchanged in the loop body.
 
 \pref{fig:ex1} shows a derivation of the bound
 $\frac{T}{K}{\cdot}|[x,y]|$ on the number of ticks for a generalized
-version of Example~1 in which increment $x$ be a constant $K>0$ and
-that consumes $T>0$ resources in each iteration.  The reasoning is similar
+version of Example~1 in which we increment $x$ by a constant $K>0$ and
+consume $T>0$ resources in each iteration.  The reasoning is similar
 to the one of Example~1 except that we obtain the potential
 $K{\cdot}\frac{T}{K}$ after the assignment.  Note that the logical
 assertions in $\Gamma$ are only used in rule for the assignment
@@ -943,28 +943,29 @@ translate the program into a term-rewriting system by hand.
 
 To automate the reasoning, we first introduce an unknown rational
 variable for each factor in the potential functions.  We then use our
-inference rules (see \pref{sec:AAA}) to emit linear inequalities on
-these variables that enforce that the potential annotations are sound.
-For instance if $K = 1$ in \pref{fig:ex1} then we would have the
+inference rules (see \pref{sec:AAA}) to emit linear constraints on
+these variables that enforce that variable assignments that respect
+the constraints correspond to sound potential annotations.  For
+instance if $K = 1$ in \pref{fig:ex1} then we would have the
 annotation $q_0 + q_{(x,y)} {\cdot} |[x,y]| + q_{(y,x)} {\cdot}
 |[y,x]|$ before the assignment and $p_0 + p_{(x,y)} {\cdot} |[x,y]| +
-p_{(y,x)} {\cdot} |[y,x]|$ after the assignment where $q_i$ and $p_i$
+p_{(y,x)} {\cdot} |[y,x]|$ after the assignment, where $q_i$ and $p_i$
 are unknown and must satisfy constraints like $p_{(x,y)} = q_{(x,y)}$,
 $p_{(y,x)} = q_{(y,x)}$, and $p_0 = q_0 + q_{(x,y)} - q_{(y,x)}$.
 
 \iffull{It might be surprising that we}{We} only track simple linear relations in
-the logical context $\Gamma$.  It would of course be possible to keep
-track of more sophisticated assertions.  However, this simple form is
+the logical context $\Gamma$.  While it would of course be possible to keep
+track of more sophisticated assertions, this simple form is
 sufficient for the examples we considered and we can efficiently
 decide queries such as $\Gamma \implies x<y \; ?$ that we make in the
 assignment rule.  Nevertheless, this logical part of our analysis
 system is orthogonal to the quantitative part and can be easily
 extended if necessary.
 
-As mentioned, the automatic analysis can handle challenging example
+As mentioned earlier, the automatic analysis can handle challenging example
 programs without special tricks or techniques.  Examples
-\emph{speed\_1} and \emph{speed\_2} that are taken from previous
-work~\cite{GulwaniMC09} and demonstrate that our method can handle
+\emph{speed\_1} and \emph{speed\_2}, that are taken from previous
+work~\cite{GulwaniMC09},  demonstrate that our method can handle
 \emph{tricky iteration patterns}.  The SPEED tool~\cite{GulwaniMC09}
 derives the same bounds as our analysis but requires heuristics for
 its counter instrumentation.  It can also be handled with inference of
@@ -976,15 +977,15 @@ In example \emph{speed\_1} we have one loop that first increments
 variable $y$ up to $m$ and then increments variable $x$ up to $n$.  We
 derive the tight bound $|[x, n]| + |[y, m]|$.
 %
-Example \emph{speed\_2} is more tricky and we found it hard to
-manually find a bound.  However, using potential transfer reasoning as
+Example \emph{speed\_2} is even trickier, and we found it hard to
+find a bound manually.  However, using potential transfer reasoning as
 in amortized analysis, it is easy to prove the tight bound
 $|[x, n]| + |[z, n]|$.
 
 Example \emph{t08a} shows the ability of the analysis to discover
 interaction between \emph{sequenced loops} through size change of
 variables.  We accurately track the size change of $y$ in the first
-loop by transferring the potential $0.1$ form $|[y,z]|$ to $|[0,y]|$.
+loop by transferring the potential $0.1$ from $|[y,z]|$ to $|[0,y]|$.
 Furthermore, \emph{t08a} shows again that we do not handle the
 constants $1$ or $0$ in any special way.  In all examples we could
 replace $0$ and $1$ with other constants like in the second loop and
@@ -1006,8 +1007,8 @@ As mentioned, the analysis also handles advanced control flow like
 \pref{fig:ex_rec} contains two mutually-recursive functions with their
 automatically derived tick bounds.  The function \code{count\_down}
 decrements its first argument $x$ until it reaches the second argument
-$y$. It then recursively calls the function \code{count\_up}.  The
-function \code{count\_up} is dual to \code{count\_down}.  Here, we
+$y$. It then recursively calls the function \code{count\_up},
+which is dual to \code{count\_down}.  Here, we
 count up $y$ by $2$ and recursively call \code{count\_down}.  Our
 analysis is the only available system that computes a tight
 bound on this example.  \iffull{The analysis amounts to computing the meeting
@@ -2219,7 +2220,7 @@ is a valid context for $n$ steps.  The induction hypothesis
 in that case says that if $\Delta \cup \Delta'$ is valid
 for $m$ steps, $\Delta'$ is valid for $m+\delta$ steps.
 So if we want to solve this goal by induction, it is
-necessary that $\delta \ge 1$.  These two contraints force
+necessary that $\delta \ge 1$.  These two constraints force
 $\delta$ to be exactly one in the theorem statement.
 
 Assume that $S$ is a complete program and $\Delta$ is empty.  By
@@ -2965,7 +2966,7 @@ to construct certificates for upper bounds derived automatically.
 % The first pass in our OCaml implementation generates the
 % logical annotations $\Gamma$ around all program statements.
 % These annotations are used later on by the quantitative
-% analysis to generate contraints.
+% analysis to generate constraints.
 % %
 % The first design choice we had to make is to give a fixed form
 % to program conditions.  Because of their generality and because
@@ -3056,7 +3057,7 @@ to construct certificates for upper bounds derived automatically.
 % When we want to know about $\Gamma \models \Delta$ we simply ask
 % one question for each of the conjuncts of $\Delta$.
 
-% \subsection{Linear Contraints Generation}
+% \subsection{Linear Constraints Generation}
 
 % \paragraph{Generating a linear program.}
 % Because figuring out the coefficents that are in $Q$ right away is a hard
