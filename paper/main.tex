@@ -454,7 +454,7 @@ counter.
 \aftersectskip
 
 In this section, we informally introduce the quantitative program
-logic and the automatic amortized analysis for for Clight programs.
+logic and the automatic amortized analysis for Clight programs.
 % The purpose of this section is to build some intuition that should
 % make the following sections easy to read.
 
@@ -464,31 +464,31 @@ The idea that drives the design of our framework is amortized
 analysis~\cite{Tarjan-amort}.  Assume that a program $S$ executes on a
 starting state $\state$ and consumes $n$ resource units of some
 quantity we are interested in.  We denote that by writing $(S, \state)
-\Downarrow_n \state'$ where $\state'$ the program state after the
+\Downarrow_n \state'$ where $\state'$ is the program state after the
 execution.  The basic idea of amortized analysis is to define a
 \emph{potential function} $\Phi$ that maps program states to non-negative
 numbers and to show that $\Phi(\state) \geq n$ if $\state$ is a
-program state such that such that $(S, \state) \Downarrow_n \state'$.
+program state such that $(S, \state) \Downarrow_n \state'$.
 
-To obtain a compositional analysis we also have to take into account
+To obtain a compositional reasnoning we also have to take into account
 the state resulting from a program's execution.  We thus use two
 potential functions, one that applies before the execution, and one
 that applies after.  The two functions must respect the relation
 $\Phi(\state) \ge n + \Phi'(\state')$ for all states $\state$ and
 $\state'$ such that $(S, \state) \Downarrow_n \state'$.  Intuitively,
 $\Phi(\state)$ must provide enough \emph{potential} for both, paying
-for resource cost of the computation and paying for the potential
+for the resource cost of the computation and paying for the potential
 $\Phi'(\state')$ on the resulting state $\state'$. That way, if
 $(\state, S_1) \Downarrow_n \state'$ and $(\state', S_2) \Downarrow_m
 \state''$, we get $\Phi(\state) \ge n + \Phi'(\state')$ and
-$\Phi'(\state') \ge m + \Phi''(\state'')$.  This can be composed to
+$\Phi'(\state') \ge m + \Phi''(\state'')$.  This can be composed as
 $\Phi(\state) \ge (n + m) + \Phi''(\state'')$.  Note that the initial
 potential function $\Phi$ provides an upper bound on the resource
 consumption of the whole program.  What we have observed is that, if
 we define $\htriple{\Phi} {S}{\Phi'}$ to mean
 $$
 \forall \state\, n\, \state'.\, (\state, p) \Downarrow_n \state' \implies \Phi(\state) \ge
-n + \Phi'(\state')
+n + \Phi'(\state') \; ,
 $$
 then we get the following familiar looking rule.
 $$
@@ -511,7 +511,7 @@ a certificate for the derived resource bound.
 It is also possible to incorporate boolean preconditions into the
 bounds to express that the bound is only valid for a certain class of
 inputs.  To this end, we allow the potential function $\Phi$ in the
-pre and post conditions to take non-negative number or $\infty$
+pre- and postconditions to take non-negative number or $\infty$
 (infinity) as values.  Infinity, plays the same role as
 $\mathit{false}$ in Hoare logic.  Boolean assertions can be embedded
 into potential functions by mapping $\mathit{false}$ to $\infty$ and
@@ -558,7 +558,7 @@ while (k > 0) {
 
 \caption{Example derivation using amortized reasoning.  We write
   $\#_1(a)$ for $\# \{ i \mid 0 \le i < N \land a[i] = 1 \}$ and use the
-  tick metric that assigns cost $n$ to the statement \lstinline{tick(n)} and
+  tick metric that assigns cost $n$ to the statement \code{tick(n)} and
   0 to all other operations.
   }
 \label{fig:xmplinc}
@@ -569,8 +569,8 @@ while (k > 0) {
 We can use the logic to prove a concrete bound for a given resource
 metric, or a bound that is parametric in a set of resource metrics.
 For example, it is possible to derive the following quantitative
-triple for a binary-search function \code{bsearch} that holds for all
-stack metrics $M$.  
+triple for a binary-search function \code{bsearch}.% that holds for all
+%stack metrics $M$.  
 %
 \begin{center}
 ${ \{ (Z = \log_2(h-\ell)) + Z{\cdot}M_\code{bsearch} \} }$
@@ -578,6 +578,7 @@ ${ \{ (Z = \log_2(h-\ell)) + Z{\cdot}M_\code{bsearch} \} }$
 ${ \{ Z{\cdot}M_\code{bsearch} \} }$
 \end{center}
 %
+It holds for all stack metrics $M$.
 A stack metric assigns cost $0$ to all evaluation steps except
 function calls.  Before a call $f(x)$, we consume $M_f > 0$ resources
 and after the call we return $M_f$ resources that can be used in
@@ -590,8 +591,8 @@ potential that is left after the function call.  The logical part $Z =
 $\infty$ otherwise.
 
 For simplicity, assume for the remainder of this section that we are
-interested in bounding the number of \emph{ticks} in a program.  Thus,
-we use a resource metric that assigns cost $n$ to the function call
+interested in bounding the number of \emph{ticks} in a program.  That
+is, we use a resource metric that assigns cost $n$ to the function call
 \code{tick(n)} and cost $0$ to all other operations.  The argument $n$
 is an integer and a negative number means that $-n$ resources are
 returned.
@@ -600,10 +601,10 @@ We say that the analysis is amortized because the use of a potential
 function $\Phi$ enables us to amortize the cost of operations like in
 typical textbook examples that use the potential method of Tarjan's
 amortized analysis.  As an illustrative example, \pref{fig:xmplinc}
-shows a program that repeatably increments a binary counter that is
+shows a program that repeatedly increments a binary counter
 implemented with a boolean-valued ($0$ or $1$) array.  The derived
-bound in the precondition states that the number of ticks that are
-executed by the program are bounded by $\#_1(a) + 2k$.  Here, $k$ is
+bound in the precondition states that the number of ticks
+executed by the program is bounded by $\#_1(a) + 2k$.  Here, $k$ is
 the number of increments to the counter that are performed by the
 program and $ \#_1(a) = \# \{ i \mid 0 \le i < N \land a[i] = 1 \}$ is
 the number of $1$'s in the array $a$.  We have inserted the statement
@@ -628,7 +629,7 @@ statement $\code{tick(1)}$, we are left with the potential $\#_1(a) +
 we can establish again our loop invariant $\#_1(a) + 2k$.
 
 See \pref{sec:logic} for more a formal definition of the logic and
-additional example derivation.
+additional example derivations.
 
 % For example we have the following judgement (provided that initially
 % $\state_0(\code x) \ge \state_0(\code y) \ge 0$).
@@ -849,7 +850,7 @@ triples for common C programs.
 To enable automation, we fix the shape of the potential functions
 $\Phi$ so that it becomes possible to use \emph{linear programming}
 (LP) to compute a derivation in the logic.  If we assume for now that
-a program state $\state$ simply maps variable to integers then we
+a program state $\state$ simply maps variables to integers then we
 require
 $$
 \Phi(\state) = q_0 + \sum_{x,y \in \dom{\state}} q_{(x,y)} {\cdot} |[\state(x),\state(y)]|
@@ -860,24 +861,24 @@ variables.  For instance, we always have $q_{(0,x)}|[0,x]|$ as a
 component of $\Phi(\state)$ if $x \in \dom{\state}$.
 %
 We then develop an inference rule for each syntactic construct that
-derives sound triples $\htriple{\Phi}P{\Phi'}$ in the quantitative
-logic but enables inference by using an LP solver.  
+derives a sound triple $\htriple{\Phi}P{\Phi'}$ in the quantitative
+logic but enables inference using an LP solver.  
 
 This idea is best explained by example.  If we again use the
 \emph{ticks} metric that assigns cost $n$ to the function call
-\code{tick(n)} \iffull{and cost $0$ to all other operations}{} then
+\code{tick(n)}\iffull{ and cost $0$ to all other operations}{} then
 the cost of the following example can be bounded by $|[x,y]|$. Note
 that there are no restrictions on the signs of the input variables in
 the examples.
 \begin{lstlisting}[basicstyle=\tt\small]
-while (x<y) {x=x+1; tick(1);} #\hfill \textnormal{(Example 1)}#
+while (x<y) { x=x+1; tick(1); } #\hfill \textnormal{(Example 1)}#
 \end{lstlisting}
 To derive this bound in our automatic amortized analysis, we start
 with the initial potential $\Phi_0 = |[x,y]|$ (short for
 $\Phi_0(\state) = |[\state(x),\state(y)]|$) which we also use as the
 loop invariant.  For the loop body we then (like in Hoare logic) have
 to derive a triple like
-$\htriple{\Phi_0}{\code{x=x+1;tick(1)}}{\Phi_0}$.  However, we can
+$\htriple{\Phi_0}{\code{x=x+1;tick(1)}}{\Phi_0}$.  We can
 only do so if we utilize the fact that $x<y$ at the beginning of the
 loop body.  % The reasoning then works as follows. We start with the
 % potential $|[x,y]|$ and the fact that $|[x,y]| > 0$ before the
@@ -898,14 +899,14 @@ calls).  However, a potential function is more flexible.  For example,
 we can use a potential function to prove that Example~2 does not
 consume any resources in the tick metric.
 \begin{lstlisting}[basicstyle=\tt\small]
-  while (x<y) {tick(-1); x=x+1; tick(1);} #\hfill \textnormal{(Example 2)}#
+  while (x<y) { tick(-1); x=x+1; tick(1); } #\hfill \textnormal{(Example 2)}#
 \end{lstlisting}
 Similarly we can prove that Example~3 can be bounded by $10|[x,y]|$.
 In both cases, we reason exactly like in the first version of the
 while loop to prove the bound.  Of course, such loops with different
 tick annotations can be seamlessly combined in a larger program.
 \begin{lstlisting}[basicstyle=\tt\small]
-  while (x<y) {x=x+1; tick(10);} #\hfill \textnormal{(Example 3)}#
+  while (x<y) { x=x+1; tick(10); } #\hfill \textnormal{(Example 3)}#
 \end{lstlisting}
 %
 More formally, we develop (\pref{sec:AAA}) a judgement 
@@ -915,10 +916,10 @@ $$
 such that $\Gamma$ contains logical assertions like $x<y$ that we
 collect along the conditional branches of the program and $Q$ is a
 family of coefficents $Q = (q_{(a,b)})_{a,b \in \text{scope}}$ that is
-indexed by the variables that are currently in scope.  The logical
+indexed by the variables currently in scope.  The logical
 context $\Gamma$ is simply a conjunction of inequalities between
-linear combinations variables.  It is used to determine at the
-assignment if we can extract constant potential to pay for future
+linear combinations of variables.  It is used, for example, to determine
+at the assignment if we can extract constant potential to pay for future
 cost.  It is important to note that the reasoning about assertions in
 $\Gamma$ is very basic.  We do not perform any fixpoint computations
 and only derive trivial loop invariants about variables that are
@@ -927,8 +928,8 @@ unchanged in the loop body.
 \pref{fig:ex1} shows a derivation of the bound
 $\frac{T}{K}{\cdot}|[x,y]|$ on the number of ticks for a generalized
 version of Example~1 in which increment $x$ be a constant $K>0$ and
-consume $T>0$ resources in each iteration.  The reasoning is similar
-to the description of Example~1 except that we obtain the potential
+that consumes $T>0$ resources in each iteration.  The reasoning is similar
+to the one of Example~1 except that we obtain the potential
 $K{\cdot}\frac{T}{K}$ after the assignment.  Note that the logical
 assertions in $\Gamma$ are only used in rule for the assignment
 \code{x=x+K}.  To the best of our knowledge, no other implemented tool
@@ -942,7 +943,7 @@ PUBS~\cite{AlbertAGPZ12} computes the tight bound $0.1(y-x)$ if we
 translate the program into a term-rewriting system by hand.
 
 To automate the reasoning, we first introduce an unknown rational
-variables for each factor in the potential functions.  We then use our
+variable for each factor in the potential functions.  We then use our
 inference rules (see \pref{sec:AAA}) to emit linear inequalities on
 these variables that enforce that the potential annotations are sound.
 For instance if $K = 1$ in \pref{fig:ex1} then we would have the
@@ -954,7 +955,7 @@ $p_{(y,x)} = q_{(y,x)}$, and $p_0 = q_0 + q_{(x,y)} - q_{(y,x)}$.
 
 \iffull{It might be surprising that we}{We} only track simple linear relations in
 the logical context $\Gamma$.  It would of course be possible to keep
-track more sophisticated assertions.  However, this simple form is
+of track more sophisticated assertions.  However, this simple form is
 sufficient for the examples we considered and we can efficiently
 decide queries such as $\Gamma \implies x<y \; ?$ that we make in the
 assignment rule.  Nevertheless, this logical part of our analysis
@@ -2010,7 +2011,7 @@ In the example in~\pref{fig:xmplmax} we derive a precise runtime
 bound on a program that searches a maximal element in an array.  The
 cost metric that we use simply counts the assignments performed by the
 program.  Hence, the resource cost is closely related to the
-number of times the test \lstinline{a[i] > m} is true during the
+number of times the test \code{a[i] > m} is true during the
 execution.
 %
 If we define
@@ -2018,7 +2019,7 @@ $$
  A(i) =  \# \{ k \mid i \le k < N \land \forall\, 0 \le j < k.\, a[j] < a[k] \} \, .
 $$
 where we write $\# S$ for the cardinal of the set $S$ then $A(1)+1$ is
-the number of ``maximum candidates'' in the array \lstinline{a} seen
+the number of ``maximum candidates'' in the array \code{a} seen
 by the algorithm. $A(1)$ is bounded by $N$, the size of the array.
 So any automated tool would at best derive the linear bound $2 \cdot
 N$ for that program.  But with the expressivity of our logic it is
@@ -2027,9 +2028,9 @@ the bound to the initial contents of the array.
 %
 The non-trivial part of this derivation is finding the loop invariant
 $(m = \max_{k \in [0, i-1]} a[k]) + A(i) + (N-i)$ for the while loop.
-When the condition \lstinline{a[i] > m} is true, we know that we
+When the condition \code{a[i] > m} is true, we know that we
 encountered a ``maximum so far'' because $m$ is a maximal element of
-\lstinline{a[$0 \dots i$]}, thus $A(i) = 1 + A(i+1)$ and we get one
+\code{a[0 \dots i]}, thus $A(i) = 1 + A(i+1)$ and we get one
 potential unit to pay for the assignment.  In the other case, no
 maximum so far is encountered so $A(i) = A(i+1)$.
 % As a side remark, if $K \ge 0$, it is possible to
