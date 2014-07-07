@@ -174,7 +174,7 @@ PUBS~\cite{AlbertAGPZ12}, Rank~\cite{AliasDFG10}, and LOOPUS~\cite{SinnZV14}.
 %
 While the these tools can derive impressive results for realistic
 software, there still exist shortcomings that hamper the application
-of existing techniques in practice.
+of existing techniques in practice:
 \itemskip
 \begin{itemize}
 \item Analysis tools are black boxes that \iffull{either}{} deliver a result or fail
@@ -229,7 +229,7 @@ timing and memory usage.  Moreover, C is a natural choice because it
 is still the most widely used language for system development; in
 particular in safety-critical embedded and real-time systems where
 resource bound analyses are often required by regulatory
-authorities~\cite{May2013}.  Our \emph{contributions} are as follows.
+authorities~\cite{May2013}.  Our \emph{contributions} are as follows:
 %
 \itemskip
 \begin{enumerate}
@@ -248,11 +248,11 @@ authorities~\cite{May2013}.  Our \emph{contributions} are as follows.
   analysis is inspired by type-based amortized resource analysis for
   functional programs~\cite{Jost03,HoffmannAH11}.  It computes
   derivations by generating simple linear constraints that can be
-  solved by an off-the-shelf LP solver and does not require any
+  solved by an off-the-shelf LP solver, and does not require any
   fixpoint computations to obtain loop invariants.
 \itemskipIn
-\item We show with a publically available prototype implementation and
-  an experimental evaluation that our novel amortized resource
+\item We show with a publically available prototype implementation, and
+  an experimental evaluation, that our novel amortized resource
   analysis works precisely and efficiently for challenging loop and
   recursion patterns, and that the derived constant factors in the
   bounds are close to or identical with the optimal ones.
@@ -268,13 +268,13 @@ proof system that produces verifiable certificates for the bounds.
 Our approach complements existing work since it provides a semantic
 foundation for the computation of bounds while still providing support
 for automation that sometimes goes beyond the capabilities of existing
-techniques.  Both the automatic amortized analysis and the
+techniques.  Furthermore, the automatic amortized analysis and the
 quantitative logic are naturally compositional and describe the
 resource behavior of code fragments without referring to the source
 code.  As a result, we directly derive global bounds that are
 functions of the input parameters of the program.  Another unique
 feature of our system is, that it can handle resources like memory
-that may become available during the execution.
+that may become available during execution.
 
 Our starting point is a recent work~\cite{veristack14} \iffull{in
   which we have}{that has} formally verified bounds on the stack usage
@@ -384,7 +384,7 @@ designed is able to leverage local assertions such as $x < y$ that we
 collect along the branching points of the program to obtain global
 resource invariants.  We achieve this by generating a linear
 constraint system that reflects resource cost and size changes of
-integer variables in the program.  A solution of the linear program
+integer variables in the program; a solution of the linear program
 immediately yields a resource usage bound for the C
 program.  % We can naturally, handle
 % advanced control flow such as break, return, iteration over negative
@@ -408,7 +408,7 @@ from the literature.  \iffull{\pref{app:cat}}{The extended version
   of this article~\cite{anon_extended}}{} contains more than $30$
 challenging loop and recursion patterns that we collected from open
 source software and the literature.  Our analysis can find
-asymptotically tight bounds for all but 3 of these patterns and in
+asymptotically tight bounds for all but 3 of these patterns, and in
 most cases the derived constant factors are tight.  To compare our
 automatic analyzer with existing techniques, we tested our examples
 with the tools such as KoAT~\cite{BrockschmidtEFFG14},
