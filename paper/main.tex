@@ -100,35 +100,34 @@
   The goal of quantitative resource analysis is to provide developers
   with quantitative information about the runtime behavior of software
   at development time.  Recent years have seen tremendous progress in
-  automatically deriving worst-case resource bounds.  Yet, many
+  automatically deriving worst-case resource bounds, yet many
   challenges in specifying, interactively deriving, formally
   certifying, and composing resource bounds remain unsolved.
 
   This paper describes a novel quantitative resource analysis
   framework that tackles these challenges for C programs.  The
-  analysis framework consists of three parts.  First, the runtime
-  resource consumption of programs is formalized with a parametric
-  cost semantics for CompCert Clight.  Second, a quantitative Hoare
-  logic that can be used for interactive bound development is
-  implement and proved sound with respect to the cost semantics in the
-  Coq Proof Assistant.  The logic is very expressive and shallow
-  embedding enables a derived bound to be any function that is
+  analysis framework consists of three parts: First, a parametric cost
+  semantics formalizes the resource consumption of CompCert Clight
+  programs.  Second, a quantitative Hoare logic enables users to
+  interactively develop resource bounds in the Coq Proof Assistant.
+  The logic is proved sound with respect to the cost semantics, and
+  shallow embedding enables a derived bound to be any function that is
   definable in Coq.  Third, an automatic amortized resource analysis
-  for C programs that computes derivations in the quantitative Hoare
-  logic is developed and implemented.  It is the first automatic
-  amortized analysis that can derive bounds that depend on negative
-  integers or differences between numbers, which is crucial to handle
-  typical systems code.  Both, the quantitative logic and the
-  automatic amortized analysis are naturally compositional and can be
-  combined to semi-automatically derive global resource bounds.
+  for C programs computes derivations in the quantitative Hoare logic.
+  It is the first automatic amortized analysis that can derive bounds
+  that depend on negative integers or differences between numbers,
+  which is crucial to handle typical systems code.  Both, the
+  quantitative logic and the automatic amortized analysis are
+  naturally compositional and can be combined to semi-automatically
+  derive global resource bounds.
   %
   An experimental evaluation demonstrates the practicability of the
   analysis framework.  The expressivity of the logic is shown by
   manually deriving customized bounds that are tailored to specific
   algorithms.  A comparison of the automatic amortized analysis with
-  other automatic tools on 30 challenging examples from the literature
-  and open-source software shows that the bounds derived by the
-  automatic amortized analysis are often more precise.
+  other automatic tools on 30 challenging loop and recursion patterns
+  from the literature and open-source software shows that the bounds
+  derived by the automatic amortized analysis are often more precise.
 \end{abstract}
 
 % \category{D.2.4}{Software Engineering}
