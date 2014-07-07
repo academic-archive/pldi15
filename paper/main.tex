@@ -955,7 +955,7 @@ $p_{(y,x)} = q_{(y,x)}$, and $p_0 = q_0 + q_{(x,y)} - q_{(y,x)}$.
 
 \iffull{It might be surprising that we}{We} only track simple linear relations in
 the logical context $\Gamma$.  It would of course be possible to keep
-of track more sophisticated assertions.  However, this simple form is
+track of more sophisticated assertions.  However, this simple form is
 sufficient for the examples we considered and we can efficiently
 decide queries such as $\Gamma \implies x<y \; ?$ that we make in the
 assignment rule.  Nevertheless, this logical part of our analysis
@@ -965,10 +965,11 @@ extended if necessary.
 As mentioned, the automatic analysis can handle challenging example
 programs without special tricks or techniques.  Examples
 \emph{speed\_1} and \emph{speed\_2} that are taken from previous
-work~\cite{GulwaniMC09} and demonstrate the our method can handle
+work~\cite{GulwaniMC09} and demonstrate that our method can handle
 \emph{tricky iteration patterns}.  The SPEED tool~\cite{GulwaniMC09}
-derives the same bounds as our analysis but requires inference of
-\emph{disjunctive invariants}.  In the abstract interpretation
+derives the same bounds as our analysis but requires heuristics for
+its counter instrumentation.  It can also be handled with inference of
+\emph{disjunctive invariants}, but in the abstract interpretation
 community, these invariants are known to be notoriously difficult to
 handle.
 %
@@ -977,12 +978,12 @@ variable $y$ up to $m$ and then increments variable $x$ up to $n$.  We
 derive the tight bound $|[x, n]| + |[y, m]|$.
 %
 Example \emph{speed\_2} is more tricky and we found it hard to
-manually find a bound.  However, using potential transfer reasoning of
-amortized analysis, it is straightforward to prove the tight bound
+manually find a bound.  However, using potential transfer reasoning as
+in amortized analysis, it is easy to prove the tight bound
 $|[x, n]| + |[z, n]|$.
 
 Example \emph{t08a} shows the ability of the analysis to discover
-interaction between \emph{sequential loops} through size changes of
+interaction between \emph{sequenced loops} through size change of
 variables.  We accurately track the size change of $y$ in the first
 loop by transferring the potential $0.1$ form $|[y,z]|$ to $|[0,y]|$.
 Furthermore, \emph{t08a} shows again that we do not handle the
@@ -993,8 +994,8 @@ needs is $y \geq c$ before assigning $y = y - c$.}{}
 %
 Example \emph{t27} shows how amortization can be used to handle
 \emph{interacting nested loops}.  In the outer loop we increment the
-variable $n$ till $n = 0$.  In each of the $|[n,0]|$ iterations, we
-increment the variable $y$ by $1000$.  We then non-deterministically
+variable $n$ until $n = 0$.  In each of the $|[n,0]|$ iterations, we
+increment the variable $y$ by $1000$.  Then we non-deterministically
 (expressed by \code{*}) execute an inner loop that decrements $y$ by
 $100$ until $y<100$.  The analysis discovers that only the first
 execution of the inner loop depends on the initial value of $y$.  We
@@ -1081,7 +1082,7 @@ S &:= \code{assert}~E
 \mid \code{tick}(n)
 \end{align*}
 %
-Expressions are $E$ are left abstract in our presentation.  For our
+Expressions $E$ are left abstract in our presentation.  For our
 analysis framework, it is only important that they are side-effect
 free.
 %
@@ -1090,8 +1091,8 @@ to variables and thus do not consider operations that update the heap.
 Moreover, function arguments and return values are assumed to be
 variables.  In the implementation we can deal with heap updates and
 general function calls and returns.  However, we have not implemented
-function pointers, goto statements, continue statements, and switch
-statements.
+function pointers, \code{goto} statements, \code{continue} statements,
+and \code{switch} statements.
 
 We include the built-in primitive $\code{assert}~E$ that terminates
 the program if the argument $E$ evaluates to false and has no effect
@@ -1319,8 +1320,8 @@ negative).
 CompCert Clight's operational semantics is based on small-step
 transitions and continuations.  Expressions---which do not have side
 effects---are evaluated in a big-step fashion.  Here, we describe a
-simplified version of Clight's semantics that is sufficient for the
-subset that we are describing.
+simplified version of Clight's semantics for the subset we are
+describing.
 
 A program state $\state = (\theta, \gamma)$ composed of two maps from
 variable names to integers. The first map $\theta : \text{Locals} \to
@@ -1331,10 +1332,11 @@ integers but in the implementation we support all data types of
 Clight.
 %
 The evaluation function \evalE{\cdot}{} maps an expression $e \in
-E$ to a value $\evalE{e}{\state} \in \Z$ in program state $\state$.
+E$ to a value $\evalE{e}{\state} \in \Z$ in the program state
+$\state$.
 
 For simplicity, we assume that local variables and global variables
-are always disjoint.  We just write $\state(x)$ to obtain the value of
+are always different.  We just write $\state(x)$ to obtain the value of
 $x$ in program state $\state$. \iffull{Such a lookup is defined as
 $$
 (\theta, \gamma)(x) =
