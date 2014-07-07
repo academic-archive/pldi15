@@ -1518,11 +1518,11 @@ The small-step semantics is standard, except that it tracks the
 resource consumption of a program.  The semantics is parametric in the
 resource of interest for the user of our system.  We achieve this
 independence by parameterizing evaluations with a resource
-\emph{metric} $M$; a tuple of nine rational numbers, one map $M_e :
+\emph{metric} $M$; a tuple of nine rational numbers \ifshort{$M_a$, $M_b$, $M_r$, $\ldots$}{}, one map $M_e :
 \text{Expr} \to \Q$ from expressions to rational numbers, and one map
-$M_t : \Z \to \Q$ from integers to rational numbers
+$M_t : \Z \to \Q$ from integers to rational numbers.
 %
-\iffull{.$$
+\iffull{$$
 M = (
 M_a,
 M_b,
@@ -1536,7 +1536,7 @@ M_s,
 M_e(E),
 M_t(n)
 )
-$$}{$M_a$, $M_b$, $M_r$, $\ldots\;$.
+$$}{
 
 }
 Each of these rational numbers indicates the amount of resource
