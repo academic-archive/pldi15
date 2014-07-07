@@ -1316,234 +1316,12 @@ negative).
 \end{figure}
 }{}
 
-\paragraph{Semantics.}
 
-CompCert Clight's operational semantics is based on small-step
-transitions and continuations.  Expressions---which do not have side
-effects---are evaluated in a big-step fashion.  Here, we describe a
-simplified version of Clight's semantics for the subset we are
-describing.
 
-A program state $\state = (\theta, \gamma)$ composed of two maps from
-variable names to integers. The first map, $\theta : \text{Locals} \to
-\Z$, assigns integers to local variables of a function, and the second
-map, $\gamma : \text{Globals} \to \Z$, gives values to global variables
-of the program.  In this article, we assume that all values are
-integers but in the implementation we support all data types of
-Clight.
-%
-The evaluation function \evalE{\cdot}{} maps an expression $e \in
-E$ to a value $\evalE{e}{\state} \in \Z$ in the program state
-$\state$.
 
-For simplicity, we assume that local variables and global variables
-are always different.  We just write $\state(x)$ to obtain the value of
-$x$ in program state $\state$. \iffull{Such a lookup is defined as
-$$
-(\theta, \gamma)(x) =
-\left\{
-\begin{array}{lr}
-\theta(x) & \mbox{ if } x \in \dom \theta \\
-\gamma(x) & \mbox{ if } x \in \dom \gamma
-\end{array}
-\right..
-$$}{}
-\iffull{For a program state $\state$, we}{Similarly} we write $\state[x \mapsto v]$
-for the program state that maps $x$ to $v$ and behaves as $\state$ for
-all other variables, regardless whether $x \in \dom \theta$ or $x \in
-\dom \gamma$.
-
-The small-step semantics is standard, except that it tracks the
-resource consumption of a program.  The semantics is parametric in the
-resource of interest for the user of our system.  We achieve this
-independence by parameterizing evaluations with a resource
-\emph{metric} $M$; a tuple of nine rational numbers, one map $M_e :
-\text{Expr} \to \Q$ from expressions to rational numbers, and one map
-$M_t : \Z \to \Q$ from integers to rational numbers
-%
-\iffull{.$$
-M = (
-M_a,
-M_b,
-M_r,
-M_u,
-M_f,
-M_l,
-M_c^1,
-M_c^2,
-M_s,
-M_e(E),
-M_t(n)
-)
-$$}{$M_a$, $M_b$, $M_r$, $\ldots\;$.
-
-}
-Each of these rational numbers indicates the amount of resource
-consumed by a corresponding operation.  If the assigned resource cost
-is negative then it means that resources are released.  The metric
-that we use in the implementation can also depend on other information
-that is statically available such as the name of the called function
-or the number of arguments.
-
-\pref{fig:opsem} contains \ifshort{selected}{} the reduction rules of the semantics.  The
-rules define a rewrite system for program configurations of the form
-$(\state, S, \cont, \cost)$, where $\state$ is the program state, $S$
-is the statement being executed, $\cont$ is a continuation that
-describes what remains to be done after the execution of $S$, and
-$\cost \in \Q$ is the non-negative number of resources available for
-further execution.  All rules that can decrease $\cost$ have the
-implicit side condition that the resource quantity available
-\emph{before} the step is non-negative.  This means that we allow
-$(\state, S, \cont, \cost)$ with $c<0$ on the right-hand side
-transition relation $\smallstep{M}^*$ to indicate that the execution
-ran out of reassesses.  However, every execution that reaches such a
-state is stuck.
-
-\iffull{
-A continuation $\cont$ represents the context of the execution of a
-given statement.  A continuation can be the empty continuation
-$\Kstop$ (used to start a program), a sequenced computation $\Kseq S
-\cont$, a loop continuation $\Kloop S \cont$, or the continuation
-$\Kcall r \theta \cont$ of a function call.
-$$
-\cont := \Kstop
-\mid \Kseq S \cont
-\mid \Kloop S \cont
-\mid \Kcall r \theta \cont
-$$
-%
-During the execution we assume a fixed function context $\fenv$ that
-maps function names to a list of variables and the statement that
-defines the function body.  It is used in the rule \textsc{S:Call}.
-}{}
-
-The intuitive meaning of an evaluation \iffull{judgement}{} $(\state,
-S, \cont, \cost) \smallstep{M}^* (\state', S', \cont', \cost')$ is the
-following.  If the statement $S$ is executed in program state
-$\state$, with continuation $\cont$, and with $\cost$ resources
-available then---after a finite number of steps---the evaluation will
-reach the new machine state $(\state', S', \cont',\cost')$ and there
-are $\cost'$ resources available.  If $\cost' \ge 0$ then the
-execution did not run out of resources and the resource consumption up
-to this point is $\cost - \cost'$.  If this difference is negative
-then resource became available during the execution.  If however
-$\cost' < 0$ then the execution ran out of resources and is stuck.
-The cost of the execution is then $\cost \ge 0$.
-
-\iffull{
-\pref{lem:sem1} summarizes the main properties of the resource
-counter of the semantics.  It can be proved by induction on the number
-of steps.
-\begin{lemma}
-\label{lem:sem1}
-\itemskip
-  \begin{enumerate}
-  \item If $(\state, S, \cont, \cost) \smallstep{M}^k (\state', S',
-    \cont', \cost')$ and $n\ge 0$ then $(\state, S, \cont, \cost {+} n)
-    \smallstep{M}^k (\state', S', \cont', \cost' {+} n)$.
-\itemskipIn
-  \item If $(\state, S, \cont, \cost) \smallstep{M}^k (\state', S',
-    \cont', \cost')$ and $(\state, S, \cont, d) \smallstep{M}^k (\state', S',
-    \cont', d')$ then $\cost - \cost' = d - d'$.
-  \end{enumerate}
-\itemskip
-\end{lemma}
-%
-If we assume that we have a \emph{positive resource metric}, that is,
-a metric that assigns a positive cost to each evaluation step then we
-can link bounds on the resource consumption under the metric to
-termination.  This is formalized by \pref{lem:sem_term}.
-%
-\begin{lemma}
- \label{lem:sem_term}
- Let $M$ be a positive metric and assume that there exists $b \in
- \Qplusz$ such that $(\state, S, \cont, \cost) \smallstep{M}^*
- (\state', S', \cont', \cost') \implies \cost {-} \cost' {\leq} b$.
- Then there exists $B \in \N$ such that $(\state, S, \cont, d)
- \smallstep{M}^n (\state'', S', \cont', d')$ for some $n$, $d$, $d'$
- and $\state''$ implies $n \le B$.
-\end{lemma}
-} 
-{
-The extended version of this article~\cite{anon_extended} contains all rules lemmas 
-that state the main properties of the cost semantics.
-}
-
-\sectskip
-\section{Quantitative Hoare Logic}
-\label{sec:logic}
-\aftersectskip
-
-In this section we describe a simplified version of the quantitative
-Hoare logic that we use in Coq to interactively prove resource bounds.
-%
-We generalize classic Hoare logic to express not only classical
-boolean-valued assertions but also assertions that talk about the
-future resource usage.  Instead of the usual assertions $P : \State
-\to \mathit{bool}$ of Hoare logic we use assertions
-$$
-P : \State \to \Q \cup \{ \infty \} \; .
-$$
-This can be understood as a refinement of boolean assertions where
-$\mathit{false}$ is $\infty$ and $\mathit{true}$ is refined by $\Q$.
-We write $\Assn$ for $\State \to \Q \cup \{ \infty \}$ and $\bot$ for
-$\lambda \state . \, \infty$.  We sometimes call assertions
-\emph{potential functions}.  To use Coq's support for propositional
-reasoning, assertions have the type $\State \to \Q \to \mathrm{Prop}$
-in the implementation.  For a given $\state \in \State$, such an
-assertion can be seen as a set $B \subseteq \Q$ of valid bounds.
-However, we find the presentation in this article easier to read.
-
-Due to \code{break} and \code{return} statements of Clight, there are
-different possible ways to exit a block of code.  We also have to keep
-track of the resource specifications of functions.  To account for
-this in the logic, our quantitative Hoare triples have the form
-$$
-\Delta; B; R \vdash
-\htriple
-  { Q }
-  { S }
-  { Q' } \; .
-$$
-The triple $\htriple{ Q }{ S }{ Q' }$ consists of a statement $S$ and
-two assertions $Q,Q' : \Assn$.  It corresponds to triples in classic
-Hoare logic and the intuitive meaning is as follows.  If $S$ is
-executed with starting state $\state$, the empty continuation
-$\Kstop$, and at least $P(\state)$ resources available then the
-evaluation does not run out of resources and there are at least
-$Q(\state')$ resources left if the evaluation terminates in state
-$\state'$.  The assertion $B : \Assn$ provides the
-postcondition for the case in which the code block $S$ is exited by a
-\code{break} statement.  So if the execution is terminated in state
-$\state'$ with a \code{break} then $B(\state')$ resources are
-available.  Similarly, $R : \Z \to \Assn$ is the postcondition for the
-case in which the code block $S$ is exited by a $\code{return}~x$
-statement.  The integer argument of $R$ is the return value.
-Finally, the function context of judgements that we write $\Delta$ is
-a mapping from function names to specification of the form
-$$
-  \forall z \, \vec v \, v .(P_f \, z \, \vec v, Q_f \, z \, v).
-$$
-The assertion $P_f \, z \, \vec v$ is the precondition of the function
-$f$ and the assertion $Q_f \, z \, v$ is its postcondition.  They are
-both parameterized by an arbitary logical variable $z$ (which can be a
-tuple) that relates the function arguments with the return value.  The
-precondition also depends on $\vec v$, the values of the arguments
-at the function invocation.  Similarly, the postcondition depends on
-the return value $v$ of the function.  The use of logical variables to
-express relations between different states of an execution is a
-standard technique of Hoare logic.
-%
-To ensure soundness, we require that $P_f$ and $Q_f$ do not depend on
-the local variables on the call stack, that is, $\forall z \, \vec v
-\, \theta \, \theta' \, \gamma . \, P_f \, z \, \vec v \,
-(\theta,\gamma) = P_f \, z \, \vec v \, (\theta',\gamma)$.
-
-For two assertions $P,Q : \Assn$, we write $P \models Q$ to if for all
-program state $\state$ $P(\state) \ge Q(\state)$.
-
-\iffull{
+\ifshort{
 \begin{figure*}[t]
+\small
 \begin{mathpar}
 %
 \Rule{L:Skip}
@@ -1698,9 +1476,236 @@ program state $\state$ $P(\state) \ge Q(\state)$.
 \end{figure*}
 }{}
 
-\ifshort{
+
+\paragraph{Semantics.}
+
+CompCert Clight's operational semantics is based on small-step
+transitions and continuations.  Expressions---which do not have side
+effects---are evaluated in a big-step fashion.  Here, we describe a
+simplified version of Clight's semantics for the subset we are
+describing.
+
+A program state $\state = (\theta, \gamma)$ composed of two maps from
+variable names to integers. The first map, $\theta : \text{Locals} \to
+\Z$, assigns integers to local variables of a function, and the second
+map, $\gamma : \text{Globals} \to \Z$, gives values to global variables
+of the program.  In this article, we assume that all values are
+integers but in the implementation we support all data types of
+Clight.
+%
+The evaluation function \evalE{\cdot}{} maps an expression $e \in
+E$ to a value $\evalE{e}{\state} \in \Z$ in the program state
+$\state$.
+
+For simplicity, we assume that local variables and global variables
+are always different.  We just write $\state(x)$ to obtain the value of
+$x$ in program state $\state$. \iffull{Such a lookup is defined as
+$$
+(\theta, \gamma)(x) =
+\left\{
+\begin{array}{lr}
+\theta(x) & \mbox{ if } x \in \dom \theta \\
+\gamma(x) & \mbox{ if } x \in \dom \gamma
+\end{array}
+\right..
+$$}{}
+\iffull{For a program state $\state$, we}{Similarly} we write $\state[x \mapsto v]$
+for the program state that maps $x$ to $v$ and behaves as $\state$ for
+all other variables, regardless whether $x \in \dom \theta$ or $x \in
+\dom \gamma$.
+
+The small-step semantics is standard, except that it tracks the
+resource consumption of a program.  The semantics is parametric in the
+resource of interest for the user of our system.  We achieve this
+independence by parameterizing evaluations with a resource
+\emph{metric} $M$; a tuple of nine rational numbers, one map $M_e :
+\text{Expr} \to \Q$ from expressions to rational numbers, and one map
+$M_t : \Z \to \Q$ from integers to rational numbers
+%
+\iffull{.$$
+M = (
+M_a,
+M_b,
+M_r,
+M_u,
+M_f,
+M_l,
+M_c^1,
+M_c^2,
+M_s,
+M_e(E),
+M_t(n)
+)
+$$}{$M_a$, $M_b$, $M_r$, $\ldots\;$.
+
+}
+Each of these rational numbers indicates the amount of resource
+consumed by a corresponding operation.  If the assigned resource cost
+is negative then it means that resources are released.  The metric
+that we use in the implementation can also depend on other information
+that is statically available such as the name of the called function
+or the number of arguments.
+
+\pref{fig:opsem} contains \ifshort{selected}{} the reduction rules of the semantics.  The
+rules define a rewrite system for program configurations of the form
+$(\state, S, \cont, \cost)$, where $\state$ is the program state, $S$
+is the statement being executed, $\cont$ is a continuation that
+describes what remains to be done after the execution of $S$, and
+$\cost \in \Q$ is the non-negative number of resources available for
+further execution.  All rules that can decrease $\cost$ have the
+implicit side condition that the resource quantity available
+\emph{before} the step is non-negative.  This means that we allow
+$(\state, S, \cont, \cost)$ with $c<0$ on the right-hand side
+transition relation $\smallstep{M}^*$ to indicate that the execution
+ran out of reassesses.  However, every execution that reaches such a
+state is stuck.
+
+\iffull{
+A continuation $\cont$ represents the context of the execution of a
+given statement.  A continuation can be the empty continuation
+$\Kstop$ (used to start a program), a sequenced computation $\Kseq S
+\cont$, a loop continuation $\Kloop S \cont$, or the continuation
+$\Kcall r \theta \cont$ of a function call.
+$$
+\cont := \Kstop
+\mid \Kseq S \cont
+\mid \Kloop S \cont
+\mid \Kcall r \theta \cont
+$$
+%
+During the execution we assume a fixed function context $\fenv$ that
+maps function names to a list of variables and the statement that
+defines the function body.  It is used in the rule \textsc{S:Call}.
+}{}
+
+The intuitive meaning of an evaluation \iffull{judgement}{} $(\state,
+S, \cont, \cost) \smallstep{M}^* (\state', S', \cont', \cost')$ is the
+following.  If the statement $S$ is executed in program state
+$\state$, with continuation $\cont$, and with $\cost$ resources
+available then---after a finite number of steps---the evaluation will
+reach the new machine state $(\state', S', \cont',\cost')$ and there
+are $\cost'$ resources available.  If $\cost' \ge 0$ then the
+execution did not run out of resources and the resource consumption up
+to this point is $\cost - \cost'$.  If this difference is negative
+then resource became available during the execution.  If however
+$\cost' < 0$ then the execution ran out of resources and is stuck.
+The cost of the execution is then $\cost \ge 0$.
+
+\iffull{
+\pref{lem:sem1} summarizes the main properties of the resource
+counter of the semantics.  It can be proved by induction on the number
+of steps.
+\begin{lemma}
+\label{lem:sem1}
+\itemskip
+  \begin{enumerate}
+  \item If $(\state, S, \cont, \cost) \smallstep{M}^k (\state', S',
+    \cont', \cost')$ and $n\ge 0$ then $(\state, S, \cont, \cost {+} n)
+    \smallstep{M}^k (\state', S', \cont', \cost' {+} n)$.
+\itemskipIn
+  \item If $(\state, S, \cont, \cost) \smallstep{M}^k (\state', S',
+    \cont', \cost')$ and $(\state, S, \cont, d) \smallstep{M}^k (\state', S',
+    \cont', d')$ then $\cost - \cost' = d - d'$.
+  \end{enumerate}
+\itemskip
+\end{lemma}
+%
+If we assume that we have a \emph{positive resource metric}, that is,
+a metric that assigns a positive cost to each evaluation step then we
+can link bounds on the resource consumption under the metric to
+termination.  This is formalized by \pref{lem:sem_term}.
+%
+\begin{lemma}
+ \label{lem:sem_term}
+ Let $M$ be a positive metric and assume that there exists $b \in
+ \Qplusz$ such that $(\state, S, \cont, \cost) \smallstep{M}^*
+ (\state', S', \cont', \cost') \implies \cost {-} \cost' {\leq} b$.
+ Then there exists $B \in \N$ such that $(\state, S, \cont, d)
+ \smallstep{M}^n (\state'', S', \cont', d')$ for some $n$, $d$, $d'$
+ and $\state''$ implies $n \le B$.
+\end{lemma}
+} 
+{
+The extended version of this article~\cite{anon_extended} contains all rules lemmas 
+that state the main properties of the cost semantics.
+}
+
+
+\sectskip
+\section{Quantitative Hoare Logic}
+\label{sec:logic}
+\aftersectskip
+
+In this section we describe a simplified version of the quantitative
+Hoare logic that we use in Coq to interactively prove resource bounds.
+%
+We generalize classic Hoare logic to express not only classical
+boolean-valued assertions but also assertions that talk about the
+future resource usage.  Instead of the usual assertions $P : \State
+\to \mathit{bool}$ of Hoare logic we use assertions
+$$
+P : \State \to \Q \cup \{ \infty \} \; .
+$$
+This can be understood as a refinement of boolean assertions where
+$\mathit{false}$ is $\infty$ and $\mathit{true}$ is refined by $\Q$.
+We write $\Assn$ for $\State \to \Q \cup \{ \infty \}$ and $\bot$ for
+$\lambda \state . \, \infty$.  We sometimes call assertions
+\emph{potential functions}.  To use Coq's support for propositional
+reasoning, assertions have the type $\State \to \Q \to \mathrm{Prop}$
+in the implementation.  For a given $\state \in \State$, such an
+assertion can be seen as a set $B \subseteq \Q$ of valid bounds.
+However, we find the presentation in this article easier to read.
+
+Due to \code{break} and \code{return} statements of Clight, there are
+different possible ways to exit a block of code.  We also have to keep
+track of the resource specifications of functions.  To account for
+this in the logic, our quantitative Hoare triples have the form
+$$
+\Delta; B; R \vdash
+\htriple
+  { Q }
+  { S }
+  { Q' } \; .
+$$
+The triple $\htriple{ Q }{ S }{ Q' }$ consists of a statement $S$ and
+two assertions $Q,Q' : \Assn$.  It corresponds to triples in classic
+Hoare logic and the intuitive meaning is as follows.  If $S$ is
+executed with starting state $\state$, the empty continuation
+$\Kstop$, and at least $P(\state)$ resources available then the
+evaluation does not run out of resources and there are at least
+$Q(\state')$ resources left if the evaluation terminates in state
+$\state'$.  The assertion $B : \Assn$ provides the
+postcondition for the case in which the code block $S$ is exited by a
+\code{break} statement.  So if the execution is terminated in state
+$\state'$ with a \code{break} then $B(\state')$ resources are
+available.  Similarly, $R : \Z \to \Assn$ is the postcondition for the
+case in which the code block $S$ is exited by a $\code{return}~x$
+statement.  The integer argument of $R$ is the return value.
+Finally, the function context of judgements that we write $\Delta$ is
+a mapping from function names to specification of the form
+$$
+  \forall z \, \vec v \, v .(P_f \, z \, \vec v, Q_f \, z \, v).
+$$
+The assertion $P_f \, z \, \vec v$ is the precondition of the function
+$f$ and the assertion $Q_f \, z \, v$ is its postcondition.  They are
+both parameterized by an arbitary logical variable $z$ (which can be a
+tuple) that relates the function arguments with the return value.  The
+precondition also depends on $\vec v$, the values of the arguments
+at the function invocation.  Similarly, the postcondition depends on
+the return value $v$ of the function.  The use of logical variables to
+express relations between different states of an execution is a
+standard technique of Hoare logic.
+%
+To ensure soundness, we require that $P_f$ and $Q_f$ do not depend on
+the local variables on the call stack, that is, $\forall z \, \vec v
+\, \theta \, \theta' \, \gamma . \, P_f \, z \, \vec v \,
+(\theta,\gamma) = P_f \, z \, \vec v \, (\theta',\gamma)$.
+
+For two assertions $P,Q : \Assn$, we write $P \models Q$ to if for all
+program state $\state$ $P(\state) \ge Q(\state)$.
+
+\iffull{
 \begin{figure*}[t]
-\small
 \begin{mathpar}
 %
 \Rule{L:Skip}
@@ -3324,6 +3329,38 @@ program since the computed bound is for transitions in an automaton
 that is derived from the C code.  For instance, the bound $2+y-x$ that
 is derived for \emph{t08} only applies to the first loop in the
 program.
+\begin{figure}[t]
+  \centering
+    \begin{minipage}[b]{.8\linewidth}
+    \begin{center}
+   \begin{lstlisting}
+int srch(
+  int t[], int n,  /* haystack */
+  int p[], int m,  /* needle */
+  int b[]
+) { int i=0, j=0, k=-1;
+    while (i < n) {
+      while (j >= 0 && t[i]!=p[j]) {
+        k = b[j];
+        assert(k > 0 && k <= j + 1);
+        j -= k; tick(1)
+      }
+      i++, j++;
+      if (j == m) break;
+      tick(1);
+    }
+    return i;
+  }
+   \end{lstlisting}
+\vspace{-1.5ex}
+$1 + 2|\inter 0 n|$
+    \end{center}
+\vspace{.1ex}
+  \end{minipage}
+  \caption{The Knuth-Morris-Pratt algorithm for string search.}
+  \label{fig:KMP}
+\end{figure}
+
 
 \begin{table}[t]
 \centering
