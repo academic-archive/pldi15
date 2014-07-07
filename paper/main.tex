@@ -1064,9 +1064,9 @@ expressions are free of side effects.
 
 \paragraph{Syntax.}
 
-In this article, we describe our system for a subset of Clight to
-discuss general ideas instead of technical details.  This subset is
-given by the following grammar.
+In this article, we describe our system for a subset of Clight that is
+sufficient to discuss the general ideas.  This subset is given by the
+following grammar.
 %
 \begin{align*}
 S &:= \code{assert}~E
@@ -1089,10 +1089,11 @@ free.
 The most notable difference to full Clight is that we can only assign
 to variables and thus do not consider operations that update the heap.
 Moreover, function arguments and return values are assumed to be
-variables.  In the implementation we can deal with heap updates and
-general function calls and returns.  However, we have not implemented
-function pointers, \code{goto} statements, \code{continue} statements,
-and \code{switch} statements.
+variables.  This is only for simplifying the presentation; in the
+implementation we can deal with heap updates and general function
+calls and returns.  However, we have not implemented our framework for function
+pointers, \code{goto} statements, \code{continue} statements, and
+\code{switch} statements.
 
 We include the built-in primitive $\code{assert}~E$ that terminates
 the program if the argument $E$ evaluates to false and has no effect
@@ -1324,9 +1325,9 @@ simplified version of Clight's semantics for the subset we are
 describing.
 
 A program state $\state = (\theta, \gamma)$ composed of two maps from
-variable names to integers. The first map $\theta : \text{Locals} \to
-\Z$ assigns integers to local variables of a function and the second
-map $\gamma : \text{Globals} \to \Z$ gives values to global variables
+variable names to integers. The first map, $\theta : \text{Locals} \to
+\Z$, assigns integers to local variables of a function, and the second
+map, $\gamma : \text{Globals} \to \Z$, gives values to global variables
 of the program.  In this article, we assume that all values are
 integers but in the implementation we support all data types of
 Clight.
@@ -1347,19 +1348,20 @@ $$
 \end{array}
 \right..
 $$}{}
-\iffull{For a program state $\state$, we}{We} similarly write $\state[x \mapsto v]$
+\iffull{For a program state $\state$, we}{Similarly} we write $\state[x \mapsto v]$
 for the program state that maps $x$ to $v$ and behaves as $\state$ for
 all other variables, regardless whether $x \in \dom \theta$ or $x \in
 \dom \gamma$.
 
 The small-step semantics is standard, except that it tracks the
-resource consumption of a program.  The semantics is oblivious to the
+resource consumption of a program.  The semantics is parametric in the
 resource of interest for the user of our system.  We achieve this
 independence by parameterizing evaluations with a resource
 \emph{metric} $M$; a tuple of nine rational numbers, one map $M_e :
 \text{Expr} \to \Q$ from expressions to rational numbers, and one map
-$M_t : \Z \to \Q$ from integers to rational numbers.
-$$
+$M_t : \Z \to \Q$ from integers to rational numbers
+%
+\iffull{.$$
 M = (
 M_a,
 M_b,
@@ -1373,7 +1375,9 @@ M_s,
 M_e(E),
 M_t(n)
 )
-$$
+$$}{$M_a$, $M_b$, $M_r$, $\ldots\;$.
+
+}
 Each of these rational numbers indicates the amount of resource
 consumed by a corresponding operation.  If the assigned resource cost
 is negative then it means that resources are released.  The metric
