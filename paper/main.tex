@@ -1862,14 +1862,14 @@ The rules are slightly simplified in comparison to the implemented
 rules in Coq.  The main difference is that the presented version does
 not formalize the heap operations.
 
-In the rule {\sc L:Skip}, we do not have to account for any resource
+\iffull{In the rule {\sc L:Skip}, we do not have to account for any resource
 consumption.  As a result, the precondition $Q$ can be any (potential)
 function and we only have to make sure that we do not end up with more
 potential.  Since the execution of \code{skip} leaves the program
 state unchanged, we can simply use the precondition as postcondition.
 The potential functions $B$ for the \code{break} and $R$ for the
 \code{return} part of the postcondition are not reachable and can
-therefore be arbitrary.
+therefore be arbitrary.}{}
 
 In the rule {\sc L:Assert}, we use the notation
 $\code{istrue}~\sem{e}_\state \implies Q + M_a$ to express that we
@@ -1890,14 +1890,13 @@ $R$ in the precondition to pay for the potential after the
 to account for the execution cost $M_r$ of the return in rule {\sc
   L:Call}\iffull{ for function calls.}{.}
 
-The rule {\sc L:Update} is the standard assignment rule of Hoare
+\iffull{The rule {\sc L:Update} is the standard assignment rule of Hoare
 logic.  With the substitution $\state[x \mapsto \sem{e}_\state]$ in
 the precondition we ensure that $Q$ evaluates to the same number as in
 the postcondition.  We also require that have we the constant
 potential $M_u + M_e(e)$ available in the precondition to pay for the
 cost of the evaluation of $e$ and the update.
-\iffull{
-}{}
+
 The rule {\sc L:Seq} rule is crucial to understand how the
 quantitative Hoare logic works.  To account for early exits of
 statements, we must ensure in the \code{break} part $B$ of $S_1$'s
@@ -1907,14 +1906,19 @@ $S_2$.  The interaction between the actual pre- and postconditions is
 analogous to standard Hoare logic.  In the postcondition of $S_1$ we
 account for the cost $M_s$ of the execution of the sequence.
 
+}
+{
+The rules {\sc L:Update} and {\sc L:Seq} correspond to the respective 
+rules of standard Hoare logic.  
+}
 In the rule {\sc L:Loop}, the \code{break} part of the
 loop body $S$ becomes the postcondition of the loop statement. We use
 an arbitrary $B$ as the \code{break} part of the judgement for
 $\code{loop}\, S$ since its operational semantics ensures that it can
 only terminate with a \code{skip} or a \code{return}.  The
-precondition $I$ of the loop is the loop invariant.  That is why we
+precondition $I$ of the loop is the loop invariant.  \iffull{That is why we
 require to have potential $I$ available in the precondition of the
-loop body $S$.  In the postcondition of $S$, the potential must be
+loop body $S$.}{}  In the postcondition of $S$, the potential must be
 sufficient to pay for the invariant $I$ and the cost $M_l$ of the loop
 iteration.
 
@@ -1929,9 +1933,9 @@ statement that depends on the integer $n$.
 }{}
 
 In the rule {\sc L:Call}, accounts for the execution cost of both
-$M_f$ for function calls and $M_r$ for \code{return} statements.  This
+$M_f$ for function calls and $M_r$ for \code{return} statements.  \iffull{This
 justifies that the {\sc L:Return} rule does not account for resource
-consumption.  The pre- and postconditions $P_f$ and $Q_f$ are taken
+consumption.}{}  The pre- and postconditions $P_f$ and $Q_f$ are taken
 from the function context $\Delta$.  The assertions in the context are
 parametric with respect to both the function argument value and the
 return value. This allows to specify a bound for a function whose
@@ -1947,8 +1951,8 @@ the precondition $P$ to the postcondition $Q$, we use an assertion $A
 : \Assn$ that is independent of global variables, that is, $\forall
 \theta \, \gamma \, \gamma' . \, A (\theta,\gamma) =
 A(\theta,\gamma')$.  It is still possible to express relations between
-global and local variables using logical variables (see the
-\iffull{following paragraph}{extended version} for details).
+global and local variables using logical variables\iffull{ (see the
+following paragraph for details).}{.}
 
 Finally, we describe the rules which are not syntax directed.  There
 are two weakening rules available in the quantitative Hoare logic.
@@ -1958,10 +1962,10 @@ resources available after its execution, then it can very well run
 with $P + c$ resources and return $Q + c$ resources.  The consequence
 {\sc L:Conseq} rule is directly imported from classical Hoare logic
 except that instead of using the logical implication $\Rightarrow$ we
-use the quantitative $\models$ that point-wise applies $\ge$.  This
+use the quantitative $\models$ that point-wise applies $\ge$.  \iffull{This
 rule indeed weakens the statement since it requires more resource to
 run the statement and yields less than what has been proved to be
-available after its termination.
+available after its termination.}{}
 
 \ifx\fullversion\undefined{}\else{
 \paragraph{Logical Variables and Shallow Embedding.}
@@ -2633,107 +2637,6 @@ analysis.  Non-linear operations such as \code{x \gets z*y} are simply
 handled by assigning zero potential to coefficients like $q_{xa}$ and
 $q_{ax}$ that contain $x$ after the assignment.
 
-\begin{figure*}
-\centering
-\begin{tabular}{r|c|c|c|c|c}
-%
-& t08 (modified t08a) & t19 & t30 & t15 & t13\\
-%
-\hline
-&
-\begin{lstlisting}
-while (y > x) {
-  x++; tick(1); 
-}
-while (x > 2) {
-  x -= 3; tick(1); 
-}
-\end{lstlisting}
-&
-\begin{lstlisting}
-while (i > 100) {
-  i--; tick(1) 
-}
-i += k+50;
-while (i >= 0) {
-  i--; tick(1); }
-\end{lstlisting}
-&
-\begin{lstlisting}
-while (x > 0) {
-  x--;
-  t=x, x=y, y=t;
-  tick(1);
-}
-\end{lstlisting}
-&
-\begin{lstlisting}
-assert(y >= 0);
-while (x>y) {
-  x -= y+1;
-  for (z=y; z > 0; z--)
-    tick(1);
-  tick(1);
-}
-\end{lstlisting}
-&
-\begin{lstlisting}
-  while (x>0) {
-    x=x-1;
-    if (*) y=y+1;
-    else
-      while (y>0) {
-        y=y-1; tick(1); }
-    tick(1); }
-\end{lstlisting}
-%
-\\
-\hline
-%
-%
-%
-AAA 
-  & {\small $1.33|[x,y]| {+} 0.33 |[0,x]|$ }
-  & {\small $50 {+} |\inter {-1} i| {+} |\inter 0 k|$ }
-  & {\small $|\inter 0 x| {+} |\inter 0 y|$}
-  & {\small $|\inter 0 x|$}
-  & {\small $2 |\inter 0 x| {+} |\inter 0 y|$}
-\\
-%
-Rank &
-{\small $2 {+} y {-} x (?)$ } &
-{\small $54+k+i$ } &
-{\small ---} &
-{\small $2+2x-y$ } &
-{\small $0.5{\cdot}y^2 {+} yx +0.5{\cdot}x^2\ldots$} % + 1{-}0.5{\cdot}y){-}0.5{\cdot}x $}
-\\
-%
-LOOPUS &
-{\small 
-  \begin{tabular}{c}
-    $\max(0, x{-}2)$\\ $+ 2\max(0, y {-} x)$
-  \end{tabular}
-} &
-{\small 
-  \begin{tabular}{c}
-    $\max(0, i{-}100)$ \\
-    $+ \max(0, k {+} i {+} 51)$
-  \end{tabular}
- } &
-{\small ---}% $1 + \max(x, y)$ (???) 
-&
-{\small ---}
-&
-{\small $2\max(x, 0) {+} \max(y, 0)$}
-\end{tabular}
-\vspace{.1cm}
-\caption{ Comparison of resource bounds derived by different tools on
-  several examples with linear bounds.  AAA stands for our automatic
-  amortized analysis for Clight.  The output of Rank has been manually
-  simplified to fit the table.  }
-\label{fig:compar}
-\end{figure*}
-
 \paragraph{Inference Rules.}
 
 Most of the rules correspond exactly to the respective rules of the
@@ -2873,6 +2776,107 @@ solver, and apply it to the symbolic names $(q_i)$ of the coefficients
 in the derivation.  If the LP-solver fails to find a solution, an
 error is reported to the user.
 
+
+\begin{figure*}
+\centering
+\begin{tabular}{r|c|c|c|c|c}
+%
+& t08 (modified t08a) & t19 & t30 & t15 & t13\\
+%
+\hline
+&
+\begin{lstlisting}
+while (y > x) {
+  x++; tick(1); 
+}
+while (x > 2) {
+  x -= 3; tick(1); 
+}
+\end{lstlisting}
+&
+\begin{lstlisting}
+while (i > 100) {
+  i--; tick(1) 
+}
+i += k+50;
+while (i >= 0) {
+  i--; tick(1); }
+\end{lstlisting}
+&
+\begin{lstlisting}
+while (x > 0) {
+  x--;
+  t=x, x=y, y=t;
+  tick(1);
+}
+\end{lstlisting}
+&
+\begin{lstlisting}
+assert(y >= 0);
+while (x>y) {
+  x -= y+1;
+  for (z=y; z > 0; z--)
+    tick(1);
+  tick(1);
+}
+\end{lstlisting}
+&
+\begin{lstlisting}
+  while (x>0) {
+    x=x-1;
+    if (*) y=y+1;
+    else
+      while (y>0) {
+        y=y-1; tick(1); }
+    tick(1); }
+\end{lstlisting}
+%
+\\
+\hline
+%
+%
+%
+AAA 
+  & {\small $1.33|[x,y]| {+} 0.33 |[0,x]|$ }
+  & {\small $50 {+} |\inter {-1} i| {+} |\inter 0 k|$ }
+  & {\small $|\inter 0 x| {+} |\inter 0 y|$}
+  & {\small $|\inter 0 x|$}
+  & {\small $2 |\inter 0 x| {+} |\inter 0 y|$}
+\\
+%
+Rank &
+{\small $2 {+} y {-} x (?)$ } &
+{\small $54+k+i$ } &
+{\small ---} &
+{\small $2+2x-y$ } &
+{\small $0.5{\cdot}y^2 {+} yx +0.5{\cdot}x^2\ldots$} % + 1{-}0.5{\cdot}y){-}0.5{\cdot}x $}
+\\
+%
+LOOPUS &
+{\small 
+  \begin{tabular}{c}
+    $\max(0, x{-}2)$\\ $+ 2\max(0, y {-} x)$
+  \end{tabular}
+} &
+{\small 
+  \begin{tabular}{c}
+    $\max(0, i{-}100)$ \\
+    $+ \max(0, k {+} i {+} 51)$
+  \end{tabular}
+ } &
+{\small ---}% $1 + \max(x, y)$ (???) 
+&
+{\small ---}
+&
+{\small $2\max(x, 0) {+} \max(y, 0)$}
+\end{tabular}
+\vspace{.1cm}
+\caption{ Comparison of resource bounds derived by different tools on
+  several examples with linear bounds.  AAA stands for our automatic
+  amortized analysis for Clight.  The output of Rank has been manually
+  simplified to fit the table.  }
+\label{fig:compar}
+\end{figure*}
 
 \paragraph{Soundness Proof.}
 
