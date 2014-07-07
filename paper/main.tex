@@ -3313,25 +3313,9 @@ counted back to $0$.  The analysis computes a tight bound.
   $9$ and $10$ like in example \emph{t08}.  Then we still obtain a
   tight linear bound.}{}
 
-To compare our tool with existing work, we focused on loop bounds and
-use a simple metric that counts the number of back edges (i.e., number
-of loop iterations) that are follows in the execution of the program
-because most other tools only bound this specific cost. In
-\pref{fig:compar}, we show the bounds we derived (AAA) together with
-the bounds derived by LOOPUS~\cite{SinnZV14} and
-Rank~\cite{AliasDFG10}.  We also contacted the authors of SPEED but
-have not been able to obtain this tool.
-KoAT~\cite{BrockschmidtEFFG14} and PUBS~\cite{AlbertAGPZ12} currently
-cannot operate on C code and the examples would need to be manually
-translated into a term-rewriting system to be analyzed by these tools.  For
-Rank it is not totally clear how the computed bound relates to the C
-program since the computed bound is for transitions in an automaton
-that is derived from the C code.  For instance, the bound $2+y-x$ that
-is derived for \emph{t08} only applies to the first loop in the
-program.
 \begin{figure}[t]
   \centering
-    \begin{minipage}[b]{.8\linewidth}
+    \begin{minipage}[b]{.9\linewidth}
     \begin{center}
    \begin{lstlisting}
 int srch(
@@ -3352,15 +3336,52 @@ int srch(
     return i;
   }
    \end{lstlisting}
-\vspace{-1.5ex}
-$1 + 2|\inter 0 n|$
+\vspace{-1.2cm}
+\hspace{3.8cm}
+\footnotesize
+\begin{tabular}{|rl|}
+\hline
+AAA & $1 {+} 2|\inter 0 n|$ \\
+Rank & $O(n^2)$ \\
+LOOPUS & $2 {+} 3\max(n, 0)$\\
+\hline
+\end{tabular}
     \end{center}
-\vspace{.1ex}
+\vspace{-0.1cm}
   \end{minipage}
   \caption{The Knuth-Morris-Pratt algorithm for string search.}
   \label{fig:KMP}
 \end{figure}
 
+
+Finally, \pref{fig:KMP} contains the search function of the
+Knuth-Morris-Pratt algorithm for string search.  Our automatic
+amortized analysis finds the tight linear bound $1+2|[0,n]|$.  We need
+to assert that the elements $b[j]$ of the failure table $b$ are in the
+interval $[1,j+1]$.  This is guaranteed by
+construction of the table in the initialization procedure of the
+algorithm, which we can also analyze automatically.  We need the
+assertion since we do not infer any logical assertion on the contents
+of the heap.  Rank derives a complex quadratic bound and LOOPUS
+derives a linear bound.
+
+
+To compare our tool with existing work, we focused on loop bounds and
+use a simple metric that counts the number of back edges (i.e., number
+of loop iterations) that are follows in the execution of the program
+because most other tools only bound this specific cost. In
+\pref{fig:compar}, we show the bounds we derived (AAA) together with
+the bounds derived by LOOPUS~\cite{SinnZV14} and
+Rank~\cite{AliasDFG10}.  We also contacted the authors of SPEED but
+have not been able to obtain this tool.
+KoAT~\cite{BrockschmidtEFFG14} and PUBS~\cite{AlbertAGPZ12} currently
+cannot operate on C code and the examples would need to be manually
+translated into a term-rewriting system to be analyzed by these tools.  For
+Rank it is not totally clear how the computed bound relates to the C
+program since the computed bound is for transitions in an automaton
+that is derived from the C code.  For instance, the bound $2+y-x$ that
+is derived for \emph{t08} only applies to the first loop in the
+program.
 
 \begin{table}[t]
 \centering
