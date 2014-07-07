@@ -1631,79 +1631,6 @@ that state the main properties of the cost semantics.
 }
 
 
-\sectskip
-\section{Quantitative Hoare Logic}
-\label{sec:logic}
-\aftersectskip
-
-In this section we describe a simplified version of the quantitative
-Hoare logic that we use in Coq to interactively prove resource bounds.
-%
-We generalize classic Hoare logic to express not only classical
-boolean-valued assertions but also assertions that talk about the
-future resource usage.  Instead of the usual assertions $P : \State
-\to \mathit{bool}$ of Hoare logic we use assertions
-$$
-P : \State \to \Q \cup \{ \infty \} \; .
-$$
-This can be understood as a refinement of boolean assertions where
-$\mathit{false}$ is $\infty$ and $\mathit{true}$ is refined by $\Q$.
-We write $\Assn$ for $\State \to \Q \cup \{ \infty \}$ and $\bot$ for
-$\lambda \state . \, \infty$.  We sometimes call assertions
-\emph{potential functions}.  To use Coq's support for propositional
-reasoning, assertions have the type $\State \to \Q \to \mathrm{Prop}$
-in the implementation.  For a given $\state \in \State$, such an
-assertion can be seen as a set $B \subseteq \Q$ of valid bounds.
-However, we find the presentation in this article easier to read.
-
-Due to \code{break} and \code{return} statements of Clight, there are
-different possible ways to exit a block of code.  We also have to keep
-track of the resource specifications of functions.  To account for
-this in the logic, our quantitative Hoare triples have the form
-$$
-\Delta; B; R \vdash
-\htriple
-  { Q }
-  { S }
-  { Q' } \; .
-$$
-The triple $\htriple{ Q }{ S }{ Q' }$ consists of a statement $S$ and
-two assertions $Q,Q' : \Assn$.  It corresponds to triples in classic
-Hoare logic and the intuitive meaning is as follows.  If $S$ is
-executed with starting state $\state$, the empty continuation
-$\Kstop$, and at least $P(\state)$ resources available then the
-evaluation does not run out of resources and there are at least
-$Q(\state')$ resources left if the evaluation terminates in state
-$\state'$.  The assertion $B : \Assn$ provides the
-postcondition for the case in which the code block $S$ is exited by a
-\code{break} statement.  So if the execution is terminated in state
-$\state'$ with a \code{break} then $B(\state')$ resources are
-available.  Similarly, $R : \Z \to \Assn$ is the postcondition for the
-case in which the code block $S$ is exited by a $\code{return}~x$
-statement.  The integer argument of $R$ is the return value.
-Finally, the function context of judgements that we write $\Delta$ is
-a mapping from function names to specification of the form
-$$
-  \forall z \, \vec v \, v .(P_f \, z \, \vec v, Q_f \, z \, v).
-$$
-The assertion $P_f \, z \, \vec v$ is the precondition of the function
-$f$ and the assertion $Q_f \, z \, v$ is its postcondition.  They are
-both parameterized by an arbitary logical variable $z$ (which can be a
-tuple) that relates the function arguments with the return value.  The
-precondition also depends on $\vec v$, the values of the arguments
-at the function invocation.  Similarly, the postcondition depends on
-the return value $v$ of the function.  The use of logical variables to
-express relations between different states of an execution is a
-standard technique of Hoare logic.
-%
-To ensure soundness, we require that $P_f$ and $Q_f$ do not depend on
-the local variables on the call stack, that is, $\forall z \, \vec v
-\, \theta \, \theta' \, \gamma . \, P_f \, z \, \vec v \,
-(\theta,\gamma) = P_f \, z \, \vec v \, (\theta',\gamma)$.
-
-For two assertions $P,Q : \Assn$, we write $P \models Q$ to if for all
-program state $\state$ $P(\state) \ge Q(\state)$.
-
 \iffull{
 \begin{figure*}[t]
 \begin{mathpar}
@@ -1859,6 +1786,79 @@ program state $\state$ $P(\state) \ge Q(\state)$.
 \label{fig:logic}
 \end{figure*}
 }{}
+
+\sectskip
+\section{Quantitative Hoare Logic}
+\label{sec:logic}
+\aftersectskip
+
+In this section we describe a simplified version of the quantitative
+Hoare logic that we use in Coq to interactively prove resource bounds.
+%
+We generalize classic Hoare logic to express not only classical
+boolean-valued assertions but also assertions that talk about the
+future resource usage.  Instead of the usual assertions $P : \State
+\to \mathit{bool}$ of Hoare logic we use assertions
+$$
+P : \State \to \Q \cup \{ \infty \} \; .
+$$
+This can be understood as a refinement of boolean assertions where
+$\mathit{false}$ is $\infty$ and $\mathit{true}$ is refined by $\Q$.
+We write $\Assn$ for $\State \to \Q \cup \{ \infty \}$ and $\bot$ for
+$\lambda \state . \, \infty$.  We sometimes call assertions
+\emph{potential functions}.  To use Coq's support for propositional
+reasoning, assertions have the type $\State \to \Q \to \mathrm{Prop}$
+in the implementation.  For a given $\state \in \State$, such an
+assertion can be seen as a set $B \subseteq \Q$ of valid bounds.
+However, we find the presentation in this article easier to read.
+
+Due to \code{break} and \code{return} statements of Clight, there are
+different possible ways to exit a block of code.  We also have to keep
+track of the resource specifications of functions.  To account for
+this in the logic, our quantitative Hoare triples have the form
+$$
+\Delta; B; R \vdash
+\htriple
+  { Q }
+  { S }
+  { Q' } \; .
+$$
+The triple $\htriple{ Q }{ S }{ Q' }$ consists of a statement $S$ and
+two assertions $Q,Q' : \Assn$.  It corresponds to triples in classic
+Hoare logic and the intuitive meaning is as follows.  If $S$ is
+executed with starting state $\state$, the empty continuation
+$\Kstop$, and at least $P(\state)$ resources available then the
+evaluation does not run out of resources and there are at least
+$Q(\state')$ resources left if the evaluation terminates in state
+$\state'$.  The assertion $B : \Assn$ provides the
+postcondition for the case in which the code block $S$ is exited by a
+\code{break} statement.  So if the execution is terminated in state
+$\state'$ with a \code{break} then $B(\state')$ resources are
+available.  Similarly, $R : \Z \to \Assn$ is the postcondition for the
+case in which the code block $S$ is exited by a $\code{return}~x$
+statement.  The integer argument of $R$ is the return value.
+Finally, the function context of judgements that we write $\Delta$ is
+a mapping from function names to specification of the form
+$$
+  \forall z \, \vec v \, v .(P_f \, z \, \vec v, Q_f \, z \, v).
+$$
+The assertion $P_f \, z \, \vec v$ is the precondition of the function
+$f$ and the assertion $Q_f \, z \, v$ is its postcondition.  They are
+both parameterized by an arbitary logical variable $z$ (which can be a
+tuple) that relates the function arguments with the return value.  The
+precondition also depends on $\vec v$, the values of the arguments
+at the function invocation.  Similarly, the postcondition depends on
+the return value $v$ of the function.  The use of logical variables to
+express relations between different states of an execution is a
+standard technique of Hoare logic.
+%
+To ensure soundness, we require that $P_f$ and $Q_f$ do not depend on
+the local variables on the call stack, that is, $\forall z \, \vec v
+\, \theta \, \theta' \, \gamma . \, P_f \, z \, \vec v \,
+(\theta,\gamma) = P_f \, z \, \vec v \, (\theta',\gamma)$.
+
+For two assertions $P,Q : \Assn$, we write $P \models Q$ to if for all
+program state $\state$ $P(\state) \ge Q(\state)$.
 
 \paragraph{Rules of the Quantitative Logic.}
 
@@ -2396,7 +2396,7 @@ in the literature.
 %
 \and\Rule{Q:Seq}
 {  B; R; (\Gamma, Q) \vdash S_1 \dashv (\Gamma', Q' {+} M_s)
-\\\\ B; R; (\Gamma', Q') \vdash S_2 \dashv (\Gamma'',Q'')
+\\ B; R; (\Gamma', Q') \vdash S_2 \dashv (\Gamma'',Q'')
 }
 { B; R; (\Gamma, Q) \vdash S_1;S_2 \dashv (\Gamma'',Q'') }
 %
@@ -2790,7 +2790,7 @@ error is reported to the user.
 %
 \hline
 &
-\begin{lstlisting}
+\begin{lstlisting}[basicstyle=\tt\scriptsize]
 while (y > x) {
   x++; tick(1); 
 }
@@ -2799,7 +2799,7 @@ while (x > 2) {
 }
 \end{lstlisting}
 &
-\begin{lstlisting}
+\begin{lstlisting}[basicstyle=\tt\scriptsize]
 while (i > 100) {
   i--; tick(1) 
 }
@@ -2808,7 +2808,7 @@ while (i >= 0) {
   i--; tick(1); }
 \end{lstlisting}
 &
-\begin{lstlisting}
+\begin{lstlisting}[basicstyle=\tt\scriptsize]
 while (x > 0) {
   x--;
   t=x, x=y, y=t;
@@ -2816,7 +2816,7 @@ while (x > 0) {
 }
 \end{lstlisting}
 &
-\begin{lstlisting}
+\begin{lstlisting}[basicstyle=\tt\scriptsize]
 assert(y >= 0);
 while (x>y) {
   x -= y+1;
@@ -2826,7 +2826,7 @@ while (x>y) {
 }
 \end{lstlisting}
 &
-\begin{lstlisting}
+\begin{lstlisting}[basicstyle=\tt\scriptsize]
   while (x>0) {
     x=x-1;
     if (*) y=y+1;
@@ -4521,46 +4521,6 @@ $|[0, y]|$ ticks
   \label{fig:cat3}
 \end{figure*}
 
-
-\paragraph{Recursive Functions}
-
-Our approach can naturally deal with mutually-recursive functions.
-The recursion patterns can be exactly the same that are used in
-iterations of loops.  In the following, we present three simple
-examples that illustrate the analysis of functions.
-
-Example \emph{t37} illustrates that the analyzer is able to perform
-inter-procedural size tracking.  The function \code{copy} adds the
-argument $x$ to the argument $y$ if $x$ is positive.  However, this
-addition is done in steps of $1$ in each recursive call.  The function
-\code{count\_down} recursively decrements its argument down to $0$.
-The derived bound $1 + 4|[0, x]| + 2|[0, y]|$ is for the function
-\code{\main} in which we first add $x$ to $y$ using the function
-\code{copy} and then count down the variable $y$ using the function
-\code{count\_down}.  The derived bound is tight.
-
-Example \emph{t39} uses mutual recursion.  The function
-\code{count\_down} is similar to the function with the same name in
-example \emph{t37}.  However, we do not count down to $0$ but to a
-variable $y$ that is passed as an argument and we call the function
-\code{count\_up} afterwards.  The function \code{count\_up} is dual to
-\code{count\_down}.  Here, we count up $y$ by $2$ and recursively call
-\code{count\_down}.  For the function $\main$, which calls
-\code{count\_down(y,z)}, the analyzer computes the tight bound $1.67 +
-1.33 |[z,y]|$.
-
-Example \emph{t46} shows a program that uses and returns resources.
-Again, we use the \emph{tick metric} and the function \code{\tick} to
-describe the resource usage.  The function \code{produce} produces
-$|[0,x]|$ resources, that is, in each of the $|[0,x]|$ iterations, it
-receives one resource unit.  Similarly, the function \code{consume}
-consumes $|[0,y]|$ resources.  The analyzer computes the tight bound
-$|[0,y]|$ for the function \code{\main}.  This is only possible since
-amortized analysis naturally tracks the size changes to the variables
-$x$ and $y$, and the interaction between \code{consume} and
-\code{produce}.
-
-
 \begin{figure*}[t!]
  \setlength{\progwidth}{.32\linewidth}
   \centering
@@ -4654,23 +4614,48 @@ $1 + 2 |\inter 0 {\code{len}}|$
   \label{fig:cat3}
 \end{figure*}
 
-\paragraph{Well-Known Algorithms}
 
-\pref{fig:cat3} shows well-known algorithms that can be automatically
-analyzed in our framework.  Example \emph{Knuth-Morris-Pratt} shows
-the search function of the Knuth-Morris-Pratt algorithm for string
-search.  To derive a bound for this algorithm we have add an assertion
-that indicates the bounds of the values that are stored in the array
-\code{b}.  Using this information we derive a tight linear bound.
 
-Example \emph{Greatest Common Divisor} is the usual implementation of
-the GCD algorithm.  We automatically derive a linear bound.  Note that
-the two tests at the beginning that check if the inputs are positive
-are essential.  Finally, example \emph{Quick Sort} shows a skeleton of
-the quick sort sorting algorithm.  Since we can only derive linear
-bounds we left out the inner loop that swaps the array elements and
-determines the position \code{n+lo} of the pivot.  We only assert that
-\code{lo < n+lo <= hi}.  We then derive a tight linear bound.
+
+
+\paragraph{Recursive Functions}
+
+Our approach can naturally deal with mutually-recursive functions.
+The recursion patterns can be exactly the same that are used in
+iterations of loops.  In the following, we present three simple
+examples that illustrate the analysis of functions.
+
+Example \emph{t37} illustrates that the analyzer is able to perform
+inter-procedural size tracking.  The function \code{copy} adds the
+argument $x$ to the argument $y$ if $x$ is positive.  However, this
+addition is done in steps of $1$ in each recursive call.  The function
+\code{count\_down} recursively decrements its argument down to $0$.
+The derived bound $1 + 4|[0, x]| + 2|[0, y]|$ is for the function
+\code{main} in which we first add $x$ to $y$ using the function
+\code{copy} and then count down the variable $y$ using the function
+\code{count\_down}.  The derived bound is tight.
+
+Example \emph{t39} uses mutual recursion.  The function
+\code{count\_down} is similar to the function with the same name in
+example \emph{t37}.  However, we do not count down to $0$ but to a
+variable $y$ that is passed as an argument and we call the function
+\code{count\_up} afterwards.  The function \code{count\_up} is dual to
+\code{count\_down}.  Here, we count up $y$ by $2$ and recursively call
+\code{count\_down}.  For the function \code{main}, which calls
+\code{count\_down(y,z)}, the analyzer computes the tight bound $1.67 +
+1.33 |[z,y]|$.
+
+Example \emph{t46} shows a program that uses and returns resources.
+Again, we use the \emph{tick metric} and the function \code{tick} to
+describe the resource usage.  The function \code{produce} produces
+$|[0,x]|$ resources, that is, in each of the $|[0,x]|$ iterations, it
+receives one resource unit.  Similarly, the function \code{consume}
+consumes $|[0,y]|$ resources.  The analyzer computes the tight bound
+$|[0,y]|$ for the function \code{main}.  This is only possible since
+amortized analysis naturally tracks the size changes to the variables
+$x$ and $y$, and the interaction between \code{consume} and
+\code{produce}.
+
 
 \begin{table*}
 \small
@@ -5317,6 +5302,25 @@ $1 {+} |\inter 0 n|$
 }
 \label{fig:eval}
 \end{table*}
+
+\paragraph{Well-Known Algorithms}
+
+\pref{fig:cat3} shows well-known algorithms that can be automatically
+analyzed in our framework.  Example \emph{Knuth-Morris-Pratt} shows
+the search function of the Knuth-Morris-Pratt algorithm for string
+search.  To derive a bound for this algorithm we have add an assertion
+that indicates the bounds of the values that are stored in the array
+\code{b}.  Using this information we derive a tight linear bound.
+
+Example \emph{Greatest Common Divisor} is the usual implementation of
+the GCD algorithm.  We automatically derive a linear bound.  Note that
+the two tests at the beginning that check if the inputs are positive
+are essential.  Finally, example \emph{Quick Sort} shows a skeleton of
+the quick sort sorting algorithm.  Since we can only derive linear
+bounds we left out the inner loop that swaps the array elements and
+determines the position \code{n+lo} of the pivot.  We only assert that
+\code{lo < n+lo <= hi}.  We then derive a tight linear bound.
+
 }\fi
 
 \bibliographystyle{abbrvnat}
