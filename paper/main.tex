@@ -121,7 +121,7 @@
   naturally compositional and can be combined to semi-automatically
   derive global resource bounds.
   %
-  An experimental evaluation demonstrates the practicability of the
+  An experimental evaluation demonstrates the practicality of the
   analysis framework.  The expressivity of the logic is shown by
   manually deriving customized bounds that are tailored to specific
   algorithms.  A comparison of the automatic amortized analysis with
@@ -251,7 +251,7 @@ authorities~\cite{May2013}.  Our \emph{contributions} are as follows:
   solved by an off-the-shelf LP solver, and does not require any
   fixpoint computations to obtain loop invariants.
 \itemskipIn
-\item We show with a publically available prototype implementation, and
+\item We show with a publicly available prototype implementation, and
   an experimental evaluation, that our novel amortized resource
   analysis works precisely and efficiently for challenging loop and
   recursion patterns, and that the derived constant factors in the
@@ -331,7 +331,7 @@ quantitative Hoare logic and is therefore a natural candidate to
 automate the reasoning.  Type-based amortized resource analysis works
 well for functional programs with pattern matching but it has been a
 long-time open problem to apply it to C-like programs with control
-flow that depends integer arithmetic, negative numbers, and non-linear
+flow that depends on integer arithmetic, negative numbers, and non-linear
 control flow.
 % example, it is a
 % long-time open problem how to use type-based amortized analysis to
@@ -383,7 +383,7 @@ fixpoint computations to obtain loop invariants.  The mechanism we
 designed is able to leverage local assertions such as $x < y$ that we
 collect along the branching points of the program to obtain global
 resource invariants.  We achieve this by generating a linear
-constraint system that reflects resource cost and size changes of
+constraint system that reflects the resource cost and size changes of
 integer variables in the program; a solution of the linear program
 immediately yields a resource usage bound for the C
 program.  % We can naturally, handle
@@ -411,21 +411,21 @@ source software and the literature.  Our analysis can find
 asymptotically tight bounds for all but 1 of these patterns, and in
 most cases the derived constant factors are tight.  To compare our
 automatic analyzer with existing techniques, we tested our examples
-with the tools such as KoAT~\cite{BrockschmidtEFFG14},
+with tools such as KoAT~\cite{BrockschmidtEFFG14},
 Rank~\cite{AliasDFG10}, and LOOPUS~\cite{SinnZV14}.  Our experiments
 show that the bounds that we derive are often more precise than those
 derived by existing tools.  Only LOOPUS~\cite{SinnZV14}, which also
 uses amortization techniques, is able to achieve a similar precision.
 %
-Several micro benchmarks demonstrate the practicability and
+Several micro benchmarks demonstrate the practicality and
 expressiveness of the quantitative Hoare logic.  For example, we
 derive a logarithmic bound for a binary search function, a bound that
 depends on the contents of an array to describe the exact cost of a
-function that finds the maximal element in an array, and a linear
-bound that amortizes the cost of $n$ successive increments to a binary
+function that finds a maximal element in an array, and a linear
+bound that amortizes the cost of $k$ successive increments to a binary
 counter.
 
-% To show the practicability of our approach we developed a case study
+% To show the practicality of our approach we developed a case study
 % with different real-time schedulers implemented in C.  To perform a
 % schedulability analysis that takes into account the overhead of the
 % scheduler we derived time bounds for context switching and
@@ -487,7 +487,7 @@ potential function $\Phi$ provides an upper bound on the resource
 consumption of the whole program.  What we have observed is that, if
 we define $\htriple{\Phi} {S}{\Phi'}$ to mean
 $$
-\forall \state\, n\, \state'.\, (\state, p) \Downarrow_n \state' \implies \Phi(\state) \ge
+\forall \state\, n\, \state'.\, (\state, S) \Downarrow_n \state' \implies \Phi(\state) \ge
 n + \Phi'(\state') \; ,
 $$
 then we get the following familiar looking rule.
@@ -508,10 +508,10 @@ a certificate for the derived resource bound.
 % embedding in Coq, every function that can be expressed in Coq can in
 % principle be used as a resource bound.    
 
-It is also possible to incorporate boolean preconditions into the
-bounds to express that the bound is only valid for a certain class of
+It is also possible to incorporate boolean conditions into a
+bound to express that the bound is only valid for a certain class of
 inputs.  To this end, we allow the potential function $\Phi$ in the
-pre- and postconditions to take non-negative number or $\infty$
+pre- and postconditions to take non-negative numbers or $\infty$
 (infinity) as values.  Infinity, plays the same role as
 $\mathit{false}$ in Hoare logic.  Boolean assertions can be embedded
 into potential functions by mapping $\mathit{false}$ to $\infty$ and
@@ -591,7 +591,7 @@ $\infty$ otherwise.
 
 For simplicity, assume for the remainder of this section that we are
 interested in bounding the number of \emph{ticks} in a program.  That
-is, we use a resource metric that assigns cost $n$ to the function call
+is, we use the \emph{tick metric} that assigns cost $n$ to the function call
 \code{tick(n)} and cost $0$ to all other operations.  The argument $n$
 is an integer and a negative number means that $-n$ resources are
 returned.
@@ -668,7 +668,7 @@ ${\color{blue}%
 \end{lstlisting}
   \caption{Automatic derivation of a tight bound on the number of
     ticks for a standard \emph{for loop}.  The parameters $K>0$ and
-    $T>0$ are not program variables but denote a concrete constants in
+    $T>0$ are not program variables but denote concrete constants in
     the program.  The reasoning works uniformly for all such $K$ and
     $T$.}
   \label{fig:ex1}
@@ -691,13 +691,13 @@ while (n>x) {
   if (m>y) 
     ${\color{blue}%
     m{>}y; \, |[x, n]| {+} |[y, m]| \vdash }$
-    y = y+1;
+    y=y+1;
     ${\color{blue}%
     \dashv \cdot ; \, 1 {+} |[x, n]| {+} |[y, m]| }$
   else
     ${\color{blue}%
     n{>}x; \, |[x, n]| {+} |[y, m]| \vdash }$
-    x = x+1;
+    x=x+1;
     ${\color{blue}%
     \dashv \cdot; \, 1 {+} |[x, n]| {+} |[y, m]| }$
   ${\color{blue}%
@@ -757,7 +757,7 @@ $|[x, n]| + |[z, n]|$
 while (z-y>0) {
   ${\color{blue}%
   y{<}z; \, 3.1|[y,z]| {+} 0.1|[0,y]| \vdash }$
-  y = y+1;
+  y=y+1;
   ${\color{blue}%
   \dashv \cdot; \, 3 {+} 3.1|[y,z]| {+} 0.1|[0,y]| \vdash }$
   tick(3);
@@ -864,7 +864,7 @@ derives a sound triple $\htriple{\Phi}P{\Phi'}$ in the quantitative
 logic but enables inference using an LP solver.  
 
 This idea is best explained by example.  If we again use the
-\emph{ticks} metric that assigns cost $n$ to the function call
+tick metric that assigns cost $n$ to the function call
 \code{tick(n)}\iffull{ and cost $0$ to all other operations}{} then
 the cost of the following example can be bounded by $|[x,y]|$.\footnote{Note
 that there are no restrictions on the signs of the input variables in
@@ -930,14 +930,14 @@ version of Example~1 in which we increment $x$ by a constant $K>0$ and
 consume $T>0$ resources in each iteration.  The reasoning is similar
 to the one of Example~1 except that we obtain the potential
 $K{\cdot}\frac{T}{K}$ after the assignment.  Note that the logical
-assertions in $\Gamma$ are only used in rule for the assignment
+assertions in $\Gamma$ are only used in the rule for the assignment
 \code{x=x+K}.  To the best of our knowledge, no other implemented tool
 for C is currently capable of deriving a tight bound on the cost of
 such a loop.  For $T=1$ (many systems focus on the number of loop
 iterations without a cost model) and $K=10$,
-KoAT~\cite{BrockschmidtEFFG14} computes the bound $x + y + 10$,
+KoAT~\cite{BrockschmidtEFFG14} computes the bound $|x| + |y| + 10$,
 Rank~\cite{AliasDFG10} computes the bound $y-x-7$, and
-LOOPUS~\cite{SinnZV14} computes the bound $y-(x+9)$.  Only
+LOOPUS~\cite{SinnZV14} computes the bound $y-x-9$.  Only
 PUBS~\cite{AlbertAGPZ12} computes the tight bound $0.1(y-x)$ if we
 translate the program into a term-rewriting system by hand.
 
@@ -968,10 +968,10 @@ programs without special tricks or techniques.  Examples
 work~\cite{GulwaniMC09},  demonstrate that our method can handle
 \emph{tricky iteration patterns}.  The SPEED tool~\cite{GulwaniMC09}
 derives the same bounds as our analysis but requires heuristics for
-its counter instrumentation.  It can also be handled with inference of
+its counter instrumentation.  These loops can also be handled with inference of
 \emph{disjunctive invariants}, but in the abstract interpretation
 community, these invariants are known to be notoriously difficult to
-handle.
+generate.
 %
 In example \emph{speed\_1} we have one loop that first increments
 variable $y$ up to $m$ and then increments variable $x$ up to $n$.  We
@@ -1095,11 +1095,11 @@ calls and returns.  However, we have not implemented our framework for function
 pointers, \code{goto} statements, \code{continue} statements, and
 \code{switch} statements.
 
-We include the built-in primitive $\code{assert}~E$ that terminates
-the program if the argument $E$ evaluates to false and has no effect
+We include the built-in primitive $\code{assert}~e$ that terminates
+the program if the argument $e$ evaluates to false and has no effect
 otherwise.  This is useful to express assumptions on the inputs of a
 program for the automatic analysis.  We also add the built-in function
-$\code{tick}(n)$ that can be called with a constant integer $n$ as a
+\code{tick(n)} that can be called with a constant integer $n$ as a
 flexible way to model resource consumption or release (if $n$ is
 negative).
 
@@ -1482,10 +1482,9 @@ negative).
 CompCert Clight's operational semantics is based on small-step
 transitions and continuations.  Expressions---which do not have side
 effects---are evaluated in a big-step fashion.  Here, we describe a
-simplified version of Clight's semantics for the subset we are
-describing.
+simplified version of Clight's semantics for the subset we consider.
 
-A program state $\state = (\theta, \gamma)$ composed of two maps from
+A program state $\state = (\theta, \gamma)$ is composed of two maps from
 variable names to integers. The first map, $\theta : \text{Locals} \to
 \Z$, assigns integers to local variables of a function, and the second
 map, $\gamma : \text{Globals} \to \Z$, gives values to global variables
@@ -1546,7 +1545,7 @@ that we use in the implementation can also depend on other information
 that is statically available such as the name of the called function
 or the number of arguments.
 
-\pref{fig:opsem} contains \ifshort{selected}{} the reduction rules of the semantics.  The
+\pref{fig:opsem} contains \ifshort{selected}{the} reduction rules of the semantics.  The
 rules define a rewrite system for program configurations of the form
 $(\state, S, \cont, \cost)$, where $\state$ is the program state, $S$
 is the statement being executed, $\cont$ is a continuation that
@@ -1557,7 +1556,7 @@ implicit side condition that the resource quantity available
 \emph{before} the step is non-negative.  This means that we allow
 $(\state, S, \cont, \cost)$ with $c<0$ on the right-hand side
 transition relation $\smallstep{M}^*$ to indicate that the execution
-ran out of reassesses.  However, every execution that reaches such a
+ran out of resources.  However, every execution that reaches such a
 state is stuck.
 
 \iffull{
@@ -1626,8 +1625,8 @@ termination.  This is formalized by \pref{lem:sem_term}.
 \end{lemma}
 } 
 {
-The extended version of this article~\cite{anon_extended} contains all rules lemmas 
-that state the main properties of the cost semantics.
+The extended version of this article~\cite{anon_extended} contains all rules and
+lemmas that state the main properties of the cost semantics.
 }
 
 
@@ -1800,14 +1799,14 @@ boolean-valued assertions but also assertions that talk about the
 future resource usage.  Instead of the usual assertions $P : \State
 \to \mathit{bool}$ of Hoare logic we use assertions
 $$
-P : \State \to \Q \cup \{ \infty \} \; .
+P : \State \to \Qplusz \cup \{ \infty \} \; .
 $$
 This can be understood as a refinement of boolean assertions where
-$\mathit{false}$ is $\infty$ and $\mathit{true}$ is refined by $\Q$.
-We write $\Assn$ for $\State \to \Q \cup \{ \infty \}$ and $\bot$ for
+$\mathit{false}$ is $\infty$ and $\mathit{true}$ is refined by $\Qplusz$.
+We write $\Assn$ for $\State \to \Qplusz \cup \{ \infty \}$ and $\bot$ for
 $\lambda \state . \, \infty$.  We sometimes call assertions
 \emph{potential functions}.  To use Coq's support for propositional
-reasoning, assertions have the type $\State \to \Q \to \mathrm{Prop}$
+reasoning, assertions have the type $\State \to \Qplusz \to \mathrm{Prop}$
 in the implementation.  For a given $\state \in \State$, such an
 assertion can be seen as a set $B \subseteq \Q$ of valid bounds.
 However, we find the presentation in this article easier to read.
@@ -1838,7 +1837,7 @@ available.  Similarly, $R : \Z \to \Assn$ is the postcondition for the
 case in which the code block $S$ is exited by a $\code{return}~x$
 statement.  The integer argument of $R$ is the return value.
 Finally, the function context of judgements that we write $\Delta$ is
-a mapping from function names to specification of the form
+a mapping from function names to specifications of the form
 $$
   \forall z \, \vec v \, v .(P_f \, z \, \vec v, Q_f \, z \, v).
 $$
@@ -1853,7 +1852,7 @@ express relations between different states of an execution is a
 standard technique of Hoare logic.
 %
 To ensure soundness, we require that $P_f$ and $Q_f$ do not depend on
-the local variables on the call stack, that is, $\forall z \, \vec v
+the local variables on the stack, that is, $\forall z \, \vec v
 \, \theta \, \theta' \, \gamma . \, P_f \, z \, \vec v \,
 (\theta,\gamma) = P_f \, z \, \vec v \, (\theta',\gamma)$.
 
@@ -1937,15 +1936,15 @@ we account for the execution cost $M_t(n)$ of the \code{tick}
 statement that depends on the integer $n$.
 }{}
 
-In the rule {\sc L:Call}, accounts for the execution cost of both
+The rule {\sc L:Call} accounts for the execution cost of both
 $M_f$ for function calls and $M_r$ for \code{return} statements.  \iffull{This
 justifies that the {\sc L:Return} rule does not account for resource
-consumption.}{}  The pre- and postconditions $P_f$ and $Q_f$ are taken
+consumption.}{}  The pre- and postcondition $P_f$ and $Q_f$ are taken
 from the function context $\Delta$.  The assertions in the context are
-parametric with respect to both the function argument value and the
+parametric with respect to both the function arguments' value and the
 return value. This allows to specify a bound for a function whose
-resource consumption depends on an input parameter.  The argument
-parameter is instantiated by the call rule using the result of the
+resource consumption depends on input parameters.  The argument
+parameters are instantiated by the call rule using the result of the
 evaluation of the argument variables in the current state.
 \iffull{Recall that we require that $P_f$ and $Q_f$ do not depend on
   the local variables on the call stack, that is, $\forall z \, \vec v
@@ -2275,7 +2274,7 @@ is again a simplified program state as introduced in \pref{sec:sem},
 $|\inter a b| = max(0,b-a)$, and $q_i \in \Qplusz$.  To simplify the
 references to the linear coefficients $q_i$, we introduce an \emph{index
   set} $I$.  This set is defined to be $\{0\} \cup \{(x, y) \mid x, y
-\in \Var \}$.  Each index $i$ corresponds to a \emph{base function}
+\in \Var \land x \neq y \}$.  Each index $i$ corresponds to a \emph{base function}
 $f_i$ in the potential function: $0$ corresponds to the constant
 function $\state \mapsto 1$, and $(x,y)$ corresponds to $\state \mapsto
 |\inter {\state(x)} {\state(y)}|$.  Using these notations we can
@@ -2295,7 +2294,7 @@ a finite number of elements are not zero. \iffull{ For soundness, we
   annotation to be always non-negative.}{}
 
 In the potential functions, we treat constants as global variables
-that can not be assigned to.  For example, if the program contains the
+that cannot be assigned to.  For example, if the program contains the
 constant $8128$ then we have a variable $c_{8128}$ and
 $\state(c_{8128}) = 8128$.  We assume that every program state
 includes the constant $c_0$.
@@ -2629,16 +2628,15 @@ defines a new context $Q'$ such that $q'_0 = q_0 \pm n$ and $\forall i
 \neq 0 .\, q'_i = q_i$.  We have the implicit side condition that all
 rational coefficients are non-negative.  Finally, if a rule mentions
 $Q$ and $Q'$ and leaves the latter undefined at some index $i$ we will
-implicitly assume that $q'_i = q_i$.  As mentioned, we leave the
-logical contexts $\Gamma$ abstract.
+implicitly assume that $q'_i = q_i$.
 
 We describe the automatic amortized analysis for a subset of
-expressions of C light.  Assignments must have the form \code{x \gets
-  y} or \code{x \gets x \pm y}.  In the implementation, a Clight
+expressions of Clight.  Assignments must have the form $x \gets
+y$ or $x \gets x \pm y$.  In the implementation, a Clight
 program is converted into this form prior to analysis without changing
 the resource cost.  This achieved by using a series of \emph{cost-free
   assignments} that do not result in additional cost in the
-analysis.  Non-linear operations such as \code{x \gets z*y} are simply
+analysis.  Non-linear operations such as $x \gets z*y$ are simply
 handled by assigning zero potential to coefficients like $q_{xa}$ and
 $q_{ax}$ that contain $x$ after the assignment.
 
@@ -2671,16 +2669,16 @@ difference to the quantitative logic.  While we have a function $\Z
 \to \Assn$ to represent return values in the logic, we assume that a
 special variable $\ret$ is part of the index set of $Q_R$.  The
 substitution $Q[\ret/x]$ denotes an potential annotation $Q'$ with
-$q_{\ret y} = q'_{x y}$ and $q_{y \ret} = q'_{y x}$ for all $y$ and
+$q'_{xy} = q_{\ret y}$ and $q'_{yx} = q_{y \ret}$ for all $y$ and
 $q_i'=q_i$ otherwise.
 
 Most interesting are the rules {\sc Q:IncP}, {\sc Q:DecP}, and {\sc
   Q:Inc} for increments and decrements, which describe how the
 potential is distributed after a size change of a variable.  The rule
-{\sc Q:IncP} is for increments $x \gets x + y$ in which we can deduce
-from the logical context $\Gamma$ that $y$ is not negative.
-Similarly, {\sc Q:DecP} is for increments $x \gets x - y$ in which we
-can deduce that $y \ge 0$.  Of course, we have symmetrical rules {\sc
+{\sc Q:IncP} is for increments $x \gets x + y$ and {\sc Q:DecP} is
+for decrements $x \gets x - y$, they both apply only when we can deduce
+from the logical context $\Gamma$ that $y \ge 0$.
+Of course, we have symmetrical rules {\sc
   Q:IncN} and {\sc Q:DecN} that can be applied if $y$ is not positive.
 The rules are equivalent in the case where $y=0$.  Finally, the rule
 {\sc Q:Inc} can be applied if we cannot deduce any information about
@@ -2689,7 +2687,7 @@ are combined into one syntax directed rule where the specialized rules
 take priority over {\sc Q:Inc}.
 
 To explain how rules for increment and decrement work, it is
-sufficient to understand the rule {\sc Q:IncP}.  The other follow the
+sufficient to understand the rule {\sc Q:IncP}.  The others follow the
 same idea and are symmetrical.  In {\sc Q:IncP}, the program updates a
 variable $x$ with $x+y$ where $y \ge 0$.  Since $x$ is changed, the
 quantitative annotation must be updated to reflect the change of the
@@ -2703,17 +2701,17 @@ $q'_{0y}$ in the postcondition can be increased by $q_{xu}$ under the
 guard that $x' \in \inter x u$.  Dually, the interval $\inter v x$ can
 get bigger with the update.  We know that $|\inter v {x'}| \le y +
 |\inter v x|$.  So we decrease the potential of $\inter 0 y$ by
-$q_{vx}$ to pay for this change.  The rule insures this
+$q_{vx}$ to pay for this change.  The rule ensures this
 only for $v \not\in \mathcal U$ because we know that $x \le v$
 otherwise, and thus $|\inter v x| = 0$.
 
 Another interesting rule is {\sc Q:Call}.  It needs to account for the
-changes to the stack caused by the function call, the argument/return
+changes to the stack caused by the function call, the arguments/return
 value passing, and the preservation of local variables.  We can sum up
 the main ideas of the rule as follows.
 \itemskip
 \begin{itemize}
-\item The potential in the pre- and postconditions of the function
+\item The potential in the pre- and postcondition of the function
   specification is equalized to its matching potential in the callee's
   pre- and postcondition.
 \itemskipIn
@@ -2726,7 +2724,7 @@ the main ideas of the rule as follows.
   are set to zero in the postcondition.
 \end{itemize}
 \itemskip
-If $x$ and $y$ are local variables and $\code{f}(x,y)$ is
+If $x$ and $y$ are local variables and $f(x,y)$ is
 called, {\sc Q:Call} splits the potential of
 $|\inter x y|$ in two parts, one part to perform the
 computation in the function $f$ and one part to keep for
@@ -2752,8 +2750,8 @@ precondition and remove potential from the postcondition.  The concept
 of \emph{more potential} is formalized by the relation $Q'
 \succeq_\Gamma Q$ that is defined in the rule {\sc Relax}.  Here, $Q$
 and $Q'$ are potential annotations and $\Gamma$ is a logical context.
-The rule {\sc Q:Relax} deals also with the important task of transferring
-constant potential (represented by $q_0$) to interval sizes and vise
+The rule {\sc Relax} deals also with the important task of transferring
+constant potential (represented by $q_0$) to interval sizes and vice
 versa.  If we can deduce from the logical context that the interval
 size $|\inter x y| \geq l$ is larger then a constant $l$ then we can
 transfer potential $q_{xy} {\cdot} |\inter x y|$ form the interval to
@@ -2771,14 +2769,14 @@ inference rules of the automatic amortized analysis.  During this
 process our tool uses symbolic names for the rational coefficients
 $(q_i)$ in the rules.  Every time a linear constraint must be
 satisfied by these coefficients, it is recorded in a global list using
-the symbolic names.  When then feed the collected constraints to an
-off the shelf LP-solver~\footnote{We currently use Coin-Or's CLP.}.
+the symbolic names.  We then feed the collected constraints to an
+off the shelf LP solver~\footnote{We currently use Coin-Or's CLP.}.
 If the solver successfully finds a solution, we know that a derivation
 exists for the considered program.  We can then extract the initial
 $Q$ from the solver and get a resource bound for the program.  To get
 a full derivation we simply extract the complete solution from the
 solver, and apply it to the symbolic names $(q_i)$ of the coefficients
-in the derivation.  If the LP-solver fails to find a solution, an
+in the derivation.  If the LP solver fails to find a solution, an
 error is reported to the user.
 
 
@@ -2801,11 +2799,11 @@ while (x > 2) {
 &
 \begin{lstlisting}[basicstyle=\tt\scriptsize]
 while (i > 100) {
-  i--; tick(1) 
-}
+  i--; tick(1) }
 i += k+50;
 while (i >= 0) {
-  i--; tick(1); }
+  i--; tick(1);
+}
 \end{lstlisting}
 &
 \begin{lstlisting}[basicstyle=\tt\scriptsize]
@@ -2818,7 +2816,7 @@ while (x > 0) {
 &
 \begin{lstlisting}[basicstyle=\tt\scriptsize]
 assert(y >= 0);
-while (x>y) {
+while (x > y) {
   x -= y+1;
   for (z=y; z > 0; z--)
     tick(1);
@@ -2827,12 +2825,12 @@ while (x>y) {
 \end{lstlisting}
 &
 \begin{lstlisting}[basicstyle=\tt\scriptsize]
-  while (x>0) {
-    x=x-1;
-    if (*) y=y+1;
+  while (x > 0) {
+    x--;
+    if (*) y++;
     else
-      while (y>0) {
-        y=y-1; tick(1); }
+      while (y > 0) {
+        y--; tick(1); }
     tick(1); }
 \end{lstlisting}
 %
@@ -3266,7 +3264,7 @@ to construct certificates for upper bounds derived automatically.
 \label{sec:exper}
 \aftersectskip
 
-We have experimentally evaluated the practicability of our automatic
+We have experimentally evaluated the practicality of our automatic
 amortized analysis with more than 30 challenging loop and recursion
 patterns from open-source code and the
 literature~\cite{GulwaniMC09,GulwaniJK09,GulwaniZ10}.  A full list of
@@ -3280,7 +3278,7 @@ evaluation.  Example \emph{t08} is a slightly modified version of
 \emph{t19} demonstrates the compositionaliy of the analysis.  The
 program consists of two loops that decrement a variable $i$.  In the
 first loop, $i$ is decremented down to 100 and in the second loop $i$
-is increment further down to $-1$.  However, between the loops we
+is decremented further down to $-1$.  However, between the loops we
 assign \code{i=i+k+50}.  So in total the program performs $52 + |[-1,i]| +
 |[0,k]|$ increments.  Our analysis finds this tight bound because our
 amortized analysis naturally takes into account the relation between
@@ -3300,7 +3298,7 @@ then we know that $x>0$ and we can obtain constant potential from the
 assignment \code{x=x-1}.  After the assignment we know that $x\geq y$
 and $y\geq 0$.  As a consequence, we can share the potential
 $|[0,x]|$ before the assignment \code{x=x-y} between $|[0,x]|$ and
-$|0,y|$ after the assignment.  In this way, we derive a tight linear
+$|[0,y]|$ after the assignment.  In this way, we derive a tight linear
 bound.
 
 Example \emph{t13} shows how amortization can be used to find linear
@@ -3368,7 +3366,7 @@ derives a linear bound.
 
 To compare our tool with existing work, we focused on loop bounds and
 use a simple metric that counts the number of back edges (i.e., number
-of loop iterations) that are follows in the execution of the program
+of loop iterations) that are followed in the execution of the program
 because most other tools only bound this specific cost. In
 \pref{fig:compar}, we show the bounds we derived (AAA) together with
 the bounds derived by LOOPUS~\cite{SinnZV14} and
@@ -3513,7 +3511,7 @@ to a formal cost semantics.  Moreover, we have a system that enables
 both automatic and interactive bound derivation, a formal soundness
 proof in Coq, and a method that can handle resources that can be
 released (e.g., memory).  However, as we have shown
-in~\pref{sec:exper}, our automatic amortized analysis matches that the
+in~\pref{sec:exper}, our automatic amortized analysis matches the
 state of the art in automatic bound analysis for linear bounds and
 sometimes even derives better constant factors than the other tools.
 Since Rank and Loopus do not handle recursion, our automatic amortized
@@ -3556,10 +3554,10 @@ resource consumption depends on (possibly negative) integers and
 non-sequential control flow as introduced by \code{break} and
 \code{return} statements.
 
-We will continue to improve our framework to reasoning more precisely
+We will continue to improve our framework to reason more precisely
 about resource usage of system software such as the hypervisor kernel
 CertiKOS~\cite{GuVFSC11}, which \iffull{we are currently developing
-  and verifying}{is currently developed and verified}.  For on thing,
+  and verifying}{is currently developed and verified}.  For one thing,
 we will improve the automation to derive \emph{polynomial bounds} and
 to handle non-linear size changes, as already developed for functional
 programs~\cite{HoffmannS13}.  For another thing, we will build on
