@@ -267,8 +267,8 @@ analysis framework for C that makes it possible to combine non-trivial
 automatically derived bounds with interactively derived bounds in a
 proof system that produces verifiable certificates for the bounds.
 Our approach complements existing work since it provides a semantic
-foundation for the computation of bounds while still providing support
-for automation that sometimes goes beyond the capabilities of existing
+foundation for the computation of bounds while still supporting
+automation that sometimes goes beyond the capabilities of existing
 techniques.  Furthermore, the automatic amortized analysis and the
 quantitative logic are naturally compositional and describe the
 resource behavior of code fragments without referring to the source
@@ -386,7 +386,7 @@ collect along the branching points of the program to obtain global
 resource invariants.  We achieve this by generating a linear
 constraint system that reflects the resource cost and size changes of
 integer variables in the program; a solution of the linear program
-immediately yields a resource usage bound for the C
+immediately yields a resource-usage bound for the C
 program.  % We can naturally, handle
 % advanced control flow such as break, return, iteration over negative
 % integer variables, and mutually-recursive functions.
@@ -909,7 +909,7 @@ tick annotations can be seamlessly combined in a larger program.
   while (x<y) { x=x+1; tick(10); } #\hfill \textnormal{(Example 3)}#
 \end{lstlisting}
 %
-More formally, we develop (\pref{sec:AAA}) a judgement 
+More formally, we develop (in \pref{sec:AAA}) a judgement 
 $$
 \Gamma; Q \vdash S \dashv Q'; \Gamma'
 $$
@@ -3276,7 +3276,7 @@ examples \iffull{together with the derived bounds is given in
 
 \pref{fig:compar} shows five representative loop patterns from the
 evaluation.  Example \emph{t08} is a slightly modified version of
-\emph{t08a} which is described in the introduction.  Example
+\emph{t08a}, which is described in~\pref{sec:inform}.  Example
 \emph{t19} demonstrates the compositionaliy of the analysis.  The
 program consists of two loops that decrement a variable $i$.  In the
 first loop, $i$ is decremented down to 100 and in the second loop $i$
