@@ -1936,27 +1936,27 @@ we account for the execution cost $M_t(n)$ of the \code{tick}
 statement that depends on the integer $n$.
 }{}
 
-The rule {\sc L:Call} accounts for the execution cost of both
-$M_f$ for function calls and $M_r$ for \code{return} statements.  \iffull{This
-justifies that the {\sc L:Return} rule does not account for resource
-consumption.}{}  The pre- and postcondition $P_f$ and $Q_f$ are taken
-from the function context $\Delta$.  The assertions in the context are
-parametric with respect to both the function arguments' value and the
-return value. This allows to specify a bound for a function whose
-resource consumption depends on input parameters.  The argument
-parameters are instantiated by the call rule using the result of the
-evaluation of the argument variables in the current state.
-\iffull{Recall that we require that $P_f$ and $Q_f$ do not depend on
-  the local variables on the call stack, that is, $\forall z \, \vec v
-  \, \theta \, \theta' \, \gamma . \, P_f \, z \, \vec v \,
-  (\theta,\gamma) = P_f \, z \, \vec v \, (\theta',\gamma)$.}{} To
-transfer potential that depends on local variables of the callee from
-the precondition $P$ to the postcondition $Q$, we use an assertion $A
-: \Assn$ that is independent of global variables, that is, $\forall
-\theta \, \gamma \, \gamma' . \, A (\theta,\gamma) =
-A(\theta,\gamma')$.  It is still possible to express relations between
-global and local variables using logical variables\iffull{ (see the
-following paragraph for details).}{.}
+The rule {\sc L:Call} accounts for the execution cost of both $M_f$
+for function calls and $M_r$ for \code{return} statements.
+\iffull{This justifies that the {\sc L:Return} rule does not account
+  for resource consumption.}{} The pre- and postcondition $P_f$ and
+$Q_f$ are taken from the function context $\Delta$.  The assertions in
+the context are parametric with respect to both the values of the
+function arguments and the return value. This allows us to specify a
+bound for a function whose resource consumption depends on its
+arguments.  The arguments are instantiated by the call rule
+using the result of the evaluation of the argument variables in the
+current state.  \iffull{Recall that we require that $P_f$ and $Q_f$ do
+  not depend on the local variables on the call stack, that is,
+  $\forall z \, \vec v \, \theta \, \theta' \, \gamma . \, P_f \, z \,
+  \vec v \, (\theta,\gamma) = P_f \, z \, \vec v \,
+  (\theta',\gamma)$.}{} To transfer potential that depends on local
+variables of the callee from the precondition $P$ to the postcondition
+$Q$, we use an assertion $A : \Assn$ that is independent of global
+variables, that is, $\forall \theta \, \gamma \, \gamma' . \, A
+(\theta,\gamma) = A(\theta,\gamma')$.  It is still possible to express
+relations between global and local variables using logical
+variables\iffull{ (see the following paragraph for details).}{.}
 
 Finally, we describe the rules which are not syntax directed.  There
 are two weakening rules available in the quantitative Hoare logic.
@@ -2283,8 +2283,8 @@ $$
   \Phi = \sum_{i \in I} q_i f_i.
 $$}
 { $\Phi = \sum_{i \in I} q_i f_i$.}  We often write $xy$ to denote the
-index $(x,y)$.  The family $(f_i)_{i\in I}$ is actually a basis (in
-the linear-algebra sense) for potential functions.  This allows us to
+index $(x,y)$.  \iffull{The family $(f_i)_{i\in I}$ is actually a basis (in
+the linear-algebra sense) for potential functions.}{}  This allows us to
 uniquely represent any linear potential function
 $\Phi$ as a \emph{quantitative annotation} $Q = (q_i)_{i \in I}$, that
 is, a family of \ifshort{non-negative}{} rational numbers where only
