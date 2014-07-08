@@ -1,6 +1,6 @@
 % Comment for anonymization
 % Also look for "SHORT" comments
-% \def\fullversion{}
+\def\fullversion{}
 
 \documentclass[nocopyrightspace,preprint]{sigplanconf}
 
@@ -16,11 +16,11 @@
 \newcommand{\subsectskip}[0]{\ifshort{\vspace{-1pt}}{}}
 
 %SHORT
-\usepackage[normal,belowskip=-11pt,aboveskip=1pt]{caption} %Remove extra space around captiosn
-\DeclareCaptionFormat{myformat}{#1#2#3\vspace{-4pt}\hrulefill}
-\captionsetup[figure]{format=myformat}
-\captionsetup[table]{format=myformat}
-\renewcommand{\captionlabelfont}{\bf}
+% \usepackage[normal,belowskip=-11pt,aboveskip=1pt]{caption} %Remove extra space around captiosn
+% \DeclareCaptionFormat{myformat}{#1#2#3\vspace{-4pt}\hrulefill}
+% \captionsetup[figure]{format=myformat}
+% \captionsetup[table]{format=myformat}
+% \renewcommand{\captionlabelfont}{\bf}
 %SHORT
 
 \usepackage[numbers]{natbib}
@@ -65,11 +65,11 @@
 \begin{document}
 
 %SHORT
-\lstset{basicstyle=\tt\scriptsize}
-\abovedisplayskip=3pt
-\belowdisplayskip=3pt
-\abovedisplayshortskip=3pt
-\belowdisplayshortskip=3pt
+% \lstset{basicstyle=\tt\scriptsize}
+% \abovedisplayskip=3pt
+% \belowdisplayskip=3pt
+% \abovedisplayshortskip=3pt
+% \belowdisplayshortskip=3pt
 %SHORT
 
 \conferenceinfo{POPL} {January XX-XX, 2014, CITY, STATE, India.}
@@ -79,8 +79,8 @@
 %----------------------------------------------------
 
 
-\titlebanner{Draft -- Do not distribute}        % These are ignored unless
-\preprintfooter{Draft}   % 'preprint' option specified.
+\titlebanner{\iffull{Extended Version}{}}%{Draft -- Do not distribute}        % These are ignored unless
+\preprintfooter{\iffull{Extended Version\hspace{-.8cm}}{}}%{Draft}   % 'preprint' option specified.
 
 \title{Compositional Certified Resource Bounds\ifshort{\vspace{-.15cm}}{}}
 % Certified Resource Bounds for C
@@ -408,7 +408,7 @@ from the literature.  \iffull{\pref{app:cat}}{The extended version
   of this article~\cite{anon_extended}}{} contains more than $30$
 challenging loop and recursion patterns that we collected from open
 source software and the literature.  Our analysis can find
-asymptotically tight bounds for all but 3 of these patterns, and in
+asymptotically tight bounds for all but 1 of these patterns, and in
 most cases the derived constant factors are tight.  To compare our
 automatic analyzer with existing techniques, we tested our examples
 with the tools such as KoAT~\cite{BrockschmidtEFFG14},
@@ -3586,18 +3586,24 @@ lock-free data structures.}{.}
 
 In this appendix we provide a non-exhaustive catalog of classes of
 programs that can be automatically analyzed by our system.  For
-simplicity, we use a cost metric that counts cost $1$ for assignments
-and cost $0$ for all other operations.  Sometimes we also use the
-\emph{ticks metric} if we want to discuss features like returning
-resources.  Of course, the examples can also be analyzed with any other
-cost metric.
+simplicity, and to compare our analysis with existing tools, we use a
+cost metric that counts the number of loop iterations and function
+calls.  This is the only cost metric supported by tools like
+KoAT~\cite{BrockschmidtEFFG14} and LOOPUS~\cite{SinnZV14}.  Sometimes
+we also use the \emph{tick metric} if we want to discuss features such as
+resource restitution.  The tick metric assigns cost $n$ to the
+statement \code{tick(n)} and cost $0$ to all other statements. Of
+course, the examples can also be analyzed with any other cost metric
+in our system.
 
-We assume that free variables in the code snippets are the inputs to
+We assume that free variables in the code snippets are the inputs of
 the program. Some of the examples contain constants on which the
 computed bound depends.  These constants are randomly chosen to
 present an example but the analysis works for other constants as well.
 Note however that it is sometimes crucial that constants are positive
-(or negative) and that the same constant at different places.
+(or negative) or that other relations hold.
+
+\pref{tab:eval} contains the details of our comparative evaluation.
 
 
 \begin{figure*}[t!]
@@ -3656,7 +3662,7 @@ $|[y,x]|$
   }
    \end{lstlisting}
 
-$3|[0,x]| + |[0,y]|$
+$2|[0,x]| + |[0,y]|$
 \\[.7\baselineskip]
       {\bf t13}
     \end{center}
@@ -3676,12 +3682,12 @@ while (n<0) {
 }
    \end{lstlisting}
 
-$12|[n,0]| + 0.01|[0,y]|$
+$11|[n,0]| + 0.01|[0,y]|$
 \\[.7\baselineskip]
       {\bf t27}
     \end{center}
   \end{minipage}
-   \caption{Amortization and Compositionality (a)}
+   \caption{Amortization and Compositionality (a).}
   \label{fig:cat1a}
 \end{figure*}
 
@@ -3705,7 +3711,7 @@ $12|[n,0]| + 0.01|[0,y]|$
   }
    \end{lstlisting}
 
-$4|[0,x]| + |[0,y]|$
+$1 + 3|[0,x]| + |[0,y]|$
 \\[.7\baselineskip]
       {\bf t07}
     \end{center}
@@ -3729,7 +3735,7 @@ $4|[0,x]| + |[0,y]|$
   }
    \end{lstlisting}
 
-$1004|[y,x]|+|[x,0]|+|[0,y]|$
+$1002|[y,x]|+|[x,0]|+|[0,y]|$
 \\[.7\baselineskip]
       {\bf t28}
     \end{center}
@@ -3750,7 +3756,7 @@ $1004|[y,x]|+|[x,0]|+|[0,y]|$
   }
    \end{lstlisting}
 
-$3|[0,x]|$
+$|[0,x]|$
 \\[.7\baselineskip]
       {\bf t15}
     \end{center}
@@ -3773,14 +3779,14 @@ $3|[0,x]|$
   }
    \end{lstlisting}
 
-$1+2|[0,x]|+103|[y,x]|$
+$101|[y,x]|$
 \\[.7\baselineskip]
       {\bf t16}
     \end{center}
   \end{minipage}
 
 
-   \caption{Amortization and Compositionality (b)}
+   \caption{Amortization and Compositionality (b).}
   \label{fig:cat1b}
 \end{figure*}
 
@@ -3801,7 +3807,7 @@ $1+2|[0,x]|+103|[y,x]|$
   }
    \end{lstlisting}
 
-$52 + |[-1,i]| + |[0,k]|$
+$50 + |[-1,i]| + |[0,k]|$
 \\[.7\baselineskip]
       {\bf t19}
     \end{center}
@@ -3838,7 +3844,7 @@ $|[x,y]|+|[y,x]|$
   }
    \end{lstlisting}
 
-$4|[0,x]|+4|[0,y]|$
+$|[0,x]|+|[0,y]|$
 \\[.7\baselineskip]
       {\bf t30}
     \end{center}
@@ -3858,20 +3864,20 @@ $4|[0,x]|+4|[0,y]|$
   }
    \end{lstlisting}
 
-$2 + 2|[0, n]|$
+$1 + |[0, n]|$
 \\[.7\baselineskip]
       {\bf t47}
     \end{center}
   \end{minipage}
 
-   \caption{Amortization and Compositionality (c)}
+   \caption{Amortization and Compositionality (c).}
   \label{fig:cat1c}
 \end{figure*}
 
 \paragraph{Amortization and Compositionality}
 
 Figures~\ref{fig:cat1a}, \ref{fig:cat1b}, and~\ref{fig:cat1c} show
-code snippets that need amortization are compositionality to obtain a
+code snippets that need amortization and compositionality to obtain a
 whole program bound.
 
 Example \emph{t07} demonstrates two different features of the
@@ -3922,7 +3928,7 @@ Example \emph{t28} is particularly interesting.  In the first loop we
 decrement the size $|[y,x]|$.  However, we also shift the interval
 $[y,x]$ to the interval $[y+1000,x+1000]$.  The analysis can derive
 that this does not change the size of the interval and computes the
-tight loop bound $3|[y,x]|$.  The additional two loops are in the
+tight loop bound $|[y,x]|$.  The additional two loops are in the
 program to show that the size tracking in the first loop works
 accurately.  The second loop is executed $|[0,y]| + 1000|[y,x]|$ times
 in the worst case.  The third loop is executed $|[x,0]| + |[y,x]|$ in
@@ -3936,36 +3942,28 @@ true and that the program is terminated without further cost
 otherwise.  If we enter the loop then we know that $x>0$ and we can
 obtain constant potential from the assignment \code{x=x-1}.  After the
 assignment we know that $x\geq y$ and $y\geq 0$.  As a consequence, we
-can share the potential $3|[0,x]|$ before the assignment \code{x=x-y}
-between $3|[0,x]|$ and $3|0,y|$ after the assignment.  In this way, we
+can share the potential $|[0,x]|$ before the assignment \code{x=x-y}
+between $|[0,x]|$ and $|[0,y]|$ after the assignment.  In this way, we
 derive a tight linear bound.
 
 Example \emph{t16} is an extension of example \emph{t15}. We again
 assume that $y$ is non-negative and use the same mechanism to iterate
 the outer loop as in \emph{t15}.  In the inner loop, we also count the
-variable $z$ down to zero and perform $|[0,z]|$ interations.  However,
+variable $z$ down to zero and perform $|[0,z]|$ iterations.  However,
 instead of assigning \code{z=y}, we assign \code{z=2y+100}.  The analysis
-computes the tight linear bound $1+2|[0,x]|+103|[y,x]|$.  The
-assignment of potential to the size interval $|[y,x]|$ in instead of
-$|[0,x]|$ is a random choice of the LP solver.  Other optimal
-solutions of the linear program that the analyzer gernerates for
-\emph{t15} would result in bounds such as $1+105|[0,x]|$ or
-$1+6|[0,x]|+99|[y,x]|$.  In fact, the $105$ potential units can be
-shared arbitrarily between the interval sizes $|[y,x]|$ and $|[0,x]|$
-as long as more than $1$ unit is assigned to $|[0,x]|$.  Since we know
-that, $y\geq 0$ the choice of the LP solver is optimal but this seems
-to be a coincidence.
+computes the linear bound $101|[0,x]|$.  The
+assignment of potential to the size interval $|[0,x]|$ in instead of
+$|[y,x]|$ is a random choice of the LP solver.
 
-Example \emph{t19} demonstrates another nice property that demonstates
-the compositionaliy of the analysis.  The program consists of two
-loops that decrement a variable $i$.  In the first loop, $i$ is
-decremented down to 100 and in the second loop $i$ is increment
-further down to $-1$.  However, between the loops we assign
-$i=i+k+50$.  So in total the program performs $52 + |[-1,i]| +
-|[0,k]|$ increments.  Our analysis finds this tight bound because our
-amortized analysis naturally takes into account the relation between
-the two loops.  Other techniques might derive a more conservative
-bound such as $52 + |[-1,i]| + |[0,k]| + |[100,i]|$.
+Example \emph{t19} consists of two loops that decrement a variable
+$i$.  In the first loop, $i$ is decremented down to 100 and in the
+second loop $i$ is increment further down to $-1$.  However, between
+the loops we assign $i=i+k+50$.  So in total the program performs $50
++ |[-1,i]| + |[0,k]|$ iterations.  Our analysis finds this tight bound
+because our amortized analysis naturally takes into account the
+relation between the two loops.  Techniques that do not use
+amortization derive a more conservative bound such as $50 + |[-1,i]| +
+|[0,k]| + |[100,i]|$.
 
 Example \emph{t20} shows how we can handle programs in which bounds
 contain absolute values like $|x-y|$.  The first loop body is only
@@ -3978,7 +3976,7 @@ reveals that the loop actually decrements both input variables $x$ and
 $y$ down to zero before terminating.  In the loop body, first $x$ is
 decremented by one.  Then the values of the variables $x$ and $y$ are
 switched using the local variable $t$ as a buffer.  Our analysis
-infers the tight bound $4|[0,x]|+4|[0,y]|$.
+infers the tight bound $|[0,x]|+|[0,y]|$.
 
 Example \emph{t47} demonstrates how we can use integers as Booleans to
 amortize the cost of loops that depend on boolean flags.  The outer
@@ -3986,9 +3984,9 @@ loop is executed as long as the variable flag is ``true'', that is,
 \code{flag>0}.  Inside the loop, there is a conditional that either
 (if $n>0$) decrements $n$ and assigns \code{flag=1}, or (if $n\geq0$)
 leaves n unchanged and assigns \code{flag=0}.  The analyzer computes
-the tight bound $2 + 2|[0, n]|$.  The potential in the loop invariant
-is $|[0,\mathit{flag}]| + 2|[0, n]|$.  In the \emph{then} branch of
-the conditional, we use the potential $2|[0, n]|$ and the fact that
+the tight bound $1 + |[0, n]|$.  The potential in the loop invariant
+is $|[0,\mathit{flag}]| + |[0, n]|$.  In the \emph{then} branch of
+the conditional, we use the potential $|[0, n]|$ and the fact that
 $n>0$.  In the \emph{else} branch, we use the potential
 $|[0,\mathit{flag}]|$ and the fact that $\mathit{flag}=1$.
 
@@ -4066,13 +4064,13 @@ $|[x, n]| + |[y, m]|$
   }
    \end{lstlisting}
 
-$1 + |[0, n]|$
+$|[0, n]|$
 \\[.7\baselineskip]
       {\bf nested\_single}
     \end{center}
   \end{minipage}
 
-   \caption{Examples from Gulwani et al's SPEED~\cite{GulwaniMC09}} (a)
+   \caption{Examples from Gulwani et al's SPEED~\cite{GulwaniMC09} (a).}
   \label{fig:cat2a}
 \end{figure*}
 
@@ -4091,7 +4089,7 @@ $1 + |[0, n]|$
     x=x+1;
    \end{lstlisting}
 
-$1 + |[0,n]|$
+$|[0,n]|$
 \\[.7\baselineskip]
       {\bf sequential\_single}
     \end{center}
@@ -4109,7 +4107,7 @@ $1 + |[0,n]|$
       x=x+1;
   }
    \end{lstlisting}
-$2 + |[0, m]| + |[0, n]|$
+$|[0, m]| + |[0, n]|$
 \\[.7\baselineskip]
       {\bf simple\_multiple}
     \end{center}
@@ -4128,7 +4126,7 @@ $2 + |[0, m]| + |[0, n]|$
   }
    \end{lstlisting}
 
-$1 + |[0,n]|$
+$|[0,n]|$
 \\[.7\baselineskip]
       {\bf simple\_single}
     \end{center}
@@ -4149,13 +4147,13 @@ $1 + |[0,n]|$
   }
    \end{lstlisting}
 
-$2 + 2 |[0, M]| + 2 |[0, N]|$
+$|[0, M]| + |[0, N]|$
 \\[.7\baselineskip]
       {\bf simple\_single\_2}
     \end{center}
   \end{minipage}
 
-   \caption{Examples from Gulwani et al's SPEED~\cite{GulwaniMC09} (b)}
+   \caption{Examples from Gulwani et al's SPEED~\cite{GulwaniMC09} (b).}
   \label{fig:cat2b}
 \end{figure*}
 
@@ -4184,7 +4182,7 @@ $2 + 2 |[0, M]| + 2 |[0, N]|$
     }
   }
    \end{lstlisting}
-$2 + 4|[0, n]|$
+$1 + 2|[0, n]|$
 \\[.7\baselineskip]
       {\bf fig4\_2}
     \end{center}
@@ -4228,7 +4226,7 @@ $---$
     \end{center}
   \end{minipage}
 
-   \caption{Examples from [GulwaniPLDI09]}
+   \caption{Examples from~\cite{GulwaniJK09}.}
   \label{fig:cat2c}
 \end{figure*}
 
@@ -4268,10 +4266,11 @@ $|[0, n]| \text{ ticks}$
     n--; m--;
     while (nondet()) {
       n--; m++;
-    }
+    };
+    tick(1);
   }
    \end{lstlisting}
-$---$
+$|[0,n]|$ ticks
 \\[.7\baselineskip]
       {\bf ex2}
     \end{center}
@@ -4290,7 +4289,7 @@ $---$
     }
   }
    \end{lstlisting}
-$2 |[0, n]|$
+$|[0, n]|$
 \\[.7\baselineskip]
       {\bf ex3}
     \end{center}
@@ -4309,14 +4308,14 @@ $2 |[0, n]|$
     }
   }
    \end{lstlisting}
-$2 + 3|[0, n]|$
+$1 + 2|[0, n]|$
 \\[.7\baselineskip]
       {\bf ex4}
     \end{center}
   \end{minipage}
 
 
-   \caption{Examples from [GulwaniPLDI10]}
+   \caption{Examples from~\cite{GulwaniZ10}.}
   \label{fig:cat3a}
 \end{figure*}
 
@@ -4325,12 +4324,10 @@ $2 + 3|[0, n]|$
 
 Our analyzer can derive almost all linear bounds for programs that
 have been described as challenges in the literature on bound
-generation.  We found only three programs with a linear bound for
-which our analyzer could not find a tight bound.  The first one
-(\emph{fig4\_5}) from [GulwaniPLDI09] requires \emph{path-sensitive
-  reasoning} to derive a bound.  The other two, \emph{ex2} and
-\emph{ex5} (see [GulwaniPLDI10]), from [GulwaniPLDI10] were described
-to have a linear bound but seem to be non-terminating.
+generation.  We found only one program with a linear bound for
+which our analyzer could not find a tight bound:  Example
+(\emph{fig4\_5}) from~~\cite{GulwaniJK09} requires \emph{path-sensitive
+  reasoning} to derive a bound.
 
 Examples \emph{fig2\_1} and \emph{fig2\_2} are taken from Gulwani et
 al~\cite{GulwaniMC09}.  They are both handled by the SPEED tool but
@@ -4371,43 +4368,39 @@ Example \emph{simple\_single\_2} uses conditionals and a \code{break}
 statement to control loop iterations.  If $x<N$ then variables $x$ and
 $y$ are incremented.  Otherwise, if $y<M$ then the same increment is
 executed.  If $y\geq M$ and $x\geq N$ then the loop is terminated with
-a break.  Our tool computes the bound $2 + 2 |[0, M]| + 2 |[0, N]|$.
+a break.  Our tool computes the bound $|[0, M]| + |[0, N]|$.
 This bound is tight in the sense that there are inputs (such as $M =
 -100$ and $N = 100$) for which the bound precisely describes the
 execution cost.  However, SPEED can compute the more precise bound
 $\max(N,M)$.  We currently cannot express this bound in our system.
 
-Example \emph{fig4\_2} from [GulwaniPLDI09] is quite involved.
-Amortized reasoning helps to understand how we derive the bound $4 +
-4|[0, n]|$.  We start with potential $6 + 4|[0, n]|$ and use the
-constant potential to pay for the two first assignments.  We use the
-remaining potential $4 + 4|[0, n]|$ and the fact that $vb=0$ to
-establish the potential $4 + 4|[0, n]| + 2|[0,vb]|$ that serves as a
-loop invariant.  In the \emph{if branch} of the conditional, we use
-the constant potential $4$ of the invariant to pay for the two
-assignments ($2$ units) and the potential of $|[0,vb]|$ ($2$ units).
-Since we also know that $|[0, n]|>0$ we obtain constant potential $4$
-and establish the loop invariant again.  In the \emph{else} branch, we
-use the potential $2|[0,vb]|$ and the fact $vb>0$ to obtain $2$
-potential units to pay for the assignment.  Since we have $4$ constant
-potential units left after the loop, we can subtract them from the
-initial potential $6 + 4|[0, n]|$.
+Example \emph{fig4\_2} from~\cite{GulwaniJK09} is quite involved.
+Amortized reasoning helps to understand how we derive the bound $1 +
+2|[0, n]|$.  We start with potential $1 + 2|[0, n]|$ and use the fact
+that $vb=0$ to establish the potential $1 + 2|[0, n]| + |[0,vb]|$ that
+serves as a loop invariant.  In the \emph{if branch} of the
+conditional, we use the constant potential $1$ of the invariant to pay
+for the potential of $|[0,vb]|$.  Since we also know that $|[0, n]|>0$
+we obtain constant potential $2$ that we use to pay for the loop
+iteration ($1$ unit) and to establish the loop invariant again ($1$
+unit).  In the \emph{else} branch, we use the potential $|[0,vb]|$
+and the fact $vb>0$ to obtain $1$ potential units to pay for the
+loop iteration.
 
-In example \emph{fig4\_4} it is essential that $m$ is positive.
-That ensures that we can obtain constant potential for the interval
-size $|[0,i]|$ in the \emph{else} branch of the conditional since
-$|[0,i]|$ decreases.  Example \emph{fig4\_5} is one of the three
-examples that we can not handle automatically.  The execution is
-bounded because the boolean value of the test \code{dir==fwd} does not
-change during the iteration of the loop.  As a result, the variable
-$i$ is either counted down to $0$ or up to $n$.  Our tool cannot
-handle example \emph{fig4\_5} because we don't do path sensitive
-reasoning.  Note however that it would be more efficient to move the
-test \code{dir==fwd} outside of the loop (this would be also done by
-an optimizing compiler).  The resulting program could be analyzer by our
-tool.
+In example \emph{fig4\_4} it is essential that $m$ is positive.  That
+ensures that we can obtain constant potential for the interval size
+$|[0,i]|$ in the \emph{else} branch of the conditional since $|[0,i]|$
+decreases.  Example \emph{fig4\_5} is an examples that we can not
+handle automatically.  The execution is bounded because the boolean
+value of the test \code{dir==fwd} does not change during the iteration
+of the loop.  As a result, the variable $i$ is either counted down to
+$0$ or up to $n$.  Our tool cannot handle example \emph{fig4\_5}
+because we don't do path sensitive reasoning.  Note however that it
+would be more efficient to move the test \code{dir==fwd} outside of
+the loop (this would be also done by an optimizing compiler).  The
+resulting program can then be analyzed by our tool.
 
-Example \emph{ex1} from [GulwaniPLDI10] specifically focusses on the
+Example \emph{ex1} from~\cite{GulwaniZ10} specifically focuses on the
 code in the \emph{if} statement.  So we use the \emph{tick metric} and
 insert \code{tick(1)} inside the if statement to derive a bound on
 the number of times the code in the if statement is executed.  Note
@@ -4418,10 +4411,10 @@ amortized approach: In the if statement we know that $n>0$ and assign
 \code{n=n-1}.  So we can use the potential of the interval size $|[0,n]|$
 to pay for the tick.
 
-We cannot analyze example \emph{ex2} for which previous work reported
-a linear bound [GulwaniPLDI10].  The reason is that this example is
-not terminating since the inner loop is not bounded.  The same is true
-for example \emph{ex5} from the same paper, which is not listed here.
+Similar to example \emph{ex1}, example \emph{ex2}
+form~\cite{GulwaniZ10} focuses on the number of iterations of the
+\emph{outer loop}.  While the whole program is not terminating, the
+number of iterations of the outer loop is bounded by $|[0,n]|$.
 Finally, example \emph{ex2} is similar to example
 \emph{nested\_single}, and \emph{ex3} is a variant of example
 \emph{t47}.
@@ -4455,7 +4448,7 @@ void main (int x,int y) {
 }
    \end{lstlisting}
 
-$1 + 4|[0, x]| + 2|[0, y]|$
+$3 + 2|[0, x]| + |[0, y]|$
 \\[.7\baselineskip]
       {\bf t37}
     \end{center}
@@ -4486,7 +4479,7 @@ void main (int y, int z) {
 }
    \end{lstlisting}
 
-$1.67 + 1.33 |[z,y]|$
+$1.33 + 0.67 |[z,y]|$
 \\[.7\baselineskip]
       {\bf t39}
     \end{center}
@@ -4630,7 +4623,7 @@ inter-procedural size tracking.  The function \code{copy} adds the
 argument $x$ to the argument $y$ if $x$ is positive.  However, this
 addition is done in steps of $1$ in each recursive call.  The function
 \code{count\_down} recursively decrements its argument down to $0$.
-The derived bound $1 + 4|[0, x]| + 2|[0, y]|$ is for the function
+The derived bound $3 + 2|[0, x]| +2|[0, y]|$ is for the function
 \code{main} in which we first add $x$ to $y$ using the function
 \code{copy} and then count down the variable $y$ using the function
 \code{count\_down}.  The derived bound is tight.
@@ -4642,8 +4635,8 @@ variable $y$ that is passed as an argument and we call the function
 \code{count\_up} afterwards.  The function \code{count\_up} is dual to
 \code{count\_down}.  Here, we count up $y$ by $2$ and recursively call
 \code{count\_down}.  For the function \code{main}, which calls
-\code{count\_down(y,z)}, the analyzer computes the tight bound $1.67 +
-1.33 |[z,y]|$.
+\code{count\_down(y,z)}, the analyzer computes the tight bound $1.33 +
+0.67 |[z,y]|$.
 
 Example \emph{t46} shows a program that uses and returns resources.
 Again, we use the \emph{tick metric} and the function \code{tick} to
@@ -5036,7 +5029,7 @@ $O(n)$ &
 
 ? &
 
-$1.1 |\inter y z| {+} 0.1 |\inter 0 y|$
+$1.33 |\inter y z| {+} 0.33 |\inter 0 y|$
 \\
 
 %--------------------------------------------
@@ -5181,7 +5174,7 @@ $O(n)$ &
 
 ? &
 
-$0.1|\inter n y| {+} 11 |\inter n 0|$
+$0.01|\inter n y| {+} 11 |\inter n 0|$
 \\
 
 %--------------------------------------------
@@ -5293,14 +5286,14 @@ $1 {+} |\inter 0 n|$
 \end{tabular}
 \caption{
   Experimental evaluation comparing the bounds generated KoAT, Rank,
-  Loopus, Speed, and our automatic amortized analysis on several
-  challenging linear examples. Results for KoAT and Speed were extracted
-  from older publications because KoAT cannot take C programs as 
-  input in its current version and Speed is not publically available.
-  Entries marked with ? signal that we cannot test the tool. Entries
-  marked with --- mean that the tool failed to produce a result.
+  LOOPUS, SPEED, and our automatic amortized analysis on several
+  challenging linear examples. Results for KoAT and SPEED were extracted
+  from previous publications because KoAT cannot take C programs as 
+  input in its current version and SPEED is not available.
+  Entries marked with ? indicate that we cannot test the respective example with the tool. Entries
+  marked with --- indicate that the tool failed to produce a result.
 }
-\label{fig:eval}
+\label{tab:eval}
 \end{table*}
 
 \paragraph{Well-Known Algorithms}
