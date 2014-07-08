@@ -2344,7 +2344,7 @@ in the literature.
 { P = Q_R[\Vret/x]  
 \\ \forall i \in \dom{P} . \, p_i = q_i
 }
-{ B; (\Gamma,Q_R); (\Gamma, Q_R{+} M_r) \vdash \code{return}~x \dashv (\Gamma',Q') }
+{ B; (\Gamma,Q_R); (\Gamma, P) \vdash \code{return}~x \dashv (\Gamma',Q') }
 %
 \and \Rule{Q:Update}
 { q'_{xy}, q'_{yx} \in \Qplusz
@@ -2483,7 +2483,7 @@ in the literature.
 { P = Q_R[\Vret/x]  
 \\ \forall i \in \dom{P} . \, p_i = q_i
 }
-{ B; (\Gamma,Q_R); (\Gamma, Q_R{+} M_r) \vdash \code{return}~x \dashv (\Gamma',Q') }
+{ B; (\Gamma,Q_R); (\Gamma, P) \vdash \code{return}~x \dashv (\Gamma',Q') }
 %
 \and \Rule{Q:Update}
 { q'_{xy}, q'_{yx} \in \Qplusz
