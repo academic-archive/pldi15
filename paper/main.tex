@@ -1809,7 +1809,7 @@ $\lambda \state . \, \infty$.  We sometimes call assertions
 \emph{potential functions}.  To use Coq's support for propositional
 reasoning, assertions have the type $\State \to \Qplusz \to \mathrm{Prop}$
 in the implementation.  For a given $\state \in \State$, such an
-assertion can be seen as a set $B \subseteq \Q$ of valid bounds.
+assertion can be seen as a set $B \subseteq \Qplusz$ of valid bounds.
 However, we find the presentation in this article easier to read.
 
 Due to \code{break} and \code{return} statements of Clight, there are
@@ -3413,7 +3413,7 @@ asymptotically tight bounds (\#lin. bounds), the number of bounds with
 the best constant factors in comparison with the other tools (\#best
 bounds), and the number of examples that we were able to test with the
 tool (\#tested).  Since we were not able to run the experiments for KoAT
-and SPEED, we simply used the bounds the have been reported by the
+and SPEED, we simply used the bounds that have been reported by the
 authors of the respective tools.  The results show that our automatic
 amortized analysis outperforms the existing tools on our example
 programs.  However, this experimental evaluation has to be taken with
