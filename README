@@ -1,24 +1,25 @@
 Build Instructions for the Automatic Amortized Analysis
 -------------------------------------------------------
 
-Our implementation is in the directory auto/, to build it
-you need to install two dependencies: CIL and Clp.  They
-can be downloaded using the two following links.
+Our implementation of the automatic amortized analysis is 
+in the directory auto/.  To build it you need OCaml (we tested
+with OCaml 4.01) and to install two dependencies: CIL and Clp.
+They can be downloaded using the two following links.
 
   - http://www.coin-or.org/download/source/Clp/
   - http://kerneis.github.io/cil/
 
 Once these dependencies installed, you need to edit the file
-config.mk to fit the build to your system.  Instructions are
-provided in this file.
+auto/config.mk to fit the build to your system.  Instructions
+are provided in this file.
 
 Once done with the configuration, compile our software using
 'make'.  If anything fails, make sure you have a version of
 OCaml that is recent enough and that you properly filled the
 config.mk file.
 
-The build process must create an executable names 'app', you
-can use it on some example C files that we bundeled in this
+The build process must create an executable named 'app', you
+can test it on an example C files that we bundeled in this
 archive in the eval/ directory.  Here is an example run:
 
         [poplzip/auto]$ ./app ../eval/gcd.c
@@ -44,13 +45,14 @@ archive in the eval/ directory.  Here is an example run:
         1.00 |[0, y]|
         [poplzip/auto]$ 
 
-The output of our analysis is a sum interval length multiplied
-by a constant rational number with an optional constant factor.
+The output of our analysis is a sum of interval lengths, multiplied
+by rational numbers, and an optional constant factor.
 In the above example the 'gcd.c' program will perform at most
 |[0,x]| + |[0,y]| iterations.  The default metric used counts
 loop iterations and function calls.  You can also use the tick
 metric that counts the number of ticks produced by a program.
-An example of that follows:
+A n ticks are produced during an executino if the built-in function
+'tick(n)' is executed by the C program. Here is an example:
 
         [poplzip/auto]% ./app -tick ../eval/speed_pldi10_ex1.c 
         Sliced program:
@@ -90,12 +92,13 @@ An example of that follows:
 Coq Development
 ---------------
 
-In the coq/ subdirectory you will find the soundness proof of
-our quantitative logic phrased for an abstracted version of
-CompCert Clight.  This "light" Clight has already been proof
-tested in the PLDI'14 paper "End-to-end Verification of
-Stack-space Bounds for C Programs".  It is expressive enough
-to deal with typical embedded C code.
+In the coq/ subdirectory you find the soundness proof of our
+quantitative logic phrased for a subset of CompCert Clight.  
+This "light" Clight has already been proof tested in the
+PLDI'14 paper "End-to-end Verification of Stack-space Bounds for C
+Programs".  It is expressive enough to deal with typical embedded C
+code and we have verifyied a compiler to translate it to the
+actual semantics of full Clight.
 
 The logic is presented in an unbundled fashion in the file
 QLogic.v, you can check it by running 'make' in its directory.
