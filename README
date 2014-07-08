@@ -51,7 +51,7 @@ In the above example the 'gcd.c' program will perform at most
 |[0,x]| + |[0,y]| iterations.  The default metric used counts
 loop iterations and function calls.  You can also use the tick
 metric that counts the number of ticks produced by a program.
-A n ticks are produced during an executino if the built-in function
+During the execution, n ticks are produced if the built-in function
 'tick(n)' is executed by the C program. Here is an example:
 
         [poplzip/auto]% ./app -tick ../eval/speed_pldi10_ex1.c 
