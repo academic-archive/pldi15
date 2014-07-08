@@ -2341,10 +2341,11 @@ in the literature.
 %
 \and
 \Rule{Q:Return}
-{ P = Q_R[\Vret/x]  
+{ P = Q_R[\Vret/x]
+\\ \Gamma = \Gamma_R[\Vret/x]
 \\ \forall i \in \dom{P} . \, p_i = q_i
 }
-{ B; (\Gamma,Q_R); (\Gamma, P) \vdash \code{return}~x \dashv (\Gamma',Q') }
+{ B; (\Gamma_R,Q_R); (\Gamma, Q) \vdash \code{return}~x \dashv (\Gamma',Q') }
 %
 \and \Rule{Q:Update}
 { q'_{xy}, q'_{yx} \in \Qplusz
@@ -2479,13 +2480,13 @@ in the literature.
 { \!\! B; R; (\Gamma, Q{+}M_t(n)) \vdash \code{tick}(n) \dashv (\Gamma, Q) \!\!}
 %
 \and }{}
-\Rule{Q:Return}
+\Rule[leftskip=.2cm,rightskip=.1cm]{Q:Return}
 { P = Q_R[\Vret/x]  
 \\ \forall i \in \dom{P} . \, p_i = q_i
 }
-{ B; (\Gamma,Q_R); (\Gamma, P) \vdash \code{return}~x \dashv (\Gamma',Q') }
+{ B; (\Gamma_R,Q_R); (\Gamma_R[\Vret/x], Q) \vdash \code{return}~x \dashv (\Gamma',Q') }
 %
-\and \Rule{Q:Update}
+\and \Rule[leftskip=.1cm,rightskip=.2cm]{Q:Update}
 { q'_{xy}, q'_{yx} \in \Qplusz
 \\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
 }
