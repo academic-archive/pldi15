@@ -1,6 +1,6 @@
 % Comment for anonymization
 % Also look for "SHORT" comments
-\def\fullversion{}
+% \def\fullversion{}
 
 \documentclass[nocopyrightspace,preprint]{sigplanconf}
 
@@ -16,11 +16,11 @@
 \newcommand{\subsectskip}[0]{\ifshort{\vspace{-1pt}}{}}
 
 %SHORT
-% \usepackage[normal,belowskip=-11pt,aboveskip=1pt]{caption} %Remove extra space around captiosn
-% \DeclareCaptionFormat{myformat}{#1#2#3\vspace{-4pt}\hrulefill}
-% \captionsetup[figure]{format=myformat}
-% \captionsetup[table]{format=myformat}
-% \renewcommand{\captionlabelfont}{\bf}
+\usepackage[normal,belowskip=-11pt,aboveskip=1pt]{caption} %Remove extra space around captiosn
+\DeclareCaptionFormat{myformat}{#1#2#3\vspace{-4pt}\hrulefill}
+\captionsetup[figure]{format=myformat}
+\captionsetup[table]{format=myformat}
+\renewcommand{\captionlabelfont}{\bf}
 %SHORT
 
 \usepackage[numbers]{natbib}
@@ -65,11 +65,11 @@
 \begin{document}
 
 %SHORT
-% \lstset{basicstyle=\tt\scriptsize}
-% \abovedisplayskip=3pt
-% \belowdisplayskip=3pt
-% \abovedisplayshortskip=3pt
-% \belowdisplayshortskip=3pt
+\lstset{basicstyle=\tt\scriptsize}
+\abovedisplayskip=3pt
+\belowdisplayskip=3pt
+\abovedisplayshortskip=3pt
+\belowdisplayshortskip=3pt
 %SHORT
 
 \conferenceinfo{POPL} {January XX-XX, 2014, CITY, STATE, India.}
