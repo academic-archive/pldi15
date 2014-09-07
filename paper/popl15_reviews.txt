@@ -1,0 +1,250 @@
+===========================================================================
+                            popl15 Review #31A
+                     Updated 29 Jul 2014 5:53:04am EDT
+---------------------------------------------------------------------------
+            Paper #31: Compositional Certified Resource Bounds
+---------------------------------------------------------------------------
+
+                      Overall merit: C. Weak paper, though I will not fight
+                                        strongly against it
+                         Confidence: Y. I am knowledgeable in this area,
+                                        but not an expert
+
+                   ===== Comments for the Authors =====
+
+This paper proposes a quantitative Hoare logic for CompCert Clight
+programs, and a method to automatically analyze Clight programs and
+produce bounds and derivations in the quantitative Hoare logic.
+The authors have implemented a tool and evaluated it through a number
+of benchmark programs.
+
+This paper looks like a combination of two papers on different topics:
+one about the quantitative Hoare logic, and the other about automatic
+cost analysis for Clight programs. Although the topics are related,
+the technical contents are rather independent from each other. I think
+neither contribution is particularly strong.
+
+- As for the quantitative Hoare logic, this is incremental with respect
+  to the previous work by Carbonneaux et al. [16]. 
+  Furthermore, I suspect that the standard Hoare logic actually suffices
+  for reasoning about costs: why not just introduce a special global variable
+  r for representing the available resource, and replace the quantitative
+  Hoare triple {A} S {B} with {r>=A} S {r>=B}?
+
+- As for the automatic cost analysis, it seems to be a rather easy adaptation
+  of Hoffmann et al.'s work on amortized resource analysis for functional programs.
+  Hoffmann and Shao [25] have also recently extended the amortized resource analysis
+  for functional programs to deal with imperative features (arrays), so dealing with
+  the reported fragment of Clight programs does not seem difficult.
+  Dealing with data structures with pointers would have been more challenging.
+
+I liked, however, the implementation and evaluation of the tool.
+
+===========================================================================
+                            popl15 Review #31B
+                     Updated 17 Aug 2014 1:12:43pm EDT
+---------------------------------------------------------------------------
+            Paper #31: Compositional Certified Resource Bounds
+---------------------------------------------------------------------------
+
+                      Overall merit: A. Good paper, I will champion it
+                         Confidence: Y. I am knowledgeable in this area,
+                                        but not an expert
+
+                   ===== Comments for the Authors =====
+
+Paper summary
+-------------
+
+Develops a formally-verified framework for cost analysis of C programs based on a resource-aware operational semantics and a quantitative Hoare logic that expresses and checks resource bounds in addition to functional correctness.  A prototype tool infers (amortized) resource bounds.  While limited to bounds linear in the program variables, this tool gives good results on a number of examples involving "tricky control flow" that other tools have difficulties analyzing.
+
+General evaluation
+------------------
+
+This paper is well written an a pleasure to read.  The main ingredients of the approach (the instrumented semantics and the quantitative Hoare logic) are explained well and feel like natural extensions of standard techniques.  In particular, the quantitative Hoare logic is clever but its soundness proof is a simple extension of a known proof.  All the pieces fit together beautifully and almost effortlessly.  I'm not an expert on automatic amortized analysis of programs, but I was pleasantly surprised by the non-obvious bounds that the AAA tool can derive automatically, even though it builds on a standard linear programming engine.  All in all, this is nice work.
+
+High-level comments
+-------------------
+
+- In the instrumented semantics, I'm not convinced that it is worth the effort to give possibly non-zero costs to basic operations of the language (expression evaluation, control structures, etc).  For one thing, the costs that can be given to these operations at the source language bear little relation to the actual costs of the corresponding machine instructions after compilation.  The only important thing to count is the "tick" operation, because this is how users can express what they really want to count in their cost evaluations.  Besides, section 5 needs assignments to have cost 0 to justify a useful program simplification...
+
+- On a somewhat related note, precise WCET analysis tools like AbsInt's a-cube are able to derive very precise timings, provided they are supplied with tight bounds on the number of iterations of every loop in the program.  Could (a variant of) the quantitative analysis of section 5 infer such bounds?  This is the same goal as Blazy, Maroneze and Pichardie (ref [12] in the paper), but they build on a rather coarse value analysis; the analysis in this paper looks much more powerful.
+
+- I'm curious to know what it would take for AAA to be able to infer nonlinear bounds.  Is this just a matter of replacing the LP solver by something more powerful, or is there something in the framework of section 5 that is specific to linear constraints?
+
+
+Low-level comments
+------------------
+
+P.1 col.1: "Worst-case time bounds....prevent side-channel attacks".  The primary practical use of WCET analysis is to guarantee proper timing of hard real-time control systems.  Timing leaks in cryptography are nearly impossible to eliminate at the software level, save by randomizing ("blinding") the secret data.
+
+P.5 col.2: please explain (at least) that M_t(n) is the cost associated with the "tick(n)" pseudo-operation.  It is apparent in the inference rules of fig. 5 but is worth mentioning in the text.
+
+P.6 col.2: "we write P |= Q to if for all": remove "to"
+
+===========================================================================
+                            popl15 Review #31C
+                     Updated 26 Aug 2014 3:51:14am EDT
+---------------------------------------------------------------------------
+            Paper #31: Compositional Certified Resource Bounds
+---------------------------------------------------------------------------
+
+                      Overall merit: C. Weak paper, though I will not fight
+                                        strongly against it
+                         Confidence: X. I am an expert in this area
+
+                   ===== Comments for the Authors =====
+
+This paper present a verified resource analysis for the Clight CompCert language. The soundness proof is mechanized inside the Coq proof assistant. The verified tool is able to infer amortized symbolic bounds on several challenging C programs.
+
+PRO:
+ 1) The paper examples and benchmarks are non trivial and push the limits of machine-checked verified tool in this area
+ 2) The tool compares well with existing (non-verified) tools like SPEED, *on the proposed benchmarks*
+
+CONS:
+ 3) This is the direct incremental sequel of a PLDI'14 paper. The main increment is the i) treatment of symbolic resource bounds in the program logic ii) an automatic analysis tool that generates a proof tree in a had hoc proof system iii) the soundness of the had hoc proof system wrt to the quantitative hoard proof system. I'm unsure point i) makes a contribution in itself.
+ 4) The current static analysis is rather limited. Not requiring a fixpoint is a disadvantage in my point of view, not a quality. It means the inference capability does not benefit from modern abstract interpretation techniques. Basically the lattice is flat. Being successful on benchmarks does not mean the analysis is better than others (like SPEED). I presume other approach are more robust, more generics than the current one. 
+ 5) The current analysis is limited and the framework is not flexible enough to easily handle new abstractions, for example to go behond difference-bounds matrices invariants.
+
+===========================================================================
+                            popl15 Review #31D
+                     Updated 4 Sep 2014 3:14:24am EDT
+---------------------------------------------------------------------------
+            Paper #31: Compositional Certified Resource Bounds
+---------------------------------------------------------------------------
+
+                      Overall merit: B. OK paper, but I will not champion
+                                        it
+                         Confidence: X. I am an expert in this area
+
+                   ===== Comments for the Authors =====
+
+The paper proposes a resource analysis framework.  It starts by
+extending Hoare logic with the "potential" functions, measuring
+resource usage in terms of the integer values of program variables.
+This extension to Quantified Hoare Logic is quite straightforward.  It
+should also be noted that if appropriate loop invariants are provided
+by a hardworking user, that complex analyses can be obtained by
+checking against the logic and its inference rules.
+
+The main contribution is to employ the inference rules so that they can generate,
+as opposed to just check, Hoare triples.
+This constitutes a program analysis method to discover
+possibly parametric expressions that bound the resource consumption.
+
+The key technical idea is to restrict the shape of the potential
+functions so that linear programming can be employed to "compute the
+derivations in the logic".   Starting with a space of expressions
+that state the difference in values for a pair values,
+the problem is now reduced to finding coefficients for these
+expressions, which range over all pairs of variables.
+With such coefficients, the inference rules can be instantiated
+so as to produce the appropriate pre and post conditions for
+the program statements, thus obtaining the desired final Hoare triples.
+
+In the evaluation, the paper has done a good job in demonstrating the
+results of their technique.  Indeed the bounds obtained for the various
+examples are impressive.
+
+In the end, the paper presents a novel approach which holds promise,
+and I tentatively recommend a weak acceptance.
+However, there are some major questions.
+The most important is that I cannot see rigorously
+how the algorithm arises from the inference rules.
+
+For example, it is stated that the algorithm would  "go through the whole
+program and apply inductively the inference rules". I don't fully
+understand what is the meaning of "inductively". From my guess,
+I believe this is a non-trivial problem, given
+the existence of loops and the Q:WEAK rule. 
+Also, the compositionality seems to be lost in the two phases 
+(collecting the constraints and solving them). While in the evaluation, 
+the running time for an individual example is negligible, I don't think
+the argument will carry to practical programs.
+ 
+Furthermore, I expect that often, when the solver successfully
+finds some solutions, there should be many (could be infinitely)
+solutions. How is the extraction performed in order to achieve
+precise bounds?
+
+The paper hints out that going beyond linear bounds is possible.
+Given what is discussed in Section 5, I couldn't see any
+plausible connection.
+
+Thus a rebuttal question is: can the authors
+present two small examples, one to demonstrate in details how
+the technique works. The other is to demonstrate when the technique
+does not work (e.g. when the loop pattern is too tricky).
+
+OTHER COMMENTS
+
+1. Introduction
+
+I don't quite agree with the 3 bullet points in the intro. I think
+the arguments should be framed positively as the supporting points for
+the current proposal, not as shortcomings of the existing
+techniques. Simply, here you are solving a different (and more
+general) problem. (And I believe that being a black-box and fully automated
+tool has its own advantages.)
+
+
+2.1
+Regarding the example in Fig. 1. I suggest the paper should add
+a few sentences explaining how the bound should be interpreted
+after discussing the proof of the invariant.
+
+2.2
+
+In this section, the paper casually mixes between "prove",
+"derive" and "compute", and causes a lot of confusion.
+E.g. After discussing that the technique can derive
+a tight bound for speed_1, it suddenly changes to
+it is easy to prove a tight bound for speed_2.
+Does it means that the technique cannot "derive" a bound
+for speed_2, but the logic is still useful for proving.
+(However, speed_2 in Fig. 3 still looks as if the bound
+is derived.)
+
+"To derive ..., we start with the initial potential \Phi_0 ..."
+Does this means that the initial formula is provided manually?
+
+The paragraph starting with "More formally, we develop (in Section 5) ..."
+causes more confusion than sheds any light to the discussion.
+My suggestion: just briefly explain the intuitive meaning of a judgement,
+and connect it to Figure 3.
+
+"t08a ... constant 0 and 1 ...". I have no idea which
+constants you are referring to.
+
+3. Syntax and Semantics
+
+"nine rational numbers ...". Why nine? More importantly,
+please give the intuitive meanings. While I can guess
+the meanings for M_a, M_b, and M_e; I couldn't figure
+out for M_t.
+
+4. Quantitative Hoare Logic
+
+It starts with the triple {Q} S {Q'} and then
+the paper talks about P and Q.
+
+
+What are \theta and \gamma? I just know that they are
+introduced in the context of local stack variables.
+
+
+5.  Automatic Amortized Analysis
+Discussed above.
+
+6. Evaluation
+From my understanding, in t15, "x -= y+1" is broken down
+into "x = x - 1" and "x = x - y".
+My follow-up question: does the order between the two matter?
+In other words, will the other order give the same bound?
+
+7. Related Work
+
+"non-linear control flow": I don't think this is a standard term.
+
+"Loopus" -> LOOPUS.
+
