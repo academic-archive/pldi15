@@ -332,19 +332,26 @@ let _ =
   let iscfile f =
     let l = String.length f in
     l >= 2 && f.[l-2] = '.' && f.[l-1] = 'c' in
-  let metric, fname =
+  let otick, fname =
     match Sys.argv with
-    | [| _; "-tick"; f |] when iscfile f ->
-      (function OpTick n -> n | _ -> 0), f
-    | [| _; f |] when iscfile f ->
-      (function OpLoop|OpCall -> 1 | _ -> 0), f
-    | _ -> (fun _ -> 0), "" in
+    | [| _; "-tick"; f |] when iscfile f -> true, f
+    | [| _; f |] when iscfile f -> false, f
+    | _ -> false, "" in
   if fname <> "" then
   let file = Frontc.parse fname () in
+  let otick = otick ||
+    List.exists
+      (function GPragma (Attr ("tick", _), _) -> true | _ -> false)
+      file.globals in
+  let metric =
+    if otick
+    then (function OpTick n -> n | _ -> 0)
+    else (function OpLoop|OpCall -> 1 | _ -> 0) in
   let file = Tools.clean_file (slice metric file) in
   print_string "Sliced program:\n";
   pp_file file;
   print_newline ();
   let l = Hood.create_logctx file in
-  print_string "Analysis:\n";
+  Printf.printf "Analysis using the %s metric:\n"
+    (if otick then "tick" else "back-edge");
   Hood.analyze true l Eval.tick_metric file
