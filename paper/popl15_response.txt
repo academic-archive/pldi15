@@ -1,0 +1,232 @@
+
+Review #31A:
+
+Our contribution is really the combination of the program logic and
+the automatic analysis in the same framework.  We deal with an
+undecidable problem so in practice there will always be programs for
+which the automation will fail (no matter how sophisticated it is).
+We propose the first framework for bound derivation in which users can
+seamlessly combine manually and (non-trivial) automatically-derived
+bounds to deal with such programs.
+
+We worked very hard to make the use of amortized resource analysis
+(ARA) look like a simple adaption.  Note however that, for example,
+the extension of ARA to signed integers was a difficult open problem
+for more than a decade.  It has been investigated by different groups
+(e.g., Samir Genaim and Martin Hofmann) but has not been addressed in
+earlier work (including FLOPS'13).  As with every open problem, it is
+tempting to say it's simple after you have seen the solution.
+
+The considered subset of Clight is actually quite big.  However,
+automatically derived bounds can only depend on integers.  This is
+sufficient to deal with system software like CertiKOS that we are
+interested in.  Bounds that depend on data structures or pointer
+arithmetic can be derived manually.  If it is not difficult to deal
+with this subset, why does our automatic tool outperform existing
+tools on simple examples?  What other approach would you suggest to
+automatically derive certified bounds?
+
+There are indeed different ways to formalize the proposed Hoare logic.
+Note however that implementing and proving it sound for Clight in the
+Coq proof assistant is not trivial.  The only other program logic for
+Clight that we are aware of is Appel et al's separation logic; it is
+not suitable for our automation since we would be required to prove
+memory safety, which is an orthogonal issue.
+
+
+Review #31B:
+
+> In the instrumented semantics, I'm not convinced that it is worth
+> the effort to give possibly non-zero costs to basic operations of
+> the language (expression evaluation, control structures, etc).
+
+Not sure if it's worth the effort but it comes in handy at points.
+For instance, we proved that bounds in the logic prove termination in
+a metric in which all these constants are positive.  Alternatively, we
+would need to have ticks at the right places which is a bit less
+elegant to reason about.
+
+> On a somewhat related note, precise WCET analysis tools like
+> AbsInt's a-cube are able to derive very precise timings, provided
+> they are supplied with tight bounds on the number of iterations of
+> every loop in the program.  Could (a variant of) the quantitative
+> analysis of section 5 infer such bounds?
+
+Absolutely: Just insert a tick(1) into the loop for which you would
+like to derive a bound.  Conversely, you can use AbsInt's tool to
+derive bounds on straight-line code and insert 'ticks' into the
+program to derive a parametric bound.  The open questions we are
+working on are: How to integrate this into CompCert to prove (in Coq)
+end-to-end guarantees on WCET?  How to handle cache and pipeline
+effects *between* basic blocks?
+
+> I'm curious to know what it would take for AAA to be able to infer
+> nonlinear bounds.  Is this just a matter of replacing the LP solver
+> by something more powerful, or is there something in the framework
+> of section 5 that is specific to linear constraints?
+
+We have developed a theory that makes it possible to infer *polynomial
+bounds* with *linear* constraint solving only.  It is based on a set
+of polynomials that we call 'multivariate resource polynomials'.  This
+is not trivial (a bit like linear algebra) and was a quite surprising
+result to people in resource analysis community.  Linear constraints
+are important because we can solve millions of them efficiently in
+practice.  (See for instance "Multivariate Amortized Resource
+Analysis", POPL'11).
+
+We designed the present analysis system with an extension to these
+multivariate resource polynomials in mind.  However, this makes the
+rules much more involved and is substantial additional implementation
+effort.  So we will report on this in a separate paper.
+
+
+Review #31C:
+
+This is an unusual expert review that does not fit the definition of
+an expert review that David Walk gave.
+
+> 3) This is the direct incremental sequel of a PLDI'14 paper. The
+> main increment is the i) treatment of symbolic resource bounds in
+> the program logic ii) an automatic analysis tool that generates a
+> proof tree in a had hoc proof system iii) the soundness of the had
+> hoc proof system wrt to the quantitative hoard proof system. I'm
+> unsure point i) makes a contribution in itself.
+
+We don't understand what the actual criticism here is.  It is good
+scientific practice to build on successful existing work.
+
+> 4) The current static analysis is rather limited. Not requiring a
+> fixpoint is a disadvantage in my point of view, not a quality. It
+> means the inference capability does not benefit from modern abstract
+> interpretation techniques. Basically the lattice is flat. Being
+> successful on benchmarks does not mean the analysis is better than
+> others (like SPEED). I presume other approach are more robust, more
+> generics than the current one.
+
+We are happy to discuss every objective advantage that the approach of
+SPEED has.  However, we don't think that a criticism like "this paper
+is bad because it is does not use abstract interpretation" is rational
+or objective.  We can name the following advantages of our approach
+over SPEED:
+
+- Our implementation is publically available and we invite the
+  reviewers to test it.  In contrast, we were not able to obtain the
+  SPEED tool from its authors.
+
+- Our automatic analysis produces machine-checkable certificates.  In
+  contrast SPEED relies on complicated external tools such as abstract
+  interpretation based invariant generation.
+
+- Our automatic analysis can be combined with manually-derived bounds.
+  In contrast, SPEED has no support for user interaction.
+
+- Our automatic analysis is compositional and naturally takes size
+  changes of variables into account; thus we derive global
+  whole-program bounds.  In contrast, SPEED derives local loop bounds
+  only.
+
+> 5) The current analysis is limited and the framework is not flexible
+> enough to easily handle new abstractions, for example to go behond
+> difference-bounds matrices invariants.
+
+We think that our framework is more flexible then existing ones.  A
+manually derived bound can be any function that is definable in Coq
+(see, e.g, Figure 1 and Figure 7).  The automation is tailored to work
+well for system code as we have it for instance in our CertiKOS
+operating system.  It is no problem to add more automation to derive
+bounds of a different shape.  We are working already on an extension
+to polynomial bounds using techniques developed, e.g., in
+"Multivariate Amortized Resource Analysis" (POPL'11).
+
+
+Review #31D:
+
+> In the end, the paper presents a novel approach which holds promise,
+> and I tentatively recommend a weak acceptance.  However, there are
+> some major questions.  The most important is that I cannot see
+> rigorously how the algorithm arises from the inference rules.
+
+We answered all technical questions of the reviewer in a PDF file that
+is available at:
+
+  http://XXX
+
+In a nutshell, there is really nothing magical going on and the
+algorithm arises almost automatically.
+
+> I don't fully understand what is the meaning of "inductively". From
+> my guess, I believe this is a non-trivial problem, given the
+> existence of loops and the Q:WEAK rule.
+
+Loops are simply handled by adding equality constraints to the linear
+program.  (See the example in the PDF.)  The rule Q:WEAK can be simply
+applied after each syntax-driven rule.  We however discovered, that it
+is sufficient to apply it right before assignments in our current set
+of examples.
+
+> Also, the compositionality seems to be lost in the two phases
+> (collecting the constraints and solving them). While in the
+> evaluation, the running time for an individual example is
+> negligible, I don't think the argument will carry to practical
+> programs.
+
+LP solvers are extremely efficient and can handle millions of
+constraints.  Moreover, our constraints are particularly simple and
+constitute so-called Network Problems that can be solved in linear
+time in practice.  As a result, our implementation scales to large
+programs.  To demonstrate that, we added a the new example XXX to the
+online version of the tool.  It has XXX lines of code and can be
+analyzed in XXX seconds.
+
+> Furthermore, I expect that often, when the solver successfully finds
+> some solutions, there should be many (could be infinitely)
+> solutions. How is the extraction performed in order to achieve
+> precise bounds?
+
+The LP solver is provided with a so-called objective function that it
+minimizes.  The objective function is basically the sum of the
+coefficients that appear in the precondition of the outermost Hoare
+triple.  If this precondition is {p + q|[0,x]| + q'|[x,0]|} then we
+would ask the solver to minimize p + q + q'.  LP solvers also support
+a nice trick that lets us express that linear coefficients should be
+minimized with higher priority than the constant coefficient p: We
+would first ask the solver to minimize q + q' and obtain a solution S.
+We then add the constraint q+q'=S(q)+S(q') to the set of constraints
+and ask to minimize p.  This is adds almost no computing time since
+solvers have clever support for this.  (Also compare the example in
+the PDF.)
+
+> The paper hints out that going beyond linear bounds is possible.
+> Given what is discussed in Section 5, I couldn't see any plausible
+> connection.
+
+Please see our answer at the very end of the response to Review #31B.
+
+> Thus a rebuttal question is: can the authors present two small
+> examples, one to demonstrate in details how the technique works. The
+> other is to demonstrate when the technique does not work (e.g. when
+> the loop pattern is too tricky).
+
+The examples can be found in the previously mentioned PDF.  The
+counter example requires simply a bound of the form max(x+y-z,0) that
+we cannot express in our current format.
+
+> And I believe that being a black-box and fully automated tool has
+> its own advantages.
+
+You can use our tool as a black box.  The only difference is that you
+can provide manual proofs if the tool false.  With the black-box
+tools, you simply don't have this option.
+
+> "t08a ... constant 0 and 1 ...". I have no idea which
+> constants you are referring to.
+
+The constant 0 appears in line 1.  The constant 1 appears in line 3.
+
+> From my understanding, in t15, "x -= y+1" is broken down into "x = x
+> - 1" and "x = x - y".  My follow-up question: does the order between
+> the two matter?  In other words, will the other order give the same
+> bound?
+
+Short answer: yes.
+
