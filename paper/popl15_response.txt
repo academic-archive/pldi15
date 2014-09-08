@@ -1,4 +1,3 @@
-
 Review #31A:
 
 Our contribution is really the combination of the program logic and
@@ -82,8 +81,8 @@ effort.  So we will report on this in a separate paper.
 
 Review #31C:
 
-This is an unusual expert review that does not fit the definition of
-an expert review that David Walk gave.
+This is an unusual expert review that does not seem to fit the
+definition of an expert review that the PC Chair (David Walker) gave.
 
 > 3) This is the direct incremental sequel of a PLDI'14 paper. The
 > main increment is the i) treatment of symbolic resource bounds in
@@ -174,7 +173,7 @@ LP solvers are extremely efficient and can handle millions of
 constraints.  Moreover, our constraints are particularly simple and
 constitute so-called Network Problems that can be solved in linear
 time in practice.  As a result, our implementation scales to large
-programs.  To demonstrate that, we added a the new example XXX to the
+programs.  To demonstrate that, we added a new example XXX to the
 online version of the tool.  It has XXX lines of code and can be
 analyzed in XXX seconds.
 
@@ -192,7 +191,7 @@ a nice trick that lets us express that linear coefficients should be
 minimized with higher priority than the constant coefficient p: We
 would first ask the solver to minimize q + q' and obtain a solution S.
 We then add the constraint q+q'=S(q)+S(q') to the set of constraints
-and ask to minimize p.  This is adds almost no computing time since
+and ask to minimize p.  This adds almost no computing time since
 solvers have clever support for this.  (Also compare the example in
 the PDF.)
 
@@ -215,7 +214,7 @@ we cannot express in our current format.
 > its own advantages.
 
 You can use our tool as a black box.  The only difference is that you
-can provide manual proofs if the tool false.  With the black-box
+can provide manual proofs if the tool fails.  With the black-box
 tools, you simply don't have this option.
 
 > "t08a ... constant 0 and 1 ...". I have no idea which
