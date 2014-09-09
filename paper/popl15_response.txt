@@ -48,8 +48,8 @@ results" (APLAS'03).  We could also imagine a more fine-grained
 integration in which we would have access to a previously computed
 abstract state when generating the constraints.  The point that we
 were trying to make is that we found it to be surprising that we can
-handle all these challenging examples without using fancy abstract
-interpretations and fixpoint computations.
+handle all these challenging examples without using state of the art
+abstract interpretations and fixpoint computations.
 
 As reviewer #31A suggests, there are different ways to implement the
 logic. However, the integration with Clight and the soundness proof in
@@ -269,4 +269,3 @@ The constant 0 appears in line 1.  The constant 1 appears in line 3.
 > bound?
 
 Short answer: yes.
-
