@@ -233,7 +233,7 @@ particularly simple and constitute so-called Network Problems that can
 be solved in linear time in practice.  As a result, our implementation
 scales to large programs.  To demonstrate that, we added the example
 "MD5 Sum" from the MiBench benchmark suit to the online version of the
-tool.  It has 260 lines of code and can be analyzed in less than 3
+tool. It has 260 lines of code and can be analyzed in less than 3
 seconds.
 
 > Furthermore, I expect that often, when the solver successfully finds
