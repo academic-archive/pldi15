@@ -178,7 +178,7 @@ It forms a lattice that is not flat, for instance, we have:
 > enough to easily handle new abstractions, for example to go behond
 > difference-bounds matrices invariants.
 
-We think that our framework is more flexible then existing ones.  A
+We think that our framework is more flexible than existing ones.  A
 manually derived bound can be any function that is definable in Coq
 (see, e.g, Figure 1 and Figure 7).  The automation is tailored to work
 well for system code as we have it for instance in our CertiKOS
@@ -211,7 +211,7 @@ Loops are simply handled by adding equality constraints to the linear
 program.  (See the example in the PDF.)  The rule Q:WEAK can be simply
 applied after each syntax-driven rule.  We however discovered, that it
 is sufficient to apply it right before assignments in our current set
-of examples.
+of examples. XXX what about ifs?
 
 > Also, the compositionality seems to be lost in the two phases
 > (collecting the constraints and solving them). While in the
@@ -271,11 +271,13 @@ tools, you simply don't have this option.
 > "t08a ... constant 0 and 1 ...". I have no idea which
 > constants you are referring to.
 
-The constant 0 appears in line 1.  The constant 1 appears in line 3.
+What we call constants are integer literals that appear in the C
+program analyzed.  The constant 0 appears in line 1.  The constant
+1 appears in line 3.
 
 > From my understanding, in t15, "x -= y+1" is broken down into "x = x
 > - 1" and "x = x - y".  My follow-up question: does the order between
 > the two matter?  In other words, will the other order give the same
 > bound?
 
-Short answer: yes.
+Short answer: the order is irrelevant for the bound.
