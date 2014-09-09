@@ -38,8 +38,8 @@ possibilities to improve performance further.
 
 There is really nothing magical going on in the implementation and the
 *algorithm arises almost automatically from the presented rules*
-without any heuristics.  Please see our detailed response to Review
-#31D, which we would also include in the accepted paper.
+without any fancy heuristics.  Please see our detailed response to
+Review #31D, which we would also include in the accepted paper.
 
 It is of course possible to *integrate abstract interpretation* with
 our framework.  On a high level, this is described in the paper
@@ -123,10 +123,10 @@ Review #31C:
 > unsure point i) makes a contribution in itself.
 
 This work is not incremental.  For instance, we present an automatic
-amortized resource analysis for C programs.  The PLDI'14 is only about
-stack-usage bounds and has very limited support for automation.  The
-focus of the PLDI work was the integration of bounds with verified
-compilation.
+amortized resource analysis for C programs.  The PLDI'14 paper is only
+about stack-usage bounds and has very limited support for automation.
+The focus of the PLDI work was the integration of C-level stack-bounds
+with verified compilation.
 
 > 4) The current static analysis is rather limited. Not requiring a
 > fixpoint is a disadvantage in my point of view, not a quality. It
@@ -140,11 +140,10 @@ As discussed at the beginning, abstract interpretation can of course
 be integrated in our framework.  However, the current automation seems
 to be sufficient for system software like CertiKOS.
 
-We would be happy to learn about objective advantages that the
-approach of SPEED has.  However, we don't think that a criticism like
-"this paper is bad because it is does not use abstract interpretation"
-is rational or objective.  We can name the following advantages of our
-approach over SPEED:
+It is always good to use successful existing techniques such as
+abstract interpretation and we would be happy to learn about objective
+advantages that the approach of SPEED has. In the meantime, we can
+name the following advantages of our work over SPEED:
 
 - Our implementation is publically available and we invite the
   reviewers to test it.  In contrast, we were not able to obtain the
@@ -195,8 +194,11 @@ Review #31D:
 > some major questions.  The most important is that I cannot see
 > rigorously how the algorithm arises from the inference rules.
 
-We answered all technical questions of the reviewer in a PDF file that
-is available at:
+We answer all technical questions of the reviewer in a PDF file that
+is available at.  Among other things it includes an example derivation
+with the automatic inference rules that illustrates the different
+steps of the automation: (1) syntax-directed application of the rules,
+(2) constraint generation, (3) constraint solving with an LP solver.
 
   http://XXX
 
@@ -207,11 +209,17 @@ algorithm arises almost automatically.
 > my guess, I believe this is a non-trivial problem, given the
 > existence of loops and the Q:WEAK rule.
 
-Loops are simply handled by adding equality constraints to the linear
-program.  (See the example in the PDF.)  The rule Q:WEAK can be simply
-applied after each syntax-driven rule.  We however discovered, that it
-is sufficient to apply it right before assignments in our current set
-of examples. XXX what about ifs?
+All rules except Q:Weak are syntax-directed and we apply them
+inductively, following the syntax tree.  The rule Q:WEAK can be simply
+applied after each syntax-driven rule (the LP solver decides later if
+it is actually used).  We however discovered, that it is sufficient to
+apply it right before assignments in our current set of examples.
+
+When we apply the rules we instantiate the rational coefficients
+(given by Q = (q_i) in the rules) with variables that are later
+instantiated to rational numbers by the LP solver.  Loops are simply
+handled by adding equality constraints to the linear program.  (See
+the example in the PDF.)
 
 > Also, the compositionality seems to be lost in the two phases
 > (collecting the constraints and solving them). While in the
@@ -257,9 +265,35 @@ Please see our answer at the very end of the response to Review #31B.
 > other is to demonstrate when the technique does not work (e.g. when
 > the loop pattern is too tricky).
 
-The examples can be found in the previously mentioned PDF.  The
-counter example requires simply a bound of the form max(x+y-z,0) that
-we cannot express in our current format.
+The first example can be found in the previously mentioned PDF.  It is
+to complex to present the derivation tree here.  The counter example
+requires simply a bound of the form max(x+y-z,0) that we cannot
+express in our current format:
+
+  while (x+y < z) {
+    if nondet() then
+      x++;
+    else
+      y++;
+    tick(1);
+  }
+
+The problem here is that we don't know that x<z (or y<z) when we
+increment x (or y, respectively).  As a result, we don't have any
+interval such as [x,z] that becomes smaller.  However, if we assert
+that x and y are non-negative then we can derive a bound:
+
+  assert (x>=0);
+  assert (y>=0);
+  while (x+y < z) {
+    if nondet() then
+      x++;
+    else
+      y++;
+    tick(1);
+  }
+
+  Computed bound: |[x, z]| + |[y, z]|
 
 > And I believe that being a black-box and fully automated tool has
 > its own advantages.
