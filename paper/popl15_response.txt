@@ -162,7 +162,17 @@ approach over SPEED:
   whole-program bounds.  In contrast, SPEED derives local loop bounds
   only.
 
-XXX Quentin XXX the lattice is flat XXX
+Our automatic system relies on an abstract program state that is
+inferred using a very minimal form of abstract interpretation (no
+complex fixpoints computations, narrowings and widenings).  Our
+abstract domain (to use the abstract interpretation terminology) is
+formed by conjunctions of linear inequalities on program variables.
+It forms a lattice which is not flat, for instance, we have:
+
+                           0 < 1
+                             |
+                             |
+                           0 < 0
 
 > 5) The current analysis is limited and the framework is not flexible
 > enough to easily handle new abstractions, for example to go behond
