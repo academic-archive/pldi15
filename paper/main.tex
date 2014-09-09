@@ -3539,52 +3539,6 @@ to deal with resources like memory usage.  Furthermore, Blazy et al.'s
 automatic bound analysis does not compute symbolic bounds.
 
 
-\sectskip
-\section{Conclusion}
-\label{sec:concl}
-\aftersectskip
-
-We have introduced an novel quantitative analysis system for CompCert
-Clight programs.  To the best of our knowledge, this article presents
-the first resource analysis framework for C that makes it possible to
-combine non-trivial automatically derived bounds with interactively
-derived bounds in a proof system that produces verifiable certificates
-for the bounds.  The main technical innovations are a quantitative
-Hoare logic for reasoning about user-defined resource cost and an
-automatic amortized analysis that derives bounds for programs whose
-resource consumption depends on (possibly negative) integers and
-non-sequential control flow as introduced by \code{break} and
-\code{return} statements.
-
-We will continue to improve our framework to reason more precisely
-about resource usage of system software such as the hypervisor kernel
-CertiKOS~\cite{GuVFSC11}, which \iffull{we are currently developing
-  and verifying}{is currently developed and verified}.  For one thing,
-we will improve the automation to derive \emph{polynomial bounds} and
-to handle non-linear size changes, as already developed for functional
-programs~\cite{HoffmannS13}.  For another thing, we will build on
-previous work~\cite{HoffmannMZ13} to generalize the quantitative
-Hoare logic to handle \emph{concurrent programs}\iffull{ with locks and
-lock-free data structures.}{.}
-
-% \acks
-
-% This research is based on work supported in part by NSF grants 1319671
-% and 1065451, and DARPA grants FA8750-10-2-0254 and FA8750-12-2-0293.
-% Any opinions, findings, and conclusions contained in this document are
-% those of the authors and do not reflect the views of these agencies.
-
-
-
-\ifx\fullversion\undefined{}\else{
-%\clearpage
-\appendix
-
-
-
-\section{Example Derivation in the Automatic System}
-\label{app:derivation}
-
 \newcommand{\loopbody}[0]{\ensuremath{\code{if~(x - 10 \geq 0)~\{x=x{-}10; tick(5);\}~else~break;}}}
 
 \begin{figure*}[t]
@@ -3652,17 +3606,70 @@ p^\text{de}_{0,10} = q^\text{de}_{0,10} + q^\text{de}_{0,x}  & p^\text{de}_{0} =
 & \forall (\alpha, \beta) \neq (0,10)  . \, p^\text{de}_{\alpha,\beta} = q^\text{de}_{\alpha,\beta}
 \end{array}
 $$
-\flushleft Linear Objective Function:
-$$
+\vspace{1.5ex}
+
+
+\begin{tabular}{l@{\hspace{5em}}l}
+ Linear Objective Function: &  Constant Objective Function: \\
+\hspace{3em} $
 q_{x,0} + 10000{\cdot}q_{0,x} + 10{\cdot}q_{x,10} + 9990q_{10,x}
-$$
-\flushleft Constant Objective Function:
-$$
+$
+&
+\hspace{3em}
+$
 q_0 + 11{\cdot}q_{0,10}  
-$$
+$
+\end{tabular}
+
 \caption{An example derivation as produced by the automatic tool.}
 \label{fig:derivation}
 \end{figure*}
+\sectskip
+\section{Conclusion}
+\label{sec:concl}
+\aftersectskip
+
+We have introduced an novel quantitative analysis system for CompCert
+Clight programs.  To the best of our knowledge, this article presents
+the first resource analysis framework for C that makes it possible to
+combine non-trivial automatically derived bounds with interactively
+derived bounds in a proof system that produces verifiable certificates
+for the bounds.  The main technical innovations are a quantitative
+Hoare logic for reasoning about user-defined resource cost and an
+automatic amortized analysis that derives bounds for programs whose
+resource consumption depends on (possibly negative) integers and
+non-sequential control flow as introduced by \code{break} and
+\code{return} statements.
+
+We will continue to improve our framework to reason more precisely
+about resource usage of system software such as the hypervisor kernel
+CertiKOS~\cite{GuVFSC11}, which \iffull{we are currently developing
+  and verifying}{is currently developed and verified}.  For one thing,
+we will improve the automation to derive \emph{polynomial bounds} and
+to handle non-linear size changes, as already developed for functional
+programs~\cite{HoffmannS13}.  For another thing, we will build on
+previous work~\cite{HoffmannMZ13} to generalize the quantitative
+Hoare logic to handle \emph{concurrent programs}\iffull{ with locks and
+lock-free data structures.}{.}
+
+% \acks
+
+% This research is based on work supported in part by NSF grants 1319671
+% and 1065451, and DARPA grants FA8750-10-2-0254 and FA8750-12-2-0293.
+% Any opinions, findings, and conclusions contained in this document are
+% those of the authors and do not reflect the views of these agencies.
+
+
+
+\ifx\fullversion\undefined{}\else{
+%\clearpage
+\appendix
+
+\newpage
+
+\section{Example Derivation in the Automatic System}
+\label{app:derivation}
+
 
 \pref{fig:derivation} contains an example derivation as it is produced
 by our automatic analyzer.  The upper case letters (with optional
@@ -3745,9 +3752,9 @@ numbers and the value of the objective function with this
 instantiation.  The solver also memorizes the optimization path that
 lead to the optimal solution.  In this case, the objective value would
 be
-$$
+$
 5000
-$$
+$
 since the LP solver assigns $q_{0,x} = 0.5$ and $q_{*} = 0$ otherwise.
 We now add the constraint
 $$
@@ -3766,6 +3773,8 @@ the derived bound is $0.5 |[0,x]|$.
 Another interesting note is that the constraints that we generate have
 a particularly simple form that is know as \emph{network problem}.
 Such problems can be solve in linear time in practice.
+
+\newpage 
 
 \section{Catalog of Automatically Analyzed Programs}
 \label{app:cat}

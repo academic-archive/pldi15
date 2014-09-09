@@ -140,38 +140,42 @@ As discussed at the beginning, abstract interpretation can of course
 be integrated in our framework.  However, the current automation seems
 to be sufficient for system software like CertiKOS.
 
-It is always good to use successful existing techniques such as
-abstract interpretation and we would be happy to learn about objective
-advantages that the approach of SPEED has. In the meantime, we can
-name the following advantages of our work over SPEED:
-
-- Our implementation is publically available and we invite the
-  reviewers to test it.  In contrast, we were not able to obtain the
-  SPEED tool from its authors.
-
-- Our automatic analysis produces machine-checkable certificates.  In
-  contrast SPEED relies on complicated external tools such as abstract
-  interpretation based invariant generation.
-
-- Our automatic analysis can be combined with manually-derived bounds.
-  In contrast, SPEED has no support for user interaction.
-
-- Our automatic analysis is compositional and naturally takes size
-  changes of variables into account; thus we derive global
-  whole-program bounds.  In contrast, SPEED derives local loop bounds
-  only.
-
-Our automatic system relies on an abstract program state that is
-inferred using a very minimal form of abstract interpretation (no
+In fact, our automatic system relies on an abstract program state that
+is inferred using a minimal form of abstract interpretation (no
 complex fixpoints computations, narrowings and widenings).  Our
 abstract domain (to use the abstract interpretation terminology) is
 formed by conjunctions of linear inequalities on program variables.
-It forms a lattice that is not flat, for instance, we have:
+It forms a lattice that is *not flat*, for instance, we have:
 
                            0 < 1
                              |
                              |
                            0 < 0
+
+It is always good to use successful existing techniques such as
+abstract interpretation and we would be happy to learn about objective
+advantages that the approach of SPEED has. In the meantime, we can
+name the following advantages of our work over SPEED:
+
+1) Our implementation is publically available and we invite the
+   reviewers to test it.  In contrast, we were not able to obtain the
+   SPEED tool from its authors.
+
+2) Our automatic analysis produces machine-checkable certificates.  In
+   contrast, SPEED relies on complicated external tools such as
+   abstract interpretation based invariant generation.
+
+3) Our automatic analysis can be combined with manually-derived bounds.
+   In contrast, SPEED has no support for user interaction.
+
+4) Our automatic analysis is compositional and naturally takes size
+   changes of variables into account; thus we derive global
+   whole-program bounds.  In contrast, SPEED derives local loop bounds
+   only.
+
+5) Our automatic analysis can deal with resources such as memory that
+   may be returned during program execution.  In contrast, SPEED can
+   only derive bounds on the number of loop iterations.
 
 > 5) The current analysis is limited and the framework is not flexible
 > enough to easily handle new abstractions, for example to go behond
@@ -200,7 +204,7 @@ with the automatic inference rules that illustrates the different
 steps of the automation: (1) syntax-directed application of the rules,
 (2) constraint generation, (3) constraint solving with an LP solver.
 
-  http://XXX
+  http://
 
 In a nutshell, there is really nothing magical going on and the
 algorithm arises almost automatically.
