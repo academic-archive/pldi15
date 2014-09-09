@@ -1,6 +1,7 @@
 We thank the reviewers for their detailed comments. 
 
-Our *main contribution* is the application of automatic amortized
+As we emphasized in the last paragraph of left column on page 2,
+our *main contribution* is the application of automatic amortized
 resource analysis to system code written in C.  This is not a simple
 extension of existing techniques.  For example, the extension to
 signed integers was a difficult open problem for more than a decade.
@@ -16,30 +17,28 @@ relations such as x<y.
 *Another contribution* is the *combination* of the program logic and
 the automatic analysis in the same framework.  We deal with an
 undecidable problem; so in practice there will always be programs for
-which the automation will fail (no matter how sophisticated it is).
-We propose the first framework for bound derivation in which users can
-seamlessly combine manually-derived and (non-trivial)
-automatically-derived bounds to deal with such programs.  The manual
-bound derivation is very flexible and can of course depend on *data
-structure sizes and pointer arithmetic*.
+which the automation will fail.  We propose the first framework for
+bound derivation in which users can seamlessly combine
+manually-derived and (non-trivial) automatically-derived bounds to
+deal with such programs.  The manual bound derivation is very flexible
+and can of course depend on *data structure sizes and pointer
+arithmetic*.
 
 Our automatic tool for bound analysis (AAA) and all benchmarks are
 *publically available*.  It can be found in the supplementary material
-and can also be conveniently accessed in a user-friendly web interface
-at
+and can also be conveniently accessed in a user-friendly web interface at
 
   http://www.cs.yale.edu/homes/qcar/aaa/
 
 Our tool *scales well to larger programs*; LP solvers can solve
 millions of constraints within a few seconds.  For example, the file
 'MD5 Sum' from MiBench on the web site has 260 LOC and is analyzed in
-less than 3 seconds on a usual laptop.  There are also many
-possibilities to improve performance further.
+less than 3 seconds on a usual laptop.  
 
 There is nothing magical going on in the implementation and the
 *algorithm arises almost automatically from the presented rules*
 without any fancy heuristics.  Please see our detailed response to
-Review #31D, which we would also include in the accepted paper.
+Review #31D.
 
 It is of course possible to *integrate abstract interpretation* with
 our framework.  On a high level, this is described in the paper
@@ -48,18 +47,18 @@ results" (APLAS'03).  We are already using a simple form of abstract
 interpretation to derive the logical state (\Gamma) that we use in the
 automation.  It is possible to use more involved abstractions and
 fixpoint computations.  The point that we were trying to make is that
-we found it to be surprising that we can handle all these challenging
+we found it surprising that we can handle all these challenging
 examples without using clever state of the art abstract
 interpretations and fixpoint computations.
 
-As reviewer #31A suggests, there are different ways to implement the
+As reviewer #31A suggested, there are different ways to implement the
 logic. However, the integration with Clight and the soundness proof in
 Coq are never trivial.  There are also some details that make the
 extension of Hoare logic non-trivial.  For instance, the rule L:Frame
 is not derivable from the rules of classic Hoare logic but essential
 in most derivations.
 
-=== OPTIONAL READING: POINT-BY-POINT RESPONSE ===
+=== OPTIONAL READING (point-by-point responses) 
 
 Review #31B:
 
