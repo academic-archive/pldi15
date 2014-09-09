@@ -140,10 +140,16 @@ interpretation terminology) is formed by conjunctions of linear
 inequalities on program variables.  It forms a lattice that is *not
 flat*, for instance, we have:
 
-                           0 < 1
-                             |
-                             |
-                           0 < 0
+                             0<1
+                            /  \
+                           /    \
+                         a<c     \
+                          |       \
+                          |        \
+                     (a<b /\ b<c)  d<e
+                           \      /
+                            \    /
+                             0<0
 
 It is always good to use successful existing techniques such as
 abstract interpretation and we would be happy to learn about objective
