@@ -1,7 +1,7 @@
 % Comment for anonymization
 % Add preprint option for the extended version
 % Also look for "SHORT" comments
-% \def\fullversion{}
+\def\fullversion{}
 
 \documentclass[nocopyrightspace,preprint]{sigplanconf}
 
@@ -17,11 +17,11 @@
 \newcommand{\subsectskip}[0]{\ifshort{\vspace{-1pt}}{}}
 
 %SHORT
-\usepackage[normal,belowskip=-11pt,aboveskip=1pt]{caption} %Remove extra space around captiosn
-\DeclareCaptionFormat{myformat}{#1#2#3\vspace{-4pt}\hrulefill}
-\captionsetup[figure]{format=myformat}
-\captionsetup[table]{format=myformat}
-\renewcommand{\captionlabelfont}{\bf}
+% \usepackage[normal,belowskip=-11pt,aboveskip=1pt]{caption} %Remove extra space around captiosn
+% \DeclareCaptionFormat{myformat}{#1#2#3\vspace{-4pt}\hrulefill}
+% \captionsetup[figure]{format=myformat}
+% \captionsetup[table]{format=myformat}
+% \renewcommand{\captionlabelfont}{\bf}
 %SHORT
 
 \usepackage[numbers]{natbib}
@@ -66,11 +66,11 @@
 \begin{document}
 
 %SHORT
-\lstset{basicstyle=\tt\scriptsize}
-\abovedisplayskip=3pt
-\belowdisplayskip=3pt
-\abovedisplayshortskip=3pt
-\belowdisplayshortskip=3pt
+% \lstset{basicstyle=\tt\scriptsize}
+% \abovedisplayskip=3pt
+% \belowdisplayskip=3pt
+% \abovedisplayshortskip=3pt
+% \belowdisplayshortskip=3pt
 %SHORT
 
 \conferenceinfo{POPL} {January XX-XX, 2014, CITY, STATE, India.}
@@ -3539,6 +3539,91 @@ to deal with resources like memory usage.  Furthermore, Blazy et al.'s
 automatic bound analysis does not compute symbolic bounds.
 
 
+\newcommand{\loopbody}[0]{\ensuremath{\code{if~(x - 10 \geq 0)~\{x=x{-}10; tick(5);\}~else~break;}}}
+
+\begin{figure*}[t]
+  \centering
+  \footnotesize
+  \begin{mathpar}
+  \inferrule*[right={\scriptsize (Q:Loop)},leftskip=0cm,rightskip=0cm,width=20cm]
+  { \inferrule*[right={\scriptsize (Q:If)},leftskip=0cm,rightskip=0cm,width=20cm]
+    { 
+      \inferrule*[right={\scriptsize (Q:Weak)},leftskip=2cm,rightskip=4cm, vdots=1.5cm]
+      { 
+        \inferrule*[right={\scriptsize (Q:Seq)},leftskip=0cm,rightskip=0cm]
+        {
+\inferrule*[right={\scriptsize (Q:Weak)},leftskip=0cm,rightskip=0cm]
+{
+  \inferrule*[right={\scriptsize (Q:DecP)},leftskip=0cm,rightskip=0cm]
+  { }
+  {(x {<} 10, B^\text{de}); ((x {\geq} 10,Q^\text{de})  \vdash \code{x = x - 10}
+   \dashv (\cdot, P^\text{de})
+  }
+}
+{(x {<} 10, B^\text{we}); ((x {\geq} 10,Q^\text{we})  \vdash \code{x = x - 10}
+\dashv (\cdot, P^\text{we})
+}
+\and
+\inferrule*[right={\scriptsize (Q:Tick)},leftskip=0cm,rightskip=0cm]
+{ }
+{(x {<} 10, B^\text{ti}); (\cdot,Q^\text{ti})  \vdash \code{tick(5)}
+ \dashv (\cdot, P^\text{ti})
+}
+} {
+          (x {<} 10, B^\text{sq}); ((x {\geq} 10,Q^\text{sq}) \vdash \code{x=x{-}10; tick(5);} \dashv (\cdot,P^\text{sq}) 
+        }
+      }
+      { (x {<} 10, B^\text{if}); ((x {\geq} 10,Q^\text{if}) \vdash \code{x=x{-}10; tick(5);} \dashv (\cdot,P^\text{if}) }
+      \and
+      \inferrule*[right={\scriptsize (Q:Weak)},leftskip=4.5cm,rightskip=4cm]
+      { \inferrule*[right={\scriptsize (Q:Break)},leftskip=0cm,rightskip=0cm]
+        { }
+        {(x {<} 10, B^\text{br}); (x {<} 10,Q^\text{br}) \vdash \code{break} \dashv (\bot,P^\text{br})}
+      }
+      {
+        (x {<} 10, B^\text{el}); (x {<} 10,Q^\text{el}) \vdash \code{break} \dashv (\cdot,P^\text{el})
+      }
+    }
+    { \hspace{3cm} (x {<} 10, B^\text{lo}); (\cdot,Q^\text{lo}) \vdash \loopbody \dashv (\cdot,P^\text{lo}) \hspace{3cm} 
+    }
+  }
+  {
+   (\cdot, B); (\cdot, Q) \vdash \code{loop}~{\loopbody} \dashv (x {<} 10, P) 
+  }
+\end{mathpar}
+\flushleft Constraints:
+$$
+\begin{array}{llll}
+P = B^\text{lo} & Q  = Q^\text{lo} & Q^\text{lo} = P^\text{lo} \\
+B^\text{el} = B^\text{if} = B^\text{lo} & Q^\text{el} = Q^\text{if} = Q^\text{lo} & P^\text{el} = P^\text{if} = P^\text{lo} \\
+B^\text{el} = B^\text{br}  & Q^\text{el} \succeq_{(x{<}10)} Q^\text{br}  & P^\text{br} \succeq_{(\cdot)} P^\text{el} \\
+B^\text{br} = Q^\text{br}\\
+B^\text{if} = B^\text{sq}  & Q^\text{if} \succeq_{(x{<}10)} Q^\text{sq}  & P^\text{sq} \succeq_{(\cdot)} P^\text{if} \\
+B^\text{sq} = B^\text{we} = B^\text{ti} & Q^\text{sq} = Q^\text{we} & P^\text{we} = Q^\text{ti} & P^\text{ti} = P^\text{sq} \\
+Q^\text{ti} = P^\text{ti} + 5 \\
+B^\text{we} = B^\text{de}  & Q^\text{we} \succeq_{(x{<}10)} Q^\text{de}  & P^\text{de} \succeq_{(\cdot)} P^\text{we} \\
+p^\text{de}_{0,10} = q^\text{de}_{0,10} + q^\text{de}_{0,x}  & p^\text{de}_{0} = q^\text{de}_{0}
+& \forall (\alpha, \beta) \neq (0,10)  . \, p^\text{de}_{\alpha,\beta} = q^\text{de}_{\alpha,\beta}
+\end{array}
+$$
+\vspace{1.5ex}
+
+
+\begin{tabular}{l@{\hspace{5em}}l}
+ Linear Objective Function: &  Constant Objective Function: \\
+\hspace{3em} $
+q_{x,0} + 10000{\cdot}q_{0,x} + 10{\cdot}q_{x,10} + 9990q_{10,x}
+$
+&
+\hspace{3em}
+$
+q_0 + 11{\cdot}q_{0,10}  
+$
+\end{tabular}
+
+\caption{An example derivation as produced by the automatic tool.}
+\label{fig:derivation}
+\end{figure*}
 \sectskip
 \section{Conclusion}
 \label{sec:concl}
@@ -3580,6 +3665,116 @@ lock-free data structures.}{.}
 %\clearpage
 \appendix
 
+\newpage
+
+\section{Example Derivation in the Automatic System}
+\label{app:derivation}
+
+
+\pref{fig:derivation} contains an example derivation as it is produced
+by our automatic analyzer.  The upper case letters (with optional
+superscript) such as $Q^\text{de}$ stand for a family of rational
+variables that are later part of the constraint system that is passed
+to the LP solver.  For example $Q^\text{de}$ stands for the potential
+function $q^\text{de}_0 + q^\text{de}_{x,0} |[x,0]| +
+q^\text{de}_{0,x} |[0,x]| + q^\text{de}_{x,10} |[x,10]| +
+q^\text{de}_{10,x} |[10,x]| + q^\text{de}_{0,10} |[0,10]|$, where the
+variables such as $q^\text{de}_{x,10}$ are yet unknown and later
+instantiated by the LP solver.  The derivation with the instantiated
+variables is then a sound derivation in the verified program logic.
+
+The rules are syntax directed and applied inductively.  That means
+that we follow the inductive definition of the syntax.  For example,
+the outermost expression is a loop, so we use the rule \text{Q:Loop}
+at the root of the derivation tree.  At this point, we don't know yet
+whether a loop invariant exists.  But we produce the constraints
+$Q^\text{lo} = P^\text{lo}$ which is short for the following
+constraint set.
+$$
+\begin{array}{lll}
+q^\text{lo}_0 = p^\text{lo}_0 &
+q^\text{lo}_{x,0}= p^\text{lo}_{x,0} &
+q^\text{lo}_{0,x}= p^\text{lo}_{0,x} \\
+q^\text{lo}_{x,10}= p^\text{lo}_{x,10} &
+q^\text{lo}_{10,x}= p^\text{lo}_{10,x} &
+q^\text{lo}_{0,10}= p^\text{lo}_{0,10}
+\end{array}
+$$
+%
+This constraint set expresses the fact that the potential before and
+after the loop body is equal and thus constitutes an invariant.
+
+In general, the weakening rule is applied after every syntax directed
+rule.  Applying weakening everywhere does not lead to performance
+problems. However, it can be left out in practice at some places to
+increase the efficiency of the tool.
+
+The weakening operation $\succeq_{\Gamma}$ is defined in the rule
+\textsc{Relax}.  For example, we have
+$$
+\begin{array}{lll}
+P^\text{de} \succeq_{(\cdot)} P^\text{we}
+& \equiv &  p^\text{we}_{0,10} \leq p^\text{de}_{0,10} + u_{0,10} - v_{0.10}  \\
+& \land &   p^\text{we}_{0} \leq p^\text{de}_{0} - 10 {\cdot} u_{0,10} + 10 {\cdot} v_{0.10}  \\
+& \land &  \forall (\alpha, \beta) \neq (0,10)  . \, p^\text{we}_{\alpha,\beta} \leq p^\text{de}_{\alpha,\beta} \;\;\; .
+\end{array}
+$$
+
+After the constraint generation, the LP solver is provided with a
+so-called objective function that it will minimize.  We wish to
+minimize the initial potential, which is the resource bound on the
+whole program.  Here it is given by $Q$.  Moreover, we would like to
+express that minimization of linear potential such as
+$$
+q_{10,x} |[10,x]|
+$$
+takes priority over minimization of constant potential such as
+$$
+q_{0,10} |[0,10]| \; .
+$$
+
+To this end, modern LP solvers support efficient resolving of
+constraint sets with additional constraints: First we take our initial
+constraint set as given in \pref{fig:derivation}.  We then as the
+solver to find a solution that satisfies the constraint and minimizes
+the linear expression 
+$$
+q_{x,0} + 10000{\cdot}q_{0,x} + 10{\cdot}q_{x,10} + 9990q_{10,x} \; .
+$$
+Note the linear penalties (this is a random choice) that we give to
+some of the factors.  We use it to express that the interval $[10,x]$
+is smaller than the interval $[0,x]$ and, similarly, that the interval
+$[x,0]$ is smaller than the interval $[x,10]$.
+
+The LP solver now returns a solution of the constraint set and an
+objective value, that is, a mapping from variables to floating-point
+numbers and the value of the objective function with this
+instantiation.  The solver also memorizes the optimization path that
+lead to the optimal solution.  In this case, the objective value would
+be
+$
+5000
+$
+since the LP solver assigns $q_{0,x} = 0.5$ and $q_{*} = 0$ otherwise.
+We now add the constraint
+$$
+q_{x,0} + 10000{\cdot}q_{0,x} + 10{\cdot}q_{x,10} + 9990q_{10,x} = 5000
+$$
+to our constraint set and ask the solver to optimize the objective
+function
+$$
+q_0 + 11{\cdot}q_{0,10} \; .
+$$
+This happens in almost no time in practice.
+
+The final solution is $q_{0,x} = 0.5$ and $q_{*} = 0$ otherwise.  Thus
+the derived bound is $0.5 |[0,x]|$.
+
+Another interesting note is that the constraints that we generate have
+a particularly simple form that is know as \emph{network problem}.
+Such problems can be solve in linear time in practice.
+
+\newpage 
 
 \section{Catalog of Automatically Analyzed Programs}
 \label{app:cat}
@@ -5325,6 +5520,8 @@ determines the position \code{n+lo} of the pivot.  We only assert that
 \scriptsize
 \bibliography{lit}
 }
+
+
 
 
 

@@ -1,37 +1,65 @@
-Review #31A:
+We thank the reviewers for their detailed comments. 
 
-Our contribution is really the combination of the program logic and
+Our *main contribution* is the application of automatic amortized
+resource analysis to system code written in C.  This is not a simple
+extension of existing techniques.  For example, the extension to
+signed integers was a difficult open problem for more than a decade.
+It has been investigated by different groups (e.g., Samir Genaim and
+Martin Hofmann) but has not been addressed in earlier work (including
+FLOPS'14).  As with every open problem, it is tempting to say it's
+simple after you have seen the solution.  In general, there are many
+new challenges when moving to C such as break and return statements,
+bounds that depend on mutable (global and local) variables (also not
+in FLOPS'14), and the need of a logical state to keep track of
+relations such as x<y.
+
+*Another contribution* is the *combination* of the program logic and
 the automatic analysis in the same framework.  We deal with an
-undecidable problem so in practice there will always be programs for
+undecidable problem; so in practice there will always be programs for
 which the automation will fail (no matter how sophisticated it is).
 We propose the first framework for bound derivation in which users can
-seamlessly combine manually and (non-trivial) automatically-derived
-bounds to deal with such programs.
+seamlessly combine manually-derived and (non-trivial)
+automatically-derived bounds to deal with such programs.  The manual
+bound derivation is very flexible and can of course depend on *data
+structure sizes and pointer arithmetic*.
 
-We worked very hard to make the use of amortized resource analysis
-(ARA) look like a simple adaption.  Note however that, for example,
-the extension of ARA to signed integers was a difficult open problem
-for more than a decade.  It has been investigated by different groups
-(e.g., Samir Genaim and Martin Hofmann) but has not been addressed in
-earlier work (including FLOPS'13).  As with every open problem, it is
-tempting to say it's simple after you have seen the solution.
+Our automatic tool for bound analysis (AAA) and all benchmarks are
+*publically available*.  It can be found in the supplementary material
+and can also be conveniently accessed in a user-friendly web interface
+at
 
-The considered subset of Clight is actually quite big.  However,
-automatically derived bounds can only depend on integers.  This is
-sufficient to deal with system software like CertiKOS that we are
-interested in.  Bounds that depend on data structures or pointer
-arithmetic can be derived manually.  If it is not difficult to deal
-with this subset, why does our automatic tool outperform existing
-tools on simple examples?  What other approach would you suggest to
-automatically derive certified bounds?
+  http://www.cs.yale.edu/homes/qcar/aaa/
 
-There are indeed different ways to formalize the proposed Hoare logic.
-Note however that implementing and proving it sound for Clight in the
-Coq proof assistant is not trivial.  The only other program logic for
-Clight that we are aware of is Appel et al's separation logic; it is
-not suitable for our automation since we would be required to prove
-memory safety, which is an orthogonal issue.
+Our tool *scales well to larger programs*; LP solvers can solve
+millions of constraints within a few seconds.  For example, the file
+'MD5 Sum' from MiBench on the web site has 260 LOC and is analyzed in
+less than 3 seconds on a usual laptop.  There are also many
+possibilities to improve performance further.
 
+There is nothing magical going on in the implementation and the
+*algorithm arises almost automatically from the presented rules*
+without any fancy heuristics.  Please see our detailed response to
+Review #31D, which we would also include in the accepted paper.
+
+It is of course possible to *integrate abstract interpretation* with
+our framework.  On a high level, this is described in the paper
+"Automatic construction of Hoare proofs from abstract interpretation
+results" (APLAS'03).  We are already using a simple form of abstract
+interpretation to derive the logical state (\Gamma) that we use in the
+automation.  It is possible to use more involved abstractions and
+fixpoint computations.  The point that we were trying to make is that
+we found it to be surprising that we can handle all these challenging
+examples without using clever state of the art abstract
+interpretations and fixpoint computations.
+
+As reviewer #31A suggests, there are different ways to implement the
+logic. However, the integration with Clight and the soundness proof in
+Coq are never trivial.  There are also some details that make the
+extension of Hoare logic non-trivial.  For instance, the rule L:Frame
+is not derivable from the rules of classic Hoare logic but essential
+in most derivations.
+
+=== OPTIONAL READING: POINT-BY-POINT RESPONSE ===
 
 Review #31B:
 
@@ -81,9 +109,6 @@ effort.  So we will report on this in a separate paper.
 
 Review #31C:
 
-This is an unusual expert review that does not seem to fit the
-definition of an expert review that the PC Chair (David Walker) gave.
-
 > 3) This is the direct incremental sequel of a PLDI'14 paper. The
 > main increment is the i) treatment of symbolic resource bounds in
 > the program logic ii) an automatic analysis tool that generates a
@@ -91,8 +116,11 @@ definition of an expert review that the PC Chair (David Walker) gave.
 > hoc proof system wrt to the quantitative hoard proof system. I'm
 > unsure point i) makes a contribution in itself.
 
-We don't understand what the actual criticism here is.  It is good
-scientific practice to build on successful existing work.
+This work is not incremental.  For instance, we present an automatic
+amortized resource analysis for C programs.  The PLDI'14 paper is only
+about stack-usage bounds and has very limited support for automation.
+The focus of the PLDI work was the integration of C-level stack-bounds
+with verified compilation.
 
 > 4) The current static analysis is rather limited. Not requiring a
 > fixpoint is a disadvantage in my point of view, not a quality. It
@@ -102,33 +130,56 @@ scientific practice to build on successful existing work.
 > others (like SPEED). I presume other approach are more robust, more
 > generics than the current one.
 
-We are happy to discuss every objective advantage that the approach of
-SPEED has.  However, we don't think that a criticism like "this paper
-is bad because it does not use abstract interpretation" is rational
-or objective.  We can name the following advantages of our approach
-over SPEED:
+As discussed at the beginning, abstract interpretation can of course
+be integrated in our framework.  In fact, our automatic system relies
+on an abstract program state that is inferred using a minimal form of
+abstract interpretation (no complex fixpoints computations, narrowings
+and widenings).  Our abstract domain (to use the abstract
+interpretation terminology) is formed by conjunctions of linear
+inequalities on program variables.  It forms a lattice that is *not
+flat*, for instance, we have:
 
-- Our implementation is publically available and we invite the
-  reviewers to test it.  In contrast, we were not able to obtain the
-  SPEED tool from its authors.
+                             0<1
+                            /  \
+                           /    \
+                         a<c     \
+                          |       \
+                          |        \
+                     (a<b /\ b<c)  d<e
+                           \      /
+                            \    /
+                             0<0
 
-- Our automatic analysis produces machine-checkable certificates.  In
-  contrast SPEED relies on complicated external tools such as abstract
-  interpretation based invariant generation.
+It is always good to use successful existing techniques such as
+abstract interpretation and we would be happy to learn about objective
+advantages that the approach of SPEED has. In the meantime, we can
+name the following advantages of our work over SPEED:
 
-- Our automatic analysis can be combined with manually-derived bounds.
-  In contrast, SPEED has no support for user interaction.
+1) Our implementation is publically available and we invite the
+   reviewers to test it.  In contrast, we were not able to obtain the
+   SPEED tool from its authors.
 
-- Our automatic analysis is compositional and naturally takes size
-  changes of variables into account; thus we derive global
-  whole-program bounds.  In contrast, SPEED derives local loop bounds
-  only.
+2) Our automatic analysis produces machine-checkable certificates.  In
+   contrast, SPEED relies on complicated external tools such as
+   abstract interpretation based invariant generation.
+
+3) Our automatic analysis can be combined with manually-derived bounds.
+   In contrast, SPEED has no support for user interaction.
+
+4) Our automatic analysis is compositional and naturally takes size
+   changes of variables into account; thus we derive global
+   whole-program bounds.  In contrast, SPEED derives local loop bounds
+   only.
+
+5) Our automatic analysis can deal with resources such as memory that
+   may be returned during program execution.  In contrast, SPEED can
+   only derive bounds on the number of loop iterations.
 
 > 5) The current analysis is limited and the framework is not flexible
 > enough to easily handle new abstractions, for example to go behond
 > difference-bounds matrices invariants.
 
-We think that our framework is more flexible then existing ones.  A
+We think that our framework is more flexible than existing ones.  A
 manually derived bound can be any function that is definable in Coq
 (see, e.g, Figure 1 and Figure 7).  The automation is tailored to work
 well for system code as we have it for instance in our CertiKOS
@@ -145,10 +196,14 @@ Review #31D:
 > some major questions.  The most important is that I cannot see
 > rigorously how the algorithm arises from the inference rules.
 
-We answered all technical questions of the reviewer in a PDF file that
-is available at:
+We answer all technical questions of the reviewer in a PDF file that
+is available at the following address.  Among other things it includes
+an example derivation with the automatic inference rules that
+illustrates the different steps of the automation: (1) syntax-directed
+application of the rules, (2) constraint generation, (3) constraint
+solving with an LP solver.
 
-  http://XXX
+  http://www.cs.yale.edu/homes/hoffmann/popl15_derivation.pdf
 
 In a nutshell, there is really nothing magical going on and the
 algorithm arises almost automatically.
@@ -157,11 +212,18 @@ algorithm arises almost automatically.
 > my guess, I believe this is a non-trivial problem, given the
 > existence of loops and the Q:WEAK rule.
 
-Loops are simply handled by adding equality constraints to the linear
-program.  (See the example in the PDF.)  The rule Q:WEAK can be simply
-applied after each syntax-driven rule.  We however discovered, that it
-is sufficient to apply it right before assignments in our current set
-of examples.
+All rules except Q:Weak are syntax-directed and we apply them
+inductively, following the syntax tree.  The rule Q:WEAK can be simply
+applied after each syntax-driven rule (the LP solver decides later if
+it is actually used).  We however discovered, that it is sufficient to
+apply it right before assignments and in the branches of if
+statements.
+
+When we apply the rules we instantiate the rational coefficients
+(given by Q = (q_i) in the rules) with variables that are later
+instantiated to rational numbers by the LP solver.  Loops are simply
+handled by adding equality constraints to the linear program.  (See
+the example in the PDF.)
 
 > Also, the compositionality seems to be lost in the two phases
 > (collecting the constraints and solving them). While in the
@@ -170,12 +232,13 @@ of examples.
 > programs.
 
 LP solvers are extremely efficient and can handle millions of
-constraints.  Moreover, our constraints are particularly simple and
-constitute so-called Network Problems that can be solved in linear
-time in practice.  As a result, our implementation scales to large
-programs.  To demonstrate that, we added a new example XXX to the
-online version of the tool.  It has XXX lines of code and can be
-analyzed in XXX seconds.
+constraints in a few seconds.  Moreover, our constraints are
+particularly simple and constitute so-called Network Problems that can
+be solved in linear time in practice.  As a result, our implementation
+scales to large programs.  To demonstrate that, we added the example
+"MD5 Sum" from the MiBench benchmark suit to the online version of the
+tool. It has 260 lines of code and can be analyzed in less than 3
+seconds.
 
 > Furthermore, I expect that often, when the solver successfully finds
 > some solutions, there should be many (could be infinitely)
@@ -206,9 +269,36 @@ Please see our answer at the very end of the response to Review #31B.
 > other is to demonstrate when the technique does not work (e.g. when
 > the loop pattern is too tricky).
 
-The examples can be found in the previously mentioned PDF.  The
-counter example requires simply a bound of the form max(x+y-z,0) that
-we cannot express in our current format.
+The first example can be found in the previously mentioned PDF file.
+It is too complex to present the derivation tree here.  The counter
+example requires simply a bound of the form max(x+y-z,0) that we
+cannot express in our current format:
+
+  while (x+y < z) {
+    if (nondet())
+      x++;
+    else
+      y++;
+    tick(1);
+  }
+
+The problem here is that we don't know that x<z (or y<z) when we
+increment x (or y, respectively).  As a result, we don't have any
+interval such as [x,z] that becomes smaller in the loop body.
+However, if we assert that x and y are non-negative then we can derive
+a bound:
+
+  assert (x>=0);
+  assert (y>=0);
+  while (x+y < z) {
+    if (nondet())
+      x++;
+    else
+      y++;
+    tick(1);
+  }
+
+  Computed bound: |[x, z]| + |[y, z]|
 
 > And I believe that being a black-box and fully automated tool has
 > its own advantages.
@@ -220,12 +310,13 @@ tools, you simply don't have this option.
 > "t08a ... constant 0 and 1 ...". I have no idea which
 > constants you are referring to.
 
-The constant 0 appears in line 1.  The constant 1 appears in line 3.
+We meant the constants that are integer literals in the C program that
+is analyzed.  The constant 0 appears in line 1.  The constant 1
+appears in line 3.
 
 > From my understanding, in t15, "x -= y+1" is broken down into "x = x
 > - 1" and "x = x - y".  My follow-up question: does the order between
 > the two matter?  In other words, will the other order give the same
 > bound?
 
-Short answer: yes.
-
+The order is irrelevant for the bound.
