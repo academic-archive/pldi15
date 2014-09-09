@@ -2,16 +2,17 @@
 We thank the reviewers for their work.
 
 Our *main contribution* is the application of automatic amortized
-analysis (ARA) to system code written in C.  This is not a simple
-extension of existing techniques.  For example, the extension of ARA
-to signed integers was a difficult open problem for more than a
-decade.  It has been investigated by different groups (e.g., Samir
-Genaim and Martin Hofmann) but has not been addressed in earlier work
-(including FLOPS'14).  As with every open problem, it is tempting to
-say it's simple after you have seen the solution.  In general, there
-are many new challenges when moving to C such as break and return
-statements, or the need of a logical state to keep track of relations
-such as x<y.
+resource analysis to system code written in C.  This is not a simple
+extension of existing techniques.  For example, the extension to
+signed integers was a difficult open problem for more than a decade.
+It has been investigated by different groups (e.g., Samir Genaim and
+Martin Hofmann) but has not been addressed in earlier work (including
+FLOPS'14).  As with every open problem, it is tempting to say it's
+simple after you have seen the solution.  In general, there are many
+new challenges when moving to C such as break and return statements,
+bounds that depend on mutable (global and local) variables (also not
+in FLOPS'14), and the need of a logical state to keep track of
+relations such as x<y.
 
 *Another contribution* is the *combination* of the program logic and
 the automatic analysis in the same framework.  We deal with an
@@ -44,26 +45,20 @@ Review #31D, which we would also include in the accepted paper.
 It is of course possible to *integrate abstract interpretation* with
 our framework.  On a high level, this is described in the paper
 "Automatic construction of Hoare proofs from abstract interpretation
-results" (APLAS'03).  We could also imagine a more fine-grained
-integration in which we would have access to a previously computed
-abstract state when generating the constraints.  The point that we
-were trying to make is that we found it to be surprising that we can
-handle all these challenging examples without using state of the art
-abstract interpretations and fixpoint computations.
+results" (APLAS'03).  We are already using a simple form of abstract
+interpretation to derive the logical state (\Gamma) that we use in the
+automation.  It is possible to use more involved abstractions and
+fixpoint computations.  The point that we were trying to make is that
+we found it to be surprising that we can handle all these challenging
+examples without using clever state of the art abstract
+interpretations and fixpoint computations.
 
 As reviewer #31A suggests, there are different ways to implement the
 logic. However, the integration with Clight and the soundness proof in
 Coq are never trivial.  There are also some details that make the
 extension of Hoare logic non-trivial.  For instance, the rule L:Frame
-is not derivable in classic Hoare logic but essential in most
-derivations.
-
-Our framework can be extended to *polynomial bounds* while still
-relying on very efficient *linear constraint solving* only.  This is
-not trivial and based on a theory of multivariate resource polynomials
-We did not present in the paper because it requires a considerable
-amount of math and complicates the presentation of the rules.  More
-details are given in the response to Review #31B.
+is not derivable from the rules of classic Hoare logic but essential
+in most derivations.
 
 ===
 
@@ -137,15 +132,13 @@ with verified compilation.
 > generics than the current one.
 
 As discussed at the beginning, abstract interpretation can of course
-be integrated in our framework.  However, the current automation seems
-to be sufficient for system software like CertiKOS.
-
-In fact, our automatic system relies on an abstract program state that
-is inferred using a minimal form of abstract interpretation (no
-complex fixpoints computations, narrowings and widenings).  Our
-abstract domain (to use the abstract interpretation terminology) is
-formed by conjunctions of linear inequalities on program variables.
-It forms a lattice that is *not flat*, for instance, we have:
+be integrated in our framework.  In fact, our automatic system relies
+on an abstract program state that is inferred using a minimal form of
+abstract interpretation (no complex fixpoints computations, narrowings
+and widenings).  Our abstract domain (to use the abstract
+interpretation terminology) is formed by conjunctions of linear
+inequalities on program variables.  It forms a lattice that is *not
+flat*, for instance, we have:
 
                            0 < 1
                              |
@@ -199,12 +192,13 @@ Review #31D:
 > rigorously how the algorithm arises from the inference rules.
 
 We answer all technical questions of the reviewer in a PDF file that
-is available at.  Among other things it includes an example derivation
-with the automatic inference rules that illustrates the different
-steps of the automation: (1) syntax-directed application of the rules,
-(2) constraint generation, (3) constraint solving with an LP solver.
+is available at the following address.  Among other things it includes
+an example derivation with the automatic inference rules that
+illustrates the different steps of the automation: (1) syntax-directed
+application of the rules, (2) constraint generation, (3) constraint
+solving with an LP solver.
 
-  http://
+  http://www.cs.yale.edu/homes/hoffmann/popl15_derivation.pdf
 
 In a nutshell, there is really nothing magical going on and the
 algorithm arises almost automatically.
@@ -217,7 +211,8 @@ All rules except Q:Weak are syntax-directed and we apply them
 inductively, following the syntax tree.  The rule Q:WEAK can be simply
 applied after each syntax-driven rule (the LP solver decides later if
 it is actually used).  We however discovered, that it is sufficient to
-apply it right before assignments in our current set of examples.
+apply it right before assignments and in the branches of if
+statements.
 
 When we apply the rules we instantiate the rational coefficients
 (given by Q = (q_i) in the rules) with variables that are later
@@ -269,13 +264,13 @@ Please see our answer at the very end of the response to Review #31B.
 > other is to demonstrate when the technique does not work (e.g. when
 > the loop pattern is too tricky).
 
-The first example can be found in the previously mentioned PDF.  It is
-to complex to present the derivation tree here.  The counter example
-requires simply a bound of the form max(x+y-z,0) that we cannot
-express in our current format:
+The first example can be found in the previously mentioned PDF file.
+It is to complex to present the derivation tree here.  The counter
+example requires simply a bound of the form max(x+y-z,0) that we
+cannot express in our current format:
 
   while (x+y < z) {
-    if nondet() then
+    if (nondet())
       x++;
     else
       y++;
@@ -284,13 +279,14 @@ express in our current format:
 
 The problem here is that we don't know that x<z (or y<z) when we
 increment x (or y, respectively).  As a result, we don't have any
-interval such as [x,z] that becomes smaller.  However, if we assert
-that x and y are non-negative then we can derive a bound:
+interval such as [x,z] that becomes smaller in the loop body.
+However, if we assert that x and y are non-negative then we can derive
+a bound:
 
   assert (x>=0);
   assert (y>=0);
   while (x+y < z) {
-    if nondet() then
+    if (nondet())
       x++;
     else
       y++;
@@ -309,13 +305,13 @@ tools, you simply don't have this option.
 > "t08a ... constant 0 and 1 ...". I have no idea which
 > constants you are referring to.
 
-What we call constants are integer literals that appear in the C
-program analyzed.  The constant 0 appears in line 1.  The constant
-1 appears in line 3.
+We meant the constants that are integer literals in the C program that
+is analyzed.  The constant 0 appears in line 1.  The constant 1
+appears in line 3.
 
 > From my understanding, in t15, "x -= y+1" is broken down into "x = x
 > - 1" and "x = x - y".  My follow-up question: does the order between
 > the two matter?  In other words, will the other order give the same
 > bound?
 
-Short answer: the order is irrelevant for the bound.
+The order is irrelevant for the bound.
