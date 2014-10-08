@@ -6,7 +6,8 @@ module E = Errormsg
 
 (* test if [v] must be tracked in the analysis *)
 let is_tracked v =
-  isIntegralType v.vtype
+  isIntegralType v.vtype &&
+  not (List.mem (Attr ("notrack", [])) (typeAttrs v.vtype))
 
 exception Unsupported
 
@@ -215,10 +216,11 @@ let slice cost {fileName; globals; _} =
                     loc.file loc.line
                 )
               )
-            | _ -> E.s (
-                E.error "%s:%d unsupported function call argument"
-                  loc.file loc.line
-              )
+            | e -> ignore (* E.s *) ( (*
+                E.log "%s:%d unsupported function call argument (%a)\n"
+                  loc.file loc.line d_exp e
+              *) );
+              args
             ) el [] in
           (match
             match lvo with
@@ -348,9 +350,11 @@ let _ =
     then (function OpTick n -> n | _ -> 0)
     else (function OpLoop|OpCall -> 1 | _ -> 0) in
   let file = Tools.clean_file (slice metric file) in
+  (*
   print_string "Sliced program:\n";
   pp_file file;
   print_newline ();
+  *)
   let l = Hood.create_logctx file in
   Printf.printf "Analysis using the %s metric:\n"
     (if otick then "tick" else "back-edge");
