@@ -1,8 +1,10 @@
 (* under the hood *)
 
 open Parse
-open Logic
 open Tools
+
+open LogicZ3
+module Logic = LogicZ3
 
 (*
 	0 - no output
@@ -23,7 +25,6 @@ end
 
 
 (* compute the logical states *)
-type pstate = ineq list
 type lannot = { lpre: pstate; lpost: pstate }
 
 let create_logctx =
@@ -34,11 +35,11 @@ let create_logctx =
     | PBreak id -> brk := lpre :: !brk; addpost m id bottom
     | PAssert (c, id) -> addpost m id (Logic.conj (of_cond c) lpre)
     | PReturn (_, id) -> addpost m id bottom
-    | PCall (_, _, _, id) -> addpost m id []
+    | PCall (_, _, _, id) -> addpost m id top
     | PInc (x, op, v, id) -> addpost m id (Logic.incr x op v lpre)
     | PSet (x, vo, id) -> addpost m id (Logic.set x vo lpre)
     | PWhile (c, p, id) ->
-      let itr pre = Logic.conj (of_cond c) pre in
+      (* let itr pre = Logic.conj (of_cond c) pre in
       let out pre = Logic.conj (of_cond (cond_neg c)) pre in
       let g pre =
         let brk = ref [] in
@@ -46,7 +47,9 @@ let create_logctx =
         let post = (UidMap.findp p m').lpost in
         ((m', out post :: !brk), post) in
       let (m', brk), inv = Logic.fix (itr lpre) g in
-      addpost m' id (List.fold_left Logic.merge (out lpre) brk)
+      addpost m' id (List.fold_left Logic.merge (out lpre) brk) *)
+      let m' = f m (ref []) (of_cond c) p in
+      addpost m' id top
     | PIf (c, p1, p2, id) ->
       let m = f m brk (Logic.conj (of_cond c) lpre) p1 in
       let m = f m brk (Logic.conj (of_cond (cond_neg c)) lpre) p2 in
@@ -57,9 +60,9 @@ let create_logctx =
       let m1 = f m brk lpre p1 in
       let m2 = f m1 brk (UidMap.findp p1 m1).lpost p2 in
       addpost m2 id (UidMap.findp p2 m2).lpost
-  in let g m {fbody;_} = f m (ref []) [] fbody
+  in let g m {fbody;_} = f m (ref []) top fbody
   in fun (fl, p) ->
-    List.fold_left g (f UidMap.empty (ref []) [] p) fl
+    List.fold_left g (f UidMap.empty (ref []) top p) fl
 
 
 (* indices we use to name lp variables *)

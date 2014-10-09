@@ -63,6 +63,7 @@ module L = struct
 end
 
 type ineq = L.sum (* sum <= 0 *)
+type pstate = ineq list
 
 let plusv c v l =
   if c = 0 then l else
@@ -86,6 +87,7 @@ let of_cond = function
     in [addl a1 (addl a2 (L.const b) l2) l1]
   | CNonDet -> []
 
+let top = []
 let bottom = [L.const 1]
 
 let ineq_incr id op delta l =
