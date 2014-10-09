@@ -2,11 +2,12 @@
 # to build against Clp and CIL.
 include config.mk
 
-SOURCES = Parse.ml Tools.ml Logic.ml Eval.ml clp_stubs.c Clp.ml Hood.ml Cee.ml
+SOURCES = Parse.ml Tools.ml Logic.ml LogicZ3.ml Eval.ml clp_stubs.c Clp.ml Hood.ml Cee.ml
 RESULT = app
-CLIBS = z bz2 Clp CoinUtils
+CLIBS = Clp CoinUtils bz2 z stdc++
 CFLAGS = -Wall -O3
 LIBS = unix str nums cil
+#LDFLAGS = -static
 
 all: debug-code
 
