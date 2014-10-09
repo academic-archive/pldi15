@@ -4,9 +4,9 @@ include config.mk
 
 SOURCES = Parse.ml Tools.ml Logic.ml LogicZ3.ml Eval.ml clp_stubs.c Clp.ml Hood.ml Cee.ml
 RESULT = app
-CLIBS = Clp CoinUtils bz2 z stdc++
+CLIBS = Clp CoinUtils z3 bz2 z stdc++
 CFLAGS = -Wall -O3
-LIBS = unix str nums cil
+LIBS = unix str nums cil z3
 #LDFLAGS = -static
 
 all: debug-code
