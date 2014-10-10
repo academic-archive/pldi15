@@ -3,6 +3,7 @@
 open Parse
 
 let ctx = Z3.mk_context []
+let solver = Z3.Solver.mk_solver ctx None
 let isort = Z3.Arithmetic.Integer.mk_sort ctx
 
 type pstate = Z3.Expr.expr
@@ -63,10 +64,11 @@ let incr id op delta ps =
 
 let unsat ps =
   let open Z3.Solver in
-  let solver = mk_solver ctx None in
-  (* set_parameters solver (Z3.Params.mk_params ctx); *)
+  push solver;
   add solver [ps];
-  check solver [] <> SATISFIABLE
+  let c = check solver [] in
+  pop solver 1;
+  c <> SATISFIABLE
 
 
 (* applications *)
