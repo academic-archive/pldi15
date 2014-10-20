@@ -2,83 +2,161 @@
 
 open Parse
 
+module Id = struct type t = id let compare = compare end
+module S = Set.Make(Id)
+
+module L = struct
+  (* linear sums *)
+  include Map.Make(Id)
+  type sum = {m: int t; k: int}
+
+  let const k = {m = empty; k}
+
+  let coeff id {m;_} =
+    try find id m with Not_found -> 0
+
+  let set x c {m;k}= {m = add x c m; k}
+
+  let addl id n m =
+    let c = coeff id m in
+    set id (c+n) m
+
+  let addk k' {m; k} = {m; k = k + k'}
+
+  let mult c {m; k} =
+    {m = map (fun n -> c * n) m; k = c * k}
+
+  let vars vs s =
+    fold (fun k c vs -> S.add k vs) s.m vs
+
+  let plus c {m = m1; k = k1} {m = m2; k = k2} =
+    let h = function Some n -> n | None -> 0 in
+    let f _ a b =
+      let o = c * h a + h b in
+      if o = 0 then None else Some o in
+    {m = merge f m1 m2; k = c * k1 + k2}
+
+  let pp {m; k} =
+    let open Printf in
+    let psign first c =
+      if first then
+        (if c < 0 then printf "-")
+      else
+        if c < 0 then printf " - "
+        else printf " + " in
+    let pterm x c =
+      if abs c <> 1 then
+        printf "%d " (abs c);
+      printf "%s" x in
+    let rec p first = function
+      | (x, c) :: tl ->
+        psign first c; pterm x c; p false tl
+      | [] -> () in
+    let bdgs =
+      List.filter (fun (_, c) -> c <> 0)
+        (bindings m) in
+    p true bdgs;
+    if k <> 0 then
+      (psign (bdgs = []) k; printf "%d" (abs k))
+end
+
+type ineq = L.sum (* sum <= 0 *)
+type pstate = ineq list
+
+let plusv c v l =
+  if c = 0 then l else
+  match v with
+  | VNum n -> L.addk (n * c) l
+  | VId x -> L.addl x c l
+
+let of_cond = function
+  | CTest (l1, cmp, l2) ->
+    let rec addl k s = function
+      | LAdd (l1, l2) -> addl k (addl k s l1) l2
+      | LSub (l1, l2) -> addl (-k) (addl k s l1) l2
+      | LMult (k', l) -> addl (k * k') s l
+      | LVar v -> plusv k v s in
+    let a1, a2, b =
+      match cmp with
+      | CLe -> 1, -1, 0
+      | CGe -> -1, 1, 0
+      | CLt -> 1, -1, 1
+      | CGt -> -1, 1, 1
+    in [addl a1 (addl a2 (L.const b) l2) l1]
+  | CNonDet -> []
+
+let top = []
+let bottom = [L.const 1]
+
+let ineq_incr id op delta l =
+  let s = match op with OPlus -> -1 | OMinus -> +1 in
+  plusv (s * L.coeff id l) delta l
+
+let set id vo ps =
+  (* forget everything concerning the assigned variable *)
+  let ps' = List.filter (fun i -> L.coeff id i = 0) ps in
+  match vo with
+  | None -> ps'
+  | Some ((VId id') as v') ->
+    plusv (-1) (VId id) (plusv (+1) v' (L.const 0)) ::
+    plusv (+1) (VId id) (plusv (-1) v' (L.const 0)) ::
+    List.fold_left (fun ps' i ->
+        let c = L.coeff id' i in
+        if c = 0 then ps' else
+        L.addl id' (-c) (L.addl id (+c) i) :: ps'
+      ) ps' ps
+  | Some (VNum n) ->
+    plusv (-1) (VId id) (L.const (+n)) ::
+    plusv (+1) (VId id) (L.const (-n)) :: ps'
+
+let incr id op delta =
+  if delta = VId id
+    then List.filter (fun i -> L.coeff id i = 0)
+    else List.map (ineq_incr id op delta)
+
+(* decision procedure (calling Z3) *)
+
 let ctx = Z3.mk_context []
 let solver = Z3.Solver.mk_solver ctx None
 let isort = Z3.Arithmetic.Integer.mk_sort ctx
 
-type pstate = Z3.Expr.expr
-
-let convvar =
-  let open Z3.Arithmetic.Integer in
-  let module V = struct type t = var let compare = compare end in
-  let module M = Map.Make(V) in
-  let m = ref M.empty in
-  fun v ->
-    try M.find v !m with Not_found ->
-    let e =
-      match v with
-      | VId id -> mk_const_s ctx id
-      | VNum n -> mk_numeral_i ctx n
-    in m := M.add v e !m; e
-
-let of_cond = function
-  | CTest (l1, cmp, l2) ->
-    let open Z3.Arithmetic in
-    let rec convl = function
-      | LAdd (l1, l2) -> mk_add ctx [convl l1; convl l2]
-      | LSub (l1, l2) -> mk_sub ctx [convl l1; convl l2]
-      | LMult (k, l) -> mk_mul ctx [convvar (VNum k); convl l]
-      | LVar v -> convvar v
-    in begin match cmp with
-    | CLe -> mk_le ctx (convl l1) (convl l2)
-    | CGe -> mk_ge ctx (convl l1) (convl l2)
-    | CLt -> mk_lt ctx (convl l1) (convl l2)
-    | CGt -> mk_gt ctx (convl l1) (convl l2)
-    end
-  | CNonDet -> Z3.Boolean.mk_true ctx
-
-let top = Z3.Boolean.mk_true ctx
-let bottom = Z3.Boolean.mk_false ctx
-
-let forget id ps =
-  let open Z3.Expr in
-  let old = mk_const_s ctx id isort in
-  let neo = mk_fresh_const ctx id isort in
-  (substitute_one ps old neo, neo)
-
-let set id vo ps =
-  let ps', _ = forget id ps in
-  match vo with
-  | Some v -> Z3.Boolean.mk_and ctx
-    [ Z3.Boolean.mk_eq ctx (convvar (VId id)) (convvar v)
-    ; ps' ]
-  | None -> ps'
-
-let incr id op delta ps =
-  let ps', neo = forget id ps in
-  let e =
-    match op with
-    | OPlus -> Z3.Arithmetic.mk_add ctx [neo; convvar delta]
-    | OMinus -> Z3.Arithmetic.mk_sub ctx [neo; convvar delta]
-  in Z3.Boolean.mk_and ctx [Z3.Boolean.mk_eq ctx (convvar (VId id)) e; ps']
-
 let unsat ps =
+  let _ =
+    output_string stderr ".";
+    flush stderr;
+    in
+  let cnvk = Z3.Arithmetic.Integer.mk_numeral_i ctx in
+  let cnvv = Z3.Arithmetic.Integer.mk_const_s ctx in
+  let cnvsum {L.m; k} =
+    let open Z3.Arithmetic in
+    let sum =
+      L.fold (fun v n s ->
+          mk_add ctx [mk_mul ctx [cnvk n; cnvv v]; s]
+        ) m (cnvk k) in
+    mk_le ctx sum (cnvk 0) in
   let open Z3.Solver in
   push solver;
-  add solver [ps];
+  add solver (List.map cnvsum ps);
   let c = check solver [] in
   pop solver 1;
   c <> SATISFIABLE
 
-
 (* applications *)
 
-let imp ps a = unsat (Z3.Boolean.mk_and ctx [ps; Z3.Boolean.mk_not ctx a])
-let entails ps l1 c l2 = imp ps (of_cond (CTest (l1, c, l2)))
-let conj ps1 ps2 = Z3.Boolean.mk_and ctx [ps1; ps2]
-let merge ps1 ps2 = Z3.Boolean.mk_or ctx [ps1; ps2]
-let rec fix _ps _f = Z3.Boolean.mk_true ctx
-(*
+let imp ps a =
+  let nega = L.addk 1 (L.mult (-1) a) in
+  unsat (nega :: ps)
+
+let conj ps1 ps2 = List.fold_left
+    (fun ps a -> if imp ps a then ps else a :: ps)
+    ps2 ps1
+
+let merge ps1 ps2 =
+  let ps2' = List.filter (imp ps1)  ps2 in
+  let ps1' = List.filter (imp ps2)  ps1 in
+  conj ps2' ps1'
+
+let rec fix ps f =
   let x, ps' = f ps in
   let rec residue trimmed r = function
     | assn :: assns ->
@@ -88,25 +166,33 @@ let rec fix _ps _f = Z3.Boolean.mk_true ctx
     | [] -> (trimmed, r) in
   let trimmed, ps'' = residue false [] ps in
   if trimmed then fix ps'' f else (x, ps)
-*)
 
+let entails ps l1 c l2 =
+  match of_cond (CTest (l1, c, l2)) with
+  | [a] -> imp ps a
+  | _ -> failwith "Logic.ml: bug in entails"
 
 let range ps = function
   | VNum n -> (Some n, Some n)
-  | VId _ as v ->
-    let bounds =
-      [ 0; 1; 2; 3; 4; 5; 6; 7; 8; 9
-      ; 10; 20; 30; 40; 50; 60; 70; 80; 90
-      ; 100; 200; 300; 400; 500; 600; 700; 800; 900 ] in
-    let lb = ref None and ub = ref None in
-    List.iter (fun n ->
-      let cmp c n = entails ps (LVar v) c (LVar (VNum n)) in
-      if cmp CLe (-n) then ub := Some (-n);
-      if !ub = None && cmp CLe n then ub := Some n;
-      if cmp CGe n then lb := Some n;
-      if !lb = None && cmp CGe (-n) then lb := Some (-n);
-    ) bounds;
-    (!lb, !ub)
+  | VId v ->
+    let upd f a = function
+      | Some x -> Some (f a x)
+      | None -> Some a in
+    List.fold_left
+      begin fun (lb, ub) a ->
+        let c = L.coeff v a in
+        let pred v' n = v=v' || n=0 in
+        if c = 0 || not (L.for_all pred a.L.m)
+          then (lb, ub) else
+          if c < 0
+            then (upd max (a.L.k / -c) lb, ub)
+            else (lb, upd min (-a.L.k / c) ub)
+      end (None, None) ps
 
 (* pretty printing *)
-let pp ps = print_string (Z3.Expr.to_string ps)
+let pp ps =
+  let rec p = function
+    | [] -> print_string "T"
+    | [a] -> L.pp a; print_string " ≤ 0"
+    | a :: tl -> L.pp a; print_string " ≤ 0 /\\ "; p tl in
+  print_string "{ "; p ps; print_string " }"
