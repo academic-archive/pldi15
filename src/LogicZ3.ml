@@ -121,14 +121,10 @@ let solver = Z3.Solver.mk_solver ctx None
 let isort = Z3.Arithmetic.Integer.mk_sort ctx
 
 let unsat ps =
-  let _ =
-    output_string stderr ".";
-    flush stderr;
-    in
-  let cnvk = Z3.Arithmetic.Integer.mk_numeral_i ctx in
-  let cnvv = Z3.Arithmetic.Integer.mk_const_s ctx in
   let cnvsum {L.m; k} =
     let open Z3.Arithmetic in
+    let cnvk = Integer.mk_numeral_i ctx in
+    let cnvv = Integer.mk_const_s ctx in
     let sum =
       L.fold (fun v n s ->
           mk_add ctx [mk_mul ctx [cnvk n; cnvv v]; s]
