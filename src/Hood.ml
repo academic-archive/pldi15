@@ -123,7 +123,7 @@ end = struct
 end
 
 (* quantitative contexts and their operations *)
-module Q(C: sig val state: Clp.t end): sig
+module Q: sig
   type ctx
   val vars: ctx -> VSet.t
   val empty: ctx
@@ -146,14 +146,13 @@ end = struct
   type ctx = { cvars: VSet.t; cmap: int M.t }
 
   let newv ?(sign=(+1)) () =
-    let c = [|
+    Clp.add_column
       { Clp.column_obj = 0.
       ; Clp.column_lower = if sign <= 0 then -. max_float else 0.
       ; Clp.column_upper = if sign >= 0 then max_float else 0.
       ; Clp.column_elements = [| |]
-      } |] in
-    Clp.add_columns C.state c;
-    Clp.number_columns C.state - 1
+      };
+    Clp.number_columns () - 1
 
   let mkrow ?(lo=0.) ?(up=0.) v' l k =
     let row_elements = Array.of_list begin
@@ -169,11 +168,11 @@ end = struct
       List.iter (fun x -> printf " + %s" (c x)) l;
       print_newline ()
     end;
-    Clp.add_rows C.state [|
+    Clp.add_row
       { Clp.row_lower = float_of_int k +. lo
       ; Clp.row_upper = float_of_int k +. up
       ; row_elements
-      } |]
+      }
 
   let vars c = c.cvars
 
@@ -227,9 +226,7 @@ end = struct
       ; row_elements =
         [| (M.find i c1.cmap, -1.)
          ; (M.find i c2.cmap, 1.) |] } in
-    let rows = Array.of_list
-      (Idx.fold (fun l i -> eqv i :: l) [] c1.cvars) in
-    Clp.add_rows C.state rows
+    Idx.fold (fun () i -> Clp.add_row (eqv i)) () c1.cvars
 
   let relax ps c =
     let lo, eq, up =
@@ -262,26 +259,22 @@ end = struct
     assert (List.for_all
       (fun {cvars;_} -> VSet.equal cvars (List.hd cl).cvars) cl
     );
-    let m (cmap', rows) i =
+    let m cmap' i =
       let v' = newv () in
       if debug > 1 then
         List.iter (fun {cmap;_} ->
           Printf.printf "v%d >= v%d\n" v' (M.find i cmap)
         ) cl;
-      let rec row accu = function
-        | {cmap;_} :: cl ->
-          let r =
-            { Clp.row_lower = -. max_float
-            ; Clp.row_upper = 0.
-            ; Clp.row_elements = [|(M.find i cmap, 1.); (v', -1.)|]
-            }
-          in row (r :: accu) cl
-        | [] -> accu in
-      (M.add i v' cmap', row rows cl) in
+      let mkrow {cmap;_} =
+        Clp.add_row
+          { Clp.row_lower = -. max_float
+          ; Clp.row_upper = 0.
+          ; Clp.row_elements = [|(M.find i cmap, 1.); (v', -1.)|]
+          } in
+      List.iter mkrow cl;
+      M.add i v' cmap' in
     let cvars = (List.hd cl).cvars in
-    let cmap, rows = Idx.fold m (M.empty, []) cvars in
-    Clp.add_rows C.state (Array.of_list rows);
-    {cvars; cmap}
+    {cvars; cmap = Idx.fold m M.empty cvars}
 
   let free c idx =
     { c with cmap = M.add idx (newv ()) c.cmap }
@@ -333,18 +326,18 @@ end = struct
       ) c (vars c)
 
   let solve (cini, cfin) =
-    let obj = Clp.objective_coefficients C.state in
+    let obj = Clp.objective_coefficients () in
     Idx.fold begin fun () i ->
       let o = float_of_int (Idx.obj i) in
       obj.(M.find i cini.cmap) <- o
     end () cini.cvars;
-    Clp.change_objective_coefficients C.state obj;
+    Clp.change_objective_coefficients obj;
     flush stdout;
-    Clp.set_log_level C.state 0; (* use 0 to turn CLP output off *)
-    Clp.initial_solve C.state;
-    match Clp.status C.state with
+    Clp.set_log_level 0; (* use 0 to turn CLP output off *)
+    Clp.initial_solve ();
+    match Clp.status () with
     | 0 ->
-      let sol = Clp.primal_column_solution C.state in
+      let sol = Clp.primal_column_solution () in
       let p c = Idx.fold
         (fun () i -> Idx.printk sol.(M.find i c.cmap) i)
         () (vars c) in
@@ -357,7 +350,6 @@ end
 
 let analyze negfrm lctx cost (fdefs, p) =
   (* generate and resolve constraints *)
-  let module Q = Q(struct let state = Clp.create () end) in
   let open Idx in
   let open Eval in
 

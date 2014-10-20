@@ -60,3 +60,78 @@ external dual_row_solution : t -> float array = "clp_dual_row_solution";;
 external dual_column_solution : t -> float array = "clp_dual_column_solution";;
 
 external status : t -> int = "clp_status"
+
+
+(* buffering wrapper for efficiency *)
+
+let st = create ()
+
+let maxcols = 1000
+let cols, ncols =
+  let dummycol =
+    { column_obj = 0.
+    ; column_lower = 0.
+    ; column_upper = 0.
+    ; column_elements = [| |]
+    } in
+  ( Array.make maxcols dummycol
+  , ref 0
+  )
+let maxrows = 1000
+let rows, nrows =
+  let dummyrow =
+    { row_lower = 0.
+    ; row_upper = 0.
+    ; row_elements = [| |]
+    } in
+  ( Array.make maxrows dummyrow
+  , ref 0
+  )
+
+let number_columns () =
+  number_columns st + !ncols
+
+let flush_cols () =
+  if !ncols > 0 then begin
+    add_columns st cols;
+    ncols := 0;
+  end
+
+let add_column col =
+  if !ncols = maxcols then
+    flush_cols ();
+  cols.(!ncols) <- col;
+  incr ncols
+
+let flush_rows () =
+  if !nrows > 0 then begin
+    flush_cols ();
+    add_rows st rows;
+    nrows := 0;
+  end
+
+let add_row row =
+  if !nrows = maxrows then
+    flush_rows ();
+  rows.(!nrows) <- row;
+  incr nrows
+
+let objective_coefficients () =
+  flush_rows ();
+  objective_coefficients st
+
+let change_objective_coefficients =
+  change_objective_coefficients st
+
+let set_log_level =
+  set_log_level st
+
+let initial_solve () =
+  flush_rows ();
+  initial_solve st
+
+let status () =
+  status st
+
+let primal_column_solution () =
+  primal_column_solution st
