@@ -3,8 +3,8 @@
 open Parse
 open Tools
 
-open LogicZ3
-module Logic = LogicZ3
+(* module Logic = LogicZ3 *)
+open Logic
 
 (*
 	0 - no output
