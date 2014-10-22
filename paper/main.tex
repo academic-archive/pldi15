@@ -148,305 +148,432 @@
 \label{sec:intro}
 \aftersectskip
 
-In software engineering and software verification, we often would like
-to have static information about the quantitative behavior of
-programs.  For example, stack and heap-space bounds are important to
-ensure the reliability of safety-critical systems~\cite{veristack14,Regehr05}.
-% Clock-cycle bounds are needed to guarantee the safety of real-time
-% systems [XXX wilhelm].  
-Static energy usage information is critical for autonomous systems and
-has applications in cloud computing~\cite{CohenZSL12,CarrollH10}.
-Worst-case time bounds can help to create constant-time
-implementations that prevent side-channel
-attacks~\cite{KasperS09,BartheBCLP14}.  Loop and recursion-depth
-bounds are used to ensure the accuracy of programs that are executed
-on unreliable hardware~\cite{CarbinMR13} and complexity bounds are
-needed to verify cryptographic protocols~\cite{BartheGB09}.
-% XXX Mention differential privacy here?
-%
-In general, quantitative performance information at design time can
-provide useful feedback for developers.
+In software engineering and software verification,
+we often would like to have static information
+about the quantitative behavior of programs.
+For example, stack and heap-space bounds
+are important to ensure the reliability of
+safety-critical systems~\cite{veristack14,Regehr05}.
+Static energy usage information is critical
+for autonomous systems and has applications in
+cloud computing~\cite{CohenZSL12,CarrollH10}.
+Worst-case time bounds can help to create
+constant-time implementations that prevent
+side-channel attacks~\cite{KasperS09,BartheBCLP14}.
+Loop and recursion-depth bounds are used to
+ensure the accuracy of programs that are executed
+on unreliable hardware~\cite{CarbinMR13} and
+complexity bounds are needed to verify cryptographic
+protocols~\cite{BartheGB09}.  In general, quantitative
+performance information at design time can provide useful
+feedback for developers.
 
-Static analysis of quantitative properties of imperative programs is
-an active research area and recent years have seen many innovations.
-Notable tools that have been developed include
-SPEED~\cite{GulwaniMC09}, KoAT~\cite{BrockschmidtEFFG14},
-PUBS~\cite{AlbertAGPZ12}, Rank~\cite{AliasDFG10}, and LOOPUS~\cite{SinnZV14}.
-%
-While the these tools can derive impressive results for realistic
-software, there still exist shortcomings that hamper the application
-of existing techniques in practice:
-\itemskip
+
+Static analysis of quantitative properties of imperative
+programs is an active research area and recent years
+have seen many innovations.  Notable tools that
+have been developed include SPEED~\cite{GulwaniMC09},
+KoAT~\cite{BrockschmidtEFFG14}, PUBS~\cite{AlbertAGPZ12},
+Rank~\cite{AliasDFG10}, and LOOPUS~\cite{SinnZV14}.
+
+These tools can derive impressive results on realistic
+system software.  However, there are still theoritical
+shortcomings that remain open problems to this day:
+
 \begin{itemize}
-\item Analysis tools are black boxes that\iffull{either}{} deliver a result or fail
-  without enabling \emph{user interaction} to manually or
-  semi-automatically derive bounds for challenging parts of the
-  program.
-\itemskipIn
-\item The computed bounds are often \emph{non-compositional} local
-  bounds (for a single (nested) loop) that are difficult to combine to
+\item The computed bounds are often
+  \emph{non-compositional} local bounds (for a single
+  (nested) loop) that are difficult to combine to
   global whole program bounds.
 \itemskipIn
-\item Existing techniques often rely on complex external tools such as
-  abstract interpretation--based invariant
-  generation~\cite{GulwaniMC09} or translation of the program into a
-  term-rewriting system~\cite{BrockschmidtEFFG14, SinnZV14} without
-  providing \emph{verifiable certificates} for the correctness of the
-  derived bound.
+\item When an automatic tool fails on a loop of the
+  program, no user interaction is possible to derive
+  a bound on the full program.
+\itemskipIn
+\item Existing tools work on a highly abstracted
+  version of the program, thus, are unable to provide
+  a simple syntactic proof of the correctness of their
+  bound.
+\itemskipIn
+\item Maybe we can mention resource freeing                    XXX
 \end{itemize}
-\itemskip
-%
-While there has been much progress in static quantitative analysis,
-Knuth correctly points out in a recent interview~\cite{KnuthInter}
-that the state-of-the-art in formal quantitative methods still falls
-short in comparison with semantic techniques.
-%
-\itemskip
-\begin{quote}
-  % Consider, for example, a computer program that sorts a list of
-  % numbers into order. 
-  $[\cdots]$ Thanks to the work of Floyd, Hoare, and others,
-  we have formal definitions of semantics, and tools by which we can
-  verify that sorting is indeed always achieved. My job is to go
-  beyond correctness, to an analysis of such things as the program's
-  running time $[\cdots]$. I'm 100\% sure that my recurrence correctly
-  describes the program's performance, and all of my colleagues agree
-  with me that the recurrence is "obviously" valid. Yet I have no
-  formal tools by which I can prove that my recurrence is right. I
-  don't really understand my reasoning processes at all!
-  \vspace{-4ex}
-  \begin{flushright}
-    -- Donald E. Knuth, 2014
-  \end{flushright}
-\end{quote}
-\itemskip
-%
-In this work, we develop a resource analysis framework for C programs
-that is based on a solid semantic foundation.  The choice of C is
-primarily motivated by \iffull{our}{the} ongoing work on the formally verified
-hypervisor kernel CertiKOS~\cite{GuVFSC11}.  CertiKOS is mainly
-developed in C and is supposed to provide verified guaranties on
-timing and memory usage.  Moreover, C is a natural choice because it
-is still the most widely used language for system development; in
-particular in safety-critical embedded and real-time systems where
-resource bound analyses are often required by regulatory
-authorities~\cite{May2013}.  Our \emph{contributions} are as follows:
-%
-\itemskip
-\begin{enumerate}
-\item We define an operational cost semantics for CompCert Clight that
-  defines the resource consumption of terminating and diverging
-  executions.  The cost is parametric in a user-definable cost metric
-  and can be negative if resources are released during an execution.
 
-\item We develop a quantitative Hoare logic for interactively deriving
-  resource bounds for Clight programs.  The logic is implemented and
-  proved sound in the Coq Proof Assistant with respect to the cost
-  semantics of Clight.
-\itemskipIn
-\item We describe an automatic static analysis that computes bounds
-  together with derivations in the quantitative Hoare logic.  The
-  analysis is inspired by type-based amortized resource analysis for
-  functional programs~\cite{Jost03,HoffmannAH11}.  It computes
-  derivations by generating simple linear constraints that can be
-  solved by an off-the-shelf LP solver, and does not require any
-  fixpoint computations to obtain loop invariants.
-\itemskipIn
-\item We show with a publicly available prototype implementation, and
-  an experimental evaluation, that our novel amortized resource
-  analysis works precisely and efficiently for challenging loop and
-  recursion patterns, and that the derived constant factors in the
-  bounds are close to or identical with the optimal ones.
-% \item We prove the completeness of the program logic
-%   with respect to the operational cost semantics.
-\end{enumerate}
-\itemskip
-%
-To the best of our knowledge, this article presents the first resource
-analysis framework for C that makes it possible to combine non-trivial
-automatically derived bounds with interactively derived bounds in a
-proof system that produces verifiable certificates for the bounds.
-Our approach complements existing work since it provides a semantic
-foundation for the computation of bounds while still supporting
-automation that sometimes goes beyond the capabilities of existing
-techniques.  Furthermore, the automatic amortized analysis and the
-quantitative logic are naturally compositional and describe the
-resource behavior of code fragments without referring to the source
-code.  As a result, we directly derive global bounds that are
-functions of the input parameters of the program.  Another unique
-feature of our system is, that it can handle resources like memory
-that may become available during execution.
+This paper presents a new framework to derive worst-case
+resource bounds for C programs.  Our choice of C is
+mainly motivated by its strong presence in system and
+embedded software.  These applications often have to meet
+strict time and memory constraints.  To ensure that these
+requirements are met, profiling is not enough because non
+exhaustive.  In contrast, static analysis tools provide
+stronger and sound guarantees.
 
-Our starting point is a recent work~\cite{veristack14} \iffull{in
-  which we have}{that has} formally verified bounds on the stack usage
-of C programs.  A key part of this stack-bound verification is based
-on a quantitative Hoare logic for deriving abstract \emph{stack
-  bounds} for CompCert Clight programs\ifshort{.}{ that depend on the
-  depth of (recursive) function calls.}  % For
-% non-recursive programs it is possible to compute derivations for such
-% stack bounds in the quantitative Hoare logic automatically.  
-% By compiling these bounds together with the C program, we have derived
-% verified stack bounds for x86 assembly code.
-%
-Our \emph{first contribution} is a generalization of the quantitative
-Hoare logic for CompCert Clight that enables us to derive resource
-bounds that are parametric in the resource of interest.  % The
-% quantitative logic is implemented in Coq and proved sound with respect
-% to a small-step operational cost semantics for Clight.
-% that counts a
-% constant resource consumption for each atomic execution step.  The
-% resource consumption at each step is parametric in a user-definable cost
-% metric and can be negative to express the release of resources (as
-% needed, e.g., to reason about memory usage).  Furthermore, a specific
-% \emph{tick} function can be inserted in the source code to further
-% customize the cost model.
-In the implementation of the logic, we use
-a shallow embedding in Coq which makes the logic very flexible.  There
-is practically no limitation on the format of the derived resource
-bounds since they can be any function that is definable in Coq.  The
-derived bounds can also be parametric in a set of cost metrics or
-specifically apply to one fixed cost metric.
+Our compositional framework is built of three parts: 1-
+a clear cost model for C programs based on instrumented
+semantics; 2- a quantitative Hoare logic allowing
+compositional reasoning on the resource consumption of
+C programs at a syntactic level; 3- an automated tool
+that derives bounds in the previous logic.
 
-The precision and expressivity of the quantitative Hoare logic provide
-an ample foundation for reasoning about resource consumption of Clight
-programs.  % The logic is naturally compositional and the derived
-% \emph{quantitative Hoare triples} can be used to specify the resource
-% consumption of library functions or to describe resource contracts
-% between different functions. 
-However, reasoning about quantitative
-properties can often be more tedious than reasoning about intentional
-properties.  Consequently, automation is inevitable to derive resource
-bounds for large code bases like CertiKOS.  Such an automation was
-easily achievable in the case of constant stack bounds for a code base
-that does not contain recursive functions~\cite{veristack14}.  In
-general however, resource bounds have to be parametric in the
-arguments of a function and depend on the number of loop iterations
-and (recursive) function calls that are performed by the function.
+Compared to existing work, our framework is a jump in
+compositionality and correctness: the analysis is no
+longer centered on single loops but on complete programs,
+a mix of automation and interaction can be used to derive
+global bounds, and bounds are computed and proved within
+a clear syntactic deductive system.  Compositionality is
+due first to the logic that soundly allows mixes of hand
+derived bounds and automatically generated bounds.  It is
+also due to the automated tool that keeps track of loop
+bounds and size changes of variables in a unified system.
 
-For functional programs, there exist resource analysis systems---based
-on type-based amortized resource analysis~\cite{Jost03,
-  HoffmannAH12}---that can automatically derive complex polynomial
-bounds with tight constant factors.  This type-based amortized
-resource analysis has been an inspiration in the design of the
-quantitative Hoare logic and is therefore a natural candidate to
-automate the reasoning.  Type-based amortized resource analysis works
-well for functional programs with pattern matching but it has been a
-long-time open problem to apply it to C-like programs with control
-flow that depends on integer arithmetic, negative numbers, and non-linear
-control flow.
-% example, it is a
-% long-time open problem how to use type-based amortized analysis to
-% derive bounds for functions whose resource consumption depends on
-% (possibly negative) integers and non-sequential control flow as
-% introduced by \code{break} and \code{return} statements.
-% Unfortunately, these are the functions \iffull{with non-constant resource
-% consumption}{} that are most common in CertiKOS and other system
-% software.
+The cost model and the quantitative Hoare logic
+presented are based on a recent work~\cite{veristack14}
+that formally verifies bounds on the stack usage of
+C programs.  We generalize this work by allowing to
+reason on any resource.  The automation, which is the
+keystone of this paper, is based on amortized analysis
+techniques~\cite{jan-something}.  It makes the analysis
+of large programs tractable by automatically generating
+resource bounds in the previous logic on a large class
+of programs.
 
-Our \emph{main contribution} is an automatic amortized resource
-analysis for CompCert Clight that computes derivations in the
-quantitative Hoare logic.  It is the first automatic amortized
-resource analysis that can derive bounds that depend on negative
-integers. It also handles programs with mutually recursive functions
-as well as \code{break} and \code{return} statements.  The
-potential-based approach of amortized analysis provides a single
-mechanism for analyzing programs that need special treatment in other
-techniques; including
-\itemskip
+Our automated analysis is able to infer linear
+resource bounds on C programs with integer loops.
+To our knowledge this is the first tool based on
+amortized analysis able to deal with negative numbers and
+differences of variables.  It is also the first resource
+analysis tool for C that deals naturally with recursive
+functions, resources that can be freed (e.g. memory),
+and sequenced loops.  Automated tools for functional
+programs already existed~\cite{Jost03,HoffmannAH12}
+but it has been a long-time open problem to apply it to
+C-like programming languages with control flow depending
+on integer arithmetic.
+
+Compared to more classical approaches based on ranking
+functions, tools that are based on amortized analysis
+only need one mechanism to provide features that are
+usually treated non uniformly:
+
 \begin{itemize}
-\item interaction between \emph{sequential loops or function calls} through
-  size changes of variables,
+\item interaction between \emph{sequential loops or
+  function calls} through size changes of variables,
 \itemskipIn
-\item \emph{nested loops} that influence each others number of iterations,
-\itemskipIn
-\item and \emph{tricky iteration patterns} as found for instance in
-  the Knuth-Morris-Pratt algorithm for string search.
+\item \emph{nested loops} that influence each other
+  with the same set of modified variables,
+\item and \emph{amortized bounds} as found
+  in the Knuth-Morris-Pratt algorithm for string
+  search.
 \end{itemize}
-\itemskip
+
+This paper presents a compositional framework for
+deriving certified resource bounds on C programs. We
+emphasize the following contributions: 1- an automatic
+analysis that generates linear compositional and
+certified resource bounds; 2- an infrastructure verified
+in Coq that lets a programmer derive complex free-form
+resource bounds on complete C programs.
+
+Give a description of the sections here.                    XXX
+
+% In software engineering and software verification, we often would like
+% to have static information about the quantitative behavior of
+% programs.  For example, stack and heap-space bounds are important to
+% ensure the reliability of safety-critical systems~\cite{veristack14,Regehr05}.
+% % Clock-cycle bounds are needed to guarantee the safety of real-time
+% % systems [XXX wilhelm].
+% Static energy usage information is critical for autonomous systems and
+% has applications in cloud computing~\cite{CohenZSL12,CarrollH10}.
+% Worst-case time bounds can help to create constant-time
+% implementations that prevent side-channel
+% attacks~\cite{KasperS09,BartheBCLP14}.  Loop and recursion-depth
+% bounds are used to ensure the accuracy of programs that are executed
+% on unreliable hardware~\cite{CarbinMR13} and complexity bounds are
+% needed to verify cryptographic protocols~\cite{BartheGB09}.
+% % XXX Mention differential privacy here?
+% %
+% In general, quantitative performance information at design time can
+% provide useful feedback for developers.
 %
-The main innovation that makes the analysis practical for C is the use
-of interval sizes in potential functions instead of the sizes of
-variables.  This leads to precise bounds of programs whose resource
-consumption can be described as a function of sizes $|[x,y]| =
-\max(0,y-x)$ of intervals of integer variables.  Such bounds arise for
-instance from standard \emph{for loops} \code{for (i = x; i+K \leq y;
-  i=i+K)} where the step-size $K>0$ is a constant.
+% Static analysis of quantitative properties of imperative programs is
+% an active research area and recent years have seen many innovations.
+% Notable tools that have been developed include
+% SPEED~\cite{GulwaniMC09}, KoAT~\cite{BrockschmidtEFFG14},
+% PUBS~\cite{AlbertAGPZ12}, Rank~\cite{AliasDFG10}, and LOOPUS~\cite{SinnZV14}.
+% %
+% While the these tools can derive impressive results for realistic
+% software, there still exist shortcomings that hamper the application
+% of existing techniques in practice:
+% \itemskip
+% \begin{itemize}
+% \item Analysis tools are black boxes that\iffull{either}{} deliver a result or fail
+%   without enabling \emph{user interaction} to manually or
+%   semi-automatically derive bounds for challenging parts of the
+%   program.
+% \itemskipIn
+% \item The computed bounds are often \emph{non-compositional} local
+%   bounds (for a single (nested) loop) that are difficult to combine to
+%   global whole program bounds.
+% \itemskipIn
+% \item Existing techniques often rely on complex external tools such as
+%   abstract interpretation--based invariant
+%   generation~\cite{GulwaniMC09} or translation of the program into a
+%   term-rewriting system~\cite{BrockschmidtEFFG14, SinnZV14} without
+%   providing \emph{verifiable certificates} for the correctness of the
+%   derived bound.
+% \end{itemize}
+% \itemskip
+% %
+% While there has been much progress in static quantitative analysis,
+% Knuth correctly points out in a recent interview~\cite{KnuthInter}
+% that the state-of-the-art in formal quantitative methods still falls
+% short in comparison with semantic techniques.
+% %
+% \itemskip
+% \begin{quote}
+%   % Consider, for example, a computer program that sorts a list of
+%   % numbers into order.
+%   $[\cdots]$ Thanks to the work of Floyd, Hoare, and others,
+%   we have formal definitions of semantics, and tools by which we can
+%   verify that sorting is indeed always achieved. My job is to go
+%   beyond correctness, to an analysis of such things as the program's
+%   running time $[\cdots]$. I'm 100\% sure that my recurrence correctly
+%   describes the program's performance, and all of my colleagues agree
+%   with me that the recurrence is "obviously" valid. Yet I have no
+%   formal tools by which I can prove that my recurrence is right. I
+%   don't really understand my reasoning processes at all!
+%   \vspace{-4ex}
+%   \begin{flushright}
+%     -- Donald E. Knuth, 2014
+%   \end{flushright}
+% \end{quote}
+% \itemskip
+% %
+% In this work, we develop a resource analysis framework for C programs
+% that is based on a solid semantic foundation.  The choice of C is
+% primarily motivated by \iffull{our}{the} ongoing work on the formally verified
+% hypervisor kernel CertiKOS~\cite{GuVFSC11}.  CertiKOS is mainly
+% developed in C and is supposed to provide verified guaranties on
+% timing and memory usage.  Moreover, C is a natural choice because it
+% is still the most widely used language for system development; in
+% particular in safety-critical embedded and real-time systems where
+% resource bound analyses are often required by regulatory
+% authorities~\cite{May2013}.  Our \emph{contributions} are as follows:
+% %
+% \itemskip
+% \begin{enumerate}
+% \item We define an operational cost semantics for CompCert Clight that
+%   defines the resource consumption of terminating and diverging
+%   executions.  The cost is parametric in a user-definable cost metric
+%   and can be negative if resources are released during an execution.
 %
-
-Despite the apparent simplicity of the new analysis system, it is able
-to reproduce results from the literature (e.g,
-SPEED~\cite{GulwaniMC09}) that have been obtained using sophisticated
-abstract interpretation--based methods such as disjunctive invariant
-generation~\cite{GulwaniMC09} and symbolic backward
-execution~\cite{GulwaniZ10}.  In contrast with abstract
-interpretation--based methods, our technique does not require any
-fixpoint computations to obtain loop invariants.  The mechanism we
-designed is able to leverage local assertions such as $x < y$ that we
-collect along the branching points of the program to obtain global
-resource invariants.  We achieve this by generating a linear
-constraint system that reflects the resource cost and size changes of
-integer variables in the program; a solution of the linear program
-immediately yields a resource-usage bound for the C
-program.  % We can naturally, handle
-% advanced control flow such as break, return, iteration over negative
-% integer variables, and mutually-recursive functions.
-
-Following the development steps of automatic amortized analysis for
-functional programs~\cite{Jost03,HoffmannH10}, we deliberately
-restrict ourselves to linear bounds in the automatic analysis (there
-are no restrictions for the manually-derived bounds in the logic).
-More specifically, bounds have the form $\sum_{a,b} q_{(a,b)} |[a,b]|$
-where $a$ and $b$ are integer variables or constants.  The reason for
-our focus on linear bounds is mainly clarity of presentation.  We
-already experimented with an extension to multivariate resource
-polynomials~\cite{HoffmannAH11,HoffmannS13} but this would make the inference
-rules considerably more involved and should better be described
-separately.  However, we developed the linear inference system so that
-the extension to polynomial bounds shall work smoothly.
-
-We have evaluated the automatic analysis with system code and examples
-from the literature.  \iffull{\pref{app:cat}}{The extended version
-  of this article~\cite{anon_extended}}{} contains more than $30$
-challenging loop and recursion patterns that we collected from open
-source software and the literature.  Our analysis can find
-asymptotically tight bounds for all but 1 of these patterns, and in
-most cases the derived constant factors are tight.  To compare our
-automatic analyzer with existing techniques, we tested our examples
-with tools such as KoAT~\cite{BrockschmidtEFFG14},
-Rank~\cite{AliasDFG10}, and LOOPUS~\cite{SinnZV14}.  Our experiments
-show that the bounds that we derive are often more precise than those
-derived by existing tools.  Only LOOPUS~\cite{SinnZV14}, which also
-uses amortization techniques, is able to achieve a similar precision.
+% \item We develop a quantitative Hoare logic for interactively deriving
+%   resource bounds for Clight programs.  The logic is implemented and
+%   proved sound in the Coq Proof Assistant with respect to the cost
+%   semantics of Clight.
+% \itemskipIn
+% \item We describe an automatic static analysis that computes bounds
+%   together with derivations in the quantitative Hoare logic.  The
+%   analysis is inspired by type-based amortized resource analysis for
+%   functional programs~\cite{Jost03,HoffmannAH11}.  It computes
+%   derivations by generating simple linear constraints that can be
+%   solved by an off-the-shelf LP solver, and does not require any
+%   fixpoint computations to obtain loop invariants.
+% \itemskipIn
+% \item We show with a publicly available prototype implementation, and
+%   an experimental evaluation, that our novel amortized resource
+%   analysis works precisely and efficiently for challenging loop and
+%   recursion patterns, and that the derived constant factors in the
+%   bounds are close to or identical with the optimal ones.
+% % \item We prove the completeness of the program logic
+% %   with respect to the operational cost semantics.
+% \end{enumerate}
+% \itemskip
+% %
+% To the best of our knowledge, this article presents the first resource
+% analysis framework for C that makes it possible to combine non-trivial
+% automatically derived bounds with interactively derived bounds in a
+% proof system that produces verifiable certificates for the bounds.
+% Our approach complements existing work since it provides a semantic
+% foundation for the computation of bounds while still supporting
+% automation that sometimes goes beyond the capabilities of existing
+% techniques.  Furthermore, the automatic amortized analysis and the
+% quantitative logic are naturally compositional and describe the
+% resource behavior of code fragments without referring to the source
+% code.  As a result, we directly derive global bounds that are
+% functions of the input parameters of the program.  Another unique
+% feature of our system is, that it can handle resources like memory
+% that may become available during execution.
 %
-Several micro benchmarks demonstrate the practicality and
-expressiveness of the quantitative Hoare logic.  For example, we
-derive a logarithmic bound for a binary search function, a bound that
-depends on the contents of an array to describe the exact cost of a
-function that finds a maximal element in an array, and a linear
-bound that amortizes the cost of $k$ successive increments to a binary
-counter.
-
-% To show the practicality of our approach we developed a case study
-% with different real-time schedulers implemented in C.  To perform a
-% schedulability analysis that takes into account the overhead of the
-% scheduler we derived time bounds for context switching and
-% initialization of the scheduler.  We then computed time bounds for a
-% set of given user task and took account the previously computed
-% scheduler overhead to determine whether the scheduling requirements of
-% all user tasks can be met.
-
-% With the intention, of making the material easily accessible we first
-% informally describe the new automatic amortized analysis
-% (\pref{sec:inform}).  We then formalize the intuition with the
-% operational cost semantics an the inference rules for the amortized
-% analysis (\pref{sec:aa}).  In \pref{sec:logic} we describe the
-% quantitative Hoare logic and its soundness proof that is formalized in
-% Coq.  In \pref{sec:inter} we prove the soundness of the automatic
-% amortized analysis by showing that derivation using the inference
-% rules can be seen as derivations in the quantitative logic.  We also
-% show how to integrate hand-derived bounds with automatically-derived
-% bounds.  \pref{sec:exper} contains the results of the experimental
-% evaluation and \pref{sec:related} describes related research.
+% Our starting point is a recent work~\cite{veristack14} \iffull{in
+%   which we have}{that has} formally verified bounds on the stack usage
+% of C programs.  A key part of this stack-bound verification is based
+% on a quantitative Hoare logic for deriving abstract \emph{stack
+%   bounds} for CompCert Clight programs\ifshort{.}{ that depend on the
+%   depth of (recursive) function calls.}  % For
+% % non-recursive programs it is possible to compute derivations for such
+% % stack bounds in the quantitative Hoare logic automatically.
+% % By compiling these bounds together with the C program, we have derived
+% % verified stack bounds for x86 assembly code.
+% %
+% Our \emph{first contribution} is a generalization of the quantitative
+% Hoare logic for CompCert Clight that enables us to derive resource
+% bounds that are parametric in the resource of interest.  % The
+% % quantitative logic is implemented in Coq and proved sound with respect
+% % to a small-step operational cost semantics for Clight.
+% % that counts a
+% % constant resource consumption for each atomic execution step.  The
+% % resource consumption at each step is parametric in a user-definable cost
+% % metric and can be negative to express the release of resources (as
+% % needed, e.g., to reason about memory usage).  Furthermore, a specific
+% % \emph{tick} function can be inserted in the source code to further
+% % customize the cost model.
+% In the implementation of the logic, we use
+% a shallow embedding in Coq which makes the logic very flexible.  There
+% is practically no limitation on the format of the derived resource
+% bounds since they can be any function that is definable in Coq.  The
+% derived bounds can also be parametric in a set of cost metrics or
+% specifically apply to one fixed cost metric.
+%
+% The precision and expressivity of the quantitative Hoare logic provide
+% an ample foundation for reasoning about resource consumption of Clight
+% programs.  % The logic is naturally compositional and the derived
+% % \emph{quantitative Hoare triples} can be used to specify the resource
+% % consumption of library functions or to describe resource contracts
+% % between different functions.
+% However, reasoning about quantitative
+% properties can often be more tedious than reasoning about intentional
+% properties.  Consequently, automation is inevitable to derive resource
+% bounds for large code bases like CertiKOS.  Such an automation was
+% easily achievable in the case of constant stack bounds for a code base
+% that does not contain recursive functions~\cite{veristack14}.  In
+% general however, resource bounds have to be parametric in the
+% arguments of a function and depend on the number of loop iterations
+% and (recursive) function calls that are performed by the function.
+%
+% For functional programs, there exist resource analysis systems---based
+% on type-based amortized resource analysis~\cite{Jost03,
+%   HoffmannAH12}---that can automatically derive complex polynomial
+% bounds with tight constant factors.  This type-based amortized
+% resource analysis has been an inspiration in the design of the
+% quantitative Hoare logic and is therefore a natural candidate to
+% automate the reasoning.  Type-based amortized resource analysis works
+% well for functional programs with pattern matching but it has been a
+% long-time open problem to apply it to C-like programs with control
+% flow that depends on integer arithmetic, negative numbers, and non-linear
+% control flow.
+% % example, it is a
+% % long-time open problem how to use type-based amortized analysis to
+% % derive bounds for functions whose resource consumption depends on
+% % (possibly negative) integers and non-sequential control flow as
+% % introduced by \code{break} and \code{return} statements.
+% % Unfortunately, these are the functions \iffull{with non-constant resource
+% % consumption}{} that are most common in CertiKOS and other system
+% % software.
+%
+% Our \emph{main contribution} is an automatic amortized resource
+% analysis for CompCert Clight that computes derivations in the
+% quantitative Hoare logic.  It is the first automatic amortized
+% resource analysis that can derive bounds that depend on negative
+% integers. It also handles programs with mutually recursive functions
+% as well as \code{break} and \code{return} statements.  The
+% potential-based approach of amortized analysis provides a single
+% mechanism for analyzing programs that need special treatment in other
+% techniques; including
+% \itemskip
+% \begin{itemize}
+% \item interaction between \emph{sequential loops or function calls} through
+%   size changes of variables,
+% \itemskipIn
+% \item \emph{nested loops} that influence each others number of iterations,
+% \itemskipIn
+% \item and \emph{tricky iteration patterns} as found for instance in
+%   the Knuth-Morris-Pratt algorithm for string search.
+% \end{itemize}
+% \itemskip
+% %
+% The main innovation that makes the analysis practical for C is the use
+% of interval sizes in potential functions instead of the sizes of
+% variables.  This leads to precise bounds of programs whose resource
+% consumption can be described as a function of sizes $|[x,y]| =
+% \max(0,y-x)$ of intervals of integer variables.  Such bounds arise for
+% instance from standard \emph{for loops} \code{for (i = x; i+K \leq y;
+%   i=i+K)} where the step-size $K>0$ is a constant.
+% %
+%
+% Despite the apparent simplicity of the new analysis system, it is able
+% to reproduce results from the literature (e.g,
+% SPEED~\cite{GulwaniMC09}) that have been obtained using sophisticated
+% abstract interpretation--based methods such as disjunctive invariant
+% generation~\cite{GulwaniMC09} and symbolic backward
+% execution~\cite{GulwaniZ10}.  In contrast with abstract
+% interpretation--based methods, our technique does not require any
+% fixpoint computations to obtain loop invariants.  The mechanism we
+% designed is able to leverage local assertions such as $x < y$ that we
+% collect along the branching points of the program to obtain global
+% resource invariants.  We achieve this by generating a linear
+% constraint system that reflects the resource cost and size changes of
+% integer variables in the program; a solution of the linear program
+% immediately yields a resource-usage bound for the C
+% program.  % We can naturally, handle
+% % advanced control flow such as break, return, iteration over negative
+% % integer variables, and mutually-recursive functions.
+%
+% Following the development steps of automatic amortized analysis for
+% functional programs~\cite{Jost03,HoffmannH10}, we deliberately
+% restrict ourselves to linear bounds in the automatic analysis (there
+% are no restrictions for the manually-derived bounds in the logic).
+% More specifically, bounds have the form $\sum_{a,b} q_{(a,b)} |[a,b]|$
+% where $a$ and $b$ are integer variables or constants.  The reason for
+% our focus on linear bounds is mainly clarity of presentation.  We
+% already experimented with an extension to multivariate resource
+% polynomials~\cite{HoffmannAH11,HoffmannS13} but this would make the inference
+% rules considerably more involved and should better be described
+% separately.  However, we developed the linear inference system so that
+% the extension to polynomial bounds shall work smoothly.
+%
+% We have evaluated the automatic analysis with system code and examples
+% from the literature.  \iffull{\pref{app:cat}}{The extended version
+%   of this article~\cite{anon_extended}}{} contains more than $30$
+% challenging loop and recursion patterns that we collected from open
+% source software and the literature.  Our analysis can find
+% asymptotically tight bounds for all but 1 of these patterns, and in
+% most cases the derived constant factors are tight.  To compare our
+% automatic analyzer with existing techniques, we tested our examples
+% with tools such as KoAT~\cite{BrockschmidtEFFG14},
+% Rank~\cite{AliasDFG10}, and LOOPUS~\cite{SinnZV14}.  Our experiments
+% show that the bounds that we derive are often more precise than those
+% derived by existing tools.  Only LOOPUS~\cite{SinnZV14}, which also
+% uses amortization techniques, is able to achieve a similar precision.
+% %
+% Several micro benchmarks demonstrate the practicality and
+% expressiveness of the quantitative Hoare logic.  For example, we
+% derive a logarithmic bound for a binary search function, a bound that
+% depends on the contents of an array to describe the exact cost of a
+% function that finds a maximal element in an array, and a linear
+% bound that amortizes the cost of $k$ successive increments to a binary
+% counter.
+%
+% % To show the practicality of our approach we developed a case study
+% % with different real-time schedulers implemented in C.  To perform a
+% % schedulability analysis that takes into account the overhead of the
+% % scheduler we derived time bounds for context switching and
+% % initialization of the scheduler.  We then computed time bounds for a
+% % set of given user task and took account the previously computed
+% % scheduler overhead to determine whether the scheduling requirements of
+% % all user tasks can be met.
+%
+% % With the intention, of making the material easily accessible we first
+% % informally describe the new automatic amortized analysis
+% % (\pref{sec:inform}).  We then formalize the intuition with the
+% % operational cost semantics an the inference rules for the amortized
+% % analysis (\pref{sec:aa}).  In \pref{sec:logic} we describe the
+% % quantitative Hoare logic and its soundness proof that is formalized in
+% % Coq.  In \pref{sec:inter} we prove the soundness of the automatic
+% % amortized analysis by showing that derivation using the inference
+% % rules can be seen as derivations in the quantitative logic.  We also
+% % show how to integrate hand-derived bounds with automatically-derived
+% % bounds.  \pref{sec:exper} contains the results of the experimental
+% % evaluation and \pref{sec:related} describes related research.
 
 \sectskip
 \section{Overview and Examples}
@@ -468,7 +595,7 @@ user-defined quantity.  We denote that by writing $(S, \state)
 execution.  The basic idea of amortized analysis is to define a
 \emph{potential function} $\Phi$ that maps program states to non-negative
 numbers and to show that $\Phi(\state) \geq n$ if $\state$ is a
-program state such that $(S, \state) \Downarrow_n \state'$ to prove 
+program state such that $(S, \state) \Downarrow_n \state'$ to prove
 a bound on the resource usage.
 
 To obtain a compositional reasnoning we also have to take into account
@@ -507,7 +634,7 @@ a certificate for the derived resource bound.
 % We have implemented and proved sound such a quantitative Hoare for
 % CompCert Clight in the Coq Proof Assistant.  Because we use a shallow
 % embedding in Coq, every function that can be expressed in Coq can in
-% principle be used as a resource bound.    
+% principle be used as a resource bound.
 
 It is also possible to incorporate boolean conditions into a
 bound to express that the bound is only valid for a certain class of
@@ -571,7 +698,7 @@ We can then use the logic to prove a concrete bound for a given resource
 metric, or a bound that is parametric in a set of resource metrics.
 For example, we can derive the following quantitative
 triple for a binary-search function \code{bsearch} that holds for all
-stack metrics $M$.  
+stack metrics $M$.
 %
 \begin{center}
 ${ \{ (Z = \log_2(h-\ell)) + Z{\cdot}M_\code{bsearch} \} }$
@@ -657,7 +784,7 @@ ${\color{blue}%
 while (x+K<=y) {
   ${\color{blue}%
   x + K \le y; \; 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \vdash }$
-  x=x+K; 
+  x=x+K;
   ${\color{blue}%
   \dashv x \leq y; \, T + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \vdash }$
   tick(T);
@@ -689,7 +816,7 @@ ${\color{blue}%
 while (n>x) {
   ${\color{blue}%
   n{>}x; \, |[x, n]| {+} |[y, m]| \vdash }$
-  if (m>y) 
+  if (m>y)
     ${\color{blue}%
     m{>}y; \, |[x, n]| {+} |[y, m]| \vdash }$
     y=y+1;
@@ -780,7 +907,7 @@ while (y>9) {
    \end{lstlisting}
 
 $3.1|[y,z]| + 0.1|[0,y]|$
-\\[.4\baselineskip] 
+\\[.4\baselineskip]
       {\bf t08a}
     \end{center}
   \end{minipage}
@@ -862,7 +989,7 @@ component of $\Phi(\state)$ if $x \in \dom{\state}$.
 %
 We then develop an inference rule for each syntactic construct that
 derives a sound triple $\htriple{\Phi}P{\Phi'}$ in the quantitative
-logic but enables inference using an LP solver.  
+logic but enables inference using an LP solver.
 
 This idea is best explained by example.  If we again use the
 tick metric that assigns cost $n$ to the function call
@@ -882,7 +1009,7 @@ $\htriple{\Phi_0}{\code{x=x+1;tick(1)}}{\Phi_0}$.  We can
 only do so if we utilize the fact that $x<y$ at the beginning of the
 loop body.  % The reasoning then works as follows. We start with the
 % potential $|[x,y]|$ and the fact that $|[x,y]| > 0$ before the
-% assignment.  
+% assignment.
 If we denote the updated version of $x$ after the
 assignment by $x'$ then the relation $|[x,y]| = |[x',y]| + 1$ between
 the potential before and after the assignment \code{x=x+1} holds.
@@ -909,7 +1036,7 @@ tick annotations can be seamlessly combined in a larger program.
   while (x<y) { x=x+1; tick(10); } #\hfill \textnormal{(Example 3)}#
 \end{lstlisting}
 %
-More formally, we develop (in \pref{sec:AAA}) a judgement 
+More formally, we develop (in \pref{sec:AAA}) a judgement
 $$
 \Gamma; Q \vdash S \dashv Q'; \Gamma'
 $$
@@ -1206,7 +1333,7 @@ negative).
 %
 \and
 \Rule{S:IfFalse}
-{ \code{isfalse}~\sem{e}_\sigma 
+{ \code{isfalse}~\sem{e}_\sigma
 \\ \cost' = \cost {-} M_c^2 {-} M_e(e)
 }
 { (\state, \code{if}(e)~S_1~\code{else}~S_2, \cont, \cost)
@@ -1624,7 +1751,7 @@ termination.  This is formalized by \pref{lem:sem_term}.
  \smallstep{M}^n (\state'', S', \cont', d')$ for some $n$, $d$, $d'$
  and $\state''$ implies $n \le B$.
 \end{lemma}
-} 
+}
 {
 The extended version of this article~\cite{anon_extended} contains all rules and
 lemmas that state the main properties of the cost semantics.
@@ -1913,8 +2040,8 @@ account for the cost $M_s$ of the execution of the sequence.
 
 }
 {
-The rules {\sc L:Update} and {\sc L:Seq} correspond to the respective 
-rules of standard Hoare logic.  
+The rules {\sc L:Update} and {\sc L:Seq} correspond to the respective
+rules of standard Hoare logic.
 }
 In the rule {\sc L:Loop}, the \code{break} part of the
 loop body $S$ becomes the postcondition of the loop statement. We use
@@ -2174,8 +2301,8 @@ statement.  \iffull{We define it as follows.
 \end{align*}}
 {
 We define $\safeK n B R Q \cont \mathop{:=}
-\safe n B {\code{break}} \cont \, \land \, 
-\safe n Q {\code{skip}} \cont \, \land \, 
+\safe n B {\code{break}} \cont \, \land \,
+\safe n Q {\code{skip}} \cont \, \land \,
 \safe n {\lambda \state.\,R\,(\state(x))} {\code{return}~x} \cont$.
 
 }
@@ -2318,7 +2445,7 @@ simpler rules and leaves room for future improvements.
 Our implementation uses conjunctions of linear inequalities as
 logical state.  We never compute fixpoints and take $\top$
 as pre- and postconditions for functions. It has proved to be
-sufficient for the variety of examples we are interested in or found 
+sufficient for the variety of examples we are interested in or found
 in the literature.
 
 
@@ -2361,7 +2488,7 @@ in the literature.
 \and \Rule[leftskip=.2cm,rightskip=.1cm]{Q:IncP}
 { \Gamma \models y \ge 0 \!
 \\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\} \!
-\\ \textstyle q'_{0y} = q_{0y} 
+\\ \textstyle q'_{0y} = q_{0y}
       + \sum_{u \in \mathcal U} q_{xu}
       - \sum_{v \not\in \mathcal U} q_{vx} \!
 }
@@ -2411,7 +2538,7 @@ in the literature.
 \\ U = Q_f[\Vargs / \vec x]
 \\ U' = Q'_f[\Vret/r]
 \\ \forall i \in \dom{U} . \, p_i = u_i
-\\ \forall i \in \dom{U'} .\, p'_i = u'_i 
+\\ \forall i \in \dom{U'} .\, p'_i = u'_i
 \\ \forall i \not\in \dom{U'} .\, p'_i = 0
 \\ \forall i \not\in \text{Loc}
   .\, s_i = 0
@@ -2421,7 +2548,7 @@ in the literature.
   (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c {-} M_r)
 }
 %
-\and 
+\and
 \Rule[leftskip=.2cm,rightskip=.2cm]{Q:Assert}
 { }
 { B; R; (\Gamma, Q {+} M_a) \vdash \code{assert}~e \dashv (\Gamma \land e, Q) }
@@ -2436,9 +2563,9 @@ in the literature.
 \and \Rule{Q:Weak}
 { B; R; (\Gamma_2,Q_2) \vdash S \dashv (\Gamma'_2, Q'_2)
 \\ \!\! \Gamma_1 \models \Gamma_2
-\\\\ Q_1 \succeq_{\Gamma_1} Q_2 
-\\ \Gamma'_2 \models \Gamma'_1 
-\\ Q'_2 \succeq_{\Gamma_2'} Q'_1 
+\\\\ Q_1 \succeq_{\Gamma_1} Q_2
+\\ \Gamma'_2 \models \Gamma'_1
+\\ Q'_2 \succeq_{\Gamma_2'} Q'_1
 }
 { B; R; (\Gamma_1,Q_1) \vdash S \dashv (\Gamma'_1, Q'_1) }
 %
@@ -2482,7 +2609,7 @@ in the literature.
 %
 \and }{}
 \Rule[leftskip=.2cm,rightskip=.1cm]{Q:Return}
-{ P = Q_R[\Vret/x]  
+{ P = Q_R[\Vret/x]
 \\ \forall i \in \dom{P} . \, p_i = q_i
 }
 { B; (\Gamma_R,Q_R); (\Gamma_R[\Vret/x], Q) \vdash \code{return}~x \dashv (\Gamma',Q') }
@@ -2500,7 +2627,7 @@ in the literature.
 \and \Rule[leftskip=.2cm,rightskip=.1cm]{Q:IncP}
 { \Gamma \models y \ge 0 \!
 \\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\} \!
-\\ \textstyle q'_{0y} = q_{0y} 
+\\ \textstyle q'_{0y} = q_{0y}
       + \sum_{u \in \mathcal U} q_{xu}
       - \sum_{v \not\in \mathcal U} q_{vx} \!
 }
@@ -2550,7 +2677,7 @@ in the literature.
 \\ U = Q_f[\Vargs / \vec x]
 \\ U' = Q'_f[\Vret/r]
 \\ \forall i \in \dom{U} . \, p_i = u_i
-\\ \forall i \in \dom{U'} .\, p'_i = u'_i 
+\\ \forall i \in \dom{U'} .\, p'_i = u'_i
 \\ \forall i \not\in \dom{U'} .\, p'_i = 0
 \\ \forall i \not\in \text{Loc}
   .\, s_i = 0
@@ -2560,7 +2687,7 @@ in the literature.
   (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c {-} M_r)
 }
 %
-\iffull{\and 
+\iffull{\and
 \Rule[leftskip=.2cm,rightskip=.2cm]{Q:Assert}
 { }
 { B; R; (\Gamma, Q {+} M_a) \vdash \code{assert}~e \dashv (\Gamma \land e, Q) }
@@ -2576,9 +2703,9 @@ in the literature.
 \and \Rule{Q:Weak}
 { B; R; (\Gamma_2,Q_2) \vdash S \dashv (\Gamma'_2, Q'_2)
 \\ \!\! \Gamma_1 \models \Gamma_2
-\\\\ Q_1 \succeq_{\Gamma_1} Q_2 
-\\ \Gamma'_2 \models \Gamma'_1 
-\\ Q'_2 \succeq_{\Gamma_2'} Q'_1 
+\\\\ Q_1 \succeq_{\Gamma_1} Q_2
+\\ \Gamma'_2 \models \Gamma'_1
+\\ Q'_2 \succeq_{\Gamma_2'} Q'_1
 }
 { B; R; (\Gamma_1,Q_1) \vdash S \dashv (\Gamma'_1, Q'_1) }
 %
@@ -2617,7 +2744,7 @@ the presentation to avoid cluttering notations.  Instead we assume a
 fixed function context $\Delta$ that is implicit on all judgements.
 Function contexts are treated exactly as in the logic.  % We call
 % precondition the pair $(\Gamma, Q)$ and postcondition the pair
-% $(\Gamma', Q')$.  
+% $(\Gamma', Q')$.
 The correspondence between judgements of the
 automation and the ones of the quantitative logic is made formal by
 our soundness proof of the automatic amortized analysis at the end of
@@ -2645,7 +2772,7 @@ $q_{ax}$ that contain $x$ after the assignment.
 \paragraph{Inference Rules.}
 
 Most of the rules correspond exactly to the respective rules of the
-quantitative Hoare logic.  
+quantitative Hoare logic.
 \iffull{
   For example, the rule {\sc Q:Skip} simply reuses its postcondition
   as precondition.  This is sound since evaluating a $\code{skip}$
@@ -2792,10 +2919,10 @@ error is reported to the user.
 &
 \begin{lstlisting}[basicstyle=\tt\scriptsize]
 while (y > x) {
-  x++; tick(1); 
+  x++; tick(1);
 }
 while (x > 2) {
-  x -= 3; tick(1); 
+  x -= 3; tick(1);
 }
 \end{lstlisting}
 &
@@ -2841,7 +2968,7 @@ while (x > y) {
 %
 %
 %
-AAA 
+AAA
   & {\small $1.33|[x,y]| {+} 0.33 |[0,x]|$ }
   & {\small $50 {+} |\inter {-1} i| {+} |\inter 0 k|$ }
   & {\small $|\inter 0 x| {+} |\inter 0 y|$}
@@ -2858,18 +2985,18 @@ Rank &
 \\
 %
 LOOPUS &
-{\small 
+{\small
   \begin{tabular}{c}
     $\max(0, x{-}2)$\\ $+ 2\max(0, y {-} x)$
   \end{tabular}
 } &
-{\small 
+{\small
   \begin{tabular}{c}
     $\max(0, i{-}100)$ \\
     $+ \max(0, k {+} i {+} 51)$
   \end{tabular}
  } &
-{\small ---}% $1 + \max(x, y)$ (???) 
+{\small ---}% $1 + \max(x, y)$ (???)
 &
 {\small ---}
 &
@@ -3148,7 +3275,7 @@ to construct certificates for upper bounds derived automatically.
 % \paragraph{Potential Annotations}
 
 % A \emph{potential annotation} for the variable set $V$ is a family
-% $$Q = (q_I)_{I \in \ind(V)}$$ 
+% $$Q = (q_I)_{I \in \ind(V)}$$
 % of non-negative rational numbers.  Such an annotation denotes the
 % resource polynomial $R_Q$ that is defined by
 % $$
@@ -3181,7 +3308,7 @@ to construct certificates for upper bounds derived automatically.
 % \;.
 % $$
 % %
-% The additive shift for natural numbers reflects the identity 
+% The additive shift for natural numbers reflects the identity
 % \begin{equation}
 % \label{eq:shift}
 % \sum_{0 {\leq} i \leq {k}} q_i \binom{n+1}{i} = \sum_{0 {\leq} i \leq {k}} (q_i{+}q_{i+1}) \binom{n}{i}
@@ -3254,7 +3381,7 @@ to construct certificates for upper bounds derived automatically.
 
 
 %%
-% Note: Later we need to shift in many directions at once like 
+% Note: Later we need to shift in many directions at once like
 %   Q' = shift_{x,y} (shift_{x,u} (Q))
 % To do: Give a combined formula for that (concise constraint system).
 %%
@@ -3547,9 +3674,9 @@ automatic bound analysis does not compute symbolic bounds.
   \begin{mathpar}
   \inferrule*[right={\scriptsize (Q:Loop)},leftskip=0cm,rightskip=0cm,width=20cm]
   { \inferrule*[right={\scriptsize (Q:If)},leftskip=0cm,rightskip=0cm,width=20cm]
-    { 
+    {
       \inferrule*[right={\scriptsize (Q:Weak)},leftskip=2cm,rightskip=4cm, vdots=1.5cm]
-      { 
+      {
         \inferrule*[right={\scriptsize (Q:Seq)},leftskip=0cm,rightskip=0cm]
         {
 \inferrule*[right={\scriptsize (Q:Weak)},leftskip=0cm,rightskip=0cm]
@@ -3570,7 +3697,7 @@ automatic bound analysis does not compute symbolic bounds.
  \dashv (\cdot, P^\text{ti})
 }
 } {
-          (x {<} 10, B^\text{sq}); ((x {\geq} 10,Q^\text{sq}) \vdash \code{x=x{-}10; tick(5);} \dashv (\cdot,P^\text{sq}) 
+          (x {<} 10, B^\text{sq}); ((x {\geq} 10,Q^\text{sq}) \vdash \code{x=x{-}10; tick(5);} \dashv (\cdot,P^\text{sq})
         }
       }
       { (x {<} 10, B^\text{if}); ((x {\geq} 10,Q^\text{if}) \vdash \code{x=x{-}10; tick(5);} \dashv (\cdot,P^\text{if}) }
@@ -3584,11 +3711,11 @@ automatic bound analysis does not compute symbolic bounds.
         (x {<} 10, B^\text{el}); (x {<} 10,Q^\text{el}) \vdash \code{break} \dashv (\cdot,P^\text{el})
       }
     }
-    { \hspace{3cm} (x {<} 10, B^\text{lo}); (\cdot,Q^\text{lo}) \vdash \loopbody \dashv (\cdot,P^\text{lo}) \hspace{3cm} 
+    { \hspace{3cm} (x {<} 10, B^\text{lo}); (\cdot,Q^\text{lo}) \vdash \loopbody \dashv (\cdot,P^\text{lo}) \hspace{3cm}
     }
   }
   {
-   (\cdot, B); (\cdot, Q) \vdash \code{loop}~{\loopbody} \dashv (x {<} 10, P) 
+   (\cdot, B); (\cdot, Q) \vdash \code{loop}~{\loopbody} \dashv (x {<} 10, P)
   }
 \end{mathpar}
 \flushleft Constraints:
@@ -3617,7 +3744,7 @@ $
 &
 \hspace{3em}
 $
-q_0 + 11{\cdot}q_{0,10}  
+q_0 + 11{\cdot}q_{0,10}
 $
 \end{tabular}
 
@@ -3737,7 +3864,7 @@ To this end, modern LP solvers support efficient resolving of
 constraint sets with additional constraints: First we take our initial
 constraint set as given in \pref{fig:derivation}.  We then as the
 solver to find a solution that satisfies the constraint and minimizes
-the linear expression 
+the linear expression
 $$
 q_{x,0} + 10000{\cdot}q_{0,x} + 10{\cdot}q_{x,10} + 9990q_{10,x} \; .
 $$
@@ -3774,7 +3901,7 @@ Another interesting note is that the constraints that we generate have
 a particularly simple form that is known as \emph{network problem}.
 Such problems can be solved in linear time in practice.
 
-\newpage 
+\newpage
 
 \section{Catalog of Automatically Analyzed Programs}
 \label{app:cat}
@@ -3817,7 +3944,7 @@ Note however that it is sometimes crucial that constants are positive
    \end{lstlisting}
 
 $1.33|[x,y]| + 0.33|[0,x]|$
-\\[.7\baselineskip] 
+\\[.7\baselineskip]
       {\bf t08}
     \end{center}
   \end{minipage}
@@ -3848,7 +3975,7 @@ $|[y,x]|$
    \begin{lstlisting}
   while (x>0) {
     x=x-1;
-    if (*) 
+    if (*)
       y=y+1;
     else {
       while (y>0)
@@ -4195,7 +4322,7 @@ $|[0,\mathit{flag}]|$ and the fact that $\mathit{flag}=1$.
     \begin{center}
    \begin{lstlisting}
   while (n>x) {
-    if (m>y) 
+    if (m>y)
       y = y+1;
     else
       x = x+1;
@@ -4316,7 +4443,7 @@ $|[0, m]| + |[0, n]|$
   while (x<n) {
     if (*)
       x=x+1;
-    else 
+    else
       x=x+1;
   }
    \end{lstlisting}
@@ -4368,8 +4495,8 @@ $|[0, M]| + |[0, N]|$
   assert m>0;
   va = n; vb = 0;
   while (va>0 && *) {
-    if (vb<m) { 
-      vb=vb+1; 
+    if (vb<m) {
+      vb=vb+1;
       va=va-1;
     } else {
       vb=vb-1;
@@ -4498,7 +4625,7 @@ $|[0, n]|$
   while (flag>0) {
     flag=0;
     while (n>0 && *) {
-      n=n-1;       
+      n=n-1;
       flag=1;
     }
   }
@@ -4859,7 +4986,7 @@ $x$ and $y$, and the interaction between \code{consume} and
 \centering
 \begin{tabular}{r|C{1.1cm}c|C{1.8cm}c|C{1.9cm}c|C{1.8cm}|C{2.65cm}}
 
- 
+
 File &
 \multicolumn{2}{|c|}{KoAT} &
 \multicolumn{2}{|c|}{Rank} &
@@ -4925,18 +5052,18 @@ $1 {+} 2 |\inter 0 {\code{len}}|$
 
 %--------------------------------------------
 % \hline \file{\dir{speed\_pldi09}{fig1.c}} &
-% 
+%
 % ? &
 % &
-% 
+%
 % --- &
 % &
-% 
+%
 % $2 \max(n, 0)$ &
 % $O(n)$ &
-% 
+%
 % God damn it &
-% 
+%
 % $1 + 2 |\inter 0 n|$
 % \\
 
@@ -5483,7 +5610,7 @@ $1 {+} |\inter 0 n|$
   Experimental evaluation comparing the bounds generated KoAT, Rank,
   LOOPUS, SPEED, and our automatic amortized analysis on several
   challenging linear examples. Results for KoAT and SPEED were extracted
-  from previous publications because KoAT cannot take C programs as 
+  from previous publications because KoAT cannot take C programs as
   input in its current version and SPEED is not available.
   Entries marked with ? indicate that we cannot test the respective example with the tool. Entries
   marked with --- indicate that the tool failed to produce a result.
@@ -5527,8 +5654,8 @@ determines the position \code{n+lo} of the pivot.  We only assert that
 
 \end{document}
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% mode: flyspell
 %%% TeX-master: t
-%%% End: 
+%%% End:
