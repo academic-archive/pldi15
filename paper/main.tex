@@ -175,7 +175,6 @@ have seen many innovations.  Notable tools that
 have been developed include SPEED~\cite{GulwaniMC09},
 KoAT~\cite{BrockschmidtEFFG14}, PUBS~\cite{AlbertAGPZ12},
 Rank~\cite{AliasDFG10}, and LOOPUS~\cite{SinnZV14}.
-
 These tools can derive impressive results on realistic
 system software.  However, there are still theoritical
 shortcomings that remain open problems to this day:
@@ -195,14 +194,17 @@ shortcomings that remain open problems to this day:
   a simple syntactic proof of the correctness of their
   bound.
 \itemskipIn
-\item Maybe we can mention resource freeing                    XXX
+\item Resources that can be freed like memory cannot
+  be handled with the usual techniques.
 \end{itemize}
 
 This paper presents a new framework to derive worst-case
 resource bounds for C programs.  Our choice of C is
 mainly motivated by its strong presence in system and
 embedded software.  These applications often have to meet
-strict time and memory constraints.  To ensure that these
+strict time and memory constraints.
+
+XXX [this has nothing to do here]    To ensure that these
 requirements are met, profiling is not enough because non
 exhaustive.  In contrast, static analysis tools provide
 stronger and sound guarantees.
@@ -228,13 +230,14 @@ bounds and size changes of variables in a unified system.
 The cost model and the quantitative Hoare logic
 presented are based on a recent work~\cite{veristack14}
 that formally verifies bounds on the stack usage of
-C programs.  We generalize this work by allowing to
-reason on any resource.  The automation, which is the
+C programs.  We generalize this work by allowing
+to reason on any resource (e.g. evaluation steps,
+memory, or stack usage).  The automation, which is the
 keystone of this paper, is based on amortized analysis
 techniques~\cite{jan-something}.  It makes the analysis
 of large programs tractable by automatically generating
-resource bounds in the previous logic on a large class
-of programs.
+resource bounds that are certified in the previous logic
+on a large class of programs.
 
 Our automated analysis is able to infer linear
 resource bounds on C programs with integer loops.
@@ -264,6 +267,12 @@ usually treated non uniformly:
   in the Knuth-Morris-Pratt algorithm for string
   search.
 \end{itemize}
+
+The main innovation that makes amortized analysis
+work on imperative languages is to track multivariate
+quantites instead of simple functions of program
+variables.  This leads to precise bounds expressed as
+functions of sizes $|[x,y]| = \max(0,y-x)$ of intervals.
 
 This paper presents a compositional framework for
 deriving certified resource bounds on C programs. We
