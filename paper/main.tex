@@ -169,118 +169,101 @@ performance information at design time can provide useful
 feedback for developers.
 
 
-Static analysis of quantitative properties of imperative
-programs is an active research area and recent years
-have seen many innovations.  Notable tools that
-have been developed include SPEED~\cite{GulwaniMC09},
-KoAT~\cite{BrockschmidtEFFG14}, PUBS~\cite{AlbertAGPZ12},
-Rank~\cite{AliasDFG10}, and LOOPUS~\cite{SinnZV14}.
-These tools can derive impressive results on realistic
-system software.  However, there are still theoritical
-shortcomings that remain open problems to this day:
 
-\begin{itemize}
-\item The computed bounds are often
-  \emph{non-compositional} local bounds (for a single
-  (nested) loop) that are difficult to combine to
-  global whole program bounds.
-\itemskipIn
-\item When an automatic tool fails on a loop of the
-  program, no user interaction is possible to derive
-  a bound on the full program.
-\itemskipIn
-\item Existing tools work on a highly abstracted
-  version of the program, thus, are unable to provide
-  a simple syntactic proof of the correctness of their
-  bound.
-\itemskipIn
-\item Resources that can be freed like memory cannot
-  be handled with the usual techniques.
-\end{itemize}
 
-This paper presents a new framework to derive worst-case
-resource bounds for C programs.  Our choice of C is
-mainly motivated by its strong presence in system and
-embedded software.  These applications often have to meet
-strict time and memory constraints.
+% NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW
 
-XXX [this has nothing to do here]    To ensure that these
-requirements are met, profiling is not enough because non
-exhaustive.  In contrast, static analysis tools provide
-stronger and sound guarantees.
+Available techniques split in two categories.  In the
+first one, tools derive impressive bounds for
+imperative programs, but are not fully compositional.
+Notable recent work like
+SPEED~\cite{GulwaniMC09}, KoAT~\cite{BrockschmidtEFFG14},
+PUBS~\cite{AlbertAGPZ12}, Rank~\cite{AliasDFG10},
+and LOOPUS~\cite{SinnZV14} falls in this category.
+They lack compositionality in at least three ways.
+First, they all base their analysis on some form of
+\emph{ranking-function}.
+Since this
+is often a local analysis, the loop bounds are expressed
+as arithmetic expressions in terms of variables as they
+are just before the loop.  This makes it hard to give a
+resource bound on sequenced loops or function calls in
+terms of the input parameters of a procedure.
+XXX MENTION GULWANI PAPER [1] XXX
+Second, while all imperative programming languages
+provide a function or procedure abstraction, all
+available tools are not able to abstract their resource
+behavior and have to inline the procedure body to perform
+any kind of analysis.  Third, when such a tool fails on
+given program, the only way out to get a resource bound
+is to rewrite the program.  There is no possibility
+of sound interaction with the tool, and manual proofs
+cannot be composed with automatically inferred bounds.
+One of the biggest challenge in the way of interaction
+with these automated tools is that they work on a highly
+abstract version of the program that has a lot more
+behaviors than the original program.
 
-Our compositional framework is built of three parts: 1-
-a clear cost model for C programs based on instrumented
-semantics; 2- a quantitative Hoare logic allowing
-compositional reasoning on the resource consumption of
-C programs at a syntactic level; 3- an automated tool
-that derives bounds in the previous logic.
+In the second category, tools also derive very tight
+bounds on functional programs~\cite{Jost03,HoffmannAH12}.
+These tools are highly compositional, scale for large
+programs, and work directly on the syntax.  Despite all
+these theoretical and practical advantages, it has been
+a long-time open problem how to make them work in the
+presence of negative integers, mutation and non-linear
+control flow.  For example, the first challenge of
+imperative programs is the absence of useful type system
+to hook the analysis on.  Another issue is that these
+tools associate a \emph{potential} directly to program
+variables, doing this in imperative programs would
+fail for loops as simple as \lstinline{for(i=x;i<y;i++)}
+where $y - i$ decreases, but not $|i|$.
+Mutation is yet another challenge, while functional
+programs relate multiple fixed inputs (the typing
+context) with one output (the expression typed),
+imperative programs can change the value of variables
+in scope, so the potential of these variables has to be
+updated after mutations or unsound bounds can be derived.
 
-Compared to existing work, our framework is a jump in
-compositionality and correctness: the analysis is no
-longer centered on single loops but on complete programs,
-a mix of automation and interaction can be used to derive
-global bounds, and bounds are computed and proved within
-a clear syntactic deductive system.  Compositionality is
-due first to the logic that soundly allows mixes of hand
-derived bounds and automatically generated bounds.  It is
-also due to the automated tool that keeps track of loop
-bounds and size changes of variables in a unified system.
-
-The cost model and the quantitative Hoare logic
-presented are based on a recent work~\cite{veristack14}
-that formally verifies bounds on the stack usage of
-C programs.  We generalize this work by allowing
-to reason on any resource (e.g. evaluation steps,
-memory, or stack usage).  The automation, which is the
-keystone of this paper, is based on amortized analysis
-techniques~\cite{jan-something}.  It makes the analysis
-of large programs tractable by automatically generating
-resource bounds that are certified in the previous logic
-on a large class of programs.
+This paper presents a new framework for automatically
+deriving resource bounds on C programs.  This new
+approach is an attempt to unify the two previous
+categories: it solves the compositionality issues of
+imperative world by adapting amortized-analysis based
+techniques from the functional world.
 
 Our automated analysis is able to infer linear
 resource bounds on C programs with integer loops.
 To our knowledge this is the first tool based on
-amortized analysis able to deal with negative numbers and
-differences of variables.  It is also the first resource
-analysis tool for C that deals naturally with recursive
-functions, resources that can be freed (e.g. memory),
-and sequenced loops.  Automated tools for functional
-programs already existed~\cite{Jost03,HoffmannAH12}
-but it has been a long-time open problem to apply it to
-C-like programming languages with control flow depending
-on integer arithmetic.
-
-Compared to more classical approaches based on ranking
-functions, tools that are based on amortized analysis
-only need one mechanism to provide features that are
-usually treated non uniformly:
+amortized analysis able to deal with negative numbers
+and differences of variables.  It is also the first
+resource analysis tool for C that deals naturally with
+recursive functions, resources that can be freed (e.g.
+memory), and sequenced loops.  Compared to more classical
+apporaches based on ranking functions, our tool inherits
+the benefits of amortized reasoning and can handle using
+only one simple mechanism:
 
 \begin{itemize}
-\item interaction between \emph{sequential loops or
+\item interactions between \emph{sequential loops or
   function calls} through size changes of variables,
 \itemskipIn
 \item \emph{nested loops} that influence each other
-  with the same set of modified variables,
-\item and \emph{amortized bounds} as found
-  in the Knuth-Morris-Pratt algorithm for string
-  search.
+  with the same set of modified variables
+\itemskipIn
+\item and \emph{amortized bounds} as found, for example, in
+  the Knuth-Morris-Pratt algorithm for string search.
 \end{itemize}
 
-The main innovation that makes amortized analysis
-work on imperative languages is to track multivariate
-quantites instead of simple functions of program
-variables.  This leads to precise bounds expressed as
-functions of sizes $|[x,y]| = \max(0,y-x)$ of intervals.
+The main innovations that make amortized analysis work
+on imperative languages is to base the analysis on a
+Hoare-like logic and track multivariate quantities instead
+of program variables directly.  This leads to precise bounds
+expressed as functions of sizes $|[x, y]| = \max(0, y-x)$ of
+intervals.
 
-This paper presents a compositional framework for
-deriving certified resource bounds on C programs. We
-emphasize the following contributions: 1- an automatic
-analysis that generates linear compositional and
-certified resource bounds; 2- an infrastructure verified
-in Coq that lets a programmer derive complex free-form
-resource bounds on complete C programs.
+% NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW
+
 
 Give a description of the sections here.                    XXX
 
