@@ -104,7 +104,7 @@ let set id vo ps =
         let c = L.coeff id' i in
         if c = 0 then ps' else
         L.addl id' (-c) (L.addl id (+c) i) :: ps'
-      ) ps' ps
+      ) ps' ps'
   | Some (VNum n) ->
     plusv (-1) (VId id) (L.const (+n)) ::
     plusv (+1) (VId id) (L.const (-n)) :: ps'
