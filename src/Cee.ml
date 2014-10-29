@@ -283,11 +283,17 @@ let slice cost {fileName; globals; _} =
       let true_cond =
         let z = LVar (VNum 0) in
         CTest (z, CLe, z) in
-      PWhile
-        ( true_cond
-        , pay_post (cost OpLoop) (slice_block b)
-        , gid ()
-        )
+      let freshen = function
+        | PTick (n, _) -> PTick (n, gid ())
+        | PInc (x, o, y, _) -> PInc (x, o, y, gid ())
+        | PSet (x, y, _) -> PSet (x, y, gid ())
+        | PCall (r, f, l, _) -> PCall (r, f, l, gid ())
+        | _ -> assert false in
+      let rec norm = function
+        | PSeq ((PTick _ | PInc _ | PSet _ | PCall _) as l, r, id) ->
+          PSeq (freshen l, norm (seq r l), id)
+        | x -> PWhile (true_cond, x, gid ()) in
+      norm (pay_post (cost OpLoop) (slice_block b))
 
     | Block b -> slice_block b
 
