@@ -191,18 +191,19 @@ resource bound on sequenced loops or function calls in
 terms of the input parameters of a procedure.
 XXX MENTION GULWANI PAPER [1] XXX
 Second, while all imperative programming languages
-provide a function or procedure abstraction, all
-available tools are not able to abstract their resource
-behavior and have to inline the procedure body to perform
-any kind of analysis.  Third, when such a tool fails on
-given program, the only way out to get a resource bound
-is to rewrite the program.  There is no possibility
-of sound interaction with the tool, and manual proofs
+provide a function or procedure abstraction, available
+tools are not able to abstract their resource behavior
+and have to inline the procedure body to perform
+their analysis.  Third, when such a tool fails on
+program, the only way out to get a resource bound is to
+rewrite the program.  There is no opportunity for sound
+interaction with the tool, for example, manual proofs
 cannot be composed with automatically inferred bounds.
-One of the biggest challenge in the way of interaction
-with these automated tools is that they work on a highly
-abstract version of the program that has a lot more
-behaviors than the original program.
+One of the toughest challenges in the way of interaction
+is that available tools work on a highly abstract version
+of the source program. This abstracted program has a lot
+more behaviors than the original one and is usually not
+able to express memory related operations.
 
 In the second category, tools also derive very tight
 bounds on functional programs~\cite{Jost03,HoffmannAH12}.
