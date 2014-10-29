@@ -92,19 +92,24 @@ let ineq_incr id op delta l =
   let s = match op with OPlus -> -1 | OMinus -> +1 in
   plusv (s * L.coeff id l) delta l
 
+let dummy =
+  let n = ref 1 in
+  fun () ->
+    let x = Printf.sprintf "?%d" !n in
+    incr n; x
+
 let set id vo ps =
-  (* forget everything concerning the assigned variable *)
-  let ps' = List.filter (fun i -> L.coeff id i = 0) ps in
+  let rename =
+    let dum = dummy () in fun i ->
+    let c = L.coeff id i in
+    if c = 0 then i else
+    L.addl id (-c) (L.addl dum (+c) i) in
+  let ps' = List.map rename ps in
   match vo with
   | None -> ps'
   | Some ((VId id') as v') ->
     plusv (-1) (VId id) (plusv (+1) v' (L.const 0)) ::
-    plusv (+1) (VId id) (plusv (-1) v' (L.const 0)) ::
-    List.fold_left (fun ps' i ->
-        let c = L.coeff id' i in
-        if c = 0 then ps' else
-        L.addl id' (-c) (L.addl id (+c) i) :: ps'
-      ) ps' ps'
+    plusv (+1) (VId id) (plusv (-1) v' (L.const 0)) :: ps'
   | Some (VNum n) ->
     plusv (-1) (VId id) (L.const (+n)) ::
     plusv (+1) (VId id) (L.const (-n)) :: ps'
