@@ -12,7 +12,7 @@ func add(x, y) local (a, b)
 { -a ≤ 0 /\ -b + y ≤ 0 /\ b - y ≤ 0 /\ -a + x - 1 ≤ 0 /\ a - x + 1 ≤ 0 }
         b = b + 1;
         b = add(a, b)
-{ T }
+{ -a ≤ 0 /\ -a + x - 1 ≤ 0 /\ a - x + 1 ≤ 0 }
       );
     return b
 { 1 ≤ 0 }

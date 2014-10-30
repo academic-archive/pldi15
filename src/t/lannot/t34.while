@@ -25,9 +25,9 @@ func amort(x) local (y)
 { -x ≤ 0 }
             y = iter(y);
             y = iter(y)
-{ T }
+{ -x ≤ 0 }
           )
-{ T }
+{ -x ≤ 0 }
       );
     return y
 { 1 ≤ 0 }

@@ -7,9 +7,9 @@ func count_down(x, y) local (a)
 { -a + y + 1 ≤ 0 /\ -a + x ≤ 0 /\ a - x ≤ 0 }
         a = a - 1;
         count_up(a, y)
-{ T }
+{ -a + y ≤ 0 /\ -a + x - 1 ≤ 0 /\ a - x + 1 ≤ 0 }
       )
-{ T }
+{ a - x ≤ 0 /\ -a + x - 1 ≤ 0 }
   )
 func count_up(x, y) local (a)
   (
@@ -20,9 +20,9 @@ func count_up(x, y) local (a)
 { a - x + 2 ≤ 0 /\ -a + y ≤ 0 /\ a - y ≤ 0 }
         a = a + 2;
         count_down(x, a)
-{ T }
+{ a - x ≤ 0 /\ -a + y + 2 ≤ 0 /\ a - y - 2 ≤ 0 }
       )
-{ T }
+{ -a + y ≤ 0 /\ a - y - 2 ≤ 0 }
   )
 
 count_down(y, z)

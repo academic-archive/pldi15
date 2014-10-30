@@ -7,9 +7,9 @@ func count_down(x) local (a)
 { -a + 1 ≤ 0 /\ -a + x ≤ 0 /\ a - x ≤ 0 }
         a = a - 1;
         count_down(a)
-{ T }
+{ -a ≤ 0 /\ -a + x - 1 ≤ 0 /\ a - x + 1 ≤ 0 }
       )
-{ T }
+{ a - x ≤ 0 /\ -a + x - 1 ≤ 0 }
   )
 func copy(x, y) local (t)
   (
@@ -21,7 +21,7 @@ func copy(x, y) local (t)
 { -x ≤ 0 }
         y = y + 1;
         y = copy(x, y)
-{ T }
+{ -x ≤ 0 }
       );
     return y
 { 1 ≤ 0 }
