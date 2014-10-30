@@ -119,6 +119,11 @@ let incr id op delta =
     then List.filter (fun i -> L.coeff id i = 0)
     else List.map (ineq_incr id op delta)
 
+let call locals =
+  List.filter (fun {L.m;_} ->
+    L.for_all (fun k _ -> List.mem k locals) m
+  )
+
 
 (* poor man's decision procedure *)
 

@@ -27,14 +27,19 @@ type pstate = ineq list
 type lannot = { lpre: pstate; lpost: pstate }
 
 let create_logctx =
-  let rec f m brk lpre prog =
+  let rec f' locs m brk lpre prog =
+    let f = f' locs in
     let addpost m id lpost = UidMap.add id { lpre; lpost } m in
     match prog with
     | PTick (_, id) -> addpost m id lpre
     | PBreak id -> brk := lpre :: !brk; addpost m id bottom
     | PAssert (c, id) -> addpost m id (Logic.conj (of_cond c) lpre)
     | PReturn (_, id) -> addpost m id bottom
-    | PCall (_, _, _, id) -> addpost m id []
+    | PCall (ret, _, _, id) ->
+      let locs = match ret with
+        | None -> locs
+        | Some x -> List.filter ((<>) x) locs in
+      addpost m id (Logic.call locs lpre)
     | PInc (x, op, v, id) -> addpost m id (Logic.incr x op v lpre)
     | PSet (x, vo, id) -> addpost m id (Logic.set x vo lpre)
     | PWhile (c, p, id) ->
@@ -57,9 +62,10 @@ let create_logctx =
       let m1 = f m brk lpre p1 in
       let m2 = f m1 brk (UidMap.findp p1 m1).lpost p2 in
       addpost m2 id (UidMap.findp p2 m2).lpost
-  in let g m {fbody;_} = f m (ref []) [] fbody
+  in let g m {fbody;fargs;flocs;_} =
+    f' (fargs@flocs) m (ref []) [] fbody
   in fun (fl, p) ->
-    List.fold_left g (f UidMap.empty (ref []) [] p) fl
+    List.fold_left g (f' [] UidMap.empty (ref []) [] p) fl
 
 
 (* indices we use to name lp variables *)
