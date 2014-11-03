@@ -173,9 +173,9 @@ feedback for developers.
 
 % NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW
 
-Available techniques split in two categories.  In the
-first one, tools derive impressive bounds for
-imperative programs, but are not fully compositional.
+Available techniques split in two categories.  Tools
+from the first one derive impressive bounds for
+imperative programs, but they are not fully compositional.
 Notable recent work like
 SPEED~\cite{GulwaniMC09}, KoAT~\cite{BrockschmidtEFFG14},
 PUBS~\cite{AlbertAGPZ12}, Rank~\cite{AliasDFG10},
@@ -184,30 +184,30 @@ They lack compositionality in at least three ways.
 First, they all base their analysis on some form of
 \emph{ranking-function}.
 Since this
-is often a local analysis, the loop bounds are expressed
-as arithmetic expressions in terms of variables as they
-are just before the loop.  This makes it hard to give a
+is often a local analysis, the loop bounds are
+arithmetic expressions that depend on the value of
+variables  just before the loop.
+This makes it hard to give a
 resource bound on sequenced loops or function calls in
 terms of the input parameters of a procedure.
-XXX MENTION GULWANI AND KOAT XXX
 Second, while all imperative programming languages
 provide a function or procedure abstraction, available
 tools are not able to abstract their resource behavior
-and have to inline the procedure body to perform
-their analysis.  Third, when such a tool fails on
-program, the only way out to get a resource bound is to
-rewrite the program.  There is no opportunity for sound
-interaction with the tool, for example, manual proofs
-cannot be composed with automatically inferred bounds.
-One of the toughest challenges in the way of interaction
-is that available tools work on a highly abstract version
-of the source program. This abstracted program has a lot
-more behaviors than the original one and is usually not
-able to express memory related operations.
+and have to inline the procedure body to perform their
+analysis.  Third, when a tool fails to find a resource
+bound for a program, the program has to be rewritten.
+There is no opportunity for sound interaction with the
+tool, for example, manual proofs cannot be composed
+with automatically inferred bounds.  One reason for this
+impossibility to interact is that available tools work
+on a highly abstract version of the source program. This
+abstracted program has a lot more behaviors than the
+original one and is usually expressed in a language that
+is not able to express memory operations.
 
-In the second category, tools also derive very tight
+In the second category, tools derive very tight
 bounds on functional programs~\cite{Jost03,HoffmannAH12}.
-These tools are highly compositional, scale for large
+They are highly compositional, scale for large
 programs, and work directly on the syntax.  Despite all
 these theoretical and practical advantages, it has been
 a long-time open problem how to make them work in the
@@ -224,12 +224,12 @@ programs relate multiple fixed inputs (the typing
 context) with one output (the expression typed),
 imperative programs can change the value of variables
 in scope, so the potential of these variables has to be
-updated after mutations or unsound bounds can be derived.
+updated after mutations or, unsound bounds can be derived.
 
 This paper presents a new framework for automatically
 deriving resource bounds on C programs.  This new
 approach is an attempt to unify the two previous
-categories: it solves the compositionality issues of
+categories: it solves the compositionality issues of the
 imperative world by adapting amortized-analysis based
 techniques from the functional world.
 
@@ -242,7 +242,7 @@ resource analysis tool for C that deals naturally with
 recursive functions, resources that can be freed (e.g.
 memory), and sequenced loops.  Compared to more classical
 apporaches based on ranking functions, our tool inherits
-the benefits of amortized reasoning and can handle using
+the benefits of amortized reasoning.  It handles, using
 only one simple mechanism:
 
 \begin{itemize}
@@ -250,7 +250,7 @@ only one simple mechanism:
   function calls} through size changes of variables,
 \itemskipIn
 \item \emph{nested loops} that influence each other
-  with the same set of modified variables
+  with the same set of modified variables,
 \itemskipIn
 \item and \emph{amortized bounds} as found, for example, in
   the Knuth-Morris-Pratt algorithm for string search.
