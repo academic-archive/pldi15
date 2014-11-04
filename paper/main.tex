@@ -198,12 +198,12 @@ analysis.  Third, when a tool fails to find a resource
 bound for a program, the program has to be rewritten.
 There is no opportunity for sound interaction with the
 tool, for example, manual proofs cannot be composed
-with automatically inferred bounds.  One reason for this
-impossibility to interact is that available tools work
-on a highly abstract version of the source program. This
+with automatically inferred bounds.  One reason for
+this impossibility to interact is that available tools
+work on an abstract version of the source program. This
 abstracted program has a lot more behaviors than the
 original one and is usually expressed in a language that
-is not able to express memory operations.
+does not feature memory operations.
 
 In the second category, tools derive very tight
 bounds on functional programs~\cite{Jost03,HoffmannAH12}.
@@ -242,8 +242,8 @@ resource analysis tool for C that deals naturally with
 recursive functions, resources that can be freed (e.g.
 memory), and sequenced loops.  Compared to more classical
 apporaches based on ranking functions, our tool inherits
-the benefits of amortized reasoning.  It handles, using
-only one simple mechanism:
+the benefits of amortized reasoning.  Using only one
+simple mechanism, it handles:
 
 \begin{itemize}
 \item interactions between \emph{sequential loops or
@@ -567,6 +567,157 @@ Give a description of the sections here.                    XXX
 % % show how to integrate hand-derived bounds with automatically-derived
 % % bounds.  \pref{sec:exper} contains the results of the experimental
 % % evaluation and \pref{sec:related} describes related research.
+
+\sectskip
+\section{Overview and Examples}
+\aftersectskip
+
+In this section, we informally introduce the automatic amortized
+analysis (AAA) for Clight programs.  Some example bounds are derived
+step by step following our algorithm.
+
+\subsection{Bounding resource usage with potential functions}
+
+The idea that underlies the design of our framework is amortized
+analysis~\cite{Tarjan-amort}.  Assume that a program $S$ executes
+on a starting state $\state$ and consumes $n$ resource units of
+some user-defined quantity.  We denote that by writing $(S, \state)
+\Downarrow_n \state'$ where $\state'$ is the program state after
+the execution.  The basic idea of amortized analysis is to define a
+\emph{potential function} $\Phi$ that maps program states to non-negative
+numbers and to show that $\Phi(\state) \geq n$ if $\state$ is a program
+state such that $(S, \state) \Downarrow_n \state'$.  This gives that
+$\Phi(\state)$ is a valid resource bound.
+
+To obtain a compositional reasoning we also have to take into account the
+state resulting from a program's execution.  We thus use two potential
+functions, one that applies before the execution, and one that applies
+after.  The two functions must respect the relation $\Phi(\state)
+\ge n + \Phi'(\state')$ for all states $\state$ and $\state'$ such
+that $(S, \state) \Downarrow_n \state'$.  Intuitively, $\Phi(\state)$
+must provide enough \emph{potential} for both, paying for the resource
+cost of the computation and paying for the potential $\Phi'(\state')$ on
+the resulting state $\state'$. That way, if $(\state, S_1) \Downarrow_n
+\state'$ and $(\state', S_2) \Downarrow_m \state''$, we get $\Phi(\state)
+\ge n + \Phi'(\state')$ and $\Phi'(\state') \ge m + \Phi''(\state'')$.
+This can be composed as $\Phi(\state) \ge (n + m) + \Phi''(\state'')$.
+Note that the initial potential function $\Phi$ provides an upper bound
+on the resource consumption of the whole program.  What we have observed
+is that, if we define $\htriple{\Phi} {S}{\Phi'}$ to mean
+$$
+\forall \state\, n\, \state'.\, (\state, S) \Downarrow_n \state' \implies \Phi(\state) \ge
+n + \Phi'(\state') \; ,
+$$
+then we get the following familiar looking rule.
+$$
+\RuleNolabel
+{\htriple{\Phi}{S_1}{\Phi'} \\ \htriple{\Phi'}{S_2}{\Phi''}}
+{\htriple{\Phi} {S_1; S_2}  {\Phi''}}.
+$$
+%
+Similarly, other language constructs lead to rules for the potential
+functions that look very similar to Hoare logic or effect system
+rules.  These rules enable interactive reasoning about resource usage
+in a flexible and compositional way, which, as a side effect, produces
+a certificate for the derived resource bound.
+
+The considerations above already show a departure from classical
+techniques for imperative programs.  Indeed, reasoning with two
+potential functions is more compositional than using
+ranking-functions because it forces to consider the sequencing of program
+operations.  In the previous rule, $\Phi$ gives a bound for
+$S_1; S_2$ through the intermediate potential $\Phi'$, even though
+it was derived on $S_1$ only.
+
+% Potential functions can access the whole program state, so this
+% framework can readily be used to derive bounds that depend on the
+% memory contents.
+
+\subsection{Automatic Amortized Analysis}
+
+The reasoning presented above is very general and flexible.  But in
+practice, to make the reasoning tractable on large code bases, we would
+like to infer automatically the potential functions.  The first step
+towards this goal is to reduce our search space by fixing the shape
+of potential functions $\Phi$.  We settle on a form that allows
+\emph{linear programming} (LP) to help inference:
+$$
+\Phi(\state) = q_0 + \sum_{x,y \in \dom(\state)}
+  q_{(x,y)} \cdot |[\state(x),\state(y)]|
+$$
+where $q_{(x,y)} \in \Qplusz$ and $|[a,b]| = \max(b-a,0)$.  We assumed
+that the program state is a simple map from program variables to integers
+and we treat constants as program variables (that cannot be changed
+by the program text).  For instance, $q_{(0,x)}|[0,x]|$ always appear in
+the sum.  We then develop an inference rule for each syntactic construct
+that derives a triple $\htriple{\Phi}P{\Phi'}$ sound in the sense of
+the previous section.
+
+This idea is best explained by example.  If we use the tick metric that
+assigns cost $n$ to the function call \code{tick(n)} and cost $0$ to all
+other operations then the cost of the following example can be bounded
+by $|[x,y]|$.\footnote{Note that there are no restrictions on the signs
+of the input variables in the examples.}
+\begin{lstlisting}[basicstyle=\tt\small]
+while (x<y) { x=x+1; tick(1); } #\hfill \textnormal{(Example 1)}#
+\end{lstlisting}
+To derive this bound in our automatic amortized analysis, we start with
+the initial potential $\Phi_0 = |[x,y]|$ (short for $\Phi_0(\state)
+= |[\state(x),\state(y)]|$) which we also use as the loop invariant.
+For the loop body we have (like in Hoare logic) to derive a triple
+like $\htriple{\Phi_0}{\code{x=x+1;tick(1)}}{\Phi_0}$.  We can only do
+so if we utilize the fact that $x<y$ at the beginning of the loop body.
+The reasoning then works as follows. We start with the potential $|[x,y]|$
+and the fact that $|[x,y]| > 0$ before the assignment.  If we denote the
+updated version of $x$ after the assignment by $x'$ then the relation
+$|[x,y]| = |[x',y]| + 1$ between the potential before and after the
+assignment \code{x=x+1} holds.  This means that we have the potential
+$|[x,y]| + 1$ before the statement \code{tick(1)}.  Since \code{tick(1)}
+consumes one resource unit, we end up with potential $|[x,y]|$ after
+the loop body and have established the loop invariant again.
+
+\subsection{Compositionality in practice}
+
+The following example is typical in cryptographic primitives
+implementations.  These primitives work by block, so when data of
+arbitrary length needs to be processed, it is munched in blocks and
+the leftovers are stored in a buffer for future use when more data
+is available.  This looping pattern is particularly well handled by
+our tool because the LP solver is leveraged to generate a tight bound.
+The optimization problem it is given encodes that constant bounds are
+preferable to linear bounds.  Thus, if $N >= 8$, the bound given by
+AAA is $\frac{N}{8} |[0,l]|$, but if $N<8$ it becomes $7\frac{8-N}{8}
++ \frac{N}{8}|[0,l]|$, because the cost for the second loop is better
+counted as constant.
+%
+\begin{lstlisting}
+for (; l >= 8; l -= 8)
+    // process one block
+    tick(N);
+for (; l > 0; l--)
+    // save leftovers
+    tick(1);
+\end{lstlisting}
+%
+It is worth taking some time to explain the constant contribution
+to the resource bound when $N<8$.  Remark first that the cost of
+the second loop is $|[0,l]|$, and after the first one, we still have
+$\frac{N}{8}|[0,l]|$ potential available from the invariant.  So we have
+to raise the potential of $|[0,l]|$ from $\frac{N}{8}$ to 1, that is,
+we must pay $\frac{8-N}{8}|[0,l]|$.  But since we got out of the first
+loop, we know that $l<8$, so it is sound to only pay $7\frac{8-N}{8}$
+potential units instead.  This explains the somewhat intriguing value
+of the constant term in the bound.  All this reasoning is done within
+our tool automatically and simply relies on general rules presented
+in further sections.
+
+This level of precision and compositionality is only achieved by
+our work, no other available tool will attain the above tight bounds
+on this common kind of looping code.  Thanks to the modularity of
+amortized analysis the intricate interactions between the bounds of
+the two loops can be modeled as one linear program, and because LP
+solvers can optimize the quality of the final bound we can keep
+it close to the actual resource consumption.
 
 \sectskip
 \section{Overview and Examples}
