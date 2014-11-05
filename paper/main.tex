@@ -678,6 +678,10 @@ the loop body and have established the loop invariant again.
 
 \subsection{Compositionality in practice}
 
+With two concrete examples from open-source projects we will try to
+show the reader that compositionality is indeed useful in the analysis
+of common code.
+
 The following example is typical in cryptographic primitives
 implementations.  These primitives work by block, so when data of
 arbitrary length needs to be processed, it is munched in blocks and
@@ -718,6 +722,30 @@ amortized analysis the intricate interactions between the bounds of
 the two loops can be modeled as one linear program, and because LP
 solvers can optimize the quality of the final bound we can keep
 it close to the actual resource consumption.
+
+A clean theoretical framework for compositional bounds sometimes
+even allow to get better asymptotic bounds.  During our experiments
+we found an example of this situation in some code from the cBench
+benchmark suite.
+%
+\begin{lstlisting}
+for (;;) {
+    do { l++; tick(1); } while (l < h && nondet());
+    do { h--; tick(1); } while (h > l && nondet());
+    if (h <= l) break;
+    tick(1); /* swap two elements */ }
+\end{lstlisting}
+%
+The above snippet is the inner loop of a Quicksort implementation, more
+precisely, it is the partitioning part of the algorithm.  This partition
+loop has linear complexity, and feeding into our analysis gives the
+correct and tight worst-case bound $2+3|[l,h]|$.  However, all available
+tools for C will derive a quadratic bound instead.  With the amortized
+analysis approach in mind, it is clear that the three loops get their
+potential from the same interval $[l,h]$.  But on the other hand, current
+techniques will try to find one linear ranking-function for each loop
+and combine them multiplicatively or additively, resulting in a loose
+quadratic bound.
 
 \sectskip
 \section{Overview and Examples}
