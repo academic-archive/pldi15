@@ -79,6 +79,8 @@
 
 %----------------------------------------------------
 
+\newcommand{\jan}[1]{{\color{orange}[[{#1}]]}}
+
 
 \titlebanner{\iffull{Extended Version}{}}%{Draft -- Do not distribute}        % These are ignored unless
 \preprintfooter{\iffull{Extended Version\hspace{-.8cm}}{Draft\hspace{.5cm}}}%{Draft}   % 'preprint' option specified.
@@ -173,13 +175,28 @@ feedback for developers.
 
 % NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW
 
-Available techniques split in two categories.  Tools
-from the first one derive impressive bounds for
+Available techniques for deriving worst-case resource bounds
+split in two categories.  Techniques
+in the first category derive impressive bounds for
 imperative programs, but they are not fully compositional.
-Notable recent work like
+This is problematic if one needs to derive global whole-program bounds.
+In the second category, techniques derive tight whole-program
+bounds on functional programs.
+They are highly compositional, scale for large
+programs, and work directly on the syntax.  However, despite all
+these theoretical and practical advantages, it has been
+a long-time open problem to make them work in the
+presence of negative integers, mutation, and non-linear
+control flow. As a result, they are not suitable for
+typical imperative code.
+%
+\jan{I changed the order here a bit. Good style: First sentence is a
+  summary of the following paragraph.}
+
+Notable tools in the first category include
 SPEED~\cite{GulwaniMC09}, KoAT~\cite{BrockschmidtEFFG14},
 PUBS~\cite{AlbertAGPZ12}, Rank~\cite{AliasDFG10},
-and LOOPUS~\cite{SinnZV14} falls in this category.
+and LOOPUS~\cite{SinnZV14}.
 They lack compositionality in at least three ways.
 First, they all base their analysis on some form of
 \emph{ranking-function}.
@@ -190,41 +207,43 @@ variables  just before the loop.
 This makes it hard to give a
 resource bound on sequenced loops or function calls in
 terms of the input parameters of a procedure.
-Second, while all imperative programming languages
+Second, while all popular imperative programming languages
 provide a function or procedure abstraction, available
 tools are not able to abstract their resource behavior
 and have to inline the procedure body to perform their
 analysis.  Third, when a tool fails to find a resource
 bound for a program, the program has to be rewritten.
-There is no opportunity for sound interaction with the
-tool, for example, manual proofs cannot be composed
-with automatically inferred bounds.  One reason for
-this impossibility to interact is that available tools
+There is no possibility for sound user interaction with the
+tool. For example, there is no concept of manual proofs for
+resource bounds and no framework that could support composition
+of manually derived bounds with automatically inferred bounds. 
+One reason for this lack of interaction is that available tools
 work on an abstract version of the source program. This
-abstracted program has a lot more behaviors than the
+abstracted program has more behaviors than the
 original one and is usually expressed in a language that
-does not feature memory operations.
+does not feature memory operations. 
+%
+\jan{@Quentin: What do you mean by ``more behaviors''?}
 
-In the second category, tools derive very tight
-bounds on functional programs~\cite{Jost03,HoffmannAH12}.
-They are highly compositional, scale for large
-programs, and work directly on the syntax.  Despite all
-these theoretical and practical advantages, it has been
-a long-time open problem how to make them work in the
-presence of negative integers, mutation and non-linear
-control flow.  For example, the first challenge of
-imperative programs is the absence of useful type system
-to hook the analysis on.  Another issue is that these
-tools associate a \emph{potential} directly to program
-variables, doing this in imperative programs would
-fail for loops as simple as \lstinline{for(i=x;i<y;i++)}
-where $y - i$ decreases, but not $|i|$.
-Mutation is yet another challenge, while functional
-programs relate multiple fixed inputs (the typing
-context) with one output (the expression typed),
-imperative programs can change the value of variables
-in scope, so the potential of these variables has to be
+In the second category, are based on type systems for functional
+programs and the potential method of amortized
+analysis~\cite{Jost03,HoffmannAH12}.  The first challenge of
+imperative programs is already the absence of a fine-grained type system to hook
+the analysis on.  Another issue is that the techniques associate
+\emph{potential} directly to program variables.  In
+imperative programs, this would fail for loops as simple as
+\lstinline{for(i=x;i<y;i++)} where $y - i$ decreases, but not $|i|$.
+Mutation is yet another challenge.  While functional programs relate
+multiple fixed inputs (the typing context) with one output (the
+expression typed), imperative programs can change the value of
+variables in scope, so the potential of these variables has to be
 updated after mutations or, unsound bounds can be derived.
+%
+\jan{@Quentin: There is a mismatch between the previous two paragraphs.
+  In the first one we talk about things that category one techniques
+  can't do. In the second one we talk about ``challenges'' for the
+  category two. We instead should just say what the state-of-the-art
+  can't do. We also have to mention Hofmann/Jost ESOP'06 and Atkey ESOP'10.}
 
 This paper presents a new framework for automatically
 deriving resource bounds on C programs.  This new
@@ -234,12 +253,12 @@ imperative world by adapting amortized-analysis based
 techniques from the functional world.
 
 Our automated analysis is able to infer linear
-resource bounds on C programs with integer loops.
-To our knowledge this is the first tool based on
-amortized analysis able to deal with negative numbers
+resource bounds on C programs with mutually-recursive functions and integer loops.
+To our knowledge this is the first technique based on
+amortized analysis that is able to derive bounds that depend on negative numbers
 and differences of variables.  It is also the first
-resource analysis tool for C that deals naturally with
-recursive functions, resources that can be freed (e.g.
+resource analysis technique for C that deals naturally with
+recursive functions, resources that can become available during execution (e.g., when freeing
 memory), and sequenced loops.  Compared to more classical
 apporaches based on ranking functions, our tool inherits
 the benefits of amortized reasoning.  Using only one
@@ -263,10 +282,30 @@ of program variables directly.  This leads to precise bounds
 expressed as functions of sizes $|[x, y]| = \max(0, y-x)$ of
 intervals.
 
+\jan{Here we need a description of the implementation and the
+  experiments.  Message: You can immediately see the great benefits of
+  the unification of the two categories in practice. It scales to
+  larger programs than existing tools (for global bounds) and is as
+  good on local bounds (for tricky loop and recursion patterns).}
+
 % NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW
 
 
 Give a description of the sections here.                    XXX
+
+\jan{We also mention before that existing imperative tools don't allow
+  for user interaction. We should pick this up again and say that we
+  can do it. But then we have to mention the PLDI paper. My suggestion:
+  \begin{itemize}
+  \item mention PLDI'14 in the paragraph about the second category and
+    say it has great flexibility for manual bound derivation but
+    almost no support for automation
+  \item just add another bullet to say that we have the same
+    flexibility for manual bound derivation as in PLDI'14 and that
+    manual and automatic bounds and be composed
+  \end{itemize}
+}
+
 
 % In software engineering and software verification, we often would like
 % to have static information about the quantitative behavior of
