@@ -274,6 +274,8 @@ simple mechanism, it handles:
 \item and \emph{amortized bounds} as found, for example, in
   the Knuth-Morris-Pratt algorithm for string search.
 \end{itemize}
+\jan{We can say that our technique is the only one that reduces the problem to
+  LP solving. I used that as a selling point in the DARPA-STAC proposal.}
 
 The main innovations that make amortized analysis work
 on imperative languages is to base the analysis on a
@@ -302,7 +304,7 @@ Give a description of the sections here.                    XXX
     almost no support for automation
   \item just add another bullet to say that we have the same
     flexibility for manual bound derivation as in PLDI'14 and that
-    manual and automatic bounds and be composed
+    manual and automatic bounds can be composed
   \end{itemize}
 }
 
@@ -612,10 +614,14 @@ Give a description of the sections here.                    XXX
 \aftersectskip
 
 In this section, we informally introduce the automatic amortized
-analysis (AAA) for Clight programs.  Some example bounds are derived
-step by step following our algorithm.
+analysis (AAA) for Clight programs and demonstrate the technique with
+example bounds that we derive step-by-step following our analysis
+system.
 
-\subsection{Bounding resource usage with potential functions}
+\jan{Watch out with the headings. Either upper case or lower case, but
+  don't mix.}
+
+\subsection{Bounding Resource Usage with Potential Functions}
 
 The idea that underlies the design of our framework is amortized
 analysis~\cite{Tarjan-amort}.  Assume that a program $S$ executes
@@ -676,15 +682,19 @@ it was derived on $S_1$ only.
 
 The reasoning presented above is very general and flexible.  But in
 practice, to make the reasoning tractable on large code bases, we would
-like to infer automatically the potential functions.  The first step
+like to automatically infer the potential functions.  The first step
 towards this goal is to reduce our search space by fixing the shape
 of potential functions $\Phi$.  We settle on a form that allows
 \emph{linear programming} (LP) to help inference:
+%
+\jan{I wouldn't say that LP is the reason we picked this format. We
+  rather picked it because it covers the most common cases.}
+%
 $$
 \Phi(\state) = q_0 + \sum_{x,y \in \dom(\state)}
   q_{(x,y)} \cdot |[\state(x),\state(y)]|
 $$
-where $q_{(x,y)} \in \Qplusz$ and $|[a,b]| = \max(b-a,0)$.  We assumed
+where $q_{(x,y)} \in \Qplusz$ and $|[a,b]| = \max(b-a,0)$.  Here, we assume
 that the program state is a simple map from program variables to integers
 and we treat constants as program variables (that cannot be changed
 by the program text).  For instance, $q_{(0,x)}|[0,x]|$ always appear in
@@ -715,11 +725,20 @@ $|[x,y]| + 1$ before the statement \code{tick(1)}.  Since \code{tick(1)}
 consumes one resource unit, we end up with potential $|[x,y]|$ after
 the loop body and have established the loop invariant again.
 
-\subsection{Compositionality in practice}
+\jan{I would add another subsection here to explain how we automate
+  the analysis with LP solving.  Message: Efficient reduction to LP
+  solving and LP solvers are great and super fast. Maybe mention
+  'network problems'.}
 
-With two concrete examples from open-source projects we will try to
-show the reader that compositionality is indeed useful in the analysis
-of common code.
+\subsection{Compositionality in Practice}
+
+With two concrete examples from open-source projects we demonstrate
+that the compositionality of our method is indeed needed in the
+analysis of common code.
+
+\jan{I don't like to talk about ``the reader''. Often you can leave it
+  out. It is fine to address the reader with ``you''. See BUGS in
+  Writing.}
 
 The following example is typical in cryptographic primitives
 implementations.  These primitives work by block, so when data of
@@ -732,6 +751,11 @@ preferable to linear bounds.  Thus, if $N >= 8$, the bound given by
 AAA is $\frac{N}{8} |[0,l]|$, but if $N<8$ it becomes $7\frac{8-N}{8}
 + \frac{N}{8}|[0,l]|$, because the cost for the second loop is better
 counted as constant.
+%
+\jan{N is unbound above. The explanation must be much slower
+  here. Explain what the code does and how the ticks account for the
+  cost. Then: What is the resource bound?. Then: What do we derive?
+  Btw: Why do you use tick(1) and not tick(M)?}
 %
 \begin{lstlisting}
 for (; l >= 8; l -= 8)
@@ -785,6 +809,9 @@ potential from the same interval $[l,h]$.  But on the other hand, current
 techniques will try to find one linear ranking-function for each loop
 and combine them multiplicatively or additively, resulting in a loose
 quadratic bound.
+%
+\jan{Did you test the last example with other tools? What are the
+  bounds they get? State the bounds here.}
 
 \sectskip
 \section{Overview and Examples}
