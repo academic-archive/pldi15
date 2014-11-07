@@ -232,17 +232,17 @@ bound for a program, the program has to be rewritten.
 There is no possibility for sound user interaction with the
 tool. For example, there is no concept of manual proofs for
 resource bounds and no framework that could support composition
-of manually derived bounds with automatically inferred bounds. 
+of manually derived bounds with automatically inferred bounds.
 One reason for this lack of interaction is that available tools
 work on an abstract version of the source program. This
 abstracted program has more behaviors than the
 original one and is usually expressed in a language that
-does not feature memory operations. 
+does not feature memory operations.
 %
 \jan{@Quentin: What do you mean by ``more behaviors''?}
 
-In the second category, are based on type systems for functional
-programs and the potential method of amortized
+Tools in the second category are based on type systems for functional
+programs and on the potential method of amortized
 analysis~\cite{Jost03,HoffmannAH12}.  The first challenge of
 imperative programs is already the absence of a fine-grained type system to hook
 the analysis on.  Another issue is that the techniques associate
