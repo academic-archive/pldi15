@@ -116,37 +116,62 @@
 
 
 \begin{abstract}
-  The goal of quantitative resource analysis is to provide developers
-  with quantitative information about the runtime behavior of software
-  at development time.  Recent years have seen tremendous progress in
-  automatically deriving worst-case resource bounds, yet many
-  challenges in specifying, interactively deriving, formally
-  certifying, and composing resource bounds remain unsolved.
+This paper presents a new approach to quantitative
+analysis for C programs.  The technique described uses
+ideas from amortized analysis and abstract interpretation
+to derive tight linear worst-case bounds that come with a
+proof certificate.  Contrary to most available tools for
+C, ours has a compositional design that provides the
+programmer with bounds expressed in terms of meaningful
+variables.  The compositionality allows to handle uniformly
+nested sequenced loops and recursive sequenced function
+calls.  The automatic analysis is implemented
+as a tool that leverages state-of-the-art SMT solvers
+LP solvers to automatically infer resource bounds on
+a wide range of C programs.  It is the first automatic
+amortized analysis that can derive bounds that depend
+on negative integers and differences between numbers.
+To prove its soundness and give a concrete shape to proof
+certificates, we developed a quantitative Hoare logic
+that we proved sound using the Coq proof assistant.  This
+logic allows manual proofs of arbitrarily complex resource
+bounds on C programs and interaction with the automation.
+To prove the scalability and precision of this new tool,
+we run it on multiple code snippets from the literature,
+reproduce results from previous work, and analyze a
+consequent part of a modern benchmark suite.
 
-  This paper describes a novel quantitative resource analysis
-  framework that tackles these challenges for C programs.  The
-  analysis framework consists of three parts: First, a parametric cost
-  semantics formalizes the resource consumption of CompCert Clight
-  programs.  Second, a quantitative Hoare logic enables users to
-  interactively develop resource bounds in the Coq Proof Assistant.
-  The logic is proved sound with respect to the cost semantics, and
-  shallow embedding enables a derived bound to be any function that is
-  definable in Coq.  Third, an automatic amortized resource analysis
-  for Clight computes derivations in the quantitative Hoare logic.
-  It is the first automatic amortized analysis that can derive bounds
-  that depend on negative integers or differences between numbers,
-  which is crucial to handle typical systems code.  Both, the
-  quantitative logic and the automatic amortized analysis are
-  naturally compositional and can be combined to semi-automatically
-  derive global resource bounds.
-  %
-  An experimental evaluation demonstrates the practicality of the
-  analysis framework.  The expressivity of the logic is shown by
-  manually deriving customized bounds that are tailored to specific
-  algorithms.  A comparison of the automatic amortized analysis with
-  other automatic tools on 30 challenging loop and recursion patterns
-  from the literature and open-source software shows that the bounds
-  derived by the automatic amortized analysis are often more precise.
+%   The goal of quantitative resource analysis is to provide developers
+%   with quantitative information about the runtime behavior of software
+%   at development time.  Recent years have seen tremendous progress in
+%   automatically deriving worst-case resource bounds, yet many
+%   challenges in specifying, interactively deriving, formally
+%   certifying, and composing resource bounds remain unsolved.
+%
+%   This paper describes a novel quantitative resource analysis
+%   framework that tackles these challenges for C programs.  The
+%   analysis framework consists of three parts: First, a parametric cost
+%   semantics formalizes the resource consumption of CompCert Clight
+%   programs.  Second, a quantitative Hoare logic enables users to
+%   interactively develop resource bounds in the Coq Proof Assistant.
+%   The logic is proved sound with respect to the cost semantics, and
+%   shallow embedding enables a derived bound to be any function that is
+%   definable in Coq.  Third, an automatic amortized resource analysis
+%   for Clight computes derivations in the quantitative Hoare logic.
+%   It is the first automatic amortized analysis that can derive bounds
+%   that depend on negative integers or differences between numbers,
+%   which is crucial to handle typical systems code.  Both, the
+%   quantitative logic and the automatic amortized analysis are
+%   naturally compositional and can be combined to semi-automatically
+%   derive global resource bounds.
+%   %
+%   An experimental evaluation demonstrates the practicality of the
+%   analysis framework.  The expressivity of the logic is shown by
+%   manually deriving customized bounds that are tailored to specific
+%   algorithms.  A comparison of the automatic amortized analysis with
+%   other automatic tools on 30 challenging loop and recursion patterns
+%   from the literature and open-source software shows that the bounds
+%   derived by the automatic amortized analysis are often more precise.
 \end{abstract}
 
 % \category{D.2.4}{Software Engineering}
