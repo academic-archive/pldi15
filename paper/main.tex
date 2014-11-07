@@ -3840,6 +3840,32 @@ example \emph{t08}.  One can see that the derived constant factors are the
 best possible if the input variable $x$ is non-negative.  If $x$ is
 negative then the bound is only slightly off.
 
+\begin{table}[t]
+\centering
+\begin{tabular}{r|c|c|c}
+Function & LoC & Bound & Time (s) \\
+\hline
+\code{adpcm\_coder} & 145 & $1+|[0,\code{N}]|$ & 0.6 \\
+\code{adpcm\_decod} & 130 & $1+|[0,\code{N}]|$ & 0.2 \\
+\code{BF\_cfb64\_enc} & 151 & $1+2|[-1,\code{N}]|$ & 0.7 \\
+\code{BF\_cbc\_enc} & 180 & $2+0.25|[-8,\code{N}]|$ & 1.0 \\
+\code{mad\_bit\_crc} & 145 & $61.19{+}0.19|[-1,\code{N}]|$ & 0.4 \\
+\code{mad\_bit\_read} & 65 & $1+0.12|[0,\code{N}]|$ & 0.05 \\
+\code{MD5Update} & 200 & $133.95{+}1.05|[0,\code{N}]|$ & 1.0 \\
+\code{sha\_update} & 98 & $2 + 3.55|[0,\code{N}]|$ & 1.2 \\
+\end{tabular}
+\vspace{.1cm}
+\caption{Evaluation of our automatic amortized analysis on larger
+C code from the cBench benchmark suite. The function analyzed might
+be calling helper functions which do not appear in the list but have
+to be analyzed.  These functions are accounted for in the LoC column
+where not only the lines count of the analyzed function is called
+but also the line count of all the funtions it calls. The line count
+is computed on pre-processed C with all unnecessary declarations
+removed.}
+\label{tab:compar}
+\end{table}
+
 \sectskip
 \section{Related Work}
 \label{sec:related}
