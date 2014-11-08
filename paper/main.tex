@@ -81,6 +81,8 @@
 \input{definitions}
 \begin{document}
 
+\lstset{moredelim=[is][\underbar]{_}{_},keepspaces=true}
+
 %SHORT
 % \lstset{basicstyle=\tt\scriptsize}
 % \abovedisplayskip=3pt
@@ -878,6 +880,132 @@ quadratic bound.
   bounds they get? State the bounds here.}
 
 \sectskip
+\section{Logical State and User Interaction}
+\label{sec:anno}
+\aftersectskip
+
+\begin{figure}
+\center
+\begin{minipage}[b]{0.8\linewidth}
+\begin{lstlisting}[numbers=left]
+${\color{blue}%
+  \mbox{logical state invariant } \{ \code{na} = \#_1(\code{a})} \}$
+while (k > 0) {
+  x=0;
+  while (x < N && a[x] == 1 _&& na > 0_) {
+    a[x]=0; _na--;_
+    tick(1);
+    x++; }
+  if (x < N) {
+    a[x]=1; _na++;_
+    tick(1); }
+  k--;
+}
+\end{lstlisting}
+\end{minipage}
+\caption{Example of assisted bound derivation using logical state.  We write
+  $\#_1(a)$ for $\# \{ i \mid 0 \le i < N \land a[i] = 1 \}$ and use the
+  tick metric that assigns cost $n$ to the statement \code{tick(n)} and
+  0 to all other operations.  The bound derived automatically is
+  $2|[0,\code{k}]| + |[0,\code{na}]|$.
+  }
+\label{fig:xmplincaux}
+\end{figure}
+
+\begin{figure}
+\begin{lstlisting}[numbers=left]
+${\color{blue}%
+  \mbox{logical state invariant }
+  \{ \code{lg} \ge \log_2(h-l) \cdot M_\code{bsearch} \} }$
+bsearch(x,l,h_,lg_) {
+  if (h-l > 1 && lg > 0) {
+    m = h + (h-l)/2;
+    _lg--;_ if (a[m]>x) h=m; else l=m;
+    tick($M_\code{bsearch}$);
+    l = bsearch(x,l,h_,lg_);
+    tick($-M_\code{bsearch}$);
+  } else return l;
+}
+\end{lstlisting}
+\caption{Example of assisted bound derivation using logical state.
+  We use the tick metric to model the stack consumption of the program.
+  Before a function call to \code{bsearch}, a tick statement pays for
+  the space used by stack frame of the function.  The space is recoverd
+  after the call.
+  The bound derived automatically is $|[0,\code{lg}]|$.
+  }
+\label{fig:xmplbsaux}
+\end{figure}
+
+While complete automation is often desirable, it cannot possibly
+be universal since the problem is undecidable.  In this section
+we present two techniques to derive complex resource bounds by
+leveraging our automation.
+
+When the resource bound of a program depends on the contents of the heap,
+or is non-linear (e.g. logarithmic, exponential), we propose to
+introduce \emph{logical state}.
+This technique is inspired by XXX (speed) and consists in introducing
+extra variables to the program that do not change its behavior, but help
+the automatic tool to figure out a bound.
+
+The systematic technique consists in the following steps. First,
+a program $P$ that fails to be analyzed automatically is enriched
+by extra variables $\vec x$ called logical variables to form a
+program $P_l(\vec x)$.  Second, an initial value $\vec X(\sigma)$
+for the logical variables is shown to be such that:
+$$
+\forall n\, \sigma\, \sigma'.\,
+  (\sigma, P_l(\vec X(\sigma))) \Downarrow_n \sigma'
+    {\implies}
+  \exists n', n' \le n \land
+  (\sigma, P) \Downarrow_{n'} \sigma'.
+$$
+Since the annotated program and the original one are often
+syntactically close, the proof of this result goes
+by simple induction on the resource-aware evaluation judgement.
+Third, using existing automation tools, a bound $B(\vec x)$ for
+$P_l(\vec x)$ is derived.  Finally this bound, instantiated with
+$\vec X$, gives the final resource bound for the program $P$.
+
+This idea is illustrated by the program on \pref{fig:xmplincaux}.
+Parts of the code underlined are annotations that were added
+to the original program text.  The top-level loop increments
+a binary counter \code{k} times.  A naive analysis of
+the algorithm yields the quadratic bound $\code{k}\cdot\code{N}$.
+However, the algorithm is in fact linear and its cost is bounded
+by $2\code{k} + \#_1(\code{a})$ where $\#_1(\code{a})$ denotes
+the number of one entries in the array \code{a}.  Since this
+number depends on the heap contents, no tool available
+for C is able to derive the linear bound.  However, it can be inferred
+by our automated tool if a logical variable \code{na} is introduced.
+This logical variable is a reification, in the program, of the
+number $\#_1(\code{a})$.  For example, on line 5 of the example
+we are setting \code{a[x]} to 0 and because of the condition we
+know that this array entry was 1.  To reflect this change on
+$\#_1(\code{a})$, the logical variable \code{na} is decremented.
+Similarly, on line 9, an array entry which was 0 becomes 1, so
+\code{na} is incremented.  To complete the step 2 of the systematic
+procedure described above, we must show that the extra test
+\code{na > 0} at line 4 does not influence the loop behavior.  It
+is done by proving inductively that $\code{na} = \#_1(\code{a})$
+and remarking that since $\code{a[x]} = 1$ is true, we must have
+$\#_1(\code{a}) > 0$, thus \code{na > 0} in the test. %  So the
+% test is in fact semantically equivalent to \code{true}.
+
+Another simple example is given on \pref{fig:xmplbsaux} where
+a logarithmic bound on the stack consumption of a binary search
+program is proved using logical variable annotations.  Once again,
+annotations are underlined in the program text.  In this example,
+to ease the proof of equivalence between the annotated program
+and the original one, we use the inequality $\code{lg} \ge
+\log_2(h-l)\cdot M_\code{bsearch}$ as invariant.  This trick
+allows a simpler proof because, when working with integer
+arithmetic, it is not always the case that $\log_2(x/2) =
+\log_2(x)-1$.
+
+
+\sectskip
 \section{Overview and Examples}
 \label{sec:inform}
 \aftersectskip
@@ -982,7 +1110,6 @@ while (k > 0) {
   ${\color{blue}%
     \{ \#_1(a) + 2k \}}$
 } ${\color{blue} \{ \#_1(a) \}}$
-
 \end{lstlisting}
 \end{minipage}
 
@@ -992,63 +1119,6 @@ while (k > 0) {
   0 to all other operations.
   }
 \label{fig:xmplinc}
-\end{figure}
-%
-\iffull{
-}{}
-\begin{figure}
-\center
-\begin{minipage}[b]{0.8\linewidth}
-\begin{lstlisting}
-${\color{blue}%
-  \mbox{logical state invariant } \{ \code{na} = \#_1(a)} \}$
-while (k > 0) {
-  x=0;
-  while (x < N && a[x] == 1 && na > 0) {
-    a[x]=0;
-    na--; tick(1);
-    x++; }
-  if (x < N) {
-    a[x]=1;
-    na++; tick(1); }
-  k--;
-}
-
-\end{lstlisting}
-\end{minipage}
-
-\caption{Example of assisted bound derivation using logical state.  We write
-  $\#_1(a)$ for $\# \{ i \mid 0 \le i < N \land a[i] = 1 \}$ and use the
-  tick metric that assigns cost $n$ to the statement \code{tick(n)} and
-  0 to all other operations.  The bound derived automatically is
-  $2|[0,\code{k}]| + |[0,\code{na}]|$.
-  }
-\label{fig:xmplincaux}
-\end{figure}
-%
-\begin{figure}
-\begin{lstlisting}
-${\color{blue}%
-  \mbox{logical state invariant }
-  \{ \code{lg} \ge \log_2(h-l) \cdot M_\code{bsearch} \} }$
-bsearch(x,l,h,lg) {
-  if (h-l > 1 && lg > 0) {
-    m = h + (h-l)/2;
-    lg--; if (a[m]>x) h=m; else l=m;
-    tick($M_\code{bsearch}$);
-    l = bsearch(x,l,h,lg);
-    tick($-M_\code{bsearch}$);
-  } else return l;
-}
-\end{lstlisting}
-\caption{Example of assisted bound derivation using logical state.
-  We use the tick metric to model the stack consumption of the program.
-  Before a function call to \code{bsearch}, a tick statement pays for
-  the space used by stack frame of the function.  The space is recoverd
-  after the call.
-  The bound derived automatically is $|[0,\code{lg}]|$.
-  }
-\label{fig:xmplbsaux}
 \end{figure}
 %
 \iffull{
