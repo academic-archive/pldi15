@@ -996,6 +996,63 @@ while (k > 0) {
 %
 \iffull{
 }{}
+\begin{figure}
+\center
+\begin{minipage}[b]{0.8\linewidth}
+\begin{lstlisting}
+${\color{blue}%
+  \mbox{logical state invariant } \{ \code{na} = \#_1(a)} \}$
+while (k > 0) {
+  x=0;
+  while (x < N && a[x] == 1 && na > 0) {
+    a[x]=0;
+    na--; tick(1);
+    x++; }
+  if (x < N) {
+    a[x]=1;
+    na++; tick(1); }
+  k--;
+}
+
+\end{lstlisting}
+\end{minipage}
+
+\caption{Example of assisted bound derivation using logical state.  We write
+  $\#_1(a)$ for $\# \{ i \mid 0 \le i < N \land a[i] = 1 \}$ and use the
+  tick metric that assigns cost $n$ to the statement \code{tick(n)} and
+  0 to all other operations.  The bound derived automatically is
+  $2|[0,\code{k}]| + |[0,\code{na}]|$.
+  }
+\label{fig:xmplincaux}
+\end{figure}
+%
+\begin{figure}
+\begin{lstlisting}
+${\color{blue}%
+  \mbox{logical state invariant }
+  \{ \code{lg} \ge \log_2(h-l) \cdot M_\code{bsearch} \} }$
+bsearch(x,l,h,lg) {
+  if (h-l > 1 && lg > 0) {
+    m = h + (h-l)/2;
+    lg--; if (a[m]>x) h=m; else l=m;
+    tick($M_\code{bsearch}$);
+    l = bsearch(x,l,h,lg);
+    tick($-M_\code{bsearch}$);
+  } else return l;
+}
+\end{lstlisting}
+\caption{Example of assisted bound derivation using logical state.
+  We use the tick metric to model the stack consumption of the program.
+  Before a function call to \code{bsearch}, a tick statement pays for
+  the space used by stack frame of the function.  The space is recoverd
+  after the call.
+  The bound derived automatically is $|[0,\code{lg}]|$.
+  }
+\label{fig:xmplbsaux}
+\end{figure}
+%
+\iffull{
+}{}
 We can then use the logic to prove a concrete bound for a given resource
 metric, or a bound that is parametric in a set of resource metrics.
 For example, we can derive the following quantitative
