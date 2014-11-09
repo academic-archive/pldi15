@@ -916,10 +916,10 @@ while (k > 0) {
 \begin{lstlisting}[numbers=left]
 ${\color{blue}%
   \mbox{logical state invariant }
-  \{ \code{lg} \ge \log_2(h-l) \cdot M_\code{bsearch} \} }$
+  \{ \code{lg} > \log_2(\code h-\code l) \} }$
 bsearch(x,l,h_,lg_) {
-  if (h-l > 1 && lg > 0) {
-    m = h + (h-l)/2;
+  if (h-l > 1 _&& lg > 0_) {
+    m = l + (h-l)/2;
     _lg--;_ if (a[m]>x) h=m; else l=m;
     tick($M_\code{bsearch}$);
     l = bsearch(x,l,h_,lg_);
@@ -931,7 +931,8 @@ bsearch(x,l,h_,lg_) {
   We use the tick metric to model the stack consumption of the program.
   Before a function call to \code{bsearch}, a tick statement pays for
   the space used by stack frame of the function.  The space is recoverd
-  after the call.
+  after the call.  We write $\log_2(x)$ for the integer part of
+  logarithm of $x$ in base 2.
   The bound derived automatically is $|[0,\code{lg}]|$.
   }
 \label{fig:xmplbsaux}
@@ -998,12 +999,37 @@ a logarithmic bound on the stack consumption of a binary search
 program is proved using logical variable annotations.  Once again,
 annotations are underlined in the program text.  In this example,
 to ease the proof of equivalence between the annotated program
-and the original one, we use the inequality $\code{lg} \ge
-\log_2(h-l)\cdot M_\code{bsearch}$ as invariant.  This trick
-allows a simpler proof because, when working with integer
-arithmetic, it is not always the case that $\log_2(x/2) =
-\log_2(x)-1$.
+and the original one, we use the inequality $\code{lg} >
+\log_2(\code h-\code l)$ as invariant.  This trick allows a simpler
+proof because, when working with integer arithmetic, it is not always
+the case that $\log_2(x-x/2) = \log_2(x)-1$ (take 3).
 
+On the other hand, it might be the case that even with annotations, a
+resource bound cannot be found automatically.  With existing tools, this
+situation requires a full rewrite of the program.  However, in our
+framework, it is possible to write a manual proof and combine it with
+bounds derived by the automatic analysis.  This interaction is made
+formal using our Quantitative Hoare Logic.  This resource aware program
+logic is an extension of the one presented in~\cite{veristack14} and
+was originally designed to prove the soundness of our automatic
+analysis.  To make it suitable for this end, we made it independent
+of the resource used (e.g. stack usage, heap usage, clock ticks) and
+implemented a smoother handling of the auxiliary state through a shallow
+embedding in Coq.  Despite being first a theoritical tool, the logic can
+be used directly as in~\cite{veristack14}.  Its judgements are inspired
+by typical Hoare logics and have the shape
+$$
+\Delta \vdash \htriple P S Q
+$$
+where $\Delta$ is a set of hypothesis on program functions, and $P, Q$
+are quantitative assertions, i.e. functions from the program states
+to $\Qplusz \cup \{\infty\}$.  The semantics of triples and the rules
+of the logic are described in further details in the extended version of
+this paper~\cite{anon_extended}.  Because our automated tool produces
+proofs of the resource bounds in the Quantitative Hoare Logic, it can
+be used as an assistant when deriving a complex bound by hand in the
+logic.  The interaction is guaranteed to be sound by the soundness
+theorem of our Quantitative Hoare Logic.
 
 \sectskip
 \section{Overview and Examples}
