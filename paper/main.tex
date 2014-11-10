@@ -210,7 +210,7 @@ ensure the accuracy of programs that are executed
 on unreliable hardware~\cite{CarbinMR13} and
 complexity bounds are needed to verify cryptographic
 protocols~\cite{BartheGB09}.  In general, quantitative
-performance information at design time can provide useful
+resource information at design time can provide useful
 feedback for developers.
 
 
@@ -223,11 +223,12 @@ fall into two categories.  Techniques
 in the first category derive impressive bounds for
 numerical imperative programs, but they are not fully compositional.
 This is problematic if one needs to derive global whole-program bounds.
-In the second category, techniques derive tight whole-program
+Techniques in the second category derive tight whole-program
 bounds on functional programs that operate on inductive data structures.
 They are highly compositional, scale for large
-programs, and work directly on the syntax.  However, despite all
-these theoretical and practical advantages, it has been
+programs, and work directly on the syntax.  However, % despite all
+% these theoretical and practical advantages, 
+it has been
 a long-time open problem to make them work in the
 presence of signed integers, mutation, and non-linear
 control flow. As a result, they are not suitable for
@@ -242,19 +243,19 @@ First, they all base their analysis on some form of
 \emph{ranking function}.
 Since this
 is usually a local analysis and loop bounds are
-arithmetic expressions that depend on the value of
-variables  just before the loop.
+arithmetic expressions that depend on the values of
+variables just before the loop.
 This makes it hard to give a
 resource bound on a sequence of loops and procedure calls in
 terms of the input parameters of a procedure.
 Second, while all popular imperative programming languages
 provide a function or procedure abstraction, available
-tools are not able to abstract their resource behavior
+tools are not able to abstract resource behavior
 and have to inline the procedure body to perform their
 analysis.  Third, when a tool fails to find a resource
-bound for a program, the program has to be rewritten.
-There is no possibility for sound user interaction with the
-tool. For example, there is no concept of manual proofs for
+bound for a program, there is no possibility for sound
+user interaction with the tool other than to the rewrite
+the program. For example, there is no concept of manual proofs of
 resource bounds and no framework that could support composition
 of manually derived bounds with automatically inferred bounds.
 One reason for this lack of interaction is that available tools
@@ -269,9 +270,9 @@ programs~\cite{Jost03,HoffmannAH12}. It has been shown that class
 definitions of object oriented programs~\cite{Jost06} and
 data-structure predicates of separation logic~\cite{Atkey10} can play
 the role of the type system in imperative programs. However, these
-techniques fail for numerical imperative programs because they lack
+techniques fail for numerical imperative programs because these programs lack
 fine-grained data-structure information to hook the analysis on.
-Another issue is that the techniques associate \emph{potential}
+Another issue is that existing techniques associate \emph{potential}
 directly with single program variables.  In imperative programs, this
 fails for loops as simple as \lstinline{for(i=x;i<y;i++)} where
 $y - i$ decreases, but not $|i|$.  Mutation is yet another problem.
@@ -291,15 +292,16 @@ Our automated analysis is able to infer linear
 resource bounds on C programs with mutually-recursive functions and integer loops.
 %
 The resource behavior of functions can be summarized
-in a function specification that can be used a every
-call-side without access to the function body.
+in a function specification that can be used at every
+call-side without accessing the function body.
 %
 To our knowledge this is the first technique based on
 amortized analysis that is able to derive bounds that depend on negative numbers
 and differences of variables.  It is also the first
 resource analysis technique for C that deals naturally with
-recursive functions, resources that can become available during execution (e.g., when freeing
-memory), and sequenced loops.  Compared to more classical
+recursive functions and sequenced loops, and can handle resources that can
+become available during execution (e.g., when freeing
+memory).  Compared to more classical
 apporaches based on ranking functions, our tool inherits
 the benefits of amortized reasoning.  Using only one
 simple mechanism, it handles:
@@ -317,10 +319,12 @@ simple mechanism, it handles:
 
 The main innovation that makes amortized analysis work
 on imperative languages is to base the analysis on a
-Hoare-like logic and track multivariate quantities instead
-of program variables directly.  This leads to precise bounds
+Hoare-like logic and to track multivariate quantities instead
+of program variables.  This leads to precise bounds
 expressed as functions of sizes $|[x, y]| = \max(0, y-x)$ of
-intervals. A distinctive feature of our analysis system is that
+intervals. 
+%
+A distinctive feature of our analysis system is that
 it reduces bound derivation to a linear optimization problem
 that can solved by off-the-shelf LP solvers.  This enables the
 efficient inference of global bounds for larger programs.
@@ -336,15 +340,34 @@ analysis by using auxiliary variables and logical assertions that can
 be verified by existing qualitative tools such as Hoare logic or
 abstract interpretation.  In this way, we can benefit from existing
 automation techniques and provide a middle-ground between fully
-automatic and fully manual verification to derive. This enables the
-semi-automatic inference of non-linear bounds, such as polynomial,
-logarithmic, and exponential bounds.
+automatic and fully manual verification for bound derivation. This
+enables the semi-automatic inference of non-linear bounds, such as
+polynomial, logarithmic, and exponential bounds.
 
-\jan{Here we need a description of the implementation and the
-  experiments.  Message: You can immediately see the great benefits of
-  the unification of the two categories in practice. It scales to
-  larger programs than existing tools (for global bounds) and is as
-  good on local bounds (for tricky loop and recursion patterns).}
+We have evaluated the automatic analysis with system code and examples
+from the literature.  Our tool automatically derived global resource
+bounds for more than XXX lines of C code from the XXX benchmark suite.
+%
+\iffull{\pref{app:cat}}{The extended version
+  of this article~\cite{anon_extended}}{} contains more than $30$
+challenging loop and recursion patterns that we collected from open
+source software and the literature.  Our analysis can find
+asymptotically tight bounds for all but 1 of these patterns, and in
+most cases the derived constant factors are tight.  To compare our
+automatic analyzer with existing techniques, we tested our examples
+with tools such as KoAT~\cite{BrockschmidtEFFG14},
+Rank~\cite{AliasDFG10}, and LOOPUS~\cite{SinnZV14}.  Our experiments
+show that the bounds that we derive are often more precise than those
+derived by existing tools.  Only LOOPUS~\cite{SinnZV14}, which also
+uses amortization techniques, is able to achieve a similar precision.
+%
+Several micro benchmarks demonstrate the practicality and
+expressiveness of the user guided bound inference.  For example, we
+derive a logarithmic bound for a binary search function, a bound that
+depends on the contents of an array to describe the exact cost of a
+function that finds a maximal element in an array, and a linear
+bound that amortizes the cost of $k$ successive increments to a binary
+counter.
 
 % Give a description of the sections here.                    XXX
 % Jan: We don't need that. Usually, people don't read it.
@@ -358,16 +381,16 @@ In summary, we make the following \emph{contributions}.
   functions, generates resource specifications for functions, derives
   easily verifiable certificates, and handles resources that can
   become available during an execution.
-\item We show how to reduce the inference of \emph{linear resource
-    bounds} to efficient LP solving.
+\item We show how to reduce the inference of \emph{linear} resource
+    bounds to efficient LP solving.
 \item We describe a new method of harnessing existing qualitative
   verification techniques to guide the automatic amortized analysis
-  to derive \emph{non-linear} resource bounds.
+  to derive \emph{non-linear} resource bounds with LP solving.
 \item We prove the soundness of the analysis with respect to a
   parametric cost semantics for C programs. The cost model can be
   further customized with function calls (\code{tick(n)}) that
-  indicate resource usage. This mechanism is also covered by the
-  soundness proof.
+  indicate resource usage. % This mechanism is also covered by the
+  % soundness proof.
 \item We present experiments with a prototype implementation on more
   than XXX lines of C code. A detailed comparison shows that our
   prototype is the only tool that can derive global bounds for larger
