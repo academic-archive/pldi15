@@ -79,7 +79,7 @@
 \input{definitions}
 \begin{document}
 
-\lstset{moredelim=[is][\underbar]{_}{_},keepspaces=true}
+\lstset{moredelim=[is][\color{blue}]{@}{@},keepspaces=true}
 
 %SHORT
 % \lstset{basicstyle=\tt\scriptsize}
@@ -396,306 +396,6 @@ In summary, we make the following \emph{contributions}.
   linear local bounds for tricky loop and recursion patterns.
 \end{itemize}
 
-% In software engineering and software verification, we often would like
-% to have static information about the quantitative behavior of
-% programs.  For example, stack and heap-space bounds are important to
-% ensure the reliability of safety-critical systems~\cite{veristack14,Regehr05}.
-% % Clock-cycle bounds are needed to guarantee the safety of real-time
-% % systems [XXX wilhelm].
-% Static energy usage information is critical for autonomous systems and
-% has applications in cloud computing~\cite{CohenZSL12,CarrollH10}.
-% Worst-case time bounds can help to create constant-time
-% implementations that prevent side-channel
-% attacks~\cite{KasperS09,BartheBCLP14}.  Loop and recursion-depth
-% bounds are used to ensure the accuracy of programs that are executed
-% on unreliable hardware~\cite{CarbinMR13} and complexity bounds are
-% needed to verify cryptographic protocols~\cite{BartheGB09}.
-% % XXX Mention differential privacy here?
-% %
-% In general, quantitative performance information at design time can
-% provide useful feedback for developers.
-%
-% Static analysis of quantitative properties of imperative programs is
-% an active research area and recent years have seen many innovations.
-% Notable tools that have been developed include
-% SPEED~\cite{GulwaniMC09}, KoAT~\cite{BrockschmidtEFFG14},
-% PUBS~\cite{AlbertAGPZ12}, Rank~\cite{AliasDFG10}, and LOOPUS~\cite{SinnZV14}.
-% %
-% While the these tools can derive impressive results for realistic
-% software, there still exist shortcomings that hamper the application
-% of existing techniques in practice:
-% \itemskip
-% \begin{itemize}
-% \item Analysis tools are black boxes that\iffull{either}{} deliver a result or fail
-%   without enabling \emph{user interaction} to manually or
-%   semi-automatically derive bounds for challenging parts of the
-%   program.
-% \itemskipIn
-% \item The computed bounds are often \emph{non-compositional} local
-%   bounds (for a single (nested) loop) that are difficult to combine to
-%   global whole program bounds.
-% \itemskipIn
-% \item Existing techniques often rely on complex external tools such as
-%   abstract interpretation--based invariant
-%   generation~\cite{GulwaniMC09} or translation of the program into a
-%   term-rewriting system~\cite{BrockschmidtEFFG14, SinnZV14} without
-%   providing \emph{verifiable certificates} for the correctness of the
-%   derived bound.
-% \end{itemize}
-% \itemskip
-% %
-% While there has been much progress in static quantitative analysis,
-% Knuth correctly points out in a recent interview~\cite{KnuthInter}
-% that the state-of-the-art in formal quantitative methods still falls
-% short in comparison with semantic techniques.
-% %
-% \itemskip
-% \begin{quote}
-%   % Consider, for example, a computer program that sorts a list of
-%   % numbers into order.
-%   $[\cdots]$ Thanks to the work of Floyd, Hoare, and others,
-%   we have formal definitions of semantics, and tools by which we can
-%   verify that sorting is indeed always achieved. My job is to go
-%   beyond correctness, to an analysis of such things as the program's
-%   running time $[\cdots]$. I'm 100\% sure that my recurrence correctly
-%   describes the program's performance, and all of my colleagues agree
-%   with me that the recurrence is "obviously" valid. Yet I have no
-%   formal tools by which I can prove that my recurrence is right. I
-%   don't really understand my reasoning processes at all!
-%   \vspace{-4ex}
-%   \begin{flushright}
-%     -- Donald E. Knuth, 2014
-%   \end{flushright}
-% \end{quote}
-% \itemskip
-% %
-% In this work, we develop a resource analysis framework for C programs
-% that is based on a solid semantic foundation.  The choice of C is
-% primarily motivated by \iffull{our}{the} ongoing work on the formally verified
-% hypervisor kernel CertiKOS~\cite{GuVFSC11}.  CertiKOS is mainly
-% developed in C and is supposed to provide verified guaranties on
-% timing and memory usage.  Moreover, C is a natural choice because it
-% is still the most widely used language for system development; in
-% particular in safety-critical embedded and real-time systems where
-% resource bound analyses are often required by regulatory
-% authorities~\cite{May2013}.  Our \emph{contributions} are as follows:
-% %
-% \itemskip
-% \begin{enumerate}
-% \item We define an operational cost semantics for CompCert Clight that
-%   defines the resource consumption of terminating and diverging
-%   executions.  The cost is parametric in a user-definable cost metric
-%   and can be negative if resources are released during an execution.
-%
-% \item We develop a quantitative Hoare logic for interactively deriving
-%   resource bounds for Clight programs.  The logic is implemented and
-%   proved sound in the Coq Proof Assistant with respect to the cost
-%   semantics of Clight.
-% \itemskipIn
-% \item We describe an automatic static analysis that computes bounds
-%   together with derivations in the quantitative Hoare logic.  The
-%   analysis is inspired by type-based amortized resource analysis for
-%   functional programs~\cite{Jost03,HoffmannAH11}.  It computes
-%   derivations by generating simple linear constraints that can be
-%   solved by an off-the-shelf LP solver, and does not require any
-%   fixpoint computations to obtain loop invariants.
-% \itemskipIn
-% \item We show with a publicly available prototype implementation, and
-%   an experimental evaluation, that our novel amortized resource
-%   analysis works precisely and efficiently for challenging loop and
-%   recursion patterns, and that the derived constant factors in the
-%   bounds are close to or identical with the optimal ones.
-% % \item We prove the completeness of the program logic
-% %   with respect to the operational cost semantics.
-% \end{enumerate}
-% \itemskip
-% %
-% To the best of our knowledge, this article presents the first resource
-% analysis framework for C that makes it possible to combine non-trivial
-% automatically derived bounds with interactively derived bounds in a
-% proof system that produces verifiable certificates for the bounds.
-% Our approach complements existing work since it provides a semantic
-% foundation for the computation of bounds while still supporting
-% automation that sometimes goes beyond the capabilities of existing
-% techniques.  Furthermore, the automatic amortized analysis and the
-% quantitative logic are naturally compositional and describe the
-% resource behavior of code fragments without referring to the source
-% code.  As a result, we directly derive global bounds that are
-% functions of the input parameters of the program.  Another unique
-% feature of our system is, that it can handle resources like memory
-% that may become available during execution.
-%
-% Our starting point is a recent work~\cite{veristack14} \iffull{in
-%   which we have}{that has} formally verified bounds on the stack usage
-% of C programs.  A key part of this stack-bound verification is based
-% on a quantitative Hoare logic for deriving abstract \emph{stack
-%   bounds} for CompCert Clight programs\ifshort{.}{ that depend on the
-%   depth of (recursive) function calls.}  % For
-% % non-recursive programs it is possible to compute derivations for such
-% % stack bounds in the quantitative Hoare logic automatically.
-% % By compiling these bounds together with the C program, we have derived
-% % verified stack bounds for x86 assembly code.
-% %
-% Our \emph{first contribution} is a generalization of the quantitative
-% Hoare logic for CompCert Clight that enables us to derive resource
-% bounds that are parametric in the resource of interest.  % The
-% % quantitative logic is implemented in Coq and proved sound with respect
-% % to a small-step operational cost semantics for Clight.
-% % that counts a
-% % constant resource consumption for each atomic execution step.  The
-% % resource consumption at each step is parametric in a user-definable cost
-% % metric and can be negative to express the release of resources (as
-% % needed, e.g., to reason about memory usage).  Furthermore, a specific
-% % \emph{tick} function can be inserted in the source code to further
-% % customize the cost model.
-% In the implementation of the logic, we use
-% a shallow embedding in Coq which makes the logic very flexible.  There
-% is practically no limitation on the format of the derived resource
-% bounds since they can be any function that is definable in Coq.  The
-% derived bounds can also be parametric in a set of cost metrics or
-% specifically apply to one fixed cost metric.
-%
-% The precision and expressivity of the quantitative Hoare logic provide
-% an ample foundation for reasoning about resource consumption of Clight
-% programs.  % The logic is naturally compositional and the derived
-% % \emph{quantitative Hoare triples} can be used to specify the resource
-% % consumption of library functions or to describe resource contracts
-% % between different functions.
-% However, reasoning about quantitative
-% properties can often be more tedious than reasoning about intentional
-% properties.  Consequently, automation is inevitable to derive resource
-% bounds for large code bases like CertiKOS.  Such an automation was
-% easily achievable in the case of constant stack bounds for a code base
-% that does not contain recursive functions~\cite{veristack14}.  In
-% general however, resource bounds have to be parametric in the
-% arguments of a function and depend on the number of loop iterations
-% and (recursive) function calls that are performed by the function.
-%
-% For functional programs, there exist resource analysis systems---based
-% on type-based amortized resource analysis~\cite{Jost03,
-%   HoffmannAH12}---that can automatically derive complex polynomial
-% bounds with tight constant factors.  This type-based amortized
-% resource analysis has been an inspiration in the design of the
-% quantitative Hoare logic and is therefore a natural candidate to
-% automate the reasoning.  Type-based amortized resource analysis works
-% well for functional programs with pattern matching but it has been a
-% long-time open problem to apply it to C-like programs with control
-% flow that depends on integer arithmetic, negative numbers, and non-linear
-% control flow.
-% % example, it is a
-% % long-time open problem how to use type-based amortized analysis to
-% % derive bounds for functions whose resource consumption depends on
-% % (possibly negative) integers and non-sequential control flow as
-% % introduced by \code{break} and \code{return} statements.
-% % Unfortunately, these are the functions \iffull{with non-constant resource
-% % consumption}{} that are most common in CertiKOS and other system
-% % software.
-%
-% Our \emph{main contribution} is an automatic amortized resource
-% analysis for CompCert Clight that computes derivations in the
-% quantitative Hoare logic.  It is the first automatic amortized
-% resource analysis that can derive bounds that depend on negative
-% integers. It also handles programs with mutually recursive functions
-% as well as \code{break} and \code{return} statements.  The
-% potential-based approach of amortized analysis provides a single
-% mechanism for analyzing programs that need special treatment in other
-% techniques; including
-% \itemskip
-% \begin{itemize}
-% \item interaction between \emph{sequential loops or function calls} through
-%   size changes of variables,
-% \itemskipIn
-% \item \emph{nested loops} that influence each others number of iterations,
-% \itemskipIn
-% \item and \emph{tricky iteration patterns} as found for instance in
-%   the Knuth-Morris-Pratt algorithm for string search.
-% \end{itemize}
-% \itemskip
-% %
-% The main innovation that makes the analysis practical for C is the use
-% of interval sizes in potential functions instead of the sizes of
-% variables.  This leads to precise bounds of programs whose resource
-% consumption can be described as a function of sizes $|[x,y]| =
-% \max(0,y-x)$ of intervals of integer variables.  Such bounds arise for
-% instance from standard \emph{for loops} \code{for (i = x; i+K \leq y;
-%   i=i+K)} where the step-size $K>0$ is a constant.
-% %
-%
-% Despite the apparent simplicity of the new analysis system, it is able
-% to reproduce results from the literature (e.g,
-% SPEED~\cite{GulwaniMC09}) that have been obtained using sophisticated
-% abstract interpretation--based methods such as disjunctive invariant
-% generation~\cite{GulwaniMC09} and symbolic backward
-% execution~\cite{GulwaniZ10}.  In contrast with abstract
-% interpretation--based methods, our technique does not require any
-% fixpoint computations to obtain loop invariants.  The mechanism we
-% designed is able to leverage local assertions such as $x < y$ that we
-% collect along the branching points of the program to obtain global
-% resource invariants.  We achieve this by generating a linear
-% constraint system that reflects the resource cost and size changes of
-% integer variables in the program; a solution of the linear program
-% immediately yields a resource-usage bound for the C
-% program.  % We can naturally, handle
-% % advanced control flow such as break, return, iteration over negative
-% % integer variables, and mutually-recursive functions.
-%
-% Following the development steps of automatic amortized analysis for
-% functional programs~\cite{Jost03,HoffmannH10}, we deliberately
-% restrict ourselves to linear bounds in the automatic analysis (there
-% are no restrictions for the manually-derived bounds in the logic).
-% More specifically, bounds have the form $\sum_{a,b} q_{(a,b)} |[a,b]|$
-% where $a$ and $b$ are integer variables or constants.  The reason for
-% our focus on linear bounds is mainly clarity of presentation.  We
-% already experimented with an extension to multivariate resource
-% polynomials~\cite{HoffmannAH11,HoffmannS13} but this would make the inference
-% rules considerably more involved and should better be described
-% separately.  However, we developed the linear inference system so that
-% the extension to polynomial bounds shall work smoothly.
-%
-% We have evaluated the automatic analysis with system code and examples
-% from the literature.  \iffull{\pref{app:cat}}{The extended version
-%   of this article~\cite{anon_extended}}{} contains more than $30$
-% challenging loop and recursion patterns that we collected from open
-% source software and the literature.  Our analysis can find
-% asymptotically tight bounds for all but 1 of these patterns, and in
-% most cases the derived constant factors are tight.  To compare our
-% automatic analyzer with existing techniques, we tested our examples
-% with tools such as KoAT~\cite{BrockschmidtEFFG14},
-% Rank~\cite{AliasDFG10}, and LOOPUS~\cite{SinnZV14}.  Our experiments
-% show that the bounds that we derive are often more precise than those
-% derived by existing tools.  Only LOOPUS~\cite{SinnZV14}, which also
-% uses amortization techniques, is able to achieve a similar precision.
-% %
-% Several micro benchmarks demonstrate the practicality and
-% expressiveness of the quantitative Hoare logic.  For example, we
-% derive a logarithmic bound for a binary search function, a bound that
-% depends on the contents of an array to describe the exact cost of a
-% function that finds a maximal element in an array, and a linear
-% bound that amortizes the cost of $k$ successive increments to a binary
-% counter.
-%
-% % To show the practicality of our approach we developed a case study
-% % with different real-time schedulers implemented in C.  To perform a
-% % schedulability analysis that takes into account the overhead of the
-% % scheduler we derived time bounds for context switching and
-% % initialization of the scheduler.  We then computed time bounds for a
-% % set of given user task and took account the previously computed
-% % scheduler overhead to determine whether the scheduling requirements of
-% % all user tasks can be met.
-%
-% % With the intention, of making the material easily accessible we first
-% % informally describe the new automatic amortized analysis
-% % (\pref{sec:inform}).  We then formalize the intuition with the
-% % operational cost semantics an the inference rules for the amortized
-% % analysis (\pref{sec:aa}).  In \pref{sec:logic} we describe the
-% % quantitative Hoare logic and its soundness proof that is formalized in
-% % Coq.  In \pref{sec:inter} we prove the soundness of the automatic
-% % amortized analysis by showing that derivation using the inference
-% % rules can be seen as derivations in the quantitative logic.  We also
-% % show how to integrate hand-derived bounds with automatically-derived
-% % bounds.  \pref{sec:exper} contains the results of the experimental
-% % evaluation and \pref{sec:related} describes related research.
-
 \sectskip
 \section{Overview and Examples}
 \aftersectskip
@@ -898,6 +598,1017 @@ linear ranking-function for each loop and combine them multiplicatively
 or additively, resulting in a loose quadratic bound or no bound at all.
 
 \sectskip
+\section{Automatic Amortized Analysis}
+\label{sec:AAA}
+\aftersectskip
+
+In this section we present the automatic amortized analysis that we
+use in our implementation to derive resource bounds for C
+programs.
+
+\paragraph{Linear Potential Functions.}
+
+To find derivations in the quantitative Hoare logic automatically, we
+have to focus on bounds that have a certain shape.  The general form
+of \emph{potential functions} (or assertions) that we consider is
+$$
+  \Phi(\state) = q_0 + \sum_{x, y \in \dom\state \land x \neq y}
+    q_{(x, y)} \cdot |\inter {\state(x)} {\state(y)}| \, .
+$$
+%
+Here $\state : (\text{Locals} \to \Z) \times (\text{Globals} \to \Z)$
+is again a simplified program state as introduced in \pref{sec:sem},
+$|\inter a b| = max(0,b-a)$, and $q_i \in \Qplusz$.  To simplify the
+references to the linear coefficients $q_i$, we introduce an \emph{index
+  set} $I$.  This set is defined to be $\{0\} \cup \{(x, y) \mid x, y
+\in \Var \land x \neq y \}$.  Each index $i$ corresponds to a \emph{base function}
+$f_i$ in the potential function: $0$ corresponds to the constant
+function $\state \mapsto 1$, and $(x,y)$ corresponds to $\state \mapsto
+|\inter {\state(x)} {\state(y)}|$.  Using these notations we can
+rewrite the above equality as\iffull{
+$$
+  \Phi = \sum_{i \in I} q_i f_i.
+$$}
+{ $\Phi = \sum_{i \in I} q_i f_i$.}  We often write $xy$ to denote the
+index $(x,y)$.  \iffull{The family $(f_i)_{i\in I}$ is actually a basis (in
+the linear-algebra sense) for potential functions.}{}  This allows us to
+uniquely represent any linear potential function
+$\Phi$ as a \emph{quantitative annotation} $Q = (q_i)_{i \in I}$, that
+is, a family of \ifshort{non-negative}{} rational numbers where only
+a finite number of elements are not zero. \iffull{ For soundness, we
+  require that potential functions always give non-negative results.
+  This is acheived by restricting coefficients in a quantitative
+  annotation to be always non-negative.}{}
+
+In the potential functions, we treat constants as global variables
+that cannot be assigned to.  For example, if the program contains the
+constant $8128$ then we have a variable $c_{8128}$ and
+$\state(c_{8128}) = 8128$.  We assume that every program state
+includes the constant $c_0$.
+
+\paragraph{Logical State.}
+
+In addition to the quantitative annotations our automatic amortized
+analysis needs to maintain a minimal logical state to justify certain
+operations on quantitative annotations.  For example when analyzing
+the code $x \gets x + y$, it is helpful to know the sign of $y$ to
+determine which intervals will increase or decrease.  The knowledge
+needed by our rules can be inferred by local reasoning (i.e., in
+basic blocks without recursion and loops) within usual theories
+(e.g. Presburger arithmetic or bit vectors).
+
+In contrast to the quantitative annotations, logical contexts $\Gamma$
+in the presented inference system are left abstract.  This allows for
+simpler rules and leaves room for future improvements.
+%
+Our implementation uses conjunctions of linear inequalities as
+logical state.  We never compute fixpoints and take $\top$
+as pre- and postconditions for functions. It has proved to be
+sufficient for the variety of examples we are interested in or found
+in the literature.
+
+
+\iffull{
+\begin{figure*}[t]
+\begin{mathpar}
+%
+\Rule[leftskip=.4cm,rightskip=.3cm]{Q:Skip}
+{ }
+{ \!\! B; R; (\Gamma, Q) \vdash \code{skip} \dashv (\Gamma, Q) \!!}
+%
+\and
+\Rule{Q:Break}
+{ }
+{\!\!  (\Gamma, Q_B); R; (\Gamma, Q_B {+} M_b) \vdash \code{break} \dashv (\Gamma', Q') \!\!}
+%
+\and
+\Rule[leftskip=.3cm,rightskip=.4cm]{Q:Tick}
+{ }
+{ \!\! B; R; (\Gamma, Q{+}M_t(n)) \vdash \code{tick}(n) \dashv (\Gamma, Q) \!\!}
+%
+\and
+\Rule{Q:Return}
+{ P = Q_R[\Vret/x]
+\\ \Gamma = \Gamma_R[\Vret/x]
+\\ \forall i \in \dom{P} . \, p_i = q_i
+}
+{ B; (\Gamma_R,Q_R); (\Gamma, Q) \vdash \code{return}~x \dashv (\Gamma',Q') }
+%
+\and \Rule{Q:Update}
+{ q'_{xy}, q'_{yx} \in \Qplusz
+\\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
+}
+{ B; R; (\Gamma[x/y], Q {+} M_u {+} M_e(y)) \vdash x \gets y \dashv (\Gamma, Q') }
+%
+\\ \Rule[leftskip=.1cm,rightskip=.1cm]{Q:Loop}
+{ (\Gamma', Q'); R; (\Gamma,Q) \vdash S \dashv (\Gamma,  Q {+} M_l) }
+{ B; R; (\Gamma, Q) \vdash \code{loop}~S \dashv (\Gamma', Q') }
+%
+\and \Rule[leftskip=.2cm,rightskip=.1cm]{Q:IncP}
+{ \Gamma \models y \ge 0 \!
+\\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\} \!
+\\ \textstyle q'_{0y} = q_{0y}
+      + \sum_{u \in \mathcal U} q_{xu}
+      - \sum_{v \not\in \mathcal U} q_{vx} \!
+}
+{ \textstyle
+  B; R; (\Gamma[x/x {+} y], Q {+} M_u {+} M_e(x {+} y)) \vdash x \gets x + y \dashv (\Gamma, Q')
+}
+%
+\and \Rule{Q:DecP}
+{ \Gamma \models y \ge 0
+\\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
+\\\\ \textstyle q'_{y0} = q_{y0}
+      + \sum_{u \in \mathcal U} q_{ux}
+      - \sum_{v \not\in \mathcal U} q_{xv}
+}
+{ \textstyle
+  B; R; (\Gamma[x/x {-} y],Q {+} M_u {+} M_e(x {-} y)) \vdash x \gets x - y \dashv (\Gamma, Q')
+}
+%
+\and \Rule{Q:Inc}
+{ M = M_u + M_e(x {\pm} y)
+\\\\ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
+\\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
+}
+{ \textstyle
+  B; R; (\Gamma[x/x {\pm} y], Q {+} M) \vdash x \gets x \pm y \dashv (\Gamma, Q')
+}
+%
+\and \Rule{Q:If}
+{ B; R; (\Gamma \land e, Q {-} M_c^1) \vdash S_1 \dashv (\Gamma',Q')
+\\\\ B; R; (\Gamma \land \neg e, Q {-} M_c^2) \vdash S_2 \dashv (\Gamma',Q')
+}
+{ B; R; (\Gamma, Q{+}M_e(e)) \vdash \code{if}(e)~S_1~\code{else}~S_2 \dashv (\Gamma',Q') }
+%
+\and\Rule{Q:Seq}
+{  B; R; (\Gamma, Q) \vdash S_1 \dashv (\Gamma', Q' {+} M_s)
+\\ B; R; (\Gamma', Q') \vdash S_2 \dashv (\Gamma'',Q'')
+}
+{ B; R; (\Gamma, Q) \vdash S_1;S_2 \dashv (\Gamma'',Q'') }
+%
+\and\Rule{Q:Call}
+{ (\Gamma_f, Q_f,  \Gamma_f', Q_f') \in \Delta(f) \!
+\\ \text{Loc} = \text{Locals}(Q) \!
+\\ \forall i \neq j . \, x_i \neq x_j \!
+\\ c \in \Qplusz \!
+\\ Q = P + S \!
+\\ Q' = P' + S
+\\ U = Q_f[\Vargs / \vec x]
+\\ U' = Q'_f[\Vret/r]
+\\ \forall i \in \dom{U} . \, p_i = u_i
+\\ \forall i \in \dom{U'} .\, p'_i = u'_i
+\\ \forall i \not\in \dom{U'} .\, p'_i = 0
+\\ \forall i \not\in \text{Loc}
+  .\, s_i = 0
+}
+{ B; R; (\Gamma_f[\Vargs / \vec x] \land \Gamma_{\text{Loc}}, Q {+} c {+} M_f)
+  \vdash r \gets f(\vec x) \dashv
+  (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c {-} M_r)
+}
+%
+\and
+\Rule[leftskip=.2cm,rightskip=.2cm]{Q:Assert}
+{ }
+{ B; R; (\Gamma, Q {+} M_a) \vdash \code{assert}~e \dashv (\Gamma \land e, Q) }
+%
+\and
+\Rule[leftskip=.2cm,rightskip=.2cm]{Q:Extend}
+{ \fenv f = (\vec y, S_f)
+\\\\ B; (\Gamma_f', Q'_f); (\Gamma_f[\Vargs/\vec y], Q_f[\Vargs/ \vec y] ) \vdash S_f \dashv (\Gamma', Q')
+}
+{ (\Gamma_f, Q_f, \Gamma_f', Q_f') \in \Delta(f) }
+%
+\and \Rule{Q:Weak}
+{ B; R; (\Gamma_2,Q_2) \vdash S \dashv (\Gamma'_2, Q'_2)
+\\ \!\! \Gamma_1 \models \Gamma_2
+\\\\ Q_1 \succeq_{\Gamma_1} Q_2
+\\ \Gamma'_2 \models \Gamma'_1
+\\ Q'_2 \succeq_{\Gamma_2'} Q'_1
+}
+{ B; R; (\Gamma_1,Q_1) \vdash S \dashv (\Gamma'_1, Q'_1) }
+%
+\and \Rule{Relax}
+{ \mathcal L = \{ xy \mid \exists l_{xy} {\in} \N \, . \, \Gamma \models l_{xy} \le |\inter x y| \}
+\\ \mathcal U = \{ xy \mid \exists u_{xy}{\in} \N \, . \, \Gamma \models |\inter x y| \le u_{xy} \}
+\\\\ \forall i \in \mathcal U.\, q'_i \ge q_i - r_i
+\\ \forall i \in \mathcal L.\, q'_i \ge q_i + p_i
+\\ \forall i \not\in \mathcal U {\cup} \mathcal L {\cup} \{0\} .\, q'_i \ge q_i
+\\ q'_0 \geq q_0 {\textstyle + \sum_{i \in \mathcal U} u_i r_i - \sum_{i \in \mathcal L} l_i p_i}
+}
+{ Q' \succeq_\Gamma Q }
+
+\end{mathpar}
+\caption{\iffull{Inference rules}{Selected inference rules} of the quantitative analysis.}
+\label{fig:auto}
+\end{figure*}
+}{}
+
+
+
+\ifshort{
+\begin{figure*}[t]
+\small
+\begin{mathpar}
+\iffull{
+%
+\Rule[leftskip=.4cm,rightskip=.3cm]{Q:Skip}
+{ }
+{ \!\! B; R; (\Gamma, Q) \vdash \code{skip} \dashv (\Gamma, Q) \!!}
+%
+\and
+\Rule{Q:Break}
+{ }
+{\!\!  (\Gamma, Q_B); R; (\Gamma, Q_B {+} M_b) \vdash \code{break} \dashv (\Gamma', Q') \!\!}
+%
+\and
+\Rule[leftskip=.3cm,rightskip=.4cm]{Q:Tick}
+{ }
+{ \!\! B; R; (\Gamma, Q{+}M_t(n)) \vdash \code{tick}(n) \dashv (\Gamma, Q) \!\!}
+%
+\and }{}
+\Rule[leftskip=.2cm,rightskip=.1cm]{Q:Return}
+{ P = Q_R[\Vret/x]
+\\ \forall i \in \dom{P} . \, p_i = q_i
+}
+{ B; (\Gamma_R,Q_R); (\Gamma_R[\Vret/x], Q) \vdash \code{return}~x \dashv (\Gamma',Q') }
+%
+\and \Rule[leftskip=.1cm,rightskip=.2cm]{Q:Update}
+{ q'_{xy}, q'_{yx} \in \Qplusz
+\\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
+}
+{ B; R; (\Gamma[x/y], Q {+} M_u {+} M_e(y)) \vdash x \gets y \dashv (\Gamma, Q') }
+%
+\\ \Rule[leftskip=.1cm,rightskip=.1cm]{Q:Loop}
+{ (\Gamma', Q'); R; (\Gamma,Q) \vdash S \dashv (\Gamma,  Q {+} M_l) }
+{ B; R; (\Gamma, Q) \vdash \code{loop}~S \dashv (\Gamma', Q') }
+%
+\and \Rule[leftskip=.2cm,rightskip=.1cm]{Q:IncP}
+{ \Gamma \models y \ge 0 \!
+\\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\} \!
+\\ \textstyle q'_{0y} = q_{0y}
+      + \sum_{u \in \mathcal U} q_{xu}
+      - \sum_{v \not\in \mathcal U} q_{vx} \!
+}
+{ \textstyle
+  B; R; (\Gamma[x/x {+} y], Q {+} M_u {+} M_e(x {+} y)) \vdash x \gets x + y \dashv (\Gamma, Q')
+}
+%
+\and \Rule{Q:DecP}
+{ \Gamma \models y \ge 0
+\\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
+\\\\ \textstyle q'_{y0} = q_{y0}
+      + \sum_{u \in \mathcal U} q_{ux}
+      - \sum_{v \not\in \mathcal U} q_{xv}
+}
+{ \textstyle
+  B; R; (\Gamma[x/x {-} y],Q {+} M_u {+} M_e(x {-} y)) \vdash x \gets x - y \dashv (\Gamma, Q')
+}
+%
+\and \Rule{Q:Inc}
+{ M = M_u + M_e(x {\pm} y)
+\\\\ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
+\\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
+}
+{ \textstyle
+  B; R; (\Gamma[x/x {\pm} y], Q {+} M) \vdash x \gets x \pm y \dashv (\Gamma, Q')
+}
+%
+\and \Rule{Q:If}
+{ B; R; (\Gamma \land e, Q {-} M_c^1) \vdash S_1 \dashv (\Gamma',Q')
+\\\\ B; R; (\Gamma \land \neg e, Q {-} M_c^2) \vdash S_2 \dashv (\Gamma',Q')
+}
+{ B; R; (\Gamma, Q{+}M_e(e)) \vdash \code{if}(e)~S_1~\code{else}~S_2 \dashv (\Gamma',Q') }
+%
+\and\Rule{Q:Seq}
+{  B; R; (\Gamma, Q) \vdash S_1 \dashv (\Gamma', Q' {+} M_s)
+\\\\ B; R; (\Gamma', Q') \vdash S_2 \dashv (\Gamma'',Q'')
+}
+{ B; R; (\Gamma, Q) \vdash S_1;S_2 \dashv (\Gamma'',Q'') }
+%
+\and\Rule{Q:Call}
+{ (\Gamma_f, Q_f,  \Gamma_f', Q_f') \in \Delta(f) \!
+\\ \text{Loc} = \text{Locals}(Q) \!
+\\ \forall i \neq j . \, x_i \neq x_j \!
+\\ c \in \Qplusz \!
+\\ Q = P + S \!
+\\ Q' = P' + S
+\\ U = Q_f[\Vargs / \vec x]
+\\ U' = Q'_f[\Vret/r]
+\\ \forall i \in \dom{U} . \, p_i = u_i
+\\ \forall i \in \dom{U'} .\, p'_i = u'_i
+\\ \forall i \not\in \dom{U'} .\, p'_i = 0
+\\ \forall i \not\in \text{Loc}
+  .\, s_i = 0
+}
+{ B; R; (\Gamma_f[\Vargs / \vec x] \land \Gamma_{\text{Loc}}, Q {+} c {+} M_f)
+  \vdash r \gets f(\vec x) \dashv
+  (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c {-} M_r)
+}
+%
+\iffull{\and
+\Rule[leftskip=.2cm,rightskip=.2cm]{Q:Assert}
+{ }
+{ B; R; (\Gamma, Q {+} M_a) \vdash \code{assert}~e \dashv (\Gamma \land e, Q) }
+}{}
+%
+\and
+\Rule[leftskip=.2cm,rightskip=.2cm]{Q:Extend}
+{ \fenv f = (\vec y, S_f)
+\\\\ B; (\Gamma_f', Q'_f); (\Gamma_f[\Vargs/\vec y], Q_f[\Vargs/ \vec y] ) \vdash S_f \dashv (\Gamma', Q')
+}
+{ (\Gamma_f, Q_f, \Gamma_f', Q_f') \in \Delta(f) }
+%
+\and \Rule{Q:Weak}
+{ B; R; (\Gamma_2,Q_2) \vdash S \dashv (\Gamma'_2, Q'_2)
+\\ \!\! \Gamma_1 \models \Gamma_2
+\\\\ Q_1 \succeq_{\Gamma_1} Q_2
+\\ \Gamma'_2 \models \Gamma'_1
+\\ Q'_2 \succeq_{\Gamma_2'} Q'_1
+}
+{ B; R; (\Gamma_1,Q_1) \vdash S \dashv (\Gamma'_1, Q'_1) }
+%
+\and \Rule{Relax}
+{ \mathcal L = \{ xy \mid \exists l_{xy} {\in} \N \, . \, \Gamma \models l_{xy} \le |\inter x y| \}
+\\ \mathcal U = \{ xy \mid \exists u_{xy}{\in} \N \, . \, \Gamma \models |\inter x y| \le u_{xy} \}
+\\\\ \forall i \in \mathcal U.\, q'_i \ge q_i - r_i
+\\ \forall i \in \mathcal L.\, q'_i \ge q_i + p_i
+\\ \forall i \not\in \mathcal U {\cup} \mathcal L {\cup} \{0\} .\, q'_i \ge q_i
+\\ q'_0 \geq q_0 {\textstyle + \sum_{i \in \mathcal U} u_i r_i - \sum_{i \in \mathcal L} l_i p_i}
+}
+{ Q' \succeq_\Gamma Q }
+
+\end{mathpar}
+\caption{\iffull{Inference rules}{Selected inference rules} of the quantitative analysis.}
+\label{fig:auto}
+\end{figure*}
+}{}
+
+\paragraph{Judgements of the Automatic Analysis.}
+
+The inference system for the automatic amortized analysis is defined
+in~\pref{fig:auto}.  The inference rules derive judgements of the form
+$$
+  (\Gamma_B, Q_B); (\Gamma_R, Q_R);
+    (\Gamma, Q) \vdash S \dashv (\Gamma', Q').
+$$
+These judgements correspond to the logic judgements $\Delta; B; R
+\vdash \htriple P S Q$ where each assertion splits in two parts, a
+logical part $\Gamma$ and a quantitative part $Q$.  That means that
+$(\Gamma_B, Q_B)$ is the postcondition of \code{break} statements,
+$(\Gamma_R, Q_R)$ is the postcondition for return statements, and
+$(\Gamma, Q) \vdash S \dashv (\Gamma', Q')$ can be understood as a
+simple Hoare triple.  We leave out the function context $\Delta$ in
+the presentation to avoid cluttering notations.  Instead we assume a
+fixed function context $\Delta$ that is implicit on all judgements.
+Function contexts are treated exactly as in the logic.  % We call
+% precondition the pair $(\Gamma, Q)$ and postcondition the pair
+% $(\Gamma', Q')$.
+The correspondence between judgements of the
+automation and the ones of the quantitative logic is made formal by
+our soundness proof of the automatic amortized analysis at the end of
+this section.
+
+As a convention, if $Q$ and $Q'$ are quantitative annotations then we
+assume that $Q = (q_i)_{i\in I}$ is a family with elements $q_i$, $Q'
+= (q'_i)_{i \in I}$, etc.  The notation $Q \pm n$ used in many rules
+defines a new context $Q'$ such that $q'_0 = q_0 \pm n$ and $\forall i
+\neq 0 .\, q'_i = q_i$.  We have the implicit side condition that all
+rational coefficients are non-negative.  Finally, if a rule mentions
+$Q$ and $Q'$ and leaves the latter undefined at some index $i$ we will
+implicitly assume that $q'_i = q_i$.
+
+We describe the automatic amortized analysis for a subset of
+expressions of Clight.  Assignments must have the form $x \gets
+y$ or $x \gets x \pm y$.  In the implementation, a Clight
+program is converted into this form prior to analysis without changing
+the resource cost.  This achieved by using a series of \emph{cost-free
+  assignments} that do not result in additional cost in the
+analysis.  Non-linear operations such as $x \gets z*y$ are simply
+handled by assigning zero potential to coefficients like $q_{xa}$ and
+$q_{ax}$ that contain $x$ after the assignment.
+
+\paragraph{Inference Rules.}
+
+Most of the rules correspond exactly to the respective rules of the
+quantitative Hoare logic.
+\iffull{
+  For example, the rule {\sc Q:Skip} simply reuses its postcondition
+  as precondition.  This is sound since evaluating a $\code{skip}$
+  statement never costs any resources and does not change the program
+  state.  Similarly, the rule {\sc Q:Tick} enforces that the
+  quantitative annotation of the precondition is at least $M_t(n)$ to
+  pay for the resource consumption.  Since the program state is also
+  unchanged in this case, the logical part $\Gamma$ of the
+  precondition can soundly be reused in the postcondition.  In the
+  rule {\sc Q:Break}, where the linear control flow is broken, the
+  postcondition $(\Gamma', Q')$ can be arbitrary.  The precondition is
+  taken from the break part of the judgement similarly as it is done
+  in the quantitative logic.
+}
+%
+{ Examples include {\sc Q:Skip, Q:Tick, Q:Break, Q:Seq, Q:Assert}, and
+  {\sc Q:Loop}.  We only show {\sc Q:Seq} and {\sc Q:Loop}.  The other
+  rules can be found in the extended version.
+}
+%
+The rule {\sc Q:Return} exhibits a slight
+difference to the quantitative logic.  While we have a function $\Z
+\to \Assn$ to represent return values in the logic, we assume that a
+special variable $\ret$ is part of the index set of $Q_R$.  The
+substitution $Q[\ret/x]$ denotes an potential annotation $Q'$ with
+$q'_{xy} = q_{\ret y}$ and $q'_{yx} = q_{y \ret}$ for all $y$ and
+$q_i'=q_i$ otherwise.
+
+Most interesting are the rules {\sc Q:IncP}, {\sc Q:DecP}, and {\sc
+  Q:Inc} for increments and decrements, which describe how the
+potential is distributed after a size change of a variable.  The rule
+{\sc Q:IncP} is for increments $x \gets x + y$ and {\sc Q:DecP} is
+for decrements $x \gets x - y$, they both apply only when we can deduce
+from the logical context $\Gamma$ that $y \ge 0$.
+Of course, we have symmetrical rules {\sc
+  Q:IncN} and {\sc Q:DecN} that can be applied if $y$ is not positive.
+The rules are equivalent in the case where $y=0$.  Finally, the rule
+{\sc Q:Inc} can be applied if we cannot deduce any information about
+$y$.  In the implementation, the rules for increments and decrements
+are combined into one syntax directed rule where the specialized rules
+take priority over {\sc Q:Inc}.
+
+To explain how rules for increment and decrement work, it is
+sufficient to understand the rule {\sc Q:IncP}.  The others follow the
+same idea and are symmetrical.  In {\sc Q:IncP}, the program updates a
+variable $x$ with $x+y$ where $y \ge 0$.  Since $x$ is changed, the
+quantitative annotation must be updated to reflect the change of the
+program state.  We write $x'$ for the value of $x$ after the assignment.
+Since $x$ is the only variable changed, only intervals of the form
+$\inter u x$ and $\inter x u$ will be resized.  Note that for any $u$,
+$\inter x u$ will get smaller with the update, and if $x' \in \inter x
+u$ we have $|\inter x u| = |\inter x {x'}| + |\inter {x'} u|$.  But
+$|\inter x {x'}| = |\inter 0 y|$ which means that the potential
+$q'_{0y}$ in the postcondition can be increased by $q_{xu}$ under the
+guard that $x' \in \inter x u$.  Dually, the interval $\inter v x$ can
+get bigger with the update.  We know that $|\inter v {x'}| \le y +
+|\inter v x|$.  So we decrease the potential of $\inter 0 y$ by
+$q_{vx}$ to pay for this change.  The rule ensures this
+only for $v \not\in \mathcal U$ because we know that $x \le v$
+otherwise, and thus $|\inter v x| = 0$.
+
+Another interesting rule is {\sc Q:Call}.  It needs to account for the
+changes to the stack caused by the function call, the arguments/return
+value passing, and the preservation of local variables.  We can sum up
+the main ideas of the rule as follows.
+\itemskip
+\begin{itemize}
+\item The potential in the pre- and postcondition of the function
+  specification is equalized to its matching potential in the callee's
+  pre- and postcondition.
+\itemskipIn
+\item
+  $\!$The potential of intervals $|\inter x y|$ is preserved
+  if $x$ and $y$ are local\iffull{ variables.}{.}
+\item
+  The unknown potentials after the call (e.g.
+  $|\inter x g|$, with $x$ local and $g$ global)
+  are set to zero in the postcondition.
+\end{itemize}
+\itemskip
+If $x$ and $y$ are local variables and $f(x,y)$ is
+called, {\sc Q:Call} splits the potential of
+$|\inter x y|$ in two parts, one part to perform the
+computation in the function $f$ and one part to keep for
+later use after the function call.  This splitting is
+realized by the equations $Q = P {+} S$ and $Q' =
+P' {+} S'$.  Arguments in the function precondition
+$(\Gamma_f, Q_f)$ are named using a fixed vector $\Vargs$
+of names different from all program variables.  This
+prevents name conflicts from happening and ensures that
+the substitution $[\Vargs/\vec x]$ is meaningful.
+Symmetrically, we use the unique name $\Vret$ to represent
+the return value in the function's postcondition
+$(\Gamma'_f, Q'_f)$.
+
+The rule {\sc Q:Weak} is not syntax directed.  In the implementation
+we apply {\sc Q:Weak} before loops and between the two statements of a
+sequential composition.  \iffull{We could integrate weakening into every
+syntax directed rule but this simple heuristic helps to make the
+analysis efficient.}{}  The high-level idea of {\sc Q:Weak} is the same
+as in the rule {\sc L:Weak} of the quantitative logic: If we have a
+sound judgement, then it is sound to add more potential to the
+precondition and remove potential from the postcondition.  The concept
+of \emph{more potential} is formalized by the relation $Q'
+\succeq_\Gamma Q$ that is defined in the rule {\sc Relax}.  Here, $Q$
+and $Q'$ are potential annotations and $\Gamma$ is a logical context.
+The rule {\sc Relax} deals also with the important task of transferring
+constant potential (represented by $q_0$) to interval sizes and vice
+versa.  If we can deduce from the logical context that the interval
+size $|\inter x y| \geq l$ is larger then a constant $l$ then we can
+transfer potential $q_{xy} {\cdot} |\inter x y|$ form the interval to
+constant potential $l{\cdot}q_{xy}$ and guarantee that we do not gain
+potential.  Conversely, if $|\inter x y| \leq u$ for a constant $u$
+then we can transfer constant potential $u{\cdot}q_{xy}$ to the
+interval potential $q_{xy} {\cdot} |\inter x y|$ without gaining
+potential.
+
+\paragraph{Automatic Inference via LP Solving.}
+
+We separate the search of a derivation into two steps.  As a first
+step we go through the whole program and apply inductively the
+inference rules of the automatic amortized analysis.  During this
+process our tool uses symbolic names for the rational coefficients
+$(q_i)$ in the rules.  Every time a linear constraint must be
+satisfied by these coefficients, it is recorded in a global list using
+the symbolic names.  We then feed the collected constraints to an
+off the shelf LP solver~\footnote{We currently use Coin-Or's CLP.}.
+If the solver successfully finds a solution, we know that a derivation
+exists for the considered program.  We can then extract the initial
+$Q$ from the solver and get a resource bound for the program.  To get
+a full derivation we simply extract the complete solution from the
+solver, and apply it to the symbolic names $(q_i)$ of the coefficients
+in the derivation.  If the LP solver fails to find a solution, an
+error is reported to the user.
+
+
+\begin{figure*}
+\centering
+\begin{tabular}{r|c|c|c|c|c}
+%
+& t08 (modified t08a) & t19 & t30 & t15 & t13\\
+%
+\hline
+&
+\begin{lstlisting}[basicstyle=\tt\scriptsize]
+while (y > x) {
+  x++; tick(1);
+}
+while (x > 2) {
+  x -= 3; tick(1);
+}
+\end{lstlisting}
+&
+\begin{lstlisting}[basicstyle=\tt\scriptsize]
+while (i > 100) {
+  i--; tick(1) }
+i += k+50;
+while (i >= 0) {
+  i--; tick(1);
+}
+\end{lstlisting}
+&
+\begin{lstlisting}[basicstyle=\tt\scriptsize]
+while (x > 0) {
+  x--;
+  t=x, x=y, y=t;
+  tick(1);
+}
+\end{lstlisting}
+&
+\begin{lstlisting}[basicstyle=\tt\scriptsize]
+assert(y >= 0);
+while (x > y) {
+  x -= y+1;
+  for (z=y; z > 0; z--)
+    tick(1);
+  tick(1);
+}
+\end{lstlisting}
+&
+\begin{lstlisting}[basicstyle=\tt\scriptsize]
+  while (x > 0) {
+    x--;
+    if (*) y++;
+    else
+      while (y > 0) {
+        y--; tick(1); }
+    tick(1); }
+\end{lstlisting}
+%
+\\
+\hline
+%
+%
+%
+AAA
+  & {\small $1.33|[x,y]| {+} 0.33 |[0,x]|$ }
+  & {\small $50 {+} |\inter {-1} i| {+} |\inter 0 k|$ }
+  & {\small $|\inter 0 x| {+} |\inter 0 y|$}
+  & {\small $|\inter 0 x|$}
+  & {\small $2 |\inter 0 x| {+} |\inter 0 y|$}
+\\
+%
+Rank &
+{\small $2 {+} y {-} x (?)$ } &
+{\small $54+k+i$ } &
+{\small ---} &
+{\small $2+2x-y$ } &
+{\small $0.5{\cdot}y^2 {+} yx +0.5{\cdot}x^2\ldots$} % + 1{-}0.5{\cdot}y){-}0.5{\cdot}x $}
+\\
+%
+LOOPUS &
+{\small
+  \begin{tabular}{c}
+    $\max(0, x{-}2)$\\ $+ 2\max(0, y {-} x)$
+  \end{tabular}
+} &
+{\small
+  \begin{tabular}{c}
+    $\max(0, i{-}100)$ \\
+    $+ \max(0, k {+} i {+} 51)$
+  \end{tabular}
+ } &
+{\small ---}% $1 + \max(x, y)$ (???)
+&
+{\small ---}
+&
+{\small $2\max(x, 0) {+} \max(y, 0)$}
+\end{tabular}
+\vspace{.1cm}
+\caption{ Comparison of resource bounds derived by different tools on
+  several examples with linear bounds.  AAA stands for our automatic
+  amortized analysis for Clight.  The output of Rank has been manually
+  simplified to fit the table.  }
+\label{fig:compar}
+\end{figure*}
+
+\paragraph{Soundness Proof.}
+
+The soundness of the analysis builds on the quantitative logic.  We
+translate judgements of the automatic amortized analysis as defined in
+\pref{fig:auto} into quantitative Hoare triples.  We define a
+translation function $\tr$, such that if a judgement $J$ in the
+automatic analysis is derivable, $\tr(J)$ is derivable in the
+quantitative logic.  By using $\tr$ to translate derivations of the
+automatic analysis to derivations in the quantitative logic we can
+automatically obtain a certified resource bound for the analyzed
+program.
+
+The translation of an assertion $(\Gamma, Q)$ in the automatic
+analysis is defined by
+$$
+  \tr(\Gamma, Q) := \lambda\state .\, (\Gamma(\state)) + \Phi_Q(\state),
+$$
+where we write $\Phi_Q$ for the unique linear potential function
+defined by the quantitative annotation $Q$.  We also need to
+translate the assumptions in function contexts of the automatic
+analysis.  We define $\tr(\Gamma_f, Q_f, \Gamma'_f, Q'_f) := \forall z \, \vec v \, v . $
+%
+$$
+(
+  \lambda \_ \, \vec v \, \state .\, \tr(\Gamma_f, Q_f)(\state[\Vargs {\mapsto} \vec v]),
+  \lambda \_ \, v \, \state .\, \tr(\Gamma'_f, Q'_f)(\state[\Vret {\mapsto} v])
+  )
+$$
+%
+These definitions let us translate the judgement $J = B; R; P \vdash
+S \dashv P'$ in the context $\Delta$ by
+$$
+  \tr(J) :=
+  (\lambda f .\, \tr(\Delta(f))); \tr(B); \tr(R) \vdash
+    \htriple{\tr(P)}{S}{\tr(P')}.
+$$
+The soundness of the automatic analysis can now be stated
+formally with the following theorem.
+%
+\begin{theorem}[Soundness of the automatic analysis]
+  If $J$ is a judgement derived with the rules of
+  \pref{fig:auto}, then $\tr(J)$ is a quantitative
+  Hoare triple derivable with the rules of
+  \pref{fig:logic}.
+\end{theorem}
+%
+\noindent
+The proof of this theorem is constructive and basically maps each rule
+of the automatic analysis directly to its counterpart in the
+quantitative logic.  The most tricky parts are the translations of the
+rules for increments and decrements and the rule {\sc Q:Weak} for
+weakening because we have to show that the preconditions of the rules
+{\sc L:Weak} or {\sc L:Update}, respectively, are met.  \iffull{ For instance
+we prove the following lemma to show the soundness of the translation
+of {\sc Q:Weak}.
+
+\begin{lemma}[Relax]
+  If $Q' \succeq_\Gamma Q$ and $\state$ is a program state such that
+  $\state \models \Gamma$ then we have $\Phi_{Q'}(\state) \ge \Phi_Q(\state)$.
+\end{lemma}
+\begin{proof}
+We observe the following inequations.
+\begin{align*}
+\Phi_{Q'}(\state) &= \sum_i q'_i f_i(\state) \\
+&\ge q_0 + \sum_{i\in\mathcal U} u_i p_i - \sum_{i\in\mathcal L} l_i p_i
+  + \sum_{i\in\mathcal U} (q_i - p_i) f_i(\state)  \\ &
+  \;\;\;\;\;\;\;\; + \sum_{i\in\mathcal L} (q_i + p_i) f_i(\state)
+  + \sum_{i\not\in \mathcal U \cup \mathcal L} q_i \\
+ &\ge \Phi_Q(\state)
+  + \sum_{i\in\mathcal U} (u_i - f_i(\state)) p_i
+  + \sum_{i\in\mathcal L} (f_i(\state) - l_i) p_i \\
+ &\ge \Phi_Q(\state).
+\end{align*}
+Since $\state \models \Gamma$, using the transitivity of $\models$ and
+the definition of $\mathcal U$ and $\mathcal L$ we get
+$\forall i\in\mathcal L.\, l_i \le f_i(\state)$ and
+$\forall i\in\mathcal U.\, f_i(\state)\le u_i$.
+These two inequalities justify the last step.
+\end{proof}
+%
+\noindent
+We prove similar lemmas for the rules that deal with assignment.  With
+the computational content of the proof, we have an effective algorithm
+to construct certificates for upper bounds derived automatically.
+}{}
+
+
+% \sectskip
+% \section{Implementation}
+
+% \subsection{Logical Annotations Generation}
+
+% \paragraph{Program conditions.}
+% The first pass in our OCaml implementation generates the
+% logical annotations $\Gamma$ around all program statements.
+% These annotations are used later on by the quantitative
+% analysis to generate constraints.
+% %
+% The first design choice we had to make is to give a fixed form
+% to program conditions.  Because of their generality and because
+% they are closed under negation, we decided to consider
+% inequalities over linear combinations as program conditions.
+% \begin{mathpar}
+% C := L < L \mid L > L \mid L \le L \mid L \ge L
+% \and
+% L := x \mid k \mid k * L \mid L + L \mid L - L
+% \end{mathpar}
+% A Condition is represented internally as a pair of one constant
+% $k \in \mathbb N$ and one map $m : V \rightarrow \mathbb N$.
+% Its intended semantics is
+% $$
+% \llbracket m \rrbracket(H) = k + \sum_v m_v \cdot H(v) \le 0.
+% $$
+% Note that conditions of this shape are closed by negation, as showed
+% by the following equivalence
+% $$
+% \neg (k + \sum_v m_v \cdot H(v) \le 0)
+% \Leftrightarrow (1-k) + \sum_v -m_v \cdot H(v) \le 0
+% $$
+% We can also note that all the ``questions'' asked to the logic
+% assertions during a proof derivation can be described using
+% linear combinations.  Conveniently enough, this language of
+% assertions is exactly Presburger's arithmetic.  This means that
+% we have a sound and complete decision procedure to answer
+% all the questions asked during the analysis.
+
+% \paragraph{Logical contexts.}
+% The second problem related to the logic is how to figure out
+% the logical contexts $\Gamma$ for each program statement.
+% This is a question that is answered by abstract interpretation
+% but, to show that our work really does not need the full power
+% of abstract interpretation, we designed and implemented a very
+% simple top-down approach: starting from a statement $S$ and
+% a pre-condition $\Gamma$ (given as a list of inequalities), we
+% generate $\mathcal P(S, \Gamma)$ a postcondition for $S$ using the
+% following equations:
+
+% \begin{align*}
+% \mathcal P(\code{skip}, \Gamma) &:= \Gamma \\
+% \mathcal P(x \gets y, \Gamma) &:= \{ e \le 0 \mid (e \le 0) \in \Gamma \land \{x\} \# e \} \\
+% \mathcal P(x \gets x + y, \Gamma) &:= \Gamma[x / x - y] \\
+% \mathcal P(x \gets x - y, \Gamma) &:= \Gamma[x / x + y] \\
+% \mathcal P(\code{assert}(C), \Gamma) &:= \Gamma,C \\
+% \mathcal P(S_1; S_2, \Gamma) &:= \mathcal P(S_2, \mathcal P(S_1, \Gamma)) \\
+% \mathcal P(\code{if} (C)~S_1~\code{else}~S_2) &:=
+%   \mathcal P(S_1, \Gamma,C) \lor \mathcal P(S_2, \Gamma,\neg C) \\
+% \mathcal P(\code{while}(C)~S, \Gamma) &:=
+%   \Gamma \lor (\neg C, \mathcal P(S, (C, \{ e \le 0 \mid (e \le 0) \in \Gamma \land {\rm set}(S) \# e \})))
+% \end{align*}
+% We used the notation ${\rm set}(S)$ to designate the set of variables
+% assigned to in the statement $S$ and $s\#e$ to mean that variables
+% in $s$ do not appear in the linear combination $e$.  Because contexts
+% are simply conjunction of conditions we must define $\Gamma \lor \Delta$
+% as a function on contexts:
+% $$
+% \Gamma \lor \Delta := \{ e \le 0 \mid (e \le 0) \in \Gamma \cup \Delta \land \Gamma \models (e \le 0) \land \Delta \models (e \le 0) \}.
+% $$
+% It is important to note that the $\mathcal P$ function defined above
+% is not performing any fixpoint computation.  Despite this flagrant
+% lack of sophistication our complete analysis is still able to figure out some
+% tricky invariants as exemplified earlier.
+% Finally, to generate annotations for the whole program $S$,
+% we run $\mathcal P(S,\bullet)$ (where $\bullet$ is the empty context)
+% and memorize all the intermediate results.  In practice, these results are stored in
+% a table that can be referenced at any time during the analysis to get the
+% pre and post-condition of any statement in the program.
+
+% \paragraph{Decision procedure.}
+% To decide logical entailment $\Gamma \models \Delta$ we use
+% Presburger's decision procedure.  But what this procedure gives us
+% is in fact only an answer the the question: Is there any heap $H$
+% such that $H \models \Gamma$.  While this sentence is existential
+% the question $\Gamma \models \Delta$ is universal.  To use the
+% decision procedure, we use the well known trick of double negation.
+% \begin{align*}
+% \Gamma \models C
+% &\Leftrightarrow \neg\neg (\Gamma \models C) \\
+% &\Leftrightarrow \neg\neg (\forall H.\, H\models\Gamma \implies H\models C) \\
+% &\Leftrightarrow \neg \exists H, H\models\Gamma \land \neg H\models C \\
+% &\Leftrightarrow \neg \exists H, H\models\Gamma \land H\models \neg C \\
+% &\Leftrightarrow \neg \exists H, H\models (\Gamma, \neg C)
+% \end{align*}
+% Thus, to know if $\Gamma \models C$ we ask the decision
+% procedure if $\Gamma, \neg C$ is satisfiable and negate the result.
+% When we want to know about $\Gamma \models \Delta$ we simply ask
+% one question for each of the conjuncts of $\Delta$.
+
+% \subsection{Linear Constraints Generation}
+
+% \paragraph{Generating a linear program.}
+% Because figuring out the coefficents that are in $Q$ right away is a hard
+% problem, we separate the search of a derivation in two steps.  As a first
+% step we go through the whole program and apply inductively the rules
+% given in the proof system section.  During this process our tool uses
+% symbolic names for the coefficients $(q_i)$.  Every time a side condition
+% must be satisfied by these coefficients, it is recorded using the symbolic
+% names in a global list.  When
+% the list of all constraints that must be satisfied by the coefficients is
+% collected, we feed it to an off the shelf LP-solver.  If the solver successfully
+% finds a solution to the given problem, we know that a derivation
+% exists for the considered program.  We can even ask the solver
+% for the initial $Q$ and get a resource bound for the program.
+% If the LP-solver fails to find a solution, an error is reported to the
+% user.
+
+% \paragraph{Making the proof system algorithmic.}
+% One problem with the proof system as described is that it is not
+% fully syntax directed.  The rule {\sc Q:Weak} can be applied at
+% all times.  However, if we apply this weakening rule at every step
+% of the derivation, the number of generated constraints and
+% the number of queries to the logic system explode.  This blowup
+% causes efficiency problems.  To avoid these performance problems
+% our implementation only applies the weakening rules at some
+% strategic points in the derivation.  More specifically, at sequence
+% points, at the beginning of while loops and around conditional
+% statements.  So far, this selection of weakening spots has been
+% driven by practice but it might be possible to prove that these
+% program points are the only ones where weakening is needed.
+
+
+% \sectskip
+% \section{Polynomial Potential}
+
+% \paragraph{Index Sets}
+
+% Let $V$ be a set of variables.  An \emph{index} $I \in \ind(V)$ is a
+% family that maps two-element sets of variables to natural numbers,
+% that is,
+% $$
+% I = (i_{\{x,y\}})_{\{x,y\} \subseteq V} \; .
+% $$
+% %
+% We identify a family $I$ with the set $\{ (\{x,y\},i_{\{x,y\}})
+% \mid \{x,y\} \subseteq V\}$.
+
+% Let $\ind(V)$ denote the set of all such indices.  We write $\ind$
+% instead of $\ind(V)$ if the set of variables $V$ is fixed or obvious
+% from the context.
+% %
+% We assume that allways $0 \in V$ and sometimes write $i_x$ instead of $i_{\{x,0\}}$.
+
+% The \emph{degree} $\deg(I)$ of an index $I = (i_{\{x,y\}})_{\{x,y\}
+%   \subseteq V}$ is defined as
+% $$
+% \deg(I) = \sum_{\{x,y\} \in V} i_{\{x,y\}} \;.
+% $$
+% We define $\ind_k(V) = \{ I \mid I \in \ind(V) \text{ and } \deg(i) \leq k
+% \}$ to be the set of indices of degree at most $k$.
+
+% \paragraph{Resource Polynomials}
+
+% Let $V$ be a set of variables.  An index $I \in \ind(V)$ denotes a
+% \emph{base polynomial} $P_I : \states \to \N$ for $V$ that maps a
+% program state $H$ to product of binomial coefficients (a natural
+% number).  We define
+% $$
+% P_I(H) = \prod_{{\{x,y\}} \subseteq V} \binom {|H(x){-}H(y)|} {i_{\{x,y\}}} \; .
+% $$
+% %
+% A \emph{resource polynomial} $R$ for the variable set $V$ is a
+% non-negative linear combination of the base polynomials for $V$.
+
+% \paragraph{Potential Annotations}
+
+% A \emph{potential annotation} for the variable set $V$ is a family
+% $$Q = (q_I)_{I \in \ind(V)}$$
+% of non-negative rational numbers.  Such an annotation denotes the
+% resource polynomial $R_Q$ that is defined by
+% $$
+% R_Q(H) = \sum_{I \in \ind(V)} q_I \cdot P_I(H) \; .
+% $$
+% %
+% We say that the potential annotation $Q$ is of degree $k$ if $q_I = 0$
+% for $I \in \ind(V)$ with $\deg(I) > k$.
+
+% \paragraph{Additive Shifts}
+
+% Let $Q$ be a potential annotation for a variable set $V$ and let
+% $\{x,y\} \subseteq V$ be a two-element variable set.  The
+% \emph{additive shift} with respect to $\{x,y\}$ is a potential
+% annotation $\shift_{\{x,y\}}(Q) = (q'_I)_{I \in \ind(V)} $ for $V$
+% that is defined through
+% $$
+% q'_I = q_I + q_{I^{\{x,y\}{+}1}} \; .
+% $$
+% For an index $I = (i_{\{x,y\}})_{\{x,y\} \subseteq V}$ we use the
+% notation $I^{\{x,y\}{+}k}$ to denote the index
+% $(i'_{\{x,y\}})_{\{x,y\} \subseteq V}$ such that
+% $$
+% i'_{\{t,u\}} = \left\{
+%   \begin{array}{ll}
+%     i_{\{t,u\}} + k  & \text{if } \{t,u\} = \{x,y\} \\
+%     i_{\{t,u\}} & \text{otherwise}
+%   \end{array}
+% \right.
+% \;.
+% $$
+% %
+% The additive shift for natural numbers reflects the identity
+% \begin{equation}
+% \label{eq:shift}
+% \sum_{0 {\leq} i \leq {k}} q_i \binom{n+1}{i} = \sum_{0 {\leq} i \leq {k}} (q_i{+}q_{i+1}) \binom{n}{i}
+% \end{equation}
+% where $q_{k+1} = 0$.  It is used in the effect system if the
+% difference $n+1$ between two variables $x,y$ decreases by one.
+
+% \begin{lemma} Let $V$ be a set of variables with $x,y \in V$ and let
+%   $H$ be a program state. Let $|H'(t) {-} H'(u)| = |H(t) {-} H(u)|$
+%   for $\{t,u\} \neq \{x,y\}$ and let $|H'(x) {-} H'(y)| = |H(x) {-}
+%   H(y)| - 1$.
+%   %
+%   If $Q' = \shift_{\{x,y\}}(Q)$ then $R_Q(H) = R_{Q'}(H')$.
+% \end{lemma}
+
+% We now study the effect of multiple simultaneous shifts.  Let $Q$ be a
+% resource annotation for a variable set $V$ and let $U_1,\ldots,U_n
+% \subseteq V$ with $|U_i| = 2$ for all $i$ and $U_i \neq U_j$ for $i
+% \neq j$ be pairwise distinct two-element variable sets.  The
+% simulations additive shift $\shift_{U_1,\ldots,U_n}(Q)$ of $Q$ with
+% respect to $U_1,\ldots,U_n$ is defined by
+% $$
+% \shift_{U_1,\ldots,U_n}(Q) = \shift_{U_1}( \cdots \shift_{U_n}(Q) \cdots ) \; .
+% $$
+% %
+% \begin{proposition}
+%   Let $V$ be a set of variables and let $U_1,\ldots,U_n$ be pairwise
+%   distinct two-element variable sets.  Let $|H'(x) {-} H'(y)| = |H(x)
+%   {-} H(y)|$ for $\{x,y\} \not\in \{U_1,\ldots,U_n\}$ and let $|H'(x)
+%   {-} H'(y)| = |H(x) {-} H(y)| - 1$ for $\{x,y\} \in
+%   \{U_1,\ldots,U_n\}$.
+%   %
+%   If $Q' = \shift_{U_1,\ldots,U_n}(Q)$ then $R_Q(H) = R_{Q'}(H')$.
+% \end{proposition}
+% %
+% As shown by the following lemma, the order in which the shifts for the
+% individual $U_i$ are applied is insignificant.
+% %
+% \begin{lemma}
+%   Let $\sigma : \{1,\ldots,n\} \to \{1,\ldots,n\}$ be a
+%   permutation. Then $\shift_{U_1,\ldots,U_n}(Q) =
+%   \shift_{U_{\sigma(1)},\ldots,U_{\sigma(n)}}(Q)$.
+% \end{lemma}
+% %
+% For reasons of efficiency in the constraint generation, we give a more
+% direct formula for the simultaneous shift.  Let $I \in \ind(V)$ and
+% let $U_1,\ldots,U_n$ be pairwise distinct two-element variable sets.
+% We define the index $I^{U_1,\ldots,U_n + k}$ as the family $(i'_{\{x,y\}})_{\{x,y\} \subseteq V}$ such that
+% $$
+% i'_{\{t,u\}} = \left\{
+%   \begin{array}{ll}
+%     i_{\{t,u\}} + k  & \text{if } \{t,u\} \in \{U_1,\ldots,U_n\} \\
+%     i_{\{t,u\}} & \text{otherwise}
+%   \end{array}
+% \right.  \;.
+% $$
+
+% %
+% \begin{lemma}
+%   Let $V$ be a variable set and let $U_1,\ldots,U_n$ be pairwise
+%   distinct two-element variable sets.
+%   %
+%   Let $Q = (q_I)_{I \in \ind(V)}$ be a resource annotation for
+%   $V$ and let $ Q' = (q'_I)_{I \in \ind(V)}$ where
+%   $$
+%   q'_I = \sum_{\{j_1,\ldots,j_m\} \subseteq \{1,\ldots,n\} } q_{I^{U_{j_1},\ldots,U_{j_m}+1}} \; .
+%   $$
+%   Then $Q' = \shift_{U_1,\ldots,U_n}(Q)$.
+% \end{lemma}
+
+
+%%
+% Note: Later we need to shift in many directions at once like
+%   Q' = shift_{x,y} (shift_{x,u} (Q))
+% To do: Give a combined formula for that (concise constraint system).
+%%
+
+
+
+
+\sectskip
 \section{Logical State and User Interaction}
 \label{sec:anno}
 \aftersectskip
@@ -911,12 +1622,12 @@ ${\color{blue}%
 while (k > 0) {
   x=0;
   while (x < N && a[x] == 1) {
-    _assert(na > 0);_
-    a[x]=0; _na--;_
+    @assert(na > 0);@
+    a[x]=0; @na--;@
     tick(1);
     x++; }
   if (x < N) {
-    a[x]=1; _na++;_
+    a[x]=1; @na++;@
     tick(1); }
   k--;
 }
@@ -936,13 +1647,13 @@ while (k > 0) {
 ${\color{blue}%
   \mbox{logical state invariant }
   \{ lg > \log_2(h - l) \} }$
-bsearch(x,l,h_,lg_) {
+bsearch(x,l,h@,lg@) {
   if (h-l > 1) {
+    @assert(lg > 0);@
     m = l + (h-l)/2;
-    _assert(lg > 0);_
-    _lg--;_ if (a[m]>x) h=m; else l=m;
+    @lg--;@ if (a[m]>x) h=m; else l=m;
     tick($M_\code{bsearch}$);
-    l = bsearch(x,l,h_,lg_);
+    l = bsearch(x,l,h@,lg@);
     tick($-M_\code{bsearch}$);
   } else return l;
 }
@@ -979,8 +1690,8 @@ $$
 \forall n\, \sigma\, \sigma'.\,
   (\sigma, P_l(\vec X(\sigma))) \Downarrow_n \sigma'
     {\implies}
-  \exists n', n' \le n \land
-  (\sigma, P) \Downarrow_{n'} \sigma'.
+  \exists n' {\le} n.\,
+    (\sigma, P) \Downarrow_{n'} \sigma'.
 $$
 Since the annotated program and the original one are often
 syntactically close, the proof of this result goes
@@ -990,7 +1701,7 @@ $P_l(\vec x)$ is derived.  Finally this bound, instantiated with
 $\vec X$, gives the final resource bound for the program $P$.
 
 This idea is illustrated by the program on \pref{fig:xmplincaux}.
-Parts of the code underlined are annotations that were added
+Parts of the code in blue are annotations that were added
 to the original program text.  The top-level loop increments
 a binary counter $k$ times.  A naive analysis of
 the algorithm yields the quadratic bound $k \cdot N$.
@@ -1017,7 +1728,7 @@ $\#_1(a) > 0$, thus the assertion \lstinline{na > 0} never fails. %  So the
 Another simple example is given on \pref{fig:xmplbsaux} where
 a logarithmic bound on the stack consumption of a binary search
 program is proved using logical variable annotations.  Once again,
-annotations are underlined in the program text.  In this example,
+annotations are in blue in the program text.  In this example,
 to ease the proof of equivalence between the annotated program
 and the original one, we use the inequality $lg >
 \log_2(h-l)$ as invariant.  This trick allows a simpler
@@ -2851,1015 +3562,6 @@ setting is actually the main use case of the previous theorem
 which is stated as a stronger result to allow a proof by
 induction.}{}
 
-
-
-\sectskip
-\section{Automatic Amortized Analysis}
-\label{sec:AAA}
-\aftersectskip
-
-In this section we present the automatic amortized analysis that we
-use in our implementation to derive resource bounds for C
-programs.
-
-\paragraph{Linear Potential Functions.}
-
-To find derivations in the quantitative Hoare logic automatically, we
-have to focus on bounds that have a certain shape.  The general form
-of \emph{potential functions} (or assertions) that we consider is
-$$
-  \Phi(\state) = q_0 + \sum_{x, y \in \dom\state \land x \neq y}
-    q_{(x, y)} \cdot |\inter {\state(x)} {\state(y)}| \, .
-$$
-%
-Here $\state : (\text{Locals} \to \Z) \times (\text{Globals} \to \Z)$
-is again a simplified program state as introduced in \pref{sec:sem},
-$|\inter a b| = max(0,b-a)$, and $q_i \in \Qplusz$.  To simplify the
-references to the linear coefficients $q_i$, we introduce an \emph{index
-  set} $I$.  This set is defined to be $\{0\} \cup \{(x, y) \mid x, y
-\in \Var \land x \neq y \}$.  Each index $i$ corresponds to a \emph{base function}
-$f_i$ in the potential function: $0$ corresponds to the constant
-function $\state \mapsto 1$, and $(x,y)$ corresponds to $\state \mapsto
-|\inter {\state(x)} {\state(y)}|$.  Using these notations we can
-rewrite the above equality as\iffull{
-$$
-  \Phi = \sum_{i \in I} q_i f_i.
-$$}
-{ $\Phi = \sum_{i \in I} q_i f_i$.}  We often write $xy$ to denote the
-index $(x,y)$.  \iffull{The family $(f_i)_{i\in I}$ is actually a basis (in
-the linear-algebra sense) for potential functions.}{}  This allows us to
-uniquely represent any linear potential function
-$\Phi$ as a \emph{quantitative annotation} $Q = (q_i)_{i \in I}$, that
-is, a family of \ifshort{non-negative}{} rational numbers where only
-a finite number of elements are not zero. \iffull{ For soundness, we
-  require that potential functions always give non-negative results.
-  This is acheived by restricting coefficients in a quantitative
-  annotation to be always non-negative.}{}
-
-In the potential functions, we treat constants as global variables
-that cannot be assigned to.  For example, if the program contains the
-constant $8128$ then we have a variable $c_{8128}$ and
-$\state(c_{8128}) = 8128$.  We assume that every program state
-includes the constant $c_0$.
-
-\paragraph{Logical State.}
-
-In addition to the quantitative annotations our automatic amortized
-analysis needs to maintain a minimal logical state to justify certain
-operations on quantitative annotations.  For example when analyzing
-the code $x \gets x + y$, it is helpful to know the sign of $y$ to
-determine which intervals will increase or decrease.  The knowledge
-needed by our rules can be inferred by local reasoning (i.e., in
-basic blocks without recursion and loops) within usual theories
-(e.g. Presburger arithmetic or bit vectors).
-
-In contrast to the quantitative annotations, logical contexts $\Gamma$
-in the presented inference system are left abstract.  This allows for
-simpler rules and leaves room for future improvements.
-%
-Our implementation uses conjunctions of linear inequalities as
-logical state.  We never compute fixpoints and take $\top$
-as pre- and postconditions for functions. It has proved to be
-sufficient for the variety of examples we are interested in or found
-in the literature.
-
-
-\iffull{
-\begin{figure*}[t]
-\begin{mathpar}
-%
-\Rule[leftskip=.4cm,rightskip=.3cm]{Q:Skip}
-{ }
-{ \!\! B; R; (\Gamma, Q) \vdash \code{skip} \dashv (\Gamma, Q) \!!}
-%
-\and
-\Rule{Q:Break}
-{ }
-{\!\!  (\Gamma, Q_B); R; (\Gamma, Q_B {+} M_b) \vdash \code{break} \dashv (\Gamma', Q') \!\!}
-%
-\and
-\Rule[leftskip=.3cm,rightskip=.4cm]{Q:Tick}
-{ }
-{ \!\! B; R; (\Gamma, Q{+}M_t(n)) \vdash \code{tick}(n) \dashv (\Gamma, Q) \!\!}
-%
-\and
-\Rule{Q:Return}
-{ P = Q_R[\Vret/x]
-\\ \Gamma = \Gamma_R[\Vret/x]
-\\ \forall i \in \dom{P} . \, p_i = q_i
-}
-{ B; (\Gamma_R,Q_R); (\Gamma, Q) \vdash \code{return}~x \dashv (\Gamma',Q') }
-%
-\and \Rule{Q:Update}
-{ q'_{xy}, q'_{yx} \in \Qplusz
-\\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
-}
-{ B; R; (\Gamma[x/y], Q {+} M_u {+} M_e(y)) \vdash x \gets y \dashv (\Gamma, Q') }
-%
-\\ \Rule[leftskip=.1cm,rightskip=.1cm]{Q:Loop}
-{ (\Gamma', Q'); R; (\Gamma,Q) \vdash S \dashv (\Gamma,  Q {+} M_l) }
-{ B; R; (\Gamma, Q) \vdash \code{loop}~S \dashv (\Gamma', Q') }
-%
-\and \Rule[leftskip=.2cm,rightskip=.1cm]{Q:IncP}
-{ \Gamma \models y \ge 0 \!
-\\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\} \!
-\\ \textstyle q'_{0y} = q_{0y}
-      + \sum_{u \in \mathcal U} q_{xu}
-      - \sum_{v \not\in \mathcal U} q_{vx} \!
-}
-{ \textstyle
-  B; R; (\Gamma[x/x {+} y], Q {+} M_u {+} M_e(x {+} y)) \vdash x \gets x + y \dashv (\Gamma, Q')
-}
-%
-\and \Rule{Q:DecP}
-{ \Gamma \models y \ge 0
-\\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
-\\\\ \textstyle q'_{y0} = q_{y0}
-      + \sum_{u \in \mathcal U} q_{ux}
-      - \sum_{v \not\in \mathcal U} q_{xv}
-}
-{ \textstyle
-  B; R; (\Gamma[x/x {-} y],Q {+} M_u {+} M_e(x {-} y)) \vdash x \gets x - y \dashv (\Gamma, Q')
-}
-%
-\and \Rule{Q:Inc}
-{ M = M_u + M_e(x {\pm} y)
-\\\\ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
-\\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
-}
-{ \textstyle
-  B; R; (\Gamma[x/x {\pm} y], Q {+} M) \vdash x \gets x \pm y \dashv (\Gamma, Q')
-}
-%
-\and \Rule{Q:If}
-{ B; R; (\Gamma \land e, Q {-} M_c^1) \vdash S_1 \dashv (\Gamma',Q')
-\\\\ B; R; (\Gamma \land \neg e, Q {-} M_c^2) \vdash S_2 \dashv (\Gamma',Q')
-}
-{ B; R; (\Gamma, Q{+}M_e(e)) \vdash \code{if}(e)~S_1~\code{else}~S_2 \dashv (\Gamma',Q') }
-%
-\and\Rule{Q:Seq}
-{  B; R; (\Gamma, Q) \vdash S_1 \dashv (\Gamma', Q' {+} M_s)
-\\ B; R; (\Gamma', Q') \vdash S_2 \dashv (\Gamma'',Q'')
-}
-{ B; R; (\Gamma, Q) \vdash S_1;S_2 \dashv (\Gamma'',Q'') }
-%
-\and\Rule{Q:Call}
-{ (\Gamma_f, Q_f,  \Gamma_f', Q_f') \in \Delta(f) \!
-\\ \text{Loc} = \text{Locals}(Q) \!
-\\ \forall i \neq j . \, x_i \neq x_j \!
-\\ c \in \Qplusz \!
-\\ Q = P + S \!
-\\ Q' = P' + S
-\\ U = Q_f[\Vargs / \vec x]
-\\ U' = Q'_f[\Vret/r]
-\\ \forall i \in \dom{U} . \, p_i = u_i
-\\ \forall i \in \dom{U'} .\, p'_i = u'_i
-\\ \forall i \not\in \dom{U'} .\, p'_i = 0
-\\ \forall i \not\in \text{Loc}
-  .\, s_i = 0
-}
-{ B; R; (\Gamma_f[\Vargs / \vec x] \land \Gamma_{\text{Loc}}, Q {+} c {+} M_f)
-  \vdash r \gets f(\vec x) \dashv
-  (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c {-} M_r)
-}
-%
-\and
-\Rule[leftskip=.2cm,rightskip=.2cm]{Q:Assert}
-{ }
-{ B; R; (\Gamma, Q {+} M_a) \vdash \code{assert}~e \dashv (\Gamma \land e, Q) }
-%
-\and
-\Rule[leftskip=.2cm,rightskip=.2cm]{Q:Extend}
-{ \fenv f = (\vec y, S_f)
-\\\\ B; (\Gamma_f', Q'_f); (\Gamma_f[\Vargs/\vec y], Q_f[\Vargs/ \vec y] ) \vdash S_f \dashv (\Gamma', Q')
-}
-{ (\Gamma_f, Q_f, \Gamma_f', Q_f') \in \Delta(f) }
-%
-\and \Rule{Q:Weak}
-{ B; R; (\Gamma_2,Q_2) \vdash S \dashv (\Gamma'_2, Q'_2)
-\\ \!\! \Gamma_1 \models \Gamma_2
-\\\\ Q_1 \succeq_{\Gamma_1} Q_2
-\\ \Gamma'_2 \models \Gamma'_1
-\\ Q'_2 \succeq_{\Gamma_2'} Q'_1
-}
-{ B; R; (\Gamma_1,Q_1) \vdash S \dashv (\Gamma'_1, Q'_1) }
-%
-\and \Rule{Relax}
-{ \mathcal L = \{ xy \mid \exists l_{xy} {\in} \N \, . \, \Gamma \models l_{xy} \le |\inter x y| \}
-\\ \mathcal U = \{ xy \mid \exists u_{xy}{\in} \N \, . \, \Gamma \models |\inter x y| \le u_{xy} \}
-\\\\ \forall i \in \mathcal U.\, q'_i \ge q_i - r_i
-\\ \forall i \in \mathcal L.\, q'_i \ge q_i + p_i
-\\ \forall i \not\in \mathcal U {\cup} \mathcal L {\cup} \{0\} .\, q'_i \ge q_i
-\\ q'_0 \geq q_0 {\textstyle + \sum_{i \in \mathcal U} u_i r_i - \sum_{i \in \mathcal L} l_i p_i}
-}
-{ Q' \succeq_\Gamma Q }
-
-\end{mathpar}
-\caption{\iffull{Inference rules}{Selected inference rules} of the quantitative analysis.}
-\label{fig:auto}
-\end{figure*}
-}{}
-
-
-
-\ifshort{
-\begin{figure*}[t]
-\small
-\begin{mathpar}
-\iffull{
-%
-\Rule[leftskip=.4cm,rightskip=.3cm]{Q:Skip}
-{ }
-{ \!\! B; R; (\Gamma, Q) \vdash \code{skip} \dashv (\Gamma, Q) \!!}
-%
-\and
-\Rule{Q:Break}
-{ }
-{\!\!  (\Gamma, Q_B); R; (\Gamma, Q_B {+} M_b) \vdash \code{break} \dashv (\Gamma', Q') \!\!}
-%
-\and
-\Rule[leftskip=.3cm,rightskip=.4cm]{Q:Tick}
-{ }
-{ \!\! B; R; (\Gamma, Q{+}M_t(n)) \vdash \code{tick}(n) \dashv (\Gamma, Q) \!\!}
-%
-\and }{}
-\Rule[leftskip=.2cm,rightskip=.1cm]{Q:Return}
-{ P = Q_R[\Vret/x]
-\\ \forall i \in \dom{P} . \, p_i = q_i
-}
-{ B; (\Gamma_R,Q_R); (\Gamma_R[\Vret/x], Q) \vdash \code{return}~x \dashv (\Gamma',Q') }
-%
-\and \Rule[leftskip=.1cm,rightskip=.2cm]{Q:Update}
-{ q'_{xy}, q'_{yx} \in \Qplusz
-\\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
-}
-{ B; R; (\Gamma[x/y], Q {+} M_u {+} M_e(y)) \vdash x \gets y \dashv (\Gamma, Q') }
-%
-\\ \Rule[leftskip=.1cm,rightskip=.1cm]{Q:Loop}
-{ (\Gamma', Q'); R; (\Gamma,Q) \vdash S \dashv (\Gamma,  Q {+} M_l) }
-{ B; R; (\Gamma, Q) \vdash \code{loop}~S \dashv (\Gamma', Q') }
-%
-\and \Rule[leftskip=.2cm,rightskip=.1cm]{Q:IncP}
-{ \Gamma \models y \ge 0 \!
-\\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\} \!
-\\ \textstyle q'_{0y} = q_{0y}
-      + \sum_{u \in \mathcal U} q_{xu}
-      - \sum_{v \not\in \mathcal U} q_{vx} \!
-}
-{ \textstyle
-  B; R; (\Gamma[x/x {+} y], Q {+} M_u {+} M_e(x {+} y)) \vdash x \gets x + y \dashv (\Gamma, Q')
-}
-%
-\and \Rule{Q:DecP}
-{ \Gamma \models y \ge 0
-\\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
-\\\\ \textstyle q'_{y0} = q_{y0}
-      + \sum_{u \in \mathcal U} q_{ux}
-      - \sum_{v \not\in \mathcal U} q_{xv}
-}
-{ \textstyle
-  B; R; (\Gamma[x/x {-} y],Q {+} M_u {+} M_e(x {-} y)) \vdash x \gets x - y \dashv (\Gamma, Q')
-}
-%
-\and \Rule{Q:Inc}
-{ M = M_u + M_e(x {\pm} y)
-\\\\ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
-\\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
-}
-{ \textstyle
-  B; R; (\Gamma[x/x {\pm} y], Q {+} M) \vdash x \gets x \pm y \dashv (\Gamma, Q')
-}
-%
-\and \Rule{Q:If}
-{ B; R; (\Gamma \land e, Q {-} M_c^1) \vdash S_1 \dashv (\Gamma',Q')
-\\\\ B; R; (\Gamma \land \neg e, Q {-} M_c^2) \vdash S_2 \dashv (\Gamma',Q')
-}
-{ B; R; (\Gamma, Q{+}M_e(e)) \vdash \code{if}(e)~S_1~\code{else}~S_2 \dashv (\Gamma',Q') }
-%
-\and\Rule{Q:Seq}
-{  B; R; (\Gamma, Q) \vdash S_1 \dashv (\Gamma', Q' {+} M_s)
-\\\\ B; R; (\Gamma', Q') \vdash S_2 \dashv (\Gamma'',Q'')
-}
-{ B; R; (\Gamma, Q) \vdash S_1;S_2 \dashv (\Gamma'',Q'') }
-%
-\and\Rule{Q:Call}
-{ (\Gamma_f, Q_f,  \Gamma_f', Q_f') \in \Delta(f) \!
-\\ \text{Loc} = \text{Locals}(Q) \!
-\\ \forall i \neq j . \, x_i \neq x_j \!
-\\ c \in \Qplusz \!
-\\ Q = P + S \!
-\\ Q' = P' + S
-\\ U = Q_f[\Vargs / \vec x]
-\\ U' = Q'_f[\Vret/r]
-\\ \forall i \in \dom{U} . \, p_i = u_i
-\\ \forall i \in \dom{U'} .\, p'_i = u'_i
-\\ \forall i \not\in \dom{U'} .\, p'_i = 0
-\\ \forall i \not\in \text{Loc}
-  .\, s_i = 0
-}
-{ B; R; (\Gamma_f[\Vargs / \vec x] \land \Gamma_{\text{Loc}}, Q {+} c {+} M_f)
-  \vdash r \gets f(\vec x) \dashv
-  (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c {-} M_r)
-}
-%
-\iffull{\and
-\Rule[leftskip=.2cm,rightskip=.2cm]{Q:Assert}
-{ }
-{ B; R; (\Gamma, Q {+} M_a) \vdash \code{assert}~e \dashv (\Gamma \land e, Q) }
-}{}
-%
-\and
-\Rule[leftskip=.2cm,rightskip=.2cm]{Q:Extend}
-{ \fenv f = (\vec y, S_f)
-\\\\ B; (\Gamma_f', Q'_f); (\Gamma_f[\Vargs/\vec y], Q_f[\Vargs/ \vec y] ) \vdash S_f \dashv (\Gamma', Q')
-}
-{ (\Gamma_f, Q_f, \Gamma_f', Q_f') \in \Delta(f) }
-%
-\and \Rule{Q:Weak}
-{ B; R; (\Gamma_2,Q_2) \vdash S \dashv (\Gamma'_2, Q'_2)
-\\ \!\! \Gamma_1 \models \Gamma_2
-\\\\ Q_1 \succeq_{\Gamma_1} Q_2
-\\ \Gamma'_2 \models \Gamma'_1
-\\ Q'_2 \succeq_{\Gamma_2'} Q'_1
-}
-{ B; R; (\Gamma_1,Q_1) \vdash S \dashv (\Gamma'_1, Q'_1) }
-%
-\and \Rule{Relax}
-{ \mathcal L = \{ xy \mid \exists l_{xy} {\in} \N \, . \, \Gamma \models l_{xy} \le |\inter x y| \}
-\\ \mathcal U = \{ xy \mid \exists u_{xy}{\in} \N \, . \, \Gamma \models |\inter x y| \le u_{xy} \}
-\\\\ \forall i \in \mathcal U.\, q'_i \ge q_i - r_i
-\\ \forall i \in \mathcal L.\, q'_i \ge q_i + p_i
-\\ \forall i \not\in \mathcal U {\cup} \mathcal L {\cup} \{0\} .\, q'_i \ge q_i
-\\ q'_0 \geq q_0 {\textstyle + \sum_{i \in \mathcal U} u_i r_i - \sum_{i \in \mathcal L} l_i p_i}
-}
-{ Q' \succeq_\Gamma Q }
-
-\end{mathpar}
-\caption{\iffull{Inference rules}{Selected inference rules} of the quantitative analysis.}
-\label{fig:auto}
-\end{figure*}
-}{}
-
-\paragraph{Judgements of the Automatic Analysis.}
-
-The inference system for the automatic amortized analysis is defined
-in~\pref{fig:auto}.  The inference rules derive judgements of the form
-$$
-  (\Gamma_B, Q_B); (\Gamma_R, Q_R);
-    (\Gamma, Q) \vdash S \dashv (\Gamma', Q').
-$$
-These judgements correspond to the logic judgements $\Delta; B; R
-\vdash \htriple P S Q$ where each assertion splits in two parts, a
-logical part $\Gamma$ and a quantitative part $Q$.  That means that
-$(\Gamma_B, Q_B)$ is the postcondition of \code{break} statements,
-$(\Gamma_R, Q_R)$ is the postcondition for return statements, and
-$(\Gamma, Q) \vdash S \dashv (\Gamma', Q')$ can be understood as a
-simple Hoare triple.  We leave out the function context $\Delta$ in
-the presentation to avoid cluttering notations.  Instead we assume a
-fixed function context $\Delta$ that is implicit on all judgements.
-Function contexts are treated exactly as in the logic.  % We call
-% precondition the pair $(\Gamma, Q)$ and postcondition the pair
-% $(\Gamma', Q')$.
-The correspondence between judgements of the
-automation and the ones of the quantitative logic is made formal by
-our soundness proof of the automatic amortized analysis at the end of
-this section.
-
-As a convention, if $Q$ and $Q'$ are quantitative annotations then we
-assume that $Q = (q_i)_{i\in I}$ is a family with elements $q_i$, $Q'
-= (q'_i)_{i \in I}$, etc.  The notation $Q \pm n$ used in many rules
-defines a new context $Q'$ such that $q'_0 = q_0 \pm n$ and $\forall i
-\neq 0 .\, q'_i = q_i$.  We have the implicit side condition that all
-rational coefficients are non-negative.  Finally, if a rule mentions
-$Q$ and $Q'$ and leaves the latter undefined at some index $i$ we will
-implicitly assume that $q'_i = q_i$.
-
-We describe the automatic amortized analysis for a subset of
-expressions of Clight.  Assignments must have the form $x \gets
-y$ or $x \gets x \pm y$.  In the implementation, a Clight
-program is converted into this form prior to analysis without changing
-the resource cost.  This achieved by using a series of \emph{cost-free
-  assignments} that do not result in additional cost in the
-analysis.  Non-linear operations such as $x \gets z*y$ are simply
-handled by assigning zero potential to coefficients like $q_{xa}$ and
-$q_{ax}$ that contain $x$ after the assignment.
-
-\paragraph{Inference Rules.}
-
-Most of the rules correspond exactly to the respective rules of the
-quantitative Hoare logic.
-\iffull{
-  For example, the rule {\sc Q:Skip} simply reuses its postcondition
-  as precondition.  This is sound since evaluating a $\code{skip}$
-  statement never costs any resources and does not change the program
-  state.  Similarly, the rule {\sc Q:Tick} enforces that the
-  quantitative annotation of the precondition is at least $M_t(n)$ to
-  pay for the resource consumption.  Since the program state is also
-  unchanged in this case, the logical part $\Gamma$ of the
-  precondition can soundly be reused in the postcondition.  In the
-  rule {\sc Q:Break}, where the linear control flow is broken, the
-  postcondition $(\Gamma', Q')$ can be arbitrary.  The precondition is
-  taken from the break part of the judgement similarly as it is done
-  in the quantitative logic.
-}
-%
-{ Examples include {\sc Q:Skip, Q:Tick, Q:Break, Q:Seq, Q:Assert}, and
-  {\sc Q:Loop}.  We only show {\sc Q:Seq} and {\sc Q:Loop}.  The other
-  rules can be found in the extended version.
-}
-%
-The rule {\sc Q:Return} exhibits a slight
-difference to the quantitative logic.  While we have a function $\Z
-\to \Assn$ to represent return values in the logic, we assume that a
-special variable $\ret$ is part of the index set of $Q_R$.  The
-substitution $Q[\ret/x]$ denotes an potential annotation $Q'$ with
-$q'_{xy} = q_{\ret y}$ and $q'_{yx} = q_{y \ret}$ for all $y$ and
-$q_i'=q_i$ otherwise.
-
-Most interesting are the rules {\sc Q:IncP}, {\sc Q:DecP}, and {\sc
-  Q:Inc} for increments and decrements, which describe how the
-potential is distributed after a size change of a variable.  The rule
-{\sc Q:IncP} is for increments $x \gets x + y$ and {\sc Q:DecP} is
-for decrements $x \gets x - y$, they both apply only when we can deduce
-from the logical context $\Gamma$ that $y \ge 0$.
-Of course, we have symmetrical rules {\sc
-  Q:IncN} and {\sc Q:DecN} that can be applied if $y$ is not positive.
-The rules are equivalent in the case where $y=0$.  Finally, the rule
-{\sc Q:Inc} can be applied if we cannot deduce any information about
-$y$.  In the implementation, the rules for increments and decrements
-are combined into one syntax directed rule where the specialized rules
-take priority over {\sc Q:Inc}.
-
-To explain how rules for increment and decrement work, it is
-sufficient to understand the rule {\sc Q:IncP}.  The others follow the
-same idea and are symmetrical.  In {\sc Q:IncP}, the program updates a
-variable $x$ with $x+y$ where $y \ge 0$.  Since $x$ is changed, the
-quantitative annotation must be updated to reflect the change of the
-program state.  We write $x'$ for the value of $x$ after the assignment.
-Since $x$ is the only variable changed, only intervals of the form
-$\inter u x$ and $\inter x u$ will be resized.  Note that for any $u$,
-$\inter x u$ will get smaller with the update, and if $x' \in \inter x
-u$ we have $|\inter x u| = |\inter x {x'}| + |\inter {x'} u|$.  But
-$|\inter x {x'}| = |\inter 0 y|$ which means that the potential
-$q'_{0y}$ in the postcondition can be increased by $q_{xu}$ under the
-guard that $x' \in \inter x u$.  Dually, the interval $\inter v x$ can
-get bigger with the update.  We know that $|\inter v {x'}| \le y +
-|\inter v x|$.  So we decrease the potential of $\inter 0 y$ by
-$q_{vx}$ to pay for this change.  The rule ensures this
-only for $v \not\in \mathcal U$ because we know that $x \le v$
-otherwise, and thus $|\inter v x| = 0$.
-
-Another interesting rule is {\sc Q:Call}.  It needs to account for the
-changes to the stack caused by the function call, the arguments/return
-value passing, and the preservation of local variables.  We can sum up
-the main ideas of the rule as follows.
-\itemskip
-\begin{itemize}
-\item The potential in the pre- and postcondition of the function
-  specification is equalized to its matching potential in the callee's
-  pre- and postcondition.
-\itemskipIn
-\item
-  $\!$The potential of intervals $|\inter x y|$ is preserved
-  if $x$ and $y$ are local\iffull{ variables.}{.}
-\item
-  The unknown potentials after the call (e.g.
-  $|\inter x g|$, with $x$ local and $g$ global)
-  are set to zero in the postcondition.
-\end{itemize}
-\itemskip
-If $x$ and $y$ are local variables and $f(x,y)$ is
-called, {\sc Q:Call} splits the potential of
-$|\inter x y|$ in two parts, one part to perform the
-computation in the function $f$ and one part to keep for
-later use after the function call.  This splitting is
-realized by the equations $Q = P {+} S$ and $Q' =
-P' {+} S'$.  Arguments in the function precondition
-$(\Gamma_f, Q_f)$ are named using a fixed vector $\Vargs$
-of names different from all program variables.  This
-prevents name conflicts from happening and ensures that
-the substitution $[\Vargs/\vec x]$ is meaningful.
-Symmetrically, we use the unique name $\Vret$ to represent
-the return value in the function's postcondition
-$(\Gamma'_f, Q'_f)$.
-
-The rule {\sc Q:Weak} is not syntax directed.  In the implementation
-we apply {\sc Q:Weak} before loops and between the two statements of a
-sequential composition.  \iffull{We could integrate weakening into every
-syntax directed rule but this simple heuristic helps to make the
-analysis efficient.}{}  The high-level idea of {\sc Q:Weak} is the same
-as in the rule {\sc L:Weak} of the quantitative logic: If we have a
-sound judgement, then it is sound to add more potential to the
-precondition and remove potential from the postcondition.  The concept
-of \emph{more potential} is formalized by the relation $Q'
-\succeq_\Gamma Q$ that is defined in the rule {\sc Relax}.  Here, $Q$
-and $Q'$ are potential annotations and $\Gamma$ is a logical context.
-The rule {\sc Relax} deals also with the important task of transferring
-constant potential (represented by $q_0$) to interval sizes and vice
-versa.  If we can deduce from the logical context that the interval
-size $|\inter x y| \geq l$ is larger then a constant $l$ then we can
-transfer potential $q_{xy} {\cdot} |\inter x y|$ form the interval to
-constant potential $l{\cdot}q_{xy}$ and guarantee that we do not gain
-potential.  Conversely, if $|\inter x y| \leq u$ for a constant $u$
-then we can transfer constant potential $u{\cdot}q_{xy}$ to the
-interval potential $q_{xy} {\cdot} |\inter x y|$ without gaining
-potential.
-
-\paragraph{Automatic Inference via LP Solving.}
-
-We separate the search of a derivation into two steps.  As a first
-step we go through the whole program and apply inductively the
-inference rules of the automatic amortized analysis.  During this
-process our tool uses symbolic names for the rational coefficients
-$(q_i)$ in the rules.  Every time a linear constraint must be
-satisfied by these coefficients, it is recorded in a global list using
-the symbolic names.  We then feed the collected constraints to an
-off the shelf LP solver~\footnote{We currently use Coin-Or's CLP.}.
-If the solver successfully finds a solution, we know that a derivation
-exists for the considered program.  We can then extract the initial
-$Q$ from the solver and get a resource bound for the program.  To get
-a full derivation we simply extract the complete solution from the
-solver, and apply it to the symbolic names $(q_i)$ of the coefficients
-in the derivation.  If the LP solver fails to find a solution, an
-error is reported to the user.
-
-
-\begin{figure*}
-\centering
-\begin{tabular}{r|c|c|c|c|c}
-%
-& t08 (modified t08a) & t19 & t30 & t15 & t13\\
-%
-\hline
-&
-\begin{lstlisting}[basicstyle=\tt\scriptsize]
-while (y > x) {
-  x++; tick(1);
-}
-while (x > 2) {
-  x -= 3; tick(1);
-}
-\end{lstlisting}
-&
-\begin{lstlisting}[basicstyle=\tt\scriptsize]
-while (i > 100) {
-  i--; tick(1) }
-i += k+50;
-while (i >= 0) {
-  i--; tick(1);
-}
-\end{lstlisting}
-&
-\begin{lstlisting}[basicstyle=\tt\scriptsize]
-while (x > 0) {
-  x--;
-  t=x, x=y, y=t;
-  tick(1);
-}
-\end{lstlisting}
-&
-\begin{lstlisting}[basicstyle=\tt\scriptsize]
-assert(y >= 0);
-while (x > y) {
-  x -= y+1;
-  for (z=y; z > 0; z--)
-    tick(1);
-  tick(1);
-}
-\end{lstlisting}
-&
-\begin{lstlisting}[basicstyle=\tt\scriptsize]
-  while (x > 0) {
-    x--;
-    if (*) y++;
-    else
-      while (y > 0) {
-        y--; tick(1); }
-    tick(1); }
-\end{lstlisting}
-%
-\\
-\hline
-%
-%
-%
-AAA
-  & {\small $1.33|[x,y]| {+} 0.33 |[0,x]|$ }
-  & {\small $50 {+} |\inter {-1} i| {+} |\inter 0 k|$ }
-  & {\small $|\inter 0 x| {+} |\inter 0 y|$}
-  & {\small $|\inter 0 x|$}
-  & {\small $2 |\inter 0 x| {+} |\inter 0 y|$}
-\\
-%
-Rank &
-{\small $2 {+} y {-} x (?)$ } &
-{\small $54+k+i$ } &
-{\small ---} &
-{\small $2+2x-y$ } &
-{\small $0.5{\cdot}y^2 {+} yx +0.5{\cdot}x^2\ldots$} % + 1{-}0.5{\cdot}y){-}0.5{\cdot}x $}
-\\
-%
-LOOPUS &
-{\small
-  \begin{tabular}{c}
-    $\max(0, x{-}2)$\\ $+ 2\max(0, y {-} x)$
-  \end{tabular}
-} &
-{\small
-  \begin{tabular}{c}
-    $\max(0, i{-}100)$ \\
-    $+ \max(0, k {+} i {+} 51)$
-  \end{tabular}
- } &
-{\small ---}% $1 + \max(x, y)$ (???)
-&
-{\small ---}
-&
-{\small $2\max(x, 0) {+} \max(y, 0)$}
-\end{tabular}
-\vspace{.1cm}
-\caption{ Comparison of resource bounds derived by different tools on
-  several examples with linear bounds.  AAA stands for our automatic
-  amortized analysis for Clight.  The output of Rank has been manually
-  simplified to fit the table.  }
-\label{fig:compar}
-\end{figure*}
-
-\paragraph{Soundness Proof.}
-
-The soundness of the analysis builds on the quantitative logic.  We
-translate judgements of the automatic amortized analysis as defined in
-\pref{fig:auto} into quantitative Hoare triples.  We define a
-translation function $\tr$, such that if a judgement $J$ in the
-automatic analysis is derivable, $\tr(J)$ is derivable in the
-quantitative logic.  By using $\tr$ to translate derivations of the
-automatic analysis to derivations in the quantitative logic we can
-automatically obtain a certified resource bound for the analyzed
-program.
-
-The translation of an assertion $(\Gamma, Q)$ in the automatic
-analysis is defined by
-$$
-  \tr(\Gamma, Q) := \lambda\state .\, (\Gamma(\state)) + \Phi_Q(\state),
-$$
-where we write $\Phi_Q$ for the unique linear potential function
-defined by the quantitative annotation $Q$.  We also need to
-translate the assumptions in function contexts of the automatic
-analysis.  We define $\tr(\Gamma_f, Q_f, \Gamma'_f, Q'_f) := \forall z \, \vec v \, v . $
-%
-$$
-(
-  \lambda \_ \, \vec v \, \state .\, \tr(\Gamma_f, Q_f)(\state[\Vargs {\mapsto} \vec v]),
-  \lambda \_ \, v \, \state .\, \tr(\Gamma'_f, Q'_f)(\state[\Vret {\mapsto} v])
-  )
-$$
-%
-These definitions let us translate the judgement $J = B; R; P \vdash
-S \dashv P'$ in the context $\Delta$ by
-$$
-  \tr(J) :=
-  (\lambda f .\, \tr(\Delta(f))); \tr(B); \tr(R) \vdash
-    \htriple{\tr(P)}{S}{\tr(P')}.
-$$
-The soundness of the automatic analysis can now be stated
-formally with the following theorem.
-%
-\begin{theorem}[Soundness of the automatic analysis]
-  If $J$ is a judgement derived with the rules of
-  \pref{fig:auto}, then $\tr(J)$ is a quantitative
-  Hoare triple derivable with the rules of
-  \pref{fig:logic}.
-\end{theorem}
-%
-\noindent
-The proof of this theorem is constructive and basically maps each rule
-of the automatic analysis directly to its counterpart in the
-quantitative logic.  The most tricky parts are the translations of the
-rules for increments and decrements and the rule {\sc Q:Weak} for
-weakening because we have to show that the preconditions of the rules
-{\sc L:Weak} or {\sc L:Update}, respectively, are met.  \iffull{ For instance
-we prove the following lemma to show the soundness of the translation
-of {\sc Q:Weak}.
-
-\begin{lemma}[Relax]
-  If $Q' \succeq_\Gamma Q$ and $\state$ is a program state such that
-  $\state \models \Gamma$ then we have $\Phi_{Q'}(\state) \ge \Phi_Q(\state)$.
-\end{lemma}
-\begin{proof}
-We observe the following inequations.
-\begin{align*}
-\Phi_{Q'}(\state) &= \sum_i q'_i f_i(\state) \\
-&\ge q_0 + \sum_{i\in\mathcal U} u_i p_i - \sum_{i\in\mathcal L} l_i p_i
-  + \sum_{i\in\mathcal U} (q_i - p_i) f_i(\state)  \\ &
-  \;\;\;\;\;\;\;\; + \sum_{i\in\mathcal L} (q_i + p_i) f_i(\state)
-  + \sum_{i\not\in \mathcal U \cup \mathcal L} q_i \\
- &\ge \Phi_Q(\state)
-  + \sum_{i\in\mathcal U} (u_i - f_i(\state)) p_i
-  + \sum_{i\in\mathcal L} (f_i(\state) - l_i) p_i \\
- &\ge \Phi_Q(\state).
-\end{align*}
-Since $\state \models \Gamma$, using the transitivity of $\models$ and
-the definition of $\mathcal U$ and $\mathcal L$ we get
-$\forall i\in\mathcal L.\, l_i \le f_i(\state)$ and
-$\forall i\in\mathcal U.\, f_i(\state)\le u_i$.
-These two inequalities justify the last step.
-\end{proof}
-%
-\noindent
-We prove similar lemmas for the rules that deal with assignment.  With
-the computational content of the proof, we have an effective algorithm
-to construct certificates for upper bounds derived automatically.
-}{}
-
-
-% \sectskip
-% \section{Implementation}
-
-% \subsection{Logical Annotations Generation}
-
-% \paragraph{Program conditions.}
-% The first pass in our OCaml implementation generates the
-% logical annotations $\Gamma$ around all program statements.
-% These annotations are used later on by the quantitative
-% analysis to generate constraints.
-% %
-% The first design choice we had to make is to give a fixed form
-% to program conditions.  Because of their generality and because
-% they are closed under negation, we decided to consider
-% inequalities over linear combinations as program conditions.
-% \begin{mathpar}
-% C := L < L \mid L > L \mid L \le L \mid L \ge L
-% \and
-% L := x \mid k \mid k * L \mid L + L \mid L - L
-% \end{mathpar}
-% A Condition is represented internally as a pair of one constant
-% $k \in \mathbb N$ and one map $m : V \rightarrow \mathbb N$.
-% Its intended semantics is
-% $$
-% \llbracket m \rrbracket(H) = k + \sum_v m_v \cdot H(v) \le 0.
-% $$
-% Note that conditions of this shape are closed by negation, as showed
-% by the following equivalence
-% $$
-% \neg (k + \sum_v m_v \cdot H(v) \le 0)
-% \Leftrightarrow (1-k) + \sum_v -m_v \cdot H(v) \le 0
-% $$
-% We can also note that all the ``questions'' asked to the logic
-% assertions during a proof derivation can be described using
-% linear combinations.  Conveniently enough, this language of
-% assertions is exactly Presburger's arithmetic.  This means that
-% we have a sound and complete decision procedure to answer
-% all the questions asked during the analysis.
-
-% \paragraph{Logical contexts.}
-% The second problem related to the logic is how to figure out
-% the logical contexts $\Gamma$ for each program statement.
-% This is a question that is answered by abstract interpretation
-% but, to show that our work really does not need the full power
-% of abstract interpretation, we designed and implemented a very
-% simple top-down approach: starting from a statement $S$ and
-% a pre-condition $\Gamma$ (given as a list of inequalities), we
-% generate $\mathcal P(S, \Gamma)$ a postcondition for $S$ using the
-% following equations:
-
-% \begin{align*}
-% \mathcal P(\code{skip}, \Gamma) &:= \Gamma \\
-% \mathcal P(x \gets y, \Gamma) &:= \{ e \le 0 \mid (e \le 0) \in \Gamma \land \{x\} \# e \} \\
-% \mathcal P(x \gets x + y, \Gamma) &:= \Gamma[x / x - y] \\
-% \mathcal P(x \gets x - y, \Gamma) &:= \Gamma[x / x + y] \\
-% \mathcal P(\code{assert}(C), \Gamma) &:= \Gamma,C \\
-% \mathcal P(S_1; S_2, \Gamma) &:= \mathcal P(S_2, \mathcal P(S_1, \Gamma)) \\
-% \mathcal P(\code{if} (C)~S_1~\code{else}~S_2) &:=
-%   \mathcal P(S_1, \Gamma,C) \lor \mathcal P(S_2, \Gamma,\neg C) \\
-% \mathcal P(\code{while}(C)~S, \Gamma) &:=
-%   \Gamma \lor (\neg C, \mathcal P(S, (C, \{ e \le 0 \mid (e \le 0) \in \Gamma \land {\rm set}(S) \# e \})))
-% \end{align*}
-% We used the notation ${\rm set}(S)$ to designate the set of variables
-% assigned to in the statement $S$ and $s\#e$ to mean that variables
-% in $s$ do not appear in the linear combination $e$.  Because contexts
-% are simply conjunction of conditions we must define $\Gamma \lor \Delta$
-% as a function on contexts:
-% $$
-% \Gamma \lor \Delta := \{ e \le 0 \mid (e \le 0) \in \Gamma \cup \Delta \land \Gamma \models (e \le 0) \land \Delta \models (e \le 0) \}.
-% $$
-% It is important to note that the $\mathcal P$ function defined above
-% is not performing any fixpoint computation.  Despite this flagrant
-% lack of sophistication our complete analysis is still able to figure out some
-% tricky invariants as exemplified earlier.
-% Finally, to generate annotations for the whole program $S$,
-% we run $\mathcal P(S,\bullet)$ (where $\bullet$ is the empty context)
-% and memorize all the intermediate results.  In practice, these results are stored in
-% a table that can be referenced at any time during the analysis to get the
-% pre and post-condition of any statement in the program.
-
-% \paragraph{Decision procedure.}
-% To decide logical entailment $\Gamma \models \Delta$ we use
-% Presburger's decision procedure.  But what this procedure gives us
-% is in fact only an answer the the question: Is there any heap $H$
-% such that $H \models \Gamma$.  While this sentence is existential
-% the question $\Gamma \models \Delta$ is universal.  To use the
-% decision procedure, we use the well known trick of double negation.
-% \begin{align*}
-% \Gamma \models C
-% &\Leftrightarrow \neg\neg (\Gamma \models C) \\
-% &\Leftrightarrow \neg\neg (\forall H.\, H\models\Gamma \implies H\models C) \\
-% &\Leftrightarrow \neg \exists H, H\models\Gamma \land \neg H\models C \\
-% &\Leftrightarrow \neg \exists H, H\models\Gamma \land H\models \neg C \\
-% &\Leftrightarrow \neg \exists H, H\models (\Gamma, \neg C)
-% \end{align*}
-% Thus, to know if $\Gamma \models C$ we ask the decision
-% procedure if $\Gamma, \neg C$ is satisfiable and negate the result.
-% When we want to know about $\Gamma \models \Delta$ we simply ask
-% one question for each of the conjuncts of $\Delta$.
-
-% \subsection{Linear Constraints Generation}
-
-% \paragraph{Generating a linear program.}
-% Because figuring out the coefficents that are in $Q$ right away is a hard
-% problem, we separate the search of a derivation in two steps.  As a first
-% step we go through the whole program and apply inductively the rules
-% given in the proof system section.  During this process our tool uses
-% symbolic names for the coefficients $(q_i)$.  Every time a side condition
-% must be satisfied by these coefficients, it is recorded using the symbolic
-% names in a global list.  When
-% the list of all constraints that must be satisfied by the coefficients is
-% collected, we feed it to an off the shelf LP-solver.  If the solver successfully
-% finds a solution to the given problem, we know that a derivation
-% exists for the considered program.  We can even ask the solver
-% for the initial $Q$ and get a resource bound for the program.
-% If the LP-solver fails to find a solution, an error is reported to the
-% user.
-
-% \paragraph{Making the proof system algorithmic.}
-% One problem with the proof system as described is that it is not
-% fully syntax directed.  The rule {\sc Q:Weak} can be applied at
-% all times.  However, if we apply this weakening rule at every step
-% of the derivation, the number of generated constraints and
-% the number of queries to the logic system explode.  This blowup
-% causes efficiency problems.  To avoid these performance problems
-% our implementation only applies the weakening rules at some
-% strategic points in the derivation.  More specifically, at sequence
-% points, at the beginning of while loops and around conditional
-% statements.  So far, this selection of weakening spots has been
-% driven by practice but it might be possible to prove that these
-% program points are the only ones where weakening is needed.
-
-
-% \sectskip
-% \section{Polynomial Potential}
-
-% \paragraph{Index Sets}
-
-% Let $V$ be a set of variables.  An \emph{index} $I \in \ind(V)$ is a
-% family that maps two-element sets of variables to natural numbers,
-% that is,
-% $$
-% I = (i_{\{x,y\}})_{\{x,y\} \subseteq V} \; .
-% $$
-% %
-% We identify a family $I$ with the set $\{ (\{x,y\},i_{\{x,y\}})
-% \mid \{x,y\} \subseteq V\}$.
-
-% Let $\ind(V)$ denote the set of all such indices.  We write $\ind$
-% instead of $\ind(V)$ if the set of variables $V$ is fixed or obvious
-% from the context.
-% %
-% We assume that allways $0 \in V$ and sometimes write $i_x$ instead of $i_{\{x,0\}}$.
-
-% The \emph{degree} $\deg(I)$ of an index $I = (i_{\{x,y\}})_{\{x,y\}
-%   \subseteq V}$ is defined as
-% $$
-% \deg(I) = \sum_{\{x,y\} \in V} i_{\{x,y\}} \;.
-% $$
-% We define $\ind_k(V) = \{ I \mid I \in \ind(V) \text{ and } \deg(i) \leq k
-% \}$ to be the set of indices of degree at most $k$.
-
-% \paragraph{Resource Polynomials}
-
-% Let $V$ be a set of variables.  An index $I \in \ind(V)$ denotes a
-% \emph{base polynomial} $P_I : \states \to \N$ for $V$ that maps a
-% program state $H$ to product of binomial coefficients (a natural
-% number).  We define
-% $$
-% P_I(H) = \prod_{{\{x,y\}} \subseteq V} \binom {|H(x){-}H(y)|} {i_{\{x,y\}}} \; .
-% $$
-% %
-% A \emph{resource polynomial} $R$ for the variable set $V$ is a
-% non-negative linear combination of the base polynomials for $V$.
-
-% \paragraph{Potential Annotations}
-
-% A \emph{potential annotation} for the variable set $V$ is a family
-% $$Q = (q_I)_{I \in \ind(V)}$$
-% of non-negative rational numbers.  Such an annotation denotes the
-% resource polynomial $R_Q$ that is defined by
-% $$
-% R_Q(H) = \sum_{I \in \ind(V)} q_I \cdot P_I(H) \; .
-% $$
-% %
-% We say that the potential annotation $Q$ is of degree $k$ if $q_I = 0$
-% for $I \in \ind(V)$ with $\deg(I) > k$.
-
-% \paragraph{Additive Shifts}
-
-% Let $Q$ be a potential annotation for a variable set $V$ and let
-% $\{x,y\} \subseteq V$ be a two-element variable set.  The
-% \emph{additive shift} with respect to $\{x,y\}$ is a potential
-% annotation $\shift_{\{x,y\}}(Q) = (q'_I)_{I \in \ind(V)} $ for $V$
-% that is defined through
-% $$
-% q'_I = q_I + q_{I^{\{x,y\}{+}1}} \; .
-% $$
-% For an index $I = (i_{\{x,y\}})_{\{x,y\} \subseteq V}$ we use the
-% notation $I^{\{x,y\}{+}k}$ to denote the index
-% $(i'_{\{x,y\}})_{\{x,y\} \subseteq V}$ such that
-% $$
-% i'_{\{t,u\}} = \left\{
-%   \begin{array}{ll}
-%     i_{\{t,u\}} + k  & \text{if } \{t,u\} = \{x,y\} \\
-%     i_{\{t,u\}} & \text{otherwise}
-%   \end{array}
-% \right.
-% \;.
-% $$
-% %
-% The additive shift for natural numbers reflects the identity
-% \begin{equation}
-% \label{eq:shift}
-% \sum_{0 {\leq} i \leq {k}} q_i \binom{n+1}{i} = \sum_{0 {\leq} i \leq {k}} (q_i{+}q_{i+1}) \binom{n}{i}
-% \end{equation}
-% where $q_{k+1} = 0$.  It is used in the effect system if the
-% difference $n+1$ between two variables $x,y$ decreases by one.
-
-% \begin{lemma} Let $V$ be a set of variables with $x,y \in V$ and let
-%   $H$ be a program state. Let $|H'(t) {-} H'(u)| = |H(t) {-} H(u)|$
-%   for $\{t,u\} \neq \{x,y\}$ and let $|H'(x) {-} H'(y)| = |H(x) {-}
-%   H(y)| - 1$.
-%   %
-%   If $Q' = \shift_{\{x,y\}}(Q)$ then $R_Q(H) = R_{Q'}(H')$.
-% \end{lemma}
-
-% We now study the effect of multiple simultaneous shifts.  Let $Q$ be a
-% resource annotation for a variable set $V$ and let $U_1,\ldots,U_n
-% \subseteq V$ with $|U_i| = 2$ for all $i$ and $U_i \neq U_j$ for $i
-% \neq j$ be pairwise distinct two-element variable sets.  The
-% simulations additive shift $\shift_{U_1,\ldots,U_n}(Q)$ of $Q$ with
-% respect to $U_1,\ldots,U_n$ is defined by
-% $$
-% \shift_{U_1,\ldots,U_n}(Q) = \shift_{U_1}( \cdots \shift_{U_n}(Q) \cdots ) \; .
-% $$
-% %
-% \begin{proposition}
-%   Let $V$ be a set of variables and let $U_1,\ldots,U_n$ be pairwise
-%   distinct two-element variable sets.  Let $|H'(x) {-} H'(y)| = |H(x)
-%   {-} H(y)|$ for $\{x,y\} \not\in \{U_1,\ldots,U_n\}$ and let $|H'(x)
-%   {-} H'(y)| = |H(x) {-} H(y)| - 1$ for $\{x,y\} \in
-%   \{U_1,\ldots,U_n\}$.
-%   %
-%   If $Q' = \shift_{U_1,\ldots,U_n}(Q)$ then $R_Q(H) = R_{Q'}(H')$.
-% \end{proposition}
-% %
-% As shown by the following lemma, the order in which the shifts for the
-% individual $U_i$ are applied is insignificant.
-% %
-% \begin{lemma}
-%   Let $\sigma : \{1,\ldots,n\} \to \{1,\ldots,n\}$ be a
-%   permutation. Then $\shift_{U_1,\ldots,U_n}(Q) =
-%   \shift_{U_{\sigma(1)},\ldots,U_{\sigma(n)}}(Q)$.
-% \end{lemma}
-% %
-% For reasons of efficiency in the constraint generation, we give a more
-% direct formula for the simultaneous shift.  Let $I \in \ind(V)$ and
-% let $U_1,\ldots,U_n$ be pairwise distinct two-element variable sets.
-% We define the index $I^{U_1,\ldots,U_n + k}$ as the family $(i'_{\{x,y\}})_{\{x,y\} \subseteq V}$ such that
-% $$
-% i'_{\{t,u\}} = \left\{
-%   \begin{array}{ll}
-%     i_{\{t,u\}} + k  & \text{if } \{t,u\} \in \{U_1,\ldots,U_n\} \\
-%     i_{\{t,u\}} & \text{otherwise}
-%   \end{array}
-% \right.  \;.
-% $$
-
-% %
-% \begin{lemma}
-%   Let $V$ be a variable set and let $U_1,\ldots,U_n$ be pairwise
-%   distinct two-element variable sets.
-%   %
-%   Let $Q = (q_I)_{I \in \ind(V)}$ be a resource annotation for
-%   $V$ and let $ Q' = (q'_I)_{I \in \ind(V)}$ where
-%   $$
-%   q'_I = \sum_{\{j_1,\ldots,j_m\} \subseteq \{1,\ldots,n\} } q_{I^{U_{j_1},\ldots,U_{j_m}+1}} \; .
-%   $$
-%   Then $Q' = \shift_{U_1,\ldots,U_n}(Q)$.
-% \end{lemma}
-
-
-%%
-% Note: Later we need to shift in many directions at once like
-%   Q' = shift_{x,y} (shift_{x,u} (Q))
-% To do: Give a combined formula for that (concise constraint system).
-%%
 
 
 
