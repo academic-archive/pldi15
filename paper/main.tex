@@ -227,7 +227,7 @@ Techniques in the second category derive tight whole-program
 bounds on functional programs that operate on inductive data structures.
 They are highly compositional, scale for large
 programs, and work directly on the syntax.  However, % despite all
-% these theoretical and practical advantages, 
+% these theoretical and practical advantages,
 it has been
 a long-time open problem to make them work in the
 presence of signed integers, mutation, and non-linear
@@ -322,7 +322,7 @@ on imperative languages is to base the analysis on a
 Hoare-like logic and to track multivariate quantities instead
 of program variables.  This leads to precise bounds
 expressed as functions of sizes $|[x, y]| = \max(0, y-x)$ of
-intervals. 
+intervals.
 %
 A distinctive feature of our analysis system is that
 it reduces bound derivation to a linear optimization problem
@@ -912,7 +912,8 @@ ${\color{blue}%
   \mbox{logical state invariant } \{ na = \#_1(a)} \}$
 while (k > 0) {
   x=0;
-  while (x < N && a[x] == 1 _&& na > 0_) {
+  while (x < N && a[x] == 1) {
+    _assert(na > 0);_
     a[x]=0; _na--;_
     tick(1);
     x++; }
@@ -938,8 +939,9 @@ ${\color{blue}%
   \mbox{logical state invariant }
   \{ lg > \log_2(h - l) \} }$
 bsearch(x,l,h_,lg_) {
-  if (h-l > 1 _&& lg > 0_) {
+  if (h-l > 1) {
     m = l + (h-l)/2;
+    _assert(lg > 0);_
     _lg--;_ if (a[m]>x) h=m; else l=m;
     tick($M_\code{bsearch}$);
     l = bsearch(x,l,h_,lg_);
@@ -1001,17 +1003,17 @@ number depends on the heap contents, no tool available
 for C is able to derive the linear bound.  However, it can be inferred
 by our automated tool if a logical variable $na$ is introduced.
 This logical variable is a reification, in the program, of the
-number $\#_1(a)$.  For example, on line 5 of the example
+number $\#_1(a)$.  For example, on line 6 of the example
 we are setting \lstinline{a[x]} to 0 and because of the condition we
 know that this array entry was 1.  To reflect this change on
 $\#_1(a)$, the logical variable $na$ is decremented.
-Similarly, on line 9, an array entry which was 0 becomes 1, so
+Similarly, on line 10, an array entry which was 0 becomes 1, so
 $na$ is incremented.  To complete the step 2 of the systematic
-procedure described above, we must show that the extra test
-\lstinline{na > 0} at line 4 does not influence the loop behavior.  It
+procedure described above, we must show that the extra assertion
+\lstinline{na > 0} on line 5 is always true.  It
 is done by proving inductively that $na = \#_1(a)$
 and remarking that since \lstinline{a[x] == 1} is true, we must have
-$\#_1(a) > 0$, thus \lstinline{na > 0} is true in the test. %  So the
+$\#_1(a) > 0$, thus the assertion \lstinline{na > 0} never fails. %  So the
 % test is in fact semantically equivalent to \lstinline{true}.
 
 Another simple example is given on \pref{fig:xmplbsaux} where
