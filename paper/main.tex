@@ -342,9 +342,11 @@ automatic and fully manual verification for bound derivation. This
 enables the semi-automatic inference of non-linear bounds, such as
 polynomial, logarithmic, and exponential bounds.
 
-We have evaluated the automatic analysis with system code and examples
-from the literature.  Our tool automatically derived global resource
-bounds for more than XXX lines of C code from the XXX benchmark suite.
+We have implemented the automatic analysis in the tool
+\toolname and experimentally evaluated its effectiveness by
+analyzing system code and examples from the literature.
+\toolname has automatically derived global resource bounds for
+more than XXX lines of C code from the XXX benchmark suite.
 %
 \iffull{\pref{app:cat}}{The extended version
   of this article~\cite{anon_extended}}{} contains more than $30$
@@ -396,17 +398,15 @@ In summary, we make the following \emph{contributions}.
   linear local bounds for tricky loop and recursion patterns.
 \end{itemize}
 
+
 \sectskip
 \section{Overview and Examples}
 \aftersectskip
 
 In this section, we informally introduce the automatic amortized
-analysis (AAA) for Clight programs and demonstrate the technique with
+analysis for Clight programs and demonstrate the technique with
 example bounds that we derive step-by-step following our analysis
 system.
-
-\jan{Watch out with the headings. Either upper case or lower case, but
-  don't mix.}
 
 \subsection{Bounding Resource Usage with Potential Functions}
 
@@ -418,7 +418,7 @@ some user-defined quantity.  We denote that by writing $(S, \state)
 the execution.  The basic idea of amortized analysis is to define a
 \emph{potential function} $\Phi$ that maps program states to non-negative
 numbers and to show that $\Phi(\state) \geq n$ if $\state$ is a program
-state such that $(S, \state) \Downarrow_n \state'$.  This gives that
+state such that $(S, \state) \Downarrow_n \state'$.  Then
 $\Phi(\state)$ is a valid resource bound.
 
 To obtain a compositional reasoning we also have to take into account the
@@ -535,7 +535,7 @@ is available.  This looping pattern is particularly well handled by
 our tool because the LP solver is leveraged to generate a tight bound.
 The optimization problem it is given encodes that constant bounds are
 preferable to linear bounds.  Thus, if $N >= 8$, the bound given by
-AAA is $\frac{N}{8} |[0,l]|$, but if $N<8$ it becomes $7\frac{8-N}{8}
+\toolname is $\frac{N}{8} |[0,l]|$, but if $N<8$ it becomes $7\frac{8-N}{8}
 + \frac{N}{8}|[0,l]|$, because the cost for the second loop is better
 counted as constant.
 %
@@ -3645,7 +3645,7 @@ int srch(
 \footnotesize
 \begin{tabular}{|rl|}
 \hline
-AAA & $1 {+} 2|\inter 0 n|$ \\
+\toolname & $1 {+} 2|\inter 0 n|$ \\
 Rank & $O(n^2)$ \\
 LOOPUS & $2 {+} 3\max(n, 0)$\\
 \hline
@@ -3674,7 +3674,7 @@ To compare our tool with existing work, we focused on loop bounds and
 use a simple metric that counts the number of back edges (i.e., number
 of loop iterations) that are followed in the execution of the program
 because most other tools only bound this specific cost. In
-\pref{fig:compar}, we show the bounds we derived (AAA) together with
+\pref{fig:compar}, we show the bounds we derived (\toolname) together with
 the bounds derived by LOOPUS~\cite{SinnZV14} and
 Rank~\cite{AliasDFG10}.  We also contacted the authors of SPEED but
 have not been able to obtain this tool.
@@ -3690,7 +3690,7 @@ program.
 \begin{table}[t]
 \centering
 \begin{tabular}{r|c|c|c|c|c}
-& KoAT & Rank & LOOPUS & SPEED & AAA \\
+& KoAT & Rank & LOOPUS & SPEED & \toolname \\
 \hline
 \#bounds & 9 & 24 & 20 & 14 & 32
 \\
@@ -5195,7 +5195,7 @@ File &
 \multicolumn{2}{|c|}{Rank} &
 \multicolumn{2}{|c|}{LOOPUS} &
 SPEED &
-AAA
+\toolname
 \\
 \hline
 
