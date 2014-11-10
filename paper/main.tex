@@ -5,19 +5,22 @@
 
 \documentclass[nocopyrightspace,preprint,pldi]{sigplanconf-pldi15}
 
-
 % Structure:
 %
-% 1) Intro
-% 2) Overview and Examples
-% 3) Cost Semantics for Clight
-% 4) Compositional Resource-Bound Analysis
-% 5) Automatic Inference via LP Solving
-% 6) Auxiliary Variables and User Interaction
-% 7) Quantitative Hoare Logic and Soundness Proof
-% 8) Experimental Evaluation
-% 9) Related Work
-% 10) Conclusion
+%    Abstract                              1c
+% 1) Intro                                 3c
+% 2) The Potential Method                  1c
+% 3) Compositional Resource-Bound Analysis 4c
+%    - Gulwani/ examples
+% 4) Derivation Rules                      2c
+% 5) Automatic Inference via LP Solving    2c
+% 6) Logical State and User Interaction    2c
+% 7) Soundness Proof                       2c
+%    1) Cost Semantics for Clight
+%    2) Quantitative Hoare Logic
+% 8) Experimental Evaluation               2c
+% 9) Related Work                          1c
+% a) Conclusion                            1c
 
 
 
@@ -940,28 +943,30 @@ or additively, resulting in a loose quadratic bound or no bound at all.
 
 \paragraph{User Guidance for Non-Linear Bounds}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \sectskip
-\section{Automatic Amortized Analysis}
+\section{Automated Reasoning with \toolname}
 \label{sec:AAA}
 \aftersectskip
 
-In this section we present the automatic amortized analysis that we
-use in our implementation to derive resource bounds for C
-programs.
+In this section we present formally the analysis that we
+use in our implementation to derive resource bounds for C code.
 
 \paragraph{Linear Potential Functions.}
 
-To find derivations in the quantitative Hoare logic automatically, we
-have to focus on bounds that have a certain shape.  The general form
-of \emph{potential functions} (or assertions) that we consider is
+To find resource bounds automatically, we first need to restrict our
+search space.  This is done by focusing on bounds that have a certain
+shape.  The general form of \emph{potential functions} that we consider is
 $$
   \Phi(\state) = q_0 + \sum_{x, y \in \dom\state \land x \neq y}
     q_{(x, y)} \cdot |\inter {\state(x)} {\state(y)}| \, .
 $$
 %
 Here $\state : (\text{Locals} \to \Z) \times (\text{Globals} \to \Z)$
-is again a simplified program state as introduced in \pref{sec:sem},
-$|\inter a b| = max(0,b-a)$, and $q_i \in \Qplusz$.  To simplify the
+is a simplified program state that maps variable names to integers,
+$|\inter a b| = \max(0,b-a)$, and $q_i \in \Qplusz$.  To simplify the
 references to the linear coefficients $q_i$, we introduce an \emph{index
   set} $I$.  This set is defined to be $\{0\} \cup \{(x, y) \mid x, y
 \in \Var \land x \neq y \}$.  Each index $i$ corresponds to a \emph{base function}
@@ -969,10 +974,9 @@ $f_i$ in the potential function: $0$ corresponds to the constant
 function $\state \mapsto 1$, and $(x,y)$ corresponds to $\state \mapsto
 |\inter {\state(x)} {\state(y)}|$.  Using these notations we can
 rewrite the above equality as\iffull{
-$$
-  \Phi = \sum_{i \in I} q_i f_i.
-$$}
-{ $\Phi = \sum_{i \in I} q_i f_i$.}  We often write $xy$ to denote the
+$$ \Phi = \sum_{i \in I} q_i f_i.$$}{
+$\Phi = \sum_{i \in I} q_i f_i$.}%
+We often write $xy$ to denote the
 index $(x,y)$.  \iffull{The family $(f_i)_{i\in I}$ is actually a basis (in
 the linear-algebra sense) for potential functions.}{}  This allows us to
 uniquely represent any linear potential function
@@ -989,26 +993,26 @@ constant $8128$ then we have a variable $c_{8128}$ and
 $\state(c_{8128}) = 8128$.  We assume that every program state
 includes the constant $c_0$.
 
-\paragraph{Logical State.}
+\paragraph{Abstract Program State.}
 
 In addition to the quantitative annotations our automatic amortized
-analysis needs to maintain a minimal logical state to justify certain
+analysis needs to maintain a minimal abstract state to justify certain
 operations on quantitative annotations.  For example when analyzing
 the code $x \gets x + y$, it is helpful to know the sign of $y$ to
 determine which intervals will increase or decrease.  The knowledge
-needed by our rules can be inferred by local reasoning (i.e., in
+needed by our rules can be inferred by local reasoning (i.e. in
 basic blocks without recursion and loops) within usual theories
 (e.g. Presburger arithmetic or bit vectors).
 
 In contrast to the quantitative annotations, logical contexts $\Gamma$
 in the presented inference system are left abstract.  This allows for
 simpler rules and leaves room for future improvements.
-%
-Our implementation uses conjunctions of linear inequalities as
-logical state.  We never compute fixpoints and take $\top$
-as pre- and postconditions for functions. It has proved to be
-sufficient for the variety of examples we are interested in or found
-in the literature.
+Our implementation finds these logical contexts using abstract
+interpretation using the domain of linear inequalities.  We observed that
+the rules of the analysis often requires only minimal local knowledge.
+This means that it is not necessary for us to compute precise loop
+invariants and only a rough fixpoint (e.g. keeping only inequalities on
+variables unchanged by the loop) is sufficient to obtain good bounds.
 
 
 \iffull{
@@ -1017,7 +1021,7 @@ in the literature.
 %
 \Rule[leftskip=.4cm,rightskip=.3cm]{Q:Skip}
 { }
-{ \!\! B; R; (\Gamma, Q) \vdash \code{skip} \dashv (\Gamma, Q) \!!}
+{ \!\! B; R; (\Gamma, Q) \vdash \code{skip} \dashv (\Gamma, Q) \!\!}
 %
 \and
 \Rule{Q:Break}
@@ -1140,9 +1144,8 @@ in the literature.
 \\ q'_0 \geq q_0 {\textstyle + \sum_{i \in \mathcal U} u_i r_i - \sum_{i \in \mathcal L} l_i p_i}
 }
 { Q' \succeq_\Gamma Q }
-
 \end{mathpar}
-\caption{\iffull{Inference rules}{Selected inference rules} of the quantitative analysis.}
+\caption{Inference rules of the quantitative analysis.}
 \label{fig:auto}
 \end{figure*}
 }{}
@@ -1282,7 +1285,7 @@ in the literature.
 { Q' \succeq_\Gamma Q }
 
 \end{mathpar}
-\caption{\iffull{Inference rules}{Selected inference rules} of the quantitative analysis.}
+\caption{Selected inference rules of the quantitative analysis.}
 \label{fig:auto}
 \end{figure*}
 }{}
@@ -1295,87 +1298,116 @@ $$
   (\Gamma_B, Q_B); (\Gamma_R, Q_R);
     (\Gamma, Q) \vdash S \dashv (\Gamma', Q').
 $$
-These judgements correspond to the logic judgements $\Delta; B; R
-\vdash \htriple P S Q$ where each assertion splits in two parts, a
-logical part $\Gamma$ and a quantitative part $Q$.  That means that
-$(\Gamma_B, Q_B)$ is the postcondition of \code{break} statements,
-$(\Gamma_R, Q_R)$ is the postcondition for return statements, and
-$(\Gamma, Q) \vdash S \dashv (\Gamma', Q')$ can be understood as a
-simple Hoare triple.  We leave out the function context $\Delta$ in
-the presentation to avoid cluttering notations.  Instead we assume a
-fixed function context $\Delta$ that is implicit on all judgements.
-Function contexts are treated exactly as in the logic.  % We call
-% precondition the pair $(\Gamma, Q)$ and postcondition the pair
-% $(\Gamma', Q')$.
-The correspondence between judgements of the
-automation and the ones of the quantitative logic is made formal by
-our soundness proof of the automatic amortized analysis at the end of
-this section.
 
-As a convention, if $Q$ and $Q'$ are quantitative annotations then we
-assume that $Q = (q_i)_{i\in I}$ is a family with elements $q_i$, $Q'
-= (q'_i)_{i \in I}$, etc.  The notation $Q \pm n$ used in many rules
-defines a new context $Q'$ such that $q'_0 = q_0 \pm n$ and $\forall i
-\neq 0 .\, q'_i = q_i$.  We have the implicit side condition that all
-rational coefficients are non-negative.  Finally, if a rule mentions
-$Q$ and $Q'$ and leaves the latter undefined at some index $i$ we will
-implicitly assume that $q'_i = q_i$.
+These judgements are similar to classic Hoare triples in the presence
+of the early exit statements \code{break} and \code{return}.  The part
+$(\Gamma_B, Q_B)$ is the postcondition used when breaking out of
+a loop.  For example, it is set upon entry of looping statements by
+the rule {\sc Q:Loop} and used before \code{break} statements by the
+rule {\sc Q:Break}.  Similarly $(\Gamma_R, Q_R)$ is the postcondition
+used before returning from a function call.  The part $(\Gamma, Q) \vdash
+S \dashv (\Gamma', Q')$ of the judgement can be seen as a regular
+Hoare triple.  All assertions are split into two parts, the logical
+part and the quantitative part.  The quantitative part $Q$ represents a
+potential function as a collection of non-negative numbers $q_i$ indexed
+by the index set $I$.  The logical part $\Gamma$ is left abstract but
+is enforced by our derivation system to respect classic Hoare logic
+constraints.
+
+% These judgements correspond to the logic judgements $\Delta; B; R
+% \vdash \htriple P S Q$ where each assertion splits in two parts, a
+% logical part $\Gamma$ and a quantitative part $Q$.  That means that
+% $(\Gamma_B, Q_B)$ is the postcondition of \code{break} statements,
+% $(\Gamma_R, Q_R)$ is the postcondition for return statements, and
+% $(\Gamma, Q) \vdash S \dashv (\Gamma', Q')$ can be understood as a
+% simple Hoare triple.  We leave out the function context $\Delta$ in
+% the presentation to avoid cluttering notations.  Instead we assume a
+% fixed function context $\Delta$ that is implicit on all judgements.
+% Function contexts are treated exactly as in the logic.  % We call
+% % precondition the pair $(\Gamma, Q)$ and postcondition the pair
+% % $(\Gamma', Q')$.
+% The correspondence between judgements of the
+% automation and the ones of the quantitative logic is made formal by
+% our soundness proof of the automatic amortized analysis at the end of
+% this section.
+
+As a convention, if $Q$ and $Q'$ are quantitative annotations
+we assume that $Q = (q_i)_{i\in I}$ and $Q' = (q'_i)_{i \in I}$.
+The notation $Q \pm n$ used in many rules defines a new context $Q'$
+such that $q'_0 = q_0 \pm n$ and $\forall i \neq 0 .\, q'_i = q_i$.
+In all the rules, we have the implicit side condition that all rational
+coefficients are non-negative.  Finally, if a rule mentions $Q$ and $Q'$
+and leaves the latter undefined at some index $i$ we will implicitly
+assume that $q'_i = q_i$.
 
 We describe the automatic amortized analysis for a subset of
-expressions of Clight.  Assignments must have the form $x \gets
+expressions of Clight.  Assignments are restricted to the form $x \gets
 y$ or $x \gets x \pm y$.  In the implementation, a Clight
 program is converted into this form prior to analysis without changing
-the resource cost.  This achieved by using a series of \emph{cost-free
+the resource cost.  This is achieved by using a series of \emph{cost-free
   assignments} that do not result in additional cost in the
-analysis.  Non-linear operations such as $x \gets z*y$ are simply
-handled by assigning zero potential to coefficients like $q_{xa}$ and
-$q_{ax}$ that contain $x$ after the assignment.
+semantics.  Non-linear operations such as $x \gets z*y$ or $x \gets
+a[y]$ are simply handled by assigning zero potential to coefficients
+like $q_{xa}$ and $q_{ax}$ that contain $x$ after the assignment.
 
 \paragraph{Inference Rules.}
 
-Most of the rules correspond exactly to the respective rules of the
-quantitative Hoare logic.
-\iffull{
-  For example, the rule {\sc Q:Skip} simply reuses its postcondition
-  as precondition.  This is sound since evaluating a $\code{skip}$
-  statement never costs any resources and does not change the program
-  state.  Similarly, the rule {\sc Q:Tick} enforces that the
-  quantitative annotation of the precondition is at least $M_t(n)$ to
-  pay for the resource consumption.  Since the program state is also
-  unchanged in this case, the logical part $\Gamma$ of the
-  precondition can soundly be reused in the postcondition.  In the
-  rule {\sc Q:Break}, where the linear control flow is broken, the
-  postcondition $(\Gamma', Q')$ can be arbitrary.  The precondition is
-  taken from the break part of the judgement similarly as it is done
-  in the quantitative logic.
-}
-%
-{ Examples include {\sc Q:Skip, Q:Tick, Q:Break, Q:Seq, Q:Assert}, and
-  {\sc Q:Loop}.  We only show {\sc Q:Seq} and {\sc Q:Loop}.  The other
-  rules can be found in the extended version.
-}
-%
-The rule {\sc Q:Return} exhibits a slight
-difference to the quantitative logic.  While we have a function $\Z
-\to \Assn$ to represent return values in the logic, we assume that a
-special variable $\ret$ is part of the index set of $Q_R$.  The
-substitution $Q[\ret/x]$ denotes an potential annotation $Q'$ with
-$q'_{xy} = q_{\ret y}$ and $q'_{yx} = q_{y \ret}$ for all $y$ and
-$q_i'=q_i$ otherwise.
+The rules of our derivation system must serve two purposes.  They must
+\emph{attach} potential to certain program variable intervals and use
+this potential, when it is allowed, to \emph{pay} for resource consuming
+operations.  These two purposes are easily illustrated on the {\sc Q:Skip}
+rule.  This rule reuses its precondition as postcondition.  This is
+explained by two facts: first, no resource is consumed by the skip
+operation, thus no potential needs to be taken out of the precondition
+to pay for the evaluation; second, the program state is not changed by
+the execution of a skip statement, thus all the potential available
+before the execution of the skip statement is still available after.
+These two observations would also justify a rule with the side-condition
+$Q' \le Q$, because some potential is always safely lost.  For the sake
+of orthogonality, it is not how we present the rule and this form of
+weakening is in fact expressed as the stand-alone rule {\sc Q:Weak}.
 
-Most interesting are the rules {\sc Q:IncP}, {\sc Q:DecP}, and {\sc
-  Q:Inc} for increments and decrements, which describe how the
-potential is distributed after a size change of a variable.  The rule
-{\sc Q:IncP} is for increments $x \gets x + y$ and {\sc Q:DecP} is
-for decrements $x \gets x - y$, they both apply only when we can deduce
-from the logical context $\Gamma$ that $y \ge 0$.
-Of course, we have symmetrical rules {\sc
-  Q:IncN} and {\sc Q:DecN} that can be applied if $y$ is not positive.
-The rules are equivalent in the case where $y=0$.  Finally, the rule
-{\sc Q:Inc} can be applied if we cannot deduce any information about
-$y$.  In the implementation, the rules for increments and decrements
-are combined into one syntax directed rule where the specialized rules
-take priority over {\sc Q:Inc}.
+% Most of the rules correspond exactly to the respective rules of the
+% quantitative Hoare logic.
+% \iffull{
+%   For example, the rule {\sc Q:Skip} simply reuses its postcondition
+%   as precondition.  This is sound since evaluating a $\code{skip}$
+%   statement never costs any resources and does not change the program
+%   state.  Similarly, the rule {\sc Q:Tick} enforces that the
+%   quantitative annotation of the precondition is at least $M_t(n)$ to
+%   pay for the resource consumption.  Since the program state is also
+%   unchanged in this case, the logical part $\Gamma$ of the
+%   precondition can soundly be reused in the postcondition.  In the
+%   rule {\sc Q:Break}, where the linear control flow is broken, the
+%   postcondition $(\Gamma', Q')$ can be arbitrary.  The precondition is
+%   taken from the break part of the judgement similarly as it is done
+%   in the quantitative logic.
+% }
+% %
+% { Examples include {\sc Q:Skip, Q:Tick, Q:Break, Q:Seq, Q:Assert}, and
+%   {\sc Q:Loop}.  We only show {\sc Q:Seq} and {\sc Q:Loop}.  The other
+%   rules can be found in the extended version.
+% }
+% %
+% The rule {\sc Q:Return} exhibits a slight
+% difference to the quantitative logic.  While we have a function $\Z
+% \to \Assn$ to represent return values in the logic, we assume that a
+% special variable $\ret$ is part of the index set of $Q_R$.  The
+% substitution $Q[\ret/x]$ denotes an potential annotation $Q'$ with
+% $q'_{xy} = q_{\ret y}$ and $q'_{yx} = q_{y \ret}$ for all $y$ and
+% $q_i'=q_i$ otherwise.
+
+Most interesting are the rules {\sc Q:IncP}, {\sc Q:DecP}, and {\sc Q:Inc}
+which describe how the potential is distributed after a size change of
+a variable.  The rule {\sc Q:IncP} is for increments $x \gets x + y$
+and {\sc Q:DecP} is for decrements $x \gets x - y$, they both apply only
+when we can deduce from the logical context $\Gamma$ that $y \ge 0$.
+Of course, we have symmetrical rules {\sc Q:IncN} and {\sc Q:DecN}
+that can be applied if $y$ is not positive.  The rules are equivalent
+in the case where $y=0$.  Finally, the rule {\sc Q:Inc} can be applied
+if we cannot deduce any information about $y$.  In the implementation,
+the rules for increments and decrements are combined into one syntax
+directed rule where the specialized rules take priority over {\sc Q:Inc}.
 
 To explain how rules for increment and decrement work, it is
 sufficient to understand the rule {\sc Q:IncP}.  The others follow the
@@ -1433,26 +1465,27 @@ $(\Gamma'_f, Q'_f)$.
 The rule {\sc Q:Weak} is not syntax directed.  In the implementation
 we apply {\sc Q:Weak} before loops and between the two statements of a
 sequential composition.  \iffull{We could integrate weakening into every
-syntax directed rule but this simple heuristic helps to make the
-analysis efficient.}{}  The high-level idea of {\sc Q:Weak} is the same
-as in the rule {\sc L:Weak} of the quantitative logic: If we have a
-sound judgement, then it is sound to add more potential to the
-precondition and remove potential from the postcondition.  The concept
-of \emph{more potential} is formalized by the relation $Q'
-\succeq_\Gamma Q$ that is defined in the rule {\sc Relax}.  Here, $Q$
-and $Q'$ are potential annotations and $\Gamma$ is a logical context.
-The rule {\sc Relax} deals also with the important task of transferring
-constant potential (represented by $q_0$) to interval sizes and vice
-versa.  If we can deduce from the logical context that the interval
-size $|\inter x y| \geq l$ is larger then a constant $l$ then we can
-transfer potential $q_{xy} {\cdot} |\inter x y|$ form the interval to
-constant potential $l{\cdot}q_{xy}$ and guarantee that we do not gain
-potential.  Conversely, if $|\inter x y| \leq u$ for a constant $u$
-then we can transfer constant potential $u{\cdot}q_{xy}$ to the
-interval potential $q_{xy} {\cdot} |\inter x y|$ without gaining
-potential.
+syntax directed rule but this simple heuristic helps to make the analysis
+efficient.}{}  The high-level idea of {\sc Q:Weak} is the following: If
+we have a sound judgement, then it is sound to add more potential to the
+precondition and remove potential from the postcondition.  The concept of
+\emph{more potential} is formalized by the relation $Q' \succeq_\Gamma Q$
+that is defined in the rule {\sc Relax}.  Here, $Q$ and $Q'$ are potential
+annotations and $\Gamma$ is a logical context.  The rule {\sc Relax}
+deals also with the important task of transferring constant potential
+(represented by $q_0$) to interval sizes and vice versa.  If we can deduce
+from the logical context that the interval size $|\inter x y| \geq l$ is
+larger then a constant $l$ then we can transfer potential $q_{xy} {\cdot}
+|\inter x y|$ form the interval to constant potential $l{\cdot}q_{xy}$
+and guarantee that we do not gain potential.  Conversely, if $|\inter
+x y| \leq u$ for a constant $u$ then we can transfer constant potential
+$u{\cdot}q_{xy}$ to the interval potential $q_{xy} {\cdot} |\inter x y|$
+without gaining potential.
 
-\paragraph{Automatic Inference via LP Solving.}
+\sectskip
+\section{Automatic Inference via LP Solving.}
+\label{sec:lp}
+\aftersectskip
 
 We separate the search of a derivation into two steps.  As a first
 step we go through the whole program and apply inductively the
@@ -1572,7 +1605,10 @@ LOOPUS &
 \label{fig:compar}
 \end{figure*}
 
-\paragraph{Soundness Proof.}
+\sectskip
+\section{Soundness Proof}
+\label{sec:soundness}
+\aftersectskip
 
 The soundness of the analysis builds on the quantitative logic.  We
 translate judgements of the automatic amortized analysis as defined in
