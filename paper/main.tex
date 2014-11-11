@@ -2167,392 +2167,49 @@ of the automatic analysis directly to its counterpart in the
 quantitative logic.  The most tricky parts are the translations of the
 rules for increments and decrements and the rule {\sc Q:Weak} for
 weakening because we have to show that the preconditions of the rules
-{\sc L:Weak} or {\sc L:Update}, respectively, are met. %  \iffull{ For instance
-% we prove the following lemma to show the soundness of the translation
-% of {\sc Q:Weak}.
+{\sc L:Weak} or {\sc L:Update}, respectively, are met.  \iffull{ For instance
+we prove the following lemma to show the soundness of the translation
+of {\sc Q:Weak}.
+
+\begin{lemma}[Relax]
+  If $Q' \succeq_\Gamma Q$ and $\state$ is a program state such that
+  $\state \models \Gamma$ then we have $\Phi_{Q'}(\state) \ge \Phi_Q(\state)$.
+\end{lemma}
+\begin{proof}
+We observe the following inequations.
+\begin{align*}
+\Phi_{Q'}(\state) &= \sum_i q'_i f_i(\state) \\
+&\ge q_0 + \sum_{i\in\mathcal U} u_i p_i - \sum_{i\in\mathcal L} l_i p_i
+  + \sum_{i\in\mathcal U} (q_i - p_i) f_i(\state)  \\ &
+  \;\;\;\;\;\;\;\; + \sum_{i\in\mathcal L} (q_i + p_i) f_i(\state)
+  + \sum_{i\not\in \mathcal U \cup \mathcal L} q_i \\
+ &\ge \Phi_Q(\state)
+  + \sum_{i\in\mathcal U} (u_i - f_i(\state)) p_i
+  + \sum_{i\in\mathcal L} (f_i(\state) - l_i) p_i \\
+ &\ge \Phi_Q(\state).
+\end{align*}
+Since $\state \models \Gamma$, using the transitivity of $\models$ and
+the definition of $\mathcal U$ and $\mathcal L$ we get
+$\forall i\in\mathcal L.\, l_i \le f_i(\state)$ and
+$\forall i\in\mathcal U.\, f_i(\state)\le u_i$.
+These two inequalities justify the last step.
+\end{proof}
 %
-% \begin{lemma}[Relax]
-%   If $Q' \succeq_\Gamma Q$ and $\state$ is a program state such that
-%   $\state \models \Gamma$ then we have $\Phi_{Q'}(\state) \ge \Phi_Q(\state)$.
-% \end{lemma}
-% \begin{proof}
-% We observe the following inequations.
-% \begin{align*}
-% \Phi_{Q'}(\state) &= \sum_i q'_i f_i(\state) \\
-% &\ge q_0 + \sum_{i\in\mathcal U} u_i p_i - \sum_{i\in\mathcal L} l_i p_i
-%   + \sum_{i\in\mathcal U} (q_i - p_i) f_i(\state)  \\ &
-%   \;\;\;\;\;\;\;\; + \sum_{i\in\mathcal L} (q_i + p_i) f_i(\state)
-%   + \sum_{i\not\in \mathcal U \cup \mathcal L} q_i \\
-%  &\ge \Phi_Q(\state)
-%   + \sum_{i\in\mathcal U} (u_i - f_i(\state)) p_i
-%   + \sum_{i\in\mathcal L} (f_i(\state) - l_i) p_i \\
-%  &\ge \Phi_Q(\state).
-% \end{align*}
-% Since $\state \models \Gamma$, using the transitivity of $\models$ and
-% the definition of $\mathcal U$ and $\mathcal L$ we get
-% $\forall i\in\mathcal L.\, l_i \le f_i(\state)$ and
-% $\forall i\in\mathcal U.\, f_i(\state)\le u_i$.
-% These two inequalities justify the last step.
-% \end{proof}
-% %
-% \noindent
-% We prove similar lemmas for the rules that deal with assignment.  With
-% the computational content of the proof, we have an effective algorithm
-% to construct certificates for upper bounds derived automatically.
-% }{}
+\noindent
+We prove similar lemmas for the rules that deal with assignment.  With
+the computational content of the proof, we have an effective algorithm
+to construct certificates for upper bounds derived automatically.
+}{}
 
-
-% \sectskip
-% \section{Implementation}
-
-% \subsection{Logical Annotations Generation}
-
-% \paragraph{Program conditions.}
-% The first pass in our OCaml implementation generates the
-% logical annotations $\Gamma$ around all program statements.
-% These annotations are used later on by the quantitative
-% analysis to generate constraints.
-% %
-% The first design choice we had to make is to give a fixed form
-% to program conditions.  Because of their generality and because
-% they are closed under negation, we decided to consider
-% inequalities over linear combinations as program conditions.
-% \begin{mathpar}
-% C := L < L \mid L > L \mid L \le L \mid L \ge L
-% \and
-% L := x \mid k \mid k * L \mid L + L \mid L - L
-% \end{mathpar}
-% A Condition is represented internally as a pair of one constant
-% $k \in \mathbb N$ and one map $m : V \rightarrow \mathbb N$.
-% Its intended semantics is
-% $$
-% \llbracket m \rrbracket(H) = k + \sum_v m_v \cdot H(v) \le 0.
-% $$
-% Note that conditions of this shape are closed by negation, as showed
-% by the following equivalence
-% $$
-% \neg (k + \sum_v m_v \cdot H(v) \le 0)
-% \Leftrightarrow (1-k) + \sum_v -m_v \cdot H(v) \le 0
-% $$
-% We can also note that all the ``questions'' asked to the logic
-% assertions during a proof derivation can be described using
-% linear combinations.  Conveniently enough, this language of
-% assertions is exactly Presburger's arithmetic.  This means that
-% we have a sound and complete decision procedure to answer
-% all the questions asked during the analysis.
-
-% \paragraph{Logical contexts.}
-% The second problem related to the logic is how to figure out
-% the logical contexts $\Gamma$ for each program statement.
-% This is a question that is answered by abstract interpretation
-% but, to show that our work really does not need the full power
-% of abstract interpretation, we designed and implemented a very
-% simple top-down approach: starting from a statement $S$ and
-% a pre-condition $\Gamma$ (given as a list of inequalities), we
-% generate $\mathcal P(S, \Gamma)$ a postcondition for $S$ using the
-% following equations:
-
-% \begin{align*}
-% \mathcal P(\code{skip}, \Gamma) &:= \Gamma \\
-% \mathcal P(x \gets y, \Gamma) &:= \{ e \le 0 \mid (e \le 0) \in \Gamma \land \{x\} \# e \} \\
-% \mathcal P(x \gets x + y, \Gamma) &:= \Gamma[x / x - y] \\
-% \mathcal P(x \gets x - y, \Gamma) &:= \Gamma[x / x + y] \\
-% \mathcal P(\code{assert}(C), \Gamma) &:= \Gamma,C \\
-% \mathcal P(S_1; S_2, \Gamma) &:= \mathcal P(S_2, \mathcal P(S_1, \Gamma)) \\
-% \mathcal P(\code{if} (C)~S_1~\code{else}~S_2) &:=
-%   \mathcal P(S_1, \Gamma,C) \lor \mathcal P(S_2, \Gamma,\neg C) \\
-% \mathcal P(\code{while}(C)~S, \Gamma) &:=
-%   \Gamma \lor (\neg C, \mathcal P(S, (C, \{ e \le 0 \mid (e \le 0) \in \Gamma \land {\rm set}(S) \# e \})))
-% \end{align*}
-% We used the notation ${\rm set}(S)$ to designate the set of variables
-% assigned to in the statement $S$ and $s\#e$ to mean that variables
-% in $s$ do not appear in the linear combination $e$.  Because contexts
-% are simply conjunction of conditions we must define $\Gamma \lor \Delta$
-% as a function on contexts:
-% $$
-% \Gamma \lor \Delta := \{ e \le 0 \mid (e \le 0) \in \Gamma \cup \Delta \land \Gamma \models (e \le 0) \land \Delta \models (e \le 0) \}.
-% $$
-% It is important to note that the $\mathcal P$ function defined above
-% is not performing any fixpoint computation.  Despite this flagrant
-% lack of sophistication our complete analysis is still able to figure out some
-% tricky invariants as exemplified earlier.
-% Finally, to generate annotations for the whole program $S$,
-% we run $\mathcal P(S,\bullet)$ (where $\bullet$ is the empty context)
-% and memorize all the intermediate results.  In practice, these results are stored in
-% a table that can be referenced at any time during the analysis to get the
-% pre and post-condition of any statement in the program.
-
-% \paragraph{Decision procedure.}
-% To decide logical entailment $\Gamma \models \Delta$ we use
-% Presburger's decision procedure.  But what this procedure gives us
-% is in fact only an answer the the question: Is there any heap $H$
-% such that $H \models \Gamma$.  While this sentence is existential
-% the question $\Gamma \models \Delta$ is universal.  To use the
-% decision procedure, we use the well known trick of double negation.
-% \begin{align*}
-% \Gamma \models C
-% &\Leftrightarrow \neg\neg (\Gamma \models C) \\
-% &\Leftrightarrow \neg\neg (\forall H.\, H\models\Gamma \implies H\models C) \\
-% &\Leftrightarrow \neg \exists H, H\models\Gamma \land \neg H\models C \\
-% &\Leftrightarrow \neg \exists H, H\models\Gamma \land H\models \neg C \\
-% &\Leftrightarrow \neg \exists H, H\models (\Gamma, \neg C)
-% \end{align*}
-% Thus, to know if $\Gamma \models C$ we ask the decision
-% procedure if $\Gamma, \neg C$ is satisfiable and negate the result.
-% When we want to know about $\Gamma \models \Delta$ we simply ask
-% one question for each of the conjuncts of $\Delta$.
-
-% \subsection{Linear Constraints Generation}
-
-% \paragraph{Generating a linear program.}
-% Because figuring out the coefficents that are in $Q$ right away is a hard
-% problem, we separate the search of a derivation in two steps.  As a first
-% step we go through the whole program and apply inductively the rules
-% given in the proof system section.  During this process our tool uses
-% symbolic names for the coefficients $(q_i)$.  Every time a side condition
-% must be satisfied by these coefficients, it is recorded using the symbolic
-% names in a global list.  When
-% the list of all constraints that must be satisfied by the coefficients is
-% collected, we feed it to an off the shelf LP-solver.  If the solver successfully
-% finds a solution to the given problem, we know that a derivation
-% exists for the considered program.  We can even ask the solver
-% for the initial $Q$ and get a resource bound for the program.
-% If the LP-solver fails to find a solution, an error is reported to the
-% user.
-
-% \paragraph{Making the proof system algorithmic.}
-% One problem with the proof system as described is that it is not
-% fully syntax directed.  The rule {\sc Q:Weak} can be applied at
-% all times.  However, if we apply this weakening rule at every step
-% of the derivation, the number of generated constraints and
-% the number of queries to the logic system explode.  This blowup
-% causes efficiency problems.  To avoid these performance problems
-% our implementation only applies the weakening rules at some
-% strategic points in the derivation.  More specifically, at sequence
-% points, at the beginning of while loops and around conditional
-% statements.  So far, this selection of weakening spots has been
-% driven by practice but it might be possible to prove that these
-% program points are the only ones where weakening is needed.
-
-
-% \sectskip
-% \section{Polynomial Potential}
-
-% \paragraph{Index Sets}
-
-% Let $V$ be a set of variables.  An \emph{index} $I \in \ind(V)$ is a
-% family that maps two-element sets of variables to natural numbers,
-% that is,
-% $$
-% I = (i_{\{x,y\}})_{\{x,y\} \subseteq V} \; .
-% $$
-% %
-% We identify a family $I$ with the set $\{ (\{x,y\},i_{\{x,y\}})
-% \mid \{x,y\} \subseteq V\}$.
-
-% Let $\ind(V)$ denote the set of all such indices.  We write $\ind$
-% instead of $\ind(V)$ if the set of variables $V$ is fixed or obvious
-% from the context.
-% %
-% We assume that allways $0 \in V$ and sometimes write $i_x$ instead of $i_{\{x,0\}}$.
-
-% The \emph{degree} $\deg(I)$ of an index $I = (i_{\{x,y\}})_{\{x,y\}
-%   \subseteq V}$ is defined as
-% $$
-% \deg(I) = \sum_{\{x,y\} \in V} i_{\{x,y\}} \;.
-% $$
-% We define $\ind_k(V) = \{ I \mid I \in \ind(V) \text{ and } \deg(i) \leq k
-% \}$ to be the set of indices of degree at most $k$.
-
-% \paragraph{Resource Polynomials}
-
-% Let $V$ be a set of variables.  An index $I \in \ind(V)$ denotes a
-% \emph{base polynomial} $P_I : \states \to \N$ for $V$ that maps a
-% program state $H$ to product of binomial coefficients (a natural
-% number).  We define
-% $$
-% P_I(H) = \prod_{{\{x,y\}} \subseteq V} \binom {|H(x){-}H(y)|} {i_{\{x,y\}}} \; .
-% $$
-% %
-% A \emph{resource polynomial} $R$ for the variable set $V$ is a
-% non-negative linear combination of the base polynomials for $V$.
-
-% \paragraph{Potential Annotations}
-
-% A \emph{potential annotation} for the variable set $V$ is a family
-% $$Q = (q_I)_{I \in \ind(V)}$$
-% of non-negative rational numbers.  Such an annotation denotes the
-% resource polynomial $R_Q$ that is defined by
-% $$
-% R_Q(H) = \sum_{I \in \ind(V)} q_I \cdot P_I(H) \; .
-% $$
-% %
-% We say that the potential annotation $Q$ is of degree $k$ if $q_I = 0$
-% for $I \in \ind(V)$ with $\deg(I) > k$.
-
-% \paragraph{Additive Shifts}
-
-% Let $Q$ be a potential annotation for a variable set $V$ and let
-% $\{x,y\} \subseteq V$ be a two-element variable set.  The
-% \emph{additive shift} with respect to $\{x,y\}$ is a potential
-% annotation $\shift_{\{x,y\}}(Q) = (q'_I)_{I \in \ind(V)} $ for $V$
-% that is defined through
-% $$
-% q'_I = q_I + q_{I^{\{x,y\}{+}1}} \; .
-% $$
-% For an index $I = (i_{\{x,y\}})_{\{x,y\} \subseteq V}$ we use the
-% notation $I^{\{x,y\}{+}k}$ to denote the index
-% $(i'_{\{x,y\}})_{\{x,y\} \subseteq V}$ such that
-% $$
-% i'_{\{t,u\}} = \left\{
-%   \begin{array}{ll}
-%     i_{\{t,u\}} + k  & \text{if } \{t,u\} = \{x,y\} \\
-%     i_{\{t,u\}} & \text{otherwise}
-%   \end{array}
-% \right.
-% \;.
-% $$
-% %
-% The additive shift for natural numbers reflects the identity
-% \begin{equation}
-% \label{eq:shift}
-% \sum_{0 {\leq} i \leq {k}} q_i \binom{n+1}{i} = \sum_{0 {\leq} i \leq {k}} (q_i{+}q_{i+1}) \binom{n}{i}
-% \end{equation}
-% where $q_{k+1} = 0$.  It is used in the effect system if the
-% difference $n+1$ between two variables $x,y$ decreases by one.
-
-% \begin{lemma} Let $V$ be a set of variables with $x,y \in V$ and let
-%   $H$ be a program state. Let $|H'(t) {-} H'(u)| = |H(t) {-} H(u)|$
-%   for $\{t,u\} \neq \{x,y\}$ and let $|H'(x) {-} H'(y)| = |H(x) {-}
-%   H(y)| - 1$.
-%   %
-%   If $Q' = \shift_{\{x,y\}}(Q)$ then $R_Q(H) = R_{Q'}(H')$.
-% \end{lemma}
-
-% We now study the effect of multiple simultaneous shifts.  Let $Q$ be a
-% resource annotation for a variable set $V$ and let $U_1,\ldots,U_n
-% \subseteq V$ with $|U_i| = 2$ for all $i$ and $U_i \neq U_j$ for $i
-% \neq j$ be pairwise distinct two-element variable sets.  The
-% simulations additive shift $\shift_{U_1,\ldots,U_n}(Q)$ of $Q$ with
-% respect to $U_1,\ldots,U_n$ is defined by
-% $$
-% \shift_{U_1,\ldots,U_n}(Q) = \shift_{U_1}( \cdots \shift_{U_n}(Q) \cdots ) \; .
-% $$
-% %
-% \begin{proposition}
-%   Let $V$ be a set of variables and let $U_1,\ldots,U_n$ be pairwise
-%   distinct two-element variable sets.  Let $|H'(x) {-} H'(y)| = |H(x)
-%   {-} H(y)|$ for $\{x,y\} \not\in \{U_1,\ldots,U_n\}$ and let $|H'(x)
-%   {-} H'(y)| = |H(x) {-} H(y)| - 1$ for $\{x,y\} \in
-%   \{U_1,\ldots,U_n\}$.
-%   %
-%   If $Q' = \shift_{U_1,\ldots,U_n}(Q)$ then $R_Q(H) = R_{Q'}(H')$.
-% \end{proposition}
-% %
-% As shown by the following lemma, the order in which the shifts for the
-% individual $U_i$ are applied is insignificant.
-% %
-% \begin{lemma}
-%   Let $\sigma : \{1,\ldots,n\} \to \{1,\ldots,n\}$ be a
-%   permutation. Then $\shift_{U_1,\ldots,U_n}(Q) =
-%   \shift_{U_{\sigma(1)},\ldots,U_{\sigma(n)}}(Q)$.
-% \end{lemma}
-% %
-% For reasons of efficiency in the constraint generation, we give a more
-% direct formula for the simultaneous shift.  Let $I \in \ind(V)$ and
-% let $U_1,\ldots,U_n$ be pairwise distinct two-element variable sets.
-% We define the index $I^{U_1,\ldots,U_n + k}$ as the family $(i'_{\{x,y\}})_{\{x,y\} \subseteq V}$ such that
-% $$
-% i'_{\{t,u\}} = \left\{
-%   \begin{array}{ll}
-%     i_{\{t,u\}} + k  & \text{if } \{t,u\} \in \{U_1,\ldots,U_n\} \\
-%     i_{\{t,u\}} & \text{otherwise}
-%   \end{array}
-% \right.  \;.
-% $$
-
-% %
-% \begin{lemma}
-%   Let $V$ be a variable set and let $U_1,\ldots,U_n$ be pairwise
-%   distinct two-element variable sets.
-%   %
-%   Let $Q = (q_I)_{I \in \ind(V)}$ be a resource annotation for
-%   $V$ and let $ Q' = (q'_I)_{I \in \ind(V)}$ where
-%   $$
-%   q'_I = \sum_{\{j_1,\ldots,j_m\} \subseteq \{1,\ldots,n\} } q_{I^{U_{j_1},\ldots,U_{j_m}+1}} \; .
-%   $$
-%   Then $Q' = \shift_{U_1,\ldots,U_n}(Q)$.
-% \end{lemma}
-
-
-%%
-% Note: Later we need to shift in many directions at once like
-%   Q' = shift_{x,y} (shift_{x,u} (Q))
-% To do: Give a combined formula for that (concise constraint system).
-%%
-
-
-
-\ifshort{
 \begin{figure*}
 \small
 \begin{mathpar}
 %
-\Rule{L:Skip}
-{ }
-{ \Delta; B; R \vdash
-\htriple
-  { Q }{ \code{skip} }{ Q }
-}
-%
-\and
-\Rule{L:Break}
-{ }
-{ \Delta; B; R \vdash
-\htriple
-  { M_b + B }{ \code{break} }{ Q }
-}
-%
-\and
-\Rule{L:Return}
-{ }
-{ \Delta; B; R \vdash
-\htriple
-  { R\,(\state(x)) }{ \code{return}~x }{ Q }
-}
-%
-\and
-\Rule[leftskip=.0cm,rightskip=.0cm]{L:Update}
+\Rule{L:Update}
 { }
 { \Delta; B; R \vdash
 \htriple
   { \lambda \state.\,M_u + M_e(e) + Q\,\state[x \mapsto \sem{e}_\state] }{ x \gets e }{ Q }
-}
-%
-\and
-\Rule[leftskip=.0cm,rightskip=.0cm]{L:Seq}
-{ \Delta; B; R \vdash
-\htriple{ P }{ S_1 }{ Q' + M_s }
-\\
-\!\!  \Delta; B; R \vdash
-\htriple{ Q' }{ S_2 }{ Q }
-}
-{ \Delta; B; R \vdash
-\htriple{ P }{ S_1;S_2 }{ Q }
-}
-%
-\and
-\Rule{L:Call}
-{
-  \Delta(f) = \forall z\,\vec v\,v.(P_f\,z\,\vec v, Q_f\,z\,v) \\
-  P \models P_f \, y \, (\state(\vec x)) \land A \\
-  \forall v.\, (Q_f \, y \, v \land A \models \lambda \state.\, Q \, \state[r \mapsto v])
-}
-{ \Delta; B; R \vdash
-\htriple
-  { M_f + P }
-  { r \gets f(\vec x) }
-  { Q - M_r }
 }
 %
 \and
@@ -2585,33 +2242,26 @@ weakening because we have to show that the preconditions of the rules
 \htriple
   { I }{ \code{loop}~S }{ Q }
 }
-%
-\and
-\Rule{L:If}
+\and \Rule{L:Seq}
 { \Delta; B; R \vdash
-\htriple
-  { \code{istrue}~\sem{e}_\state + P - M_c^1}
-  { S_1 }{ Q }
+\htriple{ P }{ S_1 }{ Q' + M_s }
 \\
-  \Delta; B; R \vdash
-\htriple
-  { \code{isfalse}~\sem{e}_\state + P - M_c^2 }
-  { S_2 }{ Q }
+\!\!  \Delta; B; R \vdash
+\htriple{ Q' }{ S_2 }{ Q }
 }
 { \Delta; B; R \vdash
-\htriple
-  { P + M_e(e) }{ \code{if}(e)~S_1~\code{else}~S_2 }{ Q }
+\htriple{ P }{ S_1;S_2 }{ Q }
 }
 %
 \and
 \Rule{L:Weaken}
 {
+  \!\! B' \models B \!\! \\
+  \!\! \forall v.\, (R'\,v \models R\,v) \!\! \\\\
   \!\! P \models P' \!\! \\
   \!\! \Delta; B'; R' \vdash
   \htriple{ P' }{ S }{ Q' } \!\! \\
-  \!\! Q' \models Q \!\! \\
-  \!\! B' \models B \!\! \\
-  \!\! \forall v.\, (R'\,v \models R\,v) \!\!
+  \!\! Q' \models Q \!\!
 }
 { \Delta; B; R \vdash
 \htriple{ P }{ S }{ Q }
@@ -2627,28 +2277,11 @@ weakening because we have to show that the preconditions of the rules
 \htriple{ P + x }{ S }{ Q + x } \!\!
 }
 %
-\and
-\Rule{L:Extend}
-{ \Delta \cup \Delta'; B; R \vdash
-  \htriple{ P }{ S }{ Q }
-\\
-  \forall f\,P_f\,Q_f.\,
-  \Delta'(f) = \forall z\,\vec v\,v.(P_f\,z\,\vec v, Q_f\,z\,v)
-  \rightarrow
-  \forall y\,\vec v.\,
-  (\Delta \cup \Delta'; \bot; Q_f\,y \vdash
-    \htriple{ P_f\,y\,\vec v }{ S_f }{ \bot })
-}
-{ \Delta; B; R \vdash
-\htriple{ P }{ S }{ Q }
-}
-%
 \end{mathpar}
 
-\caption{Rules of the Quantitative Hoare Logic}
+\caption{Selected rules of the Quantitative Hoare Logic}
 \label{fig:logic}
 \end{figure*}
-}{}
 
 
 
@@ -3156,7 +2789,7 @@ lock-free data structures.}{.}
 \end{mathpar}
 
 \caption{Rules of the Quantitative Hoare Logic}
-\label{fig:logic}
+\label{fig:logicapp}
 \end{figure*}
 
 In this section we describe a simplified version of the quantitative
@@ -3229,7 +2862,7 @@ program state $\state$ $P(\state) \ge Q(\state)$.
 
 \paragraph{Rules of the Quantitative Logic.}
 
-\pref{fig:logic} shows the inference rules of the quantitative logic.
+\pref{fig:logicapp} shows the inference rules of the quantitative logic.
 The rules are slightly simplified in comparison to the implemented
 rules in Coq.  The main difference is that the presented version does
 not formalize the heap operations.
