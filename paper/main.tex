@@ -532,7 +532,7 @@ ${\color{blue}%
 \end{lstlisting}
   \caption{Derivation of a tight bound on the number of
     ticks for a standard \emph{for loop}.  The parameters $K>0$ and
-    $T>0$ are not program variables but denote concrete constants. 
+    $T>0$ are not program variables but denote concrete constants.
     % The reasoning works uniformly for all such $K$ and
     % $T$.
   }
@@ -729,7 +729,7 @@ consume $T>0$ resources in each iteration.  The reasoning is similar
 to the one of Example~1 except that we obtain the potential
 $K{\cdot}\frac{T}{K}$ after the assignment.  Note that the logical
 assertions in $\Gamma$ are only used in the rule for the assignment
-\code{x=x+K}.  
+\code{x=x+K}.
 
 To the best of our knowledge, no other implemented tool for C is
 currently capable of deriving a tight bound on the cost of such a
@@ -935,7 +935,7 @@ point of two trains that approach each other with different speeds.}{}
   extended version~\cite{anon_extended}} is a list of more than $30$
 classes of challenging programs that we can automatically analyze.
 \pref{sec:exper} contains a more detailed comparison with other
-tools\iffull{for automatic bound derivation.}{.}
+tools\iffull{ for automatic bound derivation.}{.}
 
 
 \begin{figure}[t]
@@ -1387,17 +1387,18 @@ like $q_{xa}$ and $q_{ax}$ that contain $x$ after the assignment.
 The rules of our derivation system must serve two purposes.  They must
 \emph{attach} potential to certain program variable intervals and use
 this potential, when it is allowed, to \emph{pay} for resource consuming
-operations.  These two purposes are easily illustrated on the {\sc Q:Skip}
-rule.  This rule reuses its precondition as postcondition.  This is
+operations.  These two purposes are illustrated on the {\sc Q:Skip}
+rule.  This rule reuses its precondition as postcondition, it is
 explained by two facts: first, no resource is consumed by the skip
-operation, thus no potential needs to be taken out of the precondition
-to pay for the evaluation; second, the program state is not changed by
+operation, thus no potential has to be used to pay for the evaluation;
+second, the program state is not changed by
 the execution of a skip statement, thus all the potential available
 before the execution of the skip statement is still available after.
 These two observations would also justify a rule with the side-condition
-$Q' \le Q$, because some potential is always safely lost.  For the sake
+$Q \ge Q'$, because some potential is always safely lost.  For the sake
 of orthogonality, it is not how we present the rule and this form of
-weakening is in fact expressed as the stand-alone rule {\sc Q:Weak}.
+weakening is in fact expressed as the stand-alone rule {\sc Q:Weak}
+described later.
 
 % Most of the rules correspond exactly to the respective rules of the
 % quantitative Hoare logic.
@@ -2338,7 +2339,7 @@ was originally designed to prove the soundness of our automatic
 analysis.  To make it suitable for this end, we made it independent
 of the resource used (e.g. stack usage, heap usage, clock ticks) and
 implemented a smoother handling of the auxiliary state through a shallow
-embedding in Coq.  Despite being first a theoritical tool, the logic can
+embedding in Coq.  Despite being first a theoretical tool, the logic can
 be used directly as in~\cite{veristack14}.  Its judgements are inspired
 by typical Hoare logics and have the shape
 $$
