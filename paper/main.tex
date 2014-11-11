@@ -104,7 +104,7 @@
 \titlebanner{\iffull{Extended Version}{}}%{Draft -- Do not distribute}        % These are ignored unless
 \preprintfooter{\iffull{Extended Version\hspace{-.8cm}}{Draft\hspace{.5cm}}}%{Draft}   % 'preprint' option specified.
 
-\title{Compositional Certified Resource Bounds\ifshort{\vspace{-.15cm}}{}}
+\title{Compositional Certified Resource Bounds\ifshort{\vspace{-1.15cm}}{}}
 % Certified Resource Bounds for C
 % Compositional Certified Resource Bounds for C
 % Compositional Quantitative Resource Analysis of C Programs
@@ -155,7 +155,7 @@
   tool $\toolname$. An experimental evaluation demonstrates the
   advantages of the new technique with a comparison of $\toolname$ with
   existing tools on challenging micro benchmarks and the analysis of
-  more than XXX lines of C code from the XXX benchmark suite.
+  more than 2000 lines of C code from the cBench benchmark suite.
 
 % Contrary to most available tools for
 % C, ours has a compositional design that provides the
@@ -253,51 +253,41 @@ feedback for developers.
 
 % NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW
 
-Available techniques for deriving worst-case resource bounds
+Available techniques for automatically deriving worst-case resource bounds
 fall into two categories.  Techniques
 in the first category derive impressive bounds for
 numerical imperative programs, but are not fully compositional.
 This is problematic if one needs to derive global whole-program bounds.
 Techniques in the second category derive tight whole-program
-bounds on functional programs that operate on inductive data structures.
+bounds for programs with regular loop and recursion patterns that
+decrease the size of an individual variable or data structure.
 They are highly compositional, scale for large
 programs, and work directly on the syntax.  However, % despite all
 % these theoretical and practical advantages,
 it has been
-a long-time open problem to make them work in the
-presence of signed integers, mutation, and non-linear
-control flow. As a result, they are not suitable for
-typical imperative code.
+a long-time open problem to make them work for typical imperative code
+with non-regular iteration patterns, signed integers, mutation, and non-linear
+control flow. % As a result, they are not suitable for
+% typical imperative code.
 
-Notable tools in the first category include
+Tools in the first category include
 SPEED~\cite{GulwaniMC09}, KoAT~\cite{BrockschmidtEFFG14},
 PUBS~\cite{AlbertAGPZ12}, Rank~\cite{AliasDFG10},
 and LOOPUS~\cite{SinnZV14}.
-They lack compositionality in at least three ways.
+They lack compositionality in at least two ways.
 First, they all base their analysis on some form of
-\emph{ranking function}.
-Since this
-is usually a local analysis and loop bounds are
+\emph{ranking function} or \emph{counter instrumentation}
+that is linked to a local analysis.  As a result, loop bounds are
 arithmetic expressions that depend on the values of
 variables just before the loop.
 This makes it hard to give a
-resource bound on a sequence of loops and procedure calls in
-terms of the input parameters of a procedure.
+resource bound on a sequence of loops and function calls in
+terms of the input parameters of a function.
 Second, while all popular imperative programming languages
 provide a function or procedure abstraction, available
 tools are not able to abstract resource behavior
 and have to inline the procedure body to perform their
-analysis.  Third, when a tool fails to find a resource
-bound for a program, there is no possibility for sound
-user interaction with the tool other than to the rewrite
-the program. For example, there is no concept of manual proofs of
-resource bounds and no framework that could support composition
-of manually derived bounds with automatically inferred bounds.
-One reason for this lack of interaction is that available tools
-work on an abstract version of the source program. This
-abstracted program has sometimes more behaviors than the
-original one (introduced by non-determinism) and is usually
-expressed in a language that does not feature memory operations.
+analysis. 
 
 Tools in the second category originate form the potential method of
 amortized analysis and type systems for functional
@@ -310,11 +300,26 @@ fine-grained data-structure information to hook the analysis on.
 Another issue is that existing techniques associate \emph{potential}
 directly with single program variables.  In imperative programs, this
 fails for loops as simple as \lstinline{for(i=x;i<y;i++)} where
-$y - i$ decreases, but not $|i|$.  Mutation is yet another problem.
-While functional programs relate multiple fixed inputs (the typing
-context) with one output (the expression typed), imperative programs
-can change the value of variables in scope, so the potential of these
-variables has to be updated after mutations to ensure soundness.
+$y - i$ decreases, but not $|i|$. %  Mutation is yet another problem.
+% While functional programs relate multiple fixed inputs (the typing
+% context) with one output (the expression typed), imperative programs
+% can change the value of variables in scope, so the potential of these
+% variables has to be updated after mutations to ensure soundness.
+
+A general problem with existing tools is user interaction. When a tool
+fails to find a resource bound for a program, there is no possibility
+for sound user interaction to guide the tool during during bound
+derivation.
+For example, there is no concept of manual proofs of
+resource bounds and no framework that could support composition
+of manually derived bounds with automatically inferred bounds.
+
+% Finally, the tools often operate on an abstract version of the and use
+% complex external tools from term rewriting and abstract
+% interpretation. This makes it hard to generate a proof certificate for
+% the bounds or even to prove the soundness of the tools with respect to
+% a formal cost semantics.
+
 
 This paper presents a new framework for automatically
 deriving resource bounds on C programs.  This new
@@ -323,7 +328,7 @@ categories: It solves the compositionality issues of techniques
 for numerical imperative code by adapting amortized-analysis based
 techniques from the functional world.
 %
-Our automated analysis is able to infer linear
+Our automated analysis is able to infer
 resource bounds on C programs with mutually-recursive functions and integer loops.
 %
 The resource behavior of functions can be summarized
@@ -340,7 +345,7 @@ memory).  Compared to more classical
 apporaches based on ranking functions, our tool inherits
 the benefits of amortized reasoning.  Using only one
 simple mechanism, it handles:
-
+\itemskip
 \begin{itemize}
 \item interactions between \emph{sequential loops or
   function calls} through size changes of variables,
@@ -351,7 +356,7 @@ simple mechanism, it handles:
 \item and \emph{amortized bounds} as found, for example, in
   the Knuth-Morris-Pratt algorithm for string search.
 \end{itemize}
-
+\itemskip
 The main innovation that makes amortized analysis work
 on imperative languages is to base the analysis on a
 Hoare-like logic and to track multivariate quantities instead
@@ -360,17 +365,20 @@ expressed as functions of sizes $|[x, y]| = \max(0, y-x)$ of
 intervals.
 %
 A distinctive feature of our analysis system is that
-it reduces bound derivation to a linear optimization problem
+it reduces linear bound inference  to a linear optimization problem
 that can solved by off-the-shelf LP solvers.  This enables the
 efficient inference of global bounds for larger programs.
+%
+Moreover, our local inference rules automatically generate
+proof certificates that can be easily checked in linear time.
 
 The use of the potential method of amortized analysis makes user
 interaction possible in different ways. For one thing, we can directly
 combine the new automatic analysis with manually derived bounds in a
 previously-developed quantitative Hoare logic~\cite{veristack14} (see
-Section XXX).  For another thing, we describe a new mechanism that
+\pref{sec:soundness}).  For another thing, we describe a new mechanism that
 allows the separation of quantitative and qualitative verification
-(see Section XXX).  Using this mechanism, the user can guide the
+(see \pref{sec:anno}).  Using this mechanism, the user can guide the
 analysis by using auxiliary variables and logical assertions that can
 be verified by existing qualitative tools such as Hoare logic or
 abstract interpretation.  In this way, we can benefit from existing
@@ -379,46 +387,43 @@ automatic and fully manual verification for bound derivation. This
 enables the semi-automatic inference of non-linear bounds, such as
 polynomial, logarithmic, and exponential bounds.
 
-We have implemented the automatic analysis in the tool
+We have implemented the analysis system in the tool
 \toolname and experimentally evaluated its effectiveness by
 analyzing system code and examples from the literature.
 \toolname has automatically derived global resource bounds for
-more than XXX lines of C code from the XXX benchmark suite.
+more than 2000 lines of C code from the cBench benchmark suite.
 %
 \iffull{\pref{app:cat}}{The extended version
   of this article~\cite{anon_extended}}{} contains more than $30$
 challenging loop and recursion patterns that we collected from open
 source software and the literature.  Our analysis can find
 asymptotically tight bounds for all but 1 of these patterns, and in
-most cases the derived constant factors are tight.  To compare our
-automatic analyzer with existing techniques, we tested our examples
+most cases the derived constant factors are tight.  To compare $\toolname$ 
+with existing techniques, we tested our examples
 with tools such as KoAT~\cite{BrockschmidtEFFG14},
 Rank~\cite{AliasDFG10}, and LOOPUS~\cite{SinnZV14}.  Our experiments
 show that the bounds that we derive are often more precise than those
 derived by existing tools.  Only LOOPUS~\cite{SinnZV14}, which also
 uses amortization techniques, is able to achieve a similar precision.
-%
+
 Several micro benchmarks demonstrate the practicality and
 expressiveness of the user guided bound inference.  For example, we
 derive a logarithmic bound for a binary search function, a bound that
 depends on the contents of an array to describe the exact cost of a
-function that finds a maximal element in an array, and a linear
-bound that amortizes the cost of $k$ successive increments to a binary
-counter.
-
-% Give a description of the sections here.                    XXX
-% Jan: We don't need that. Usually, people don't read it.
+function that finds a maximal element in an array, and a bound 
+that amortizes the cost of $k$ successive increments to a binary
+counter (see \pref{sec:anno}).
 
 In summary, we make the following \emph{contributions}.
-
+\itemskip
 \begin{itemize}
 \item We develop the first automatic amortized analysis for C
   programs. It is naturally compositional, tracks size changes of
   variables to derive global bounds, can handle mutually-recursive
-  functions, generates resource specifications for functions, derives
-  easily verifiable certificates, and handles resources that can
-  become available during an execution.
-\item We show how to reduce the inference of \emph{linear} resource
+  functions, generates resource abstractions for functions, derives
+  proof certificates, and handles resources that can
+  become available during execution.
+\item We show how to automatically reduce the inference of \emph{linear} resource
     bounds to efficient LP solving.
 \item We describe a new method of harnessing existing qualitative
   verification techniques to guide the automatic amortized analysis
@@ -429,11 +434,17 @@ In summary, we make the following \emph{contributions}.
   indicate resource usage. % This mechanism is also covered by the
   % soundness proof.
 \item We present experiments with a prototype implementation on more
-  than XXX lines of C code. A detailed comparison shows that our
+  than 2000 lines of C code. A detailed comparison shows that our
   prototype is the only tool that can derive global bounds for larger
   C programs while being as powerful as existing tools when deriving
   linear local bounds for tricky loop and recursion patterns.
 \end{itemize}
+\itemskip
+%
+{\footnotesize \sl
+[To the reviewers: The auxiliary material contains an anonymized
+version of the extended article, and the source code of $\toolname$
+and all examples.] }
 
 
 \sectskip
