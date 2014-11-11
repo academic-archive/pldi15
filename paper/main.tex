@@ -1200,24 +1200,7 @@ or additively, resulting in a loose quadratic bound or no bound at all.
 \begin{figure*}
 \small
 \begin{mathpar}
-\iffull{
-%
-\Rule[leftskip=.4cm,rightskip=.3cm]{Q:Skip}
-{ }
-{ \!\! B; R; (\Gamma, Q) \vdash \code{skip} \dashv (\Gamma, Q) \!!}
-%
-\and
-\Rule{Q:Break}
-{ }
-{\!\!  (\Gamma, Q_B); R; (\Gamma, Q_B {+} M_b) \vdash \code{break} \dashv (\Gamma', Q') \!\!}
-%
-\and
-\Rule[leftskip=.3cm,rightskip=.4cm]{Q:Tick}
-{ }
-{ \!\! B; R; (\Gamma, Q{+}M_t(n)) \vdash \code{tick}(n) \dashv (\Gamma, Q) \!\!}
-%
-\and }{}
-\Rule[leftskip=1.2cm,rightskip=.5cm]{Q:Return}
+\Rule[leftskip=1.2cm,rightskip=.5cm]{Q:Ret}
 { P = Q_R[\Vret/x]
 \\ \forall i \in \dom{P} . \, p_i = q_i
 }
@@ -1295,12 +1278,6 @@ or additively, resulting in a loose quadratic bound or no bound at all.
   \vdash r \gets f(\vec x) \dashv
   (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c {-} M_r)
 }
-%
-\iffull{\and
-\Rule[leftskip=.2cm,rightskip=.2cm]{Q:Assert}
-{ }
-{ B; R; (\Gamma, Q {+} M_a) \vdash \code{assert}~e \dashv (\Gamma \land e, Q) }
-}{}
 %
 \and
 \Rule[leftskip=.2cm,rightskip=.2cm]{Q:Extend}
