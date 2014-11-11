@@ -36,11 +36,11 @@
 \newcommand{\subsectskip}[0]{\ifshort{\vspace{-1pt}}{}}
 
 %SHORT
-% \usepackage[normal,belowskip=-11pt,aboveskip=1pt]{caption} %Remove extra space around captiosn
-% \DeclareCaptionFormat{myformat}{#1#2#3\vspace{-4pt}\hrulefill}
-% \captionsetup[figure]{format=myformat}
-% \captionsetup[table]{format=myformat}
-% \renewcommand{\captionlabelfont}{\bf}
+\usepackage[normal,belowskip=-11pt,aboveskip=1pt]{caption} %Remove extra space around captiosn
+\DeclareCaptionFormat{myformat}{#1#2#3\vspace{-4pt}\hrulefill}
+\captionsetup[figure]{format=myformat}
+\captionsetup[table]{format=myformat}
+\renewcommand{\captionlabelfont}{\bf}
 %SHORT
 
 \usepackage[utf8]{inputenc} %for utf8 input
@@ -478,15 +478,20 @@ This can be composed as $\Phi(\state) \ge (n + m) + \Phi''(\state'')$.
 Note that the initial potential function $\Phi$ provides an upper bound
 on the resource consumption of the whole program.  What we have observed
 is that, if we define $\htriple{\Phi} {S}{\Phi'}$ to mean
+\itemskip
+\itemskip
 $$
 \forall \state\, n\, \state'.\, (\state, S) \Downarrow_n \state' \implies \Phi(\state) \ge
 n + \Phi'(\state') \; ,
+\vspace{-1.5ex}
 $$
-then we get the following familiar looking rule.
+then we get the following familiar looking rule
+\itemskip
 $$
 \RuleNolabel
 {\htriple{\Phi}{S_1}{\Phi'} \\ \htriple{\Phi'}{S_2}{\Phi''}}
-{\htriple{\Phi} {S_1; S_2}  {\Phi''}}.
+{\htriple{\Phi} {S_1; S_2}  {\Phi''}} \;\; .
+\vspace{-1.5ex}
 $$
 %
 This rule already shows a departure from classical techniques that are
@@ -524,8 +529,37 @@ a certificate for the derived resource bound.
 % % that derives a triple $\htriple{\Phi}P{\Phi'}$ sound in the sense of
 % % the previous section.
 
+
+The derivation of a resource bound using potential functions is best
+explained by example.  If we use the tick metric that assigns cost $n$
+to the function call \code{tick(n)} and cost $0$ to all other
+operations then the cost of the following example can be bounded by
+$|[x,y]| = \max(y{-}x,0)$.% \footnote{Note that there are no restrictions on
+  % the signs of the input variables in the examples.}
+\begin{lstlisting}[basicstyle=\tt\small]
+while (x<y) { x=x+1; tick(1); } #\hfill \textnormal{(Example 1)}#
+\end{lstlisting}
+To derive this bound, we start with the initial potential $\Phi_0 =
+|[x,y]|$, which
+we also use as the loop invariant.  For the loop body we have (like in
+Hoare logic) to derive a triple like
+$\htriple{\Phi_0}{\code{x=x+1;tick(1)}}{\Phi_0}$.  We can only do so
+if we utilize the fact that $x<y$ at the beginning of the loop body.
+The reasoning then works as follows. We start with the potential
+$|[x,y]|$ and the fact that $|[x,y]| > 0$ before the assignment.  If
+we denote the updated version of $x$ after the assignment by $x'$ then
+the relation $|[x,y]| = |[x',y]| + 1$ between the potential before and
+after the assignment \code{x=x+1} holds.  This means that we have the
+potential $|[x,y]| + 1$ before the statement \code{tick(1)}.  Since
+\code{tick(1)} consumes one resource unit, we end up with potential
+$|[x,y]|$ after the loop body and have established the loop invariant
+again.
+
+
+
 \begin{figure}[t]
   \centering
+\vspace{-1.5ex}
 \begin{lstlisting}[mathescape]
 ${\color{blue}%
   \cdot; \, 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \vdash }$
@@ -551,6 +585,74 @@ ${\color{blue}%
   \label{fig:ex1}
 \end{figure}
 
+\pref{fig:ex1} shows a derivation of the bound
+$\frac{T}{K}{\cdot}|[x,y]|$ on the number of ticks for a generalized
+version of Example~1 in which we increment $x$ by a constant $K>0$ and
+consume $T>0$ resources in each iteration.  The reasoning is similar
+to the one of Example~1 except that we obtain the potential
+$K{\cdot}\frac{T}{K}$ after the assignment.  Note that the logical
+assertions in $\Gamma$ are only used in the rule for the assignment
+\code{x=x+K}.
+
+To the best of our knowledge, no other implemented tool for C is
+currently capable of deriving a tight bound on the cost of such a
+loop.  For $T=1$ (many systems focus on the number of loop iterations
+without a cost model) and $K=10$, KoAT computes the bound $|x| + |y| +
+10$, Rank computes the bound $y-x-7$, and LOOPUS computes the bound
+$y-x-9$.  Only PUBS computes the tight bound $0.1(y-x)$ if we
+translate the program into a term-rewriting system by
+hand. Nevertheless, we will show in \pref{sec:AAA} that the
+potential method makes automatic bound derivation straightforward.
+
+% To automate the reasoning, we first introduce an unknown rational
+% variable for each factor in the potential functions.  We then use our
+% inference rules (see \pref{sec:AAA}) to emit linear constraints on
+% these variables that enforce that variable assignments that respect
+% the constraints correspond to sound potential annotations.  For
+% instance if $K = 1$ in \pref{fig:ex1} then we would have the
+% annotation $q_0 + q_{(x,y)} {\cdot} |[x,y]| + q_{(y,x)} {\cdot}
+% |[y,x]|$ before the assignment and $p_0 + p_{(x,y)} {\cdot} |[x,y]| +
+% p_{(y,x)} {\cdot} |[y,x]|$ after the assignment, where $q_i$ and $p_i$
+% are unknown and must satisfy constraints like $p_{(x,y)} = q_{(x,y)}$,
+% $p_{(y,x)} = q_{(y,x)}$, and $p_0 = q_0 + q_{(x,y)} -
+% q_{(y,x)}$. Finally, we call an off-the-shelf LP solver to minimize
+% the coefficients of the initial potential function. LP solvers are
+% among the most mature constraint solving tools. As a result, the bound
+% derivation works very efficiently in practice.
+
+% \iffull{It might be surprising that we}{We} only track simple linear relations in
+% the logical context $\Gamma$.  While it would of course be possible to keep
+% track of more sophisticated assertions, this simple form is
+% sufficient for the examples we considered and we can efficiently
+% decide queries such as $\Gamma \implies x<y \; ?$ that we make in the
+% assignment rule.  Nevertheless, this logical part of our analysis
+% system is orthogonal to the quantitative part and can be easily
+% extended if necessary.
+
+The concept of a potential function is a generalization of the
+concept of a ranking function.  A potential function can be used like
+a ranking function if we use the tick metric and add the statement
+\code{tick(1)} to every back edge of the program (loops and function
+calls).  However, a potential function is more flexible.  For example,
+we can use a potential function to prove that Example~2 does not
+consume any resources in the tick metric.
+\begin{lstlisting}[basicstyle=\tt\small]
+#\!\!\!\!\!# while (x<y) {tick(-1); x=x+1; tick(1)} #\hfill \textnormal{(Example 2)}#
+\end{lstlisting}
+Similarly we can prove that Example~3 can be bounded by $10|[x,y]|$.
+In both cases, we reason exactly like in the first version of the
+while loop to prove the bound.  Of course, such loops with different
+tick annotations can be seamlessly combined in a larger program.
+\begin{lstlisting}[basicstyle=\tt\small]
+while (x<y) { x=x+1; tick(10); } #\hfill \textnormal{(Example 3)}#
+\end{lstlisting}
+
+\iffull{In general, the potential based approach addresses several challenges
+in resource bound analysis. This includes amortized bounds in which
+individual loop iterations have different resource consumption,
+sequential loops or function calls that require the tracking of size
+changes of variables, and nested loops that interact by modifying the
+same set of variables.}{}
 
 \newlength{\progwidth}
 
@@ -708,102 +810,6 @@ $59|[n,0]| {+} 0.05|[0,y]|$
   0.05|[0,y]|$.}
   \label{fig:ex_list}
 \end{figure*}
-
-The derivation of a resource bound using potential functions is best
-explained by example.  If we use the tick metric that assigns cost $n$
-to the function call \code{tick(n)} and cost $0$ to all other
-operations then the cost of the following example can be bounded by
-$|[x,y]| = \max(y{-}x,0)$.% \footnote{Note that there are no restrictions on
-  % the signs of the input variables in the examples.}
-\begin{lstlisting}[basicstyle=\tt\small]
-while (x<y) { x=x+1; tick(1); } #\hfill \textnormal{(Example 1)}#
-\end{lstlisting}
-To derive this bound, we start with the initial potential $\Phi_0 =
-|[x,y]|$, which
-we also use as the loop invariant.  For the loop body we have (like in
-Hoare logic) to derive a triple like
-$\htriple{\Phi_0}{\code{x=x+1;tick(1)}}{\Phi_0}$.  We can only do so
-if we utilize the fact that $x<y$ at the beginning of the loop body.
-The reasoning then works as follows. We start with the potential
-$|[x,y]|$ and the fact that $|[x,y]| > 0$ before the assignment.  If
-we denote the updated version of $x$ after the assignment by $x'$ then
-the relation $|[x,y]| = |[x',y]| + 1$ between the potential before and
-after the assignment \code{x=x+1} holds.  This means that we have the
-potential $|[x,y]| + 1$ before the statement \code{tick(1)}.  Since
-\code{tick(1)} consumes one resource unit, we end up with potential
-$|[x,y]|$ after the loop body and have established the loop invariant
-again.
-
-\pref{fig:ex1} shows a derivation of the bound
-$\frac{T}{K}{\cdot}|[x,y]|$ on the number of ticks for a generalized
-version of Example~1 in which we increment $x$ by a constant $K>0$ and
-consume $T>0$ resources in each iteration.  The reasoning is similar
-to the one of Example~1 except that we obtain the potential
-$K{\cdot}\frac{T}{K}$ after the assignment.  Note that the logical
-assertions in $\Gamma$ are only used in the rule for the assignment
-\code{x=x+K}.
-
-To the best of our knowledge, no other implemented tool for C is
-currently capable of deriving a tight bound on the cost of such a
-loop.  For $T=1$ (many systems focus on the number of loop iterations
-without a cost model) and $K=10$, KoAT computes the bound $|x| + |y| +
-10$, Rank computes the bound $y-x-7$, and LOOPUS computes the bound
-$y-x-9$.  Only PUBS computes the tight bound $0.1(y-x)$ if we
-translate the program into a term-rewriting system by
-hand. Nevertheless, we will show in \jan{Next section} that the
-potential method makes automatic bound derivation straightforward.
-
-% To automate the reasoning, we first introduce an unknown rational
-% variable for each factor in the potential functions.  We then use our
-% inference rules (see \pref{sec:AAA}) to emit linear constraints on
-% these variables that enforce that variable assignments that respect
-% the constraints correspond to sound potential annotations.  For
-% instance if $K = 1$ in \pref{fig:ex1} then we would have the
-% annotation $q_0 + q_{(x,y)} {\cdot} |[x,y]| + q_{(y,x)} {\cdot}
-% |[y,x]|$ before the assignment and $p_0 + p_{(x,y)} {\cdot} |[x,y]| +
-% p_{(y,x)} {\cdot} |[y,x]|$ after the assignment, where $q_i$ and $p_i$
-% are unknown and must satisfy constraints like $p_{(x,y)} = q_{(x,y)}$,
-% $p_{(y,x)} = q_{(y,x)}$, and $p_0 = q_0 + q_{(x,y)} -
-% q_{(y,x)}$. Finally, we call an off-the-shelf LP solver to minimize
-% the coefficients of the initial potential function. LP solvers are
-% among the most mature constraint solving tools. As a result, the bound
-% derivation works very efficiently in practice.
-
-% \iffull{It might be surprising that we}{We} only track simple linear relations in
-% the logical context $\Gamma$.  While it would of course be possible to keep
-% track of more sophisticated assertions, this simple form is
-% sufficient for the examples we considered and we can efficiently
-% decide queries such as $\Gamma \implies x<y \; ?$ that we make in the
-% assignment rule.  Nevertheless, this logical part of our analysis
-% system is orthogonal to the quantitative part and can be easily
-% extended if necessary.
-
-Note that our notion of a potential function is a generalization of the
-concept of a ranking function.  A potential function can be used like
-a ranking function if we use the tick metric and add the statement
-\code{tick(1)} to every back edge of the program (loops and function
-calls).  However, a potential function is more flexible.  For example,
-we can use a potential function to prove that Example~2 does not
-consume any resources in the tick metric.
-\begin{lstlisting}[basicstyle=\tt\small]
-#\!\!\!\!\!# while (x<y) {tick(-1); x=x+1; tick(1)} #\hfill \textnormal{(Example 2)}#
-\end{lstlisting}
-Similarly we can prove that Example~3 can be bounded by $10|[x,y]|$.
-In both cases, we reason exactly like in the first version of the
-while loop to prove the bound.  Of course, such loops with different
-tick annotations can be seamlessly combined in a larger program.
-\begin{lstlisting}[basicstyle=\tt\small]
-while (x<y) { x=x+1; tick(10); } #\hfill \textnormal{(Example 3)}#
-\end{lstlisting}
-
-In general, the potential based approach addresses several challenges
-in resource bound analysis. This includes amortized bounds in which
-individual loop iterations have different resource consumption,
-sequential loops or function calls that require the tracking of size
-changes of variables, and nested loops that interact by modifying the
-same set of variables.
-
-
 
 
 
