@@ -1,7 +1,7 @@
 % Comment for anonymization
 % Add preprint option for the extended version
 % Also look for "SHORT" comments
-\def\fullversion{}
+% \def\fullversion{}
 
 \documentclass[nocopyrightspace,preprint,pldi]{sigplanconf-pldi15}
 
@@ -1515,132 +1515,7 @@ x y| \leq u$ for a constant $u$ then we can transfer constant potential
 $u{\cdot}q_{xy}$ to the interval potential $q_{xy} {\cdot} |\inter x y|$
 without gaining potential.
 
-\sectskip
-\section{Automatic Inference via LP Solving}
-\label{sec:lp}
-\aftersectskip
-
-We separate the search of a derivation into two steps.  As a first
-step we go through the whole program and apply inductively the
-derivation rules of the automatic amortized analysis.  During this
-process our tool uses symbolic names for the rational coefficients
-$(q_i)$ in the rules.  Every time a linear constraint must be
-satisfied by these coefficients, it is recorded in a global list using
-the symbolic names.  We then feed the collected constraints to an
-off the shelf LP solver. (We currently use Coin-Or's CLP.)
-If the solver successfully finds a solution, we know that a derivation
-exists for the considered program.  We can then extract the initial
-$Q$ from the solver and get a resource bound for the program.  To get
-a full derivation we simply extract the complete solution from the
-solver, and apply it to the symbolic names $(q_i)$ of the coefficients
-in the derivation.  If the LP solver fails to find a solution, an
-error is reported to the user.
-
-\pref{fig:derivation} contains an example derivation as it is produced
-by our automatic analyzer.  The upper case letters (with optional
-superscript) such as $Q^\text{de}$ stand for a family of rational
-variables that are later part of the constraint system that is passed
-to the LP solver.  For example $Q^\text{de}$ stands for the potential
-function $q^\text{de}_0 + q^\text{de}_{x,0} |[x,0]| +
-q^\text{de}_{0,x} |[0,x]| + q^\text{de}_{x,10} |[x,10]| +
-q^\text{de}_{10,x} |[10,x]| + q^\text{de}_{0,10} |[0,10]|$, where the
-variables such as $q^\text{de}_{x,10}$ are yet unknown and later
-instantiated by the LP solver.  The derivation with the instantiated
-variables is then a sound derivation in the verified program logic.
-
-The rules are syntax directed and applied inductively.  That means
-that we follow the inductive definition of the syntax.  For example,
-the outermost expression is a loop, so we use the rule \text{Q:Loop}
-at the root of the derivation tree.  At this point, we don't know yet
-whether a loop invariant exists.  But we produce the constraints
-$Q^\text{lo} = P^\text{lo}$ which is short for the following
-constraint set.
-$$
-\begin{array}{lll}
-q^\text{lo}_0 = p^\text{lo}_0 &
-q^\text{lo}_{x,0}= p^\text{lo}_{x,0} &
-q^\text{lo}_{0,x}= p^\text{lo}_{0,x} \\
-q^\text{lo}_{x,10}= p^\text{lo}_{x,10} &
-q^\text{lo}_{10,x}= p^\text{lo}_{10,x} &
-q^\text{lo}_{0,10}= p^\text{lo}_{0,10}
-\end{array}
-$$
-%
-This constraint set expresses the fact that the potential before and
-after the loop body is equal and thus constitutes an invariant.
-
-In general, the weakening rule is applied after every syntax directed
-rule.  Applying weakening everywhere does not lead to performance
-problems. However, it can be left out in practice at some places to
-increase the efficiency of the tool.
-
-The weakening operation $\succeq_{\Gamma}$ is defined in the rule
-\textsc{Relax}.  For example, we have
-$$
-\begin{array}{lll}
-P^\text{de} \succeq_{(\cdot)} P^\text{we}
-& \equiv &  p^\text{we}_{0,10} \leq p^\text{de}_{0,10} + u_{0,10} - v_{0.10}  \\
-& \land &   p^\text{we}_{0} \leq p^\text{de}_{0} - 10 {\cdot} u_{0,10} + 10 {\cdot} v_{0.10}  \\
-& \land &  \forall (\alpha, \beta) \neq (0,10)  . \, p^\text{we}_{\alpha,\beta} \leq p^\text{de}_{\alpha,\beta} \;\;\; .
-\end{array}
-$$
-
-After the constraint generation, the LP solver is provided with a
-so-called objective function that it will minimize.  We wish to
-minimize the initial potential, which is the resource bound on the
-whole program.  Here it is given by $Q$.  Moreover, we would like to
-express that minimization of linear potential such as
-$$
-q_{10,x} |[10,x]|
-$$
-takes priority over minimization of constant potential such as
-$$
-q_{0,10} |[0,10]| \; .
-$$
-
-To this end, modern LP solvers support efficient resolving of
-constraint sets with additional constraints: First we take our initial
-constraint set as given in \pref{fig:derivation}.  We then as the
-solver to find a solution that satisfies the constraint and minimizes
-the linear expression
-$$
-q_{x,0} + 10000{\cdot}q_{0,x} + 10{\cdot}q_{x,10} + 9990q_{10,x} \; .
-$$
-Note the linear penalties (this is a random choice) that we give to
-some of the factors.  We use it to express that the interval $[10,x]$
-is smaller than the interval $[0,x]$ and, similarly, that the interval
-$[x,0]$ is smaller than the interval $[x,10]$.
-
-The LP solver now returns a solution of the constraint set and an
-objective value, that is, a mapping from variables to floating-point
-numbers and the value of the objective function with this
-instantiation.  The solver also memorizes the optimization path that
-led to the optimal solution.  In this case, the objective value would
-be
-$
-5000
-$
-since the LP solver assigns $q_{0,x} = 0.5$ and $q_{*} = 0$ otherwise.
-We now add the constraint
-$$
-q_{x,0} + 10000{\cdot}q_{0,x} + 10{\cdot}q_{x,10} + 9990q_{10,x} = 5000
-$$
-to our constraint set and ask the solver to optimize the objective
-function
-$$
-q_0 + 11{\cdot}q_{0,10} \; .
-$$
-This happens in almost no time in practice.
-
-The final solution is $q_{0,x} = 0.5$ and $q_{*} = 0$ otherwise.  Thus
-the derived bound is $0.5 |[0,x]|$.
-
-Another interesting note is that the constraints that we generate have
-a particularly simple form that is known as \emph{network problem}.
-Such problems can be solved in linear time in practice.
-
 \newcommand{\loopbody}[0]{\ensuremath{\code{if~(x - 10 \geq 0)~\{x=x{-}10; tick(5);\}~else~break;}}}
-
 \begin{figure*}
 \centering
 \footnotesize
@@ -1694,7 +1569,8 @@ Such problems can be solved in linear time in practice.
 { (\cdot, B); (\cdot, Q) \vdash \code{loop}~{\loopbody} \dashv (x {<} 10, P)
 }
 \end{mathpar}
-\flushleft Constraints:
+\flushleft
+\begin{tabular}{l}Constraints:\end{tabular}
 $$
 \begin{array}{lll}
 P {=} B^\text{lo} \land Q {=} Q^\text{lo} {=} P^\text{lo}
@@ -1719,24 +1595,131 @@ Q^\text{ti} {=} P^\text{ti} + 5
               p^\text{de}_{\alpha,\beta} {=} q^\text{de}_{\alpha,\beta}
 \end{array}
 $$
-\vspace{1.5ex}
-
-
 \begin{tabular}{l@{\hspace{5em}}l}
- Linear Objective Function: &  Constant Objective Function: \\
-\hspace{3em} $
-q_{x,0} + 10000{\cdot}q_{0,x} + 10{\cdot}q_{x,10} + 9990q_{10,x}
-$
-&
-\hspace{3em}
-$
-q_0 + 11{\cdot}q_{0,10}
-$
+  Linear Objective Function: $
+    1{\cdot}q_{x,0} + 10000{\cdot}q_{0,x} + 11{\cdot}q_{x,10} + 9990{\cdot}q_{10,x}
+  $
+& Constant Objective Function: $
+    1{\cdot}q_0 + 11{\cdot}q_{0,10}
+  $
 \end{tabular}
-
 \caption{An example derivation as produced by the automatic tool.}
 \label{fig:derivation}
 \end{figure*}
+
+\sectskip
+\section{Automatic Inference via LP Solving}
+\label{sec:lp}
+\aftersectskip
+
+We separate the search of a derivation into two steps.  As a first
+step we go through the whole program and apply inductively the
+derivation rules of the automatic amortized analysis.  During this
+process our tool uses symbolic names for the rational coefficients
+$(q_i)$ in the rules.  Every time a linear constraint must be
+satisfied by these coefficients, it is recorded in a global list using
+the symbolic names.  We then feed the collected constraints to an
+off the shelf LP solver. (We currently use Coin-Or's CLP.)
+If the solver successfully finds a solution, we know that a derivation
+exists for the considered program.  We can then extract the initial
+$Q$ from the solver and get a resource bound for the program.  To get
+a full derivation we simply extract the complete solution from the
+solver, and apply it to the symbolic names $(q_i)$ of the coefficients
+in the derivation.  If the LP solver fails to find a solution, an
+error is reported to the user.
+
+\pref{fig:derivation} contains an example derivation as it is produced
+by our automatic analyzer.  The upper case letters (with optional
+superscript) such as $Q^\text{de}$ are families of
+variables that are later part of the constraint system that is passed
+to the LP solver.  For example $Q^\text{de}$ stands for the potential
+function $q^\text{de}_0 + q^\text{de}_{x,0} |[x,0]| +
+q^\text{de}_{0,x} |[0,x]| + q^\text{de}_{x,10} |[x,10]| +
+q^\text{de}_{10,x} |[10,x]| + q^\text{de}_{0,10} |[0,10]|$, where the
+variables such as $q^\text{de}_{x,10}$ are yet unknown and later
+instantiated by the LP solver.
+
+The rules are syntax directed and applied inductively.  For example,
+the outermost expression is a loop, so we use the rule \text{Q:Loop}
+at the root of the derivation tree.  At this point, we don't know yet
+whether a loop invariant exists.  But we produce the constraints
+$Q^\text{lo} = P^\text{lo}$\iffull{ which is short for the following
+constraint set.
+$$
+\begin{array}{lll}
+q^\text{lo}_0 = p^\text{lo}_0 &
+q^\text{lo}_{x,0}= p^\text{lo}_{x,0} &
+q^\text{lo}_{0,x}= p^\text{lo}_{0,x} \\
+q^\text{lo}_{x,10}= p^\text{lo}_{x,10} &
+q^\text{lo}_{10,x}= p^\text{lo}_{10,x} &
+q^\text{lo}_{0,10}= p^\text{lo}_{0,10}
+\end{array}
+$$}{.}
+%
+This constraint expresses the fact that the potential before and
+after the loop body is equal and thus constitutes an invariant.
+
+In general, the weakening rule can be applied after every syntax directed
+rule.  However, it can be left out in practice at some places to
+increase the efficiency of the tool.
+The weakening operation $\succeq_{\Gamma}$ is defined by the rule
+\textsc{Relax}, it is parameterized by a logical context that is
+used to gather information on interval sizes.  For example, we have
+$$
+\begin{array}{lll}
+P^\text{de} \succeq_{(\cdot)} P^\text{we}
+& \equiv &  p^\text{we}_{0,10} \leq p^\text{de}_{0,10} + u_{0,10} - v_{0.10}  \\
+& \land &   p^\text{we}_{0} \leq p^\text{de}_{0} - 10 {\cdot} u_{0,10} + 10 {\cdot} v_{0.10}  \\
+& \land &  \forall (\alpha, \beta) \neq (0,10)  . \, p^\text{we}_{\alpha,\beta} \leq p^\text{de}_{\alpha,\beta} \;\;\; .
+\end{array}
+$$
+
+After the constraint generation, the LP solver is provided with a
+so-called objective function to minimize.  We wish to
+minimize the initial potential, which constitutes the resource bound on the
+whole program.  Here it is given by $Q$.  Moreover, we would like to
+express that minimization of linear potential such as
+$q_{10,x} |[10,x]|$
+takes priority over minimization of constant potential such as
+$q_{0,10} |[0,10]|$.
+
+To get a tight bound, we use modern LP solvers that allow constraint
+solving and minimization at the same time:  First we consider our initial
+constraint set as given in \pref{fig:derivation} and ask the
+solver to find a solution that satisfies the constraints and minimizes
+the linear expression
+$$
+1{\cdot}q_{x,0} + 10000{\cdot}q_{0,x} + 11{\cdot}q_{x,10} + 9990{\cdot}q_{10,x} \; .
+$$
+The penalties given to certain factors are used
+to prioritize certain intervals.  For example, a bound with
+$[10,x]$ will be prefered to another with $[0,x]$ because $|[10,x]|
+\le |[0,x]|$.
+%
+The LP solver now returns a solution of the constraint set and an
+objective value\iffull{, that is, a mapping from variables to floating-point
+numbers and the value of the objective function with this
+instantiation}{}.  The solver also memorizes the optimization path that
+led to the optimal solution.  In this case, the objective value would
+be 5000
+since the LP solver assigns $q_{0,x} = 0.5$ and $q_{*} = 0$ otherwise.
+We now add the constraint
+$$
+1{\cdot}q_{x,0} + 10000{\cdot}q_{0,x} + 11{\cdot}q_{x,10} + 9990{\cdot}q_{10,x}
+ \le 5000
+$$
+to our constraint set and ask the solver to optimize the objective
+function
+$$
+q_0 + 11{\cdot}q_{0,10} \; .
+$$
+This happens in almost no time in practice.
+The final solution is $q_{0,x} = 0.5$ and $q_{*} = 0$ otherwise.  Thus
+the derived bound is $0.5 |[0,x]|$.
+
+Another interesting note is that the constraints that we generate have
+a particularly simple form that is known as \emph{network problem}.
+Such problems can be solved in linear time in practice.
 
 
 \begin{figure*}
