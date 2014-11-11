@@ -403,15 +403,8 @@ In summary, we make the following \emph{contributions}.
 
 
 \sectskip
-\section{Overview and Examples}
+\section{The Potential Method}
 \aftersectskip
-
-In this section, we informally introduce the automatic amortized
-analysis for Clight programs and demonstrate the technique with
-example bounds that we derive step-by-step following our analysis
-system.
-
-\subsection{Bounding Resource Usage with Potential Functions}
 
 The idea that underlies the design of our framework is amortized
 analysis~\cite{Tarjan-amort}.  Assume that a program $S$ executes
@@ -464,30 +457,26 @@ in a flexible and compositional way, which, as a side effect, produces
 a certificate for the derived resource bound.
 
 
-% Potential functions can access the whole program state, so this
-% framework can readily be used to derive bounds that depend on the
-% memory contents.
+% \subsection{Automating  Amortized Analysis}
 
-\subsection{Automating  Amortized Analysis}
-
-To make amortized reasoning feasible on large code bases, we would
-like to automatically infer the potential functions.  The first step
-towards this goal is to reduce our search space by fixing the shape of
-potential functions $\Phi$.  In this paper, we focus on a form that
-can express tight bounds for many typical programs and allows
-inference view \emph{linear programming}:
-%
-$$
-\Phi(\state) = q_0 + \sum_{x,y \in \dom{\state}}
-  q_{(x,y)} \cdot |[\state(x),\state(y)]|
-$$
-where $q_{(x,y)} \in \Qplusz$ and $|[a,b]| = \max(b-a,0)$.  For now, we assume
-that a program state is a simple map from program variables to integers
-and we treat constants as program variables (that cannot be changed
-by the program text).  For instance, $q_{(0,x)}|[0,x]|$ always appear in
-the sum.  % We then develop an inference rule for each syntactic construct
-% that derives a triple $\htriple{\Phi}P{\Phi'}$ sound in the sense of
-% the previous section.
+% To make amortized reasoning feasible on large code bases, we would
+% like to automatically infer the potential functions.  The first step
+% towards this goal is to reduce our search space by fixing the shape of
+% potential functions $\Phi$.  In this paper, we focus on a form that
+% can express tight bounds for many typical programs and allows
+% inference view \emph{linear programming}:
+% %
+% $$
+% \Phi(\state) = q_0 + \sum_{x,y \in \dom{\state}}
+%   q_{(x,y)} \cdot |[\state(x),\state(y)]|
+% $$
+% where $q_{(x,y)} \in \Qplusz$ and $|[a,b]| = \max(b-a,0)$.  For now, we assume
+% that a program state is a simple map from program variables to integers
+% and we treat constants as program variables (that cannot be changed
+% by the program text).  For instance, $q_{(0,x)}|[0,x]|$ always appear in
+% the sum.  % We then develop an inference rule for each syntactic construct
+% % that derives a triple $\htriple{\Phi}P{\Phi'}$ sound in the sense of
+% % the previous section.
 
 \begin{figure}[t]
   \centering
@@ -507,11 +496,12 @@ while (x+K<=y) {
 ${\color{blue}%
  \dashv x \geq y; 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]|}$
 \end{lstlisting}
-  \caption{Automatic derivation of a tight bound on the number of
+  \caption{Derivation of a tight bound on the number of
     ticks for a standard \emph{for loop}.  The parameters $K>0$ and
-    $T>0$ are not program variables but denote concrete constants in
-    the program.  The reasoning works uniformly for all such $K$ and
-    $T$.}
+    $T>0$ are not program variables but denote concrete constants. 
+    % The reasoning works uniformly for all such $K$ and
+    % $T$.
+  }
   \label{fig:ex1}
 \end{figure}
 
@@ -676,29 +666,30 @@ $59|[n,0]| {+} 0.05|[0,y]|$
   \label{fig:ex_list}
 \end{figure*}
 
-The automatic derivation of a resource bound using these potential
-functions is best explained by example.  If we use the tick metric
-that assigns cost $n$ to the function call \code{tick(n)} and cost $0$
-to all other operations then the cost of the following example can be
-bounded by $|[x,y]|$.% \footnote{Note that there are no restrictions on
+The derivation of a resource bound using potential functions is best
+explained by example.  If we use the tick metric that assigns cost $n$
+to the function call \code{tick(n)} and cost $0$ to all other
+operations then the cost of the following example can be bounded by
+$|[x,y]| = \max(y{-}x,0)$.% \footnote{Note that there are no restrictions on
   % the signs of the input variables in the examples.}
 \begin{lstlisting}[basicstyle=\tt\small]
 while (x<y) { x=x+1; tick(1); } #\hfill \textnormal{(Example 1)}#
 \end{lstlisting}
-To derive this bound in our amortized analysis, we start with
-the initial potential $\Phi_0 = |[x,y]|$ (short for $\Phi_0(\state)
-= |[\state(x),\state(y)]|$) which we also use as the loop invariant.
-For the loop body we have (like in Hoare logic) to derive a triple
-like $\htriple{\Phi_0}{\code{x=x+1;tick(1)}}{\Phi_0}$.  We can only do
-so if we utilize the fact that $x<y$ at the beginning of the loop body.
-The reasoning then works as follows. We start with the potential $|[x,y]|$
-and the fact that $|[x,y]| > 0$ before the assignment.  If we denote the
-updated version of $x$ after the assignment by $x'$ then the relation
-$|[x,y]| = |[x',y]| + 1$ between the potential before and after the
-assignment \code{x=x+1} holds.  This means that we have the potential
-$|[x,y]| + 1$ before the statement \code{tick(1)}.  Since \code{tick(1)}
-consumes one resource unit, we end up with potential $|[x,y]|$ after
-the loop body and have established the loop invariant again.
+To derive this bound, we start with the initial potential $\Phi_0 =
+|[x,y]|$, which
+we also use as the loop invariant.  For the loop body we have (like in
+Hoare logic) to derive a triple like
+$\htriple{\Phi_0}{\code{x=x+1;tick(1)}}{\Phi_0}$.  We can only do so
+if we utilize the fact that $x<y$ at the beginning of the loop body.
+The reasoning then works as follows. We start with the potential
+$|[x,y]|$ and the fact that $|[x,y]| > 0$ before the assignment.  If
+we denote the updated version of $x$ after the assignment by $x'$ then
+the relation $|[x,y]| = |[x',y]| + 1$ between the potential before and
+after the assignment \code{x=x+1} holds.  This means that we have the
+potential $|[x,y]| + 1$ before the statement \code{tick(1)}.  Since
+\code{tick(1)} consumes one resource unit, we end up with potential
+$|[x,y]|$ after the loop body and have established the loop invariant
+again.
 
 \pref{fig:ex1} shows a derivation of the bound
 $\frac{T}{K}{\cdot}|[x,y]|$ on the number of ticks for a generalized
@@ -707,40 +698,43 @@ consume $T>0$ resources in each iteration.  The reasoning is similar
 to the one of Example~1 except that we obtain the potential
 $K{\cdot}\frac{T}{K}$ after the assignment.  Note that the logical
 assertions in $\Gamma$ are only used in the rule for the assignment
-\code{x=x+K}.  To the best of our knowledge, no other implemented tool
-for C is currently capable of deriving a tight bound on the cost of
-such a loop.  For $T=1$ (many systems focus on the number of loop
-iterations without a cost model) and $K=10$, KoAT computes the bound
-$|x| + |y| + 10$, Rank computes the bound $y-x-7$, and LOOPUS computes
-the bound $y-x-9$.  Only PUBS computes the tight bound $0.1(y-x)$ if
-we translate the program into a term-rewriting system by hand.
+\code{x=x+K}.  
 
-To automate the reasoning, we first introduce an unknown rational
-variable for each factor in the potential functions.  We then use our
-inference rules (see \pref{sec:AAA}) to emit linear constraints on
-these variables that enforce that variable assignments that respect
-the constraints correspond to sound potential annotations.  For
-instance if $K = 1$ in \pref{fig:ex1} then we would have the
-annotation $q_0 + q_{(x,y)} {\cdot} |[x,y]| + q_{(y,x)} {\cdot}
-|[y,x]|$ before the assignment and $p_0 + p_{(x,y)} {\cdot} |[x,y]| +
-p_{(y,x)} {\cdot} |[y,x]|$ after the assignment, where $q_i$ and $p_i$
-are unknown and must satisfy constraints like $p_{(x,y)} = q_{(x,y)}$,
-$p_{(y,x)} = q_{(y,x)}$, and $p_0 = q_0 + q_{(x,y)} -
-q_{(y,x)}$. Finally, we call an off-the-shelf LP solver to minimize
-the coefficients of the initial potential function. LP solvers are
-among the most mature constraint solving tools. As a result, the bound
-derivation works very efficiently in practice.
+To the best of our knowledge, no other implemented tool for C is
+currently capable of deriving a tight bound on the cost of such a
+loop.  For $T=1$ (many systems focus on the number of loop iterations
+without a cost model) and $K=10$, KoAT computes the bound $|x| + |y| +
+10$, Rank computes the bound $y-x-7$, and LOOPUS computes the bound
+$y-x-9$.  Only PUBS computes the tight bound $0.1(y-x)$ if we
+translate the program into a term-rewriting system by
+hand. Nevertheless, we will show in \jan{Next section} that the
+potential method makes automatic bound derivation straightforward.
 
-\iffull{It might be surprising that we}{We} only track simple linear relations in
-the logical context $\Gamma$.  While it would of course be possible to keep
-track of more sophisticated assertions, this simple form is
-sufficient for the examples we considered and we can efficiently
-decide queries such as $\Gamma \implies x<y \; ?$ that we make in the
-assignment rule.  Nevertheless, this logical part of our analysis
-system is orthogonal to the quantitative part and can be easily
-extended if necessary.
+% To automate the reasoning, we first introduce an unknown rational
+% variable for each factor in the potential functions.  We then use our
+% inference rules (see \pref{sec:AAA}) to emit linear constraints on
+% these variables that enforce that variable assignments that respect
+% the constraints correspond to sound potential annotations.  For
+% instance if $K = 1$ in \pref{fig:ex1} then we would have the
+% annotation $q_0 + q_{(x,y)} {\cdot} |[x,y]| + q_{(y,x)} {\cdot}
+% |[y,x]|$ before the assignment and $p_0 + p_{(x,y)} {\cdot} |[x,y]| +
+% p_{(y,x)} {\cdot} |[y,x]|$ after the assignment, where $q_i$ and $p_i$
+% are unknown and must satisfy constraints like $p_{(x,y)} = q_{(x,y)}$,
+% $p_{(y,x)} = q_{(y,x)}$, and $p_0 = q_0 + q_{(x,y)} -
+% q_{(y,x)}$. Finally, we call an off-the-shelf LP solver to minimize
+% the coefficients of the initial potential function. LP solvers are
+% among the most mature constraint solving tools. As a result, the bound
+% derivation works very efficiently in practice.
 
-\ifx\fullversion\undefined{}\else{
+% \iffull{It might be surprising that we}{We} only track simple linear relations in
+% the logical context $\Gamma$.  While it would of course be possible to keep
+% track of more sophisticated assertions, this simple form is
+% sufficient for the examples we considered and we can efficiently
+% decide queries such as $\Gamma \implies x<y \; ?$ that we make in the
+% assignment rule.  Nevertheless, this logical part of our analysis
+% system is orthogonal to the quantitative part and can be easily
+% extended if necessary.
+
 Note that our notion of a potential function is a generalization of the
 concept of a ranking function.  A potential function can be used like
 a ranking function if we use the tick metric and add the statement
@@ -758,21 +752,100 @@ tick annotations can be seamlessly combined in a larger program.
 \begin{lstlisting}[basicstyle=\tt\small]
 while (x<y) { x=x+1; tick(10); } #\hfill \textnormal{(Example 3)}#
 \end{lstlisting}
-}\fi
+
+In general, the potential based approach addresses several challenges
+in resource bound analysis. This includes amortized bounds in which
+individual loop iterations have different resource consumption,
+sequential loops or function calls that require the tracking of size
+changes of variables, and nested loops that interact by modifying the
+same set of variables.
 
 
-\subsection{Advantages of the Potential Method }
 
-The potential based approach addresses several challenges in resource
-bound analysis. This includes amortized bounds in which individual
-loop iterations have different resource consumption, sequential loops
-or function calls that require the tracking of size changes of
-variables, and nested loops that interact by modifying the same set of
-variables.
 
-\paragraph{Challenging Loop Patterns} As mentioned earlier, the
-automatic analysis can handle challenging example programs without
-special tricks or techniques.  Examples \emph{speed\_1} and
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\sectskip
+\section{Compositional Resource-Bound Analysis}
+\label{sec:AAA}
+\aftersectskip
+
+In this section we describe the high-level design of the automatic
+amortized analysis that we implemented in $\toolname$. We then explain
+and motivate our design decisions with examples.
+
+\paragraph{Linear Potential Functions.}
+
+To find resource bounds automatically, we first need to restrict our
+search space.  In this work, we focus on a form that can express tight
+bounds for many typical programs and allows inference view
+\emph{linear programming}.  The general form of \emph{potential
+  functions} that we consider is
+$$
+  \Phi(\state) = q_0 + \sum_{x, y \in \dom\state \land x \neq y}
+    q_{(x, y)} \cdot |\inter {\state(x)} {\state(y)}| \, .
+$$
+%
+Here $\state : (\text{Locals} \to \Z) \times (\text{Globals} \to \Z)$
+is a simplified program state that maps variable names to integers,
+$|\inter a b| = \max(0,b-a)$, and $q_i \in \Qplusz$.  To simplify the
+references to the linear coefficients $q_i$, we introduce an \emph{index
+  set} $I$.  This set is defined to be $\{0\} \cup \{(x, y) \mid x, y
+\in \Var \land x \neq y \}$.  Each index $i$ corresponds to a \emph{base function}
+$f_i$ in the potential function: $0$ corresponds to the constant
+function $\state \mapsto 1$, and $(x,y)$ corresponds to $\state \mapsto
+|\inter {\state(x)} {\state(y)}|$.  Using these notations we can
+rewrite the above equality as\iffull{
+$$ \Phi(\state) = \sum_{i \in I} q_i f_i(\state).$$}{
+$\Phi(\state) = \sum_{i \in I} q_i f_i(\state)$.}%
+We often write $xy$ to denote the
+index $(x,y)$.  \iffull{The family $(f_i)_{i\in I}$ is actually a basis (in
+the linear-algebra sense) for potential functions.}{}  This allows us to
+uniquely represent any linear potential function
+$\Phi$ as a \emph{quantitative annotation} $Q = (q_i)_{i \in I}$, that
+is, a family of \ifshort{non-negative}{} rational numbers where only
+a finite number of elements are not zero. \iffull{ For soundness, we
+  require that potential functions always give non-negative results.
+  This is acheived by restricting coefficients in a quantitative
+  annotation to be always non-negative.}{}
+
+In the potential functions, we treat constants as global variables
+that cannot be assigned to.  For example, if the program contains the
+constant $8128$ then we have a variable $c_{8128}$ and
+$\state(c_{8128}) = 8128$.  We assume that every program state
+includes the constant $c_0$.
+
+\paragraph{Abstract Program State.}
+
+In addition to the quantitative annotations our automatic amortized
+analysis needs to maintain a minimal abstract state to justify certain
+operations on quantitative annotations.  For example when analyzing
+the code $x \gets x + y$, it is helpful to know the sign of $y$ to
+determine which intervals will increase or decrease.  The knowledge
+needed by our rules can be inferred by local reasoning (i.e. in
+basic blocks without recursion and loops) within usual theories
+(e.g. Presburger arithmetic or bit vectors).
+
+In contrast to the quantitative annotations, logical contexts $\Gamma$
+in the presented inference system are left abstract.  This allows for
+simpler rules and leaves room for future improvements.
+Our implementation finds these logical contexts using abstract
+interpretation using the domain of linear inequalities.  We observed that
+the rules of the analysis often requires only minimal local knowledge.
+This means that it is not necessary for us to compute precise loop
+invariants and only a rough fixpoint (e.g. keeping only inequalities on
+variables unchanged by the loop) is sufficient to obtain good bounds.
+
+
+\paragraph{Examples: Challenging Loop Patterns.}
+
+One might think that our set of potential functions is too simplistic
+to be able to express and prove bounds for realistic
+programs. Nevertheless, we can handle challenging example programs
+without special tricks or techniques.  Examples \emph{speed\_1} and
 \emph{speed\_2}, that are taken from previous work~\cite{GulwaniMC09},
 demonstrate that our method can handle \emph{tricky iteration
   patterns}.  The SPEED tool~\cite{GulwaniMC09} derives the same
@@ -860,16 +933,11 @@ $\;\;\;\;\;\;\,0.67 |[y,x]|\;\;$ (\code{count\_up(x,y)})
 \end{figure}
 
 
-
-\paragraph{Compositionality}
+\paragraph{Examples: Compositionality.}
 
 With two concrete examples from open-source projects we demonstrate
 that the compositionality of our method is indeed needed in the
 analysis of common code.
-
-\jan{I don't like to talk about ``the reader''. Often you can leave it
-  out. It is fine to address the reader with ``you''. See BUGS in
-  Writing.}
 
 The following example is typical in cryptographic primitives
 implementations.  These primitives work by block, so when data of
@@ -940,79 +1008,6 @@ prove the termination of the loop and LOOPUS derives the quadratic bound
 $(h-l-1)^2$.  Following the classic technique, these tools try to find one
 linear ranking-function for each loop and combine them multiplicatively
 or additively, resulting in a loose quadratic bound or no bound at all.
-
-\paragraph{User Guidance for Non-Linear Bounds}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\sectskip
-\section{Automated Reasoning with \toolname}
-\label{sec:AAA}
-\aftersectskip
-
-In this section we present formally the analysis that we
-use in our implementation to derive resource bounds for C code.
-
-\paragraph{Linear Potential Functions.}
-
-To find resource bounds automatically, we first need to restrict our
-search space.  This is done by focusing on bounds that have a certain
-shape.  The general form of \emph{potential functions} that we consider is
-$$
-  \Phi(\state) = q_0 + \sum_{x, y \in \dom\state \land x \neq y}
-    q_{(x, y)} \cdot |\inter {\state(x)} {\state(y)}| \, .
-$$
-%
-Here $\state : (\text{Locals} \to \Z) \times (\text{Globals} \to \Z)$
-is a simplified program state that maps variable names to integers,
-$|\inter a b| = \max(0,b-a)$, and $q_i \in \Qplusz$.  To simplify the
-references to the linear coefficients $q_i$, we introduce an \emph{index
-  set} $I$.  This set is defined to be $\{0\} \cup \{(x, y) \mid x, y
-\in \Var \land x \neq y \}$.  Each index $i$ corresponds to a \emph{base function}
-$f_i$ in the potential function: $0$ corresponds to the constant
-function $\state \mapsto 1$, and $(x,y)$ corresponds to $\state \mapsto
-|\inter {\state(x)} {\state(y)}|$.  Using these notations we can
-rewrite the above equality as\iffull{
-$$ \Phi = \sum_{i \in I} q_i f_i.$$}{
-$\Phi = \sum_{i \in I} q_i f_i$.}%
-We often write $xy$ to denote the
-index $(x,y)$.  \iffull{The family $(f_i)_{i\in I}$ is actually a basis (in
-the linear-algebra sense) for potential functions.}{}  This allows us to
-uniquely represent any linear potential function
-$\Phi$ as a \emph{quantitative annotation} $Q = (q_i)_{i \in I}$, that
-is, a family of \ifshort{non-negative}{} rational numbers where only
-a finite number of elements are not zero. \iffull{ For soundness, we
-  require that potential functions always give non-negative results.
-  This is acheived by restricting coefficients in a quantitative
-  annotation to be always non-negative.}{}
-
-In the potential functions, we treat constants as global variables
-that cannot be assigned to.  For example, if the program contains the
-constant $8128$ then we have a variable $c_{8128}$ and
-$\state(c_{8128}) = 8128$.  We assume that every program state
-includes the constant $c_0$.
-
-\paragraph{Abstract Program State.}
-
-In addition to the quantitative annotations our automatic amortized
-analysis needs to maintain a minimal abstract state to justify certain
-operations on quantitative annotations.  For example when analyzing
-the code $x \gets x + y$, it is helpful to know the sign of $y$ to
-determine which intervals will increase or decrease.  The knowledge
-needed by our rules can be inferred by local reasoning (i.e. in
-basic blocks without recursion and loops) within usual theories
-(e.g. Presburger arithmetic or bit vectors).
-
-In contrast to the quantitative annotations, logical contexts $\Gamma$
-in the presented inference system are left abstract.  This allows for
-simpler rules and leaves room for future improvements.
-Our implementation finds these logical contexts using abstract
-interpretation using the domain of linear inequalities.  We observed that
-the rules of the analysis often requires only minimal local knowledge.
-This means that it is not necessary for us to compute precise loop
-invariants and only a rough fixpoint (e.g. keeping only inequalities on
-variables unchanged by the loop) is sufficient to obtain good bounds.
 
 
 \iffull{
@@ -1290,10 +1285,16 @@ variables unchanged by the loop) is sufficient to obtain good bounds.
 \end{figure*}
 }{}
 
-\paragraph{Judgements of the Automatic Analysis.}
 
-The inference system for the automatic amortized analysis is defined
-in~\pref{fig:auto}.  The inference rules derive judgements of the form
+\section{Derivation System}
+
+In the following we describe the local and compositional derivation
+rules of the automatic amortized analysis.
+
+\paragraph{Judgements.}
+
+The derivation system for the automatic amortized analysis is defined
+in~\pref{fig:auto}.  The derivation rules derive judgements of the form
 $$
   (\Gamma_B, Q_B); (\Gamma_R, Q_R);
     (\Gamma, Q) \vdash S \dashv (\Gamma', Q').
@@ -1350,7 +1351,7 @@ semantics.  Non-linear operations such as $x \gets z*y$ or $x \gets
 a[y]$ are simply handled by assigning zero potential to coefficients
 like $q_{xa}$ and $q_{ax}$ that contain $x$ after the assignment.
 
-\paragraph{Inference Rules.}
+\paragraph{Derivation Rules.}
 
 The rules of our derivation system must serve two purposes.  They must
 \emph{attach} potential to certain program variable intervals and use
@@ -1489,7 +1490,7 @@ without gaining potential.
 
 We separate the search of a derivation into two steps.  As a first
 step we go through the whole program and apply inductively the
-inference rules of the automatic amortized analysis.  During this
+derivation rules of the automatic amortized analysis.  During this
 process our tool uses symbolic names for the rational coefficients
 $(q_i)$ in the rules.  Every time a linear constraint must be
 satisfied by these coefficients, it is recorded in a global list using
@@ -2164,6 +2165,14 @@ weakening because we have to show that the preconditions of the rules
 \section{Logical State and User Interaction}
 \label{sec:anno}
 \aftersectskip
+
+
+\jan{ the following should go somewhere here:
+
+Note that potential functions can access the whole program state, so
+this framework can readily be used to derive bounds that depend on the
+memory contents.
+}
 
 \begin{figure}
 \center
