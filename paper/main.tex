@@ -119,31 +119,64 @@
 
 
 \begin{abstract}
-This paper presents a new approach to quantitative
-analysis for C programs.
-The technique described uses
-ideas from amortized analysis and abstract interpretation
-to derive tight linear worst-case bounds that come with a
-proof certificate.  Contrary to most available tools for
-C, ours has a compositional design that provides the
-programmer with bounds expressed in terms of meaningful
-variables.  The compositionality allows to handle uniformly
-nested sequenced loops and recursive sequenced function
-calls.  The automatic analysis is implemented
-as a tool that leverages state-of-the-art SMT solvers
-LP solvers to automatically infer resource bounds on
-a wide range of C programs.  It is the first automatic
-amortized analysis that can derive bounds that depend
-on negative integers and differences between numbers.
-To prove its soundness and give a concrete shape to proof
-certificates, we developed a quantitative Hoare logic
-that we proved sound using the Coq proof assistant.  This
-logic allows manual proofs of arbitrarily complex resource
-bounds on C programs and interaction with the automation.
-To prove the scalability and precision of this new tool,
-we run it on multiple code snippets from the literature,
-reproduce results from previous work, and analyze a
-consequent part of a modern benchmark suite.
+  This paper presents a new approach for automatically deriving
+  worst-case resource bounds for C programs.
+  %
+  The described technique combines ideas from amortized analysis and
+  abstract interpretation in a unified framework to address four
+  challenges for state-of-the-art techniques: compositionality, user
+  interaction, generation of proof certificates, and scalability.
+  %
+  \emph{Compositionality} is achieved by incorporating the potential
+  method of amortized analysis.  It enables the derivation of global
+  whole-program bounds with local derivation rules by naturally
+  tracking size changes of variables in sequenced loops and function
+  calls.  The resource consumption of functions is described abstractly
+  and a function call can be analyzed without access to the function
+  body.
+  %\
+  \emph{User interaction} is supported with a new mechanism that
+  clearly separates qualitative and quantitative verification. A user
+  can guide the analysis to derive complex non-linear bounds by using
+  auxiliary variables and assertions.  The assertions are
+  separately proved using established qualitative techniques such as
+  abstract interpretation or Hoare logic.
+  %
+  \emph{Proof certificates} are automatically generated from the local
+  derivation rules. A soundness proof of the derivation system with
+  respect to a formal cost semantics guarantees the validity of the
+  certificates.
+  %
+  \emph{Scalability} is attained by an efficient reduction of
+  bound inference to a linear optimization problem that can be solved
+  by off-the-shelf LP solvers.
+  %
+  The analysis framework is implemented in the publically-available
+  tool $\toolname$. An experimental evaluation demonstrates the
+  advantages of the new technique with a comparison of $\toolname$ with
+  existing tools on challenging micro benchmarks and the analysis of
+  more than XXX lines of C code from the XXX benchmark suite.
+
+% Contrary to most available tools for
+% C, ours has a compositional design that provides the
+% programmer with bounds expressed in terms of meaningful
+% variables.  The compositionality allows to handle uniformly
+% nested sequenced loops and recursive sequenced function
+% calls.  The automatic analysis is implemented
+% as a tool that leverages state-of-the-art SMT solvers
+% LP solvers to automatically infer resource bounds on
+% a wide range of C programs.  It is the first automatic
+% amortized analysis that can derive bounds that depend
+% on negative integers and differences between numbers.
+% To prove its soundness and give a concrete shape to proof
+% certificates, we developed a quantitative Hoare logic
+% that we proved sound using the Coq proof assistant.  This
+% logic allows manual proofs of arbitrarily complex resource
+% bounds on C programs and interaction with the automation.
+% To prove the scalability and precision of this new tool,
+% we run it on multiple code snippets from the literature,
+% reproduce results from previous work, and analyze a
+% consequent part of a modern benchmark suite.
 
 %   The goal of quantitative resource analysis is to provide developers
 %   with quantitative information about the runtime behavior of software
