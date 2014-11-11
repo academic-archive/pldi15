@@ -893,22 +893,21 @@ variables unchanged by the loop) is sufficient to obtain good bounds.
 
 
 \begin{figure*}
- \setlength{\progwidth}{.30\linewidth}
   \centering
 \hspace{-0.4cm}
-  \begin{minipage}[b]{.4\linewidth}
+  \begin{minipage}[b]{7cm}
     \begin{center}
    \begin{lstlisting}[]
-void count_down (int x,int y) {
-  if (x>y) { tick(1); count_up(x-1,y);}
+void c_down (int x,int y) {
+  if (x>y) { tick(1); c_up(x-1,y); }
 }
-void count_up (int x, int y) {
-  if (y+1<x) { tick(1); count_down(x,y+2);}
+void c_up (int x, int y) {
+  if (y+1<x) {tick(1); c_down(x,y+2);}
 }
    \end{lstlisting}
 \vspace{-2.5ex}
-$0.33 + 0.67 |[y,x]|\;\;$ (\code{count\_down(x,y)})\\
-$\;\;\;\;\;\;\,0.67 |[y,x]|\;\;$ (\code{count\_up(x,y)})
+$0.33 + 0.67 |[y,x]|\;\;$ (\code{c\_down(x,y)})\\
+$\;\;\;\;\;\;\,0.67 |[y,x]|\;\;$ (\code{c\_up(x,y)})
 \\[.4\baselineskip]
       {\bf t39}
     \end{center}
@@ -916,30 +915,44 @@ $\;\;\;\;\;\;\,0.67 |[y,x]|\;\;$ (\code{count\_up(x,y)})
 %
 \hfill
 %
-  \begin{minipage}[b]{\progwidth}
+  \begin{minipage}[b]{5cm}
     \begin{center}
    \begin{lstlisting}
-
+for (; l >= 8; l -= 8)
+  // process one block
+  tick(N);
+for (; l > 0; l--)
+  // save leftovers
+  tick(1);
    \end{lstlisting}
 \vspace{-2.5ex}
 $XXX$
 \\[.4\baselineskip]
-      {\bf XXX}
+      {\bf t61}
     \end{center}
   \end{minipage}
 %
 \hfill
 %
-  \begin{minipage}[b]{\progwidth}
+  \begin{minipage}[b]{5.5cm}
     \begin{center}
    \begin{lstlisting}
 
 
    \end{lstlisting}
 \vspace{-2.5ex}
+\begin{lstlisting}
+for (;;) {
+  do { l++; tick(1); } 
+    while (l < h && *);
+  do { h--; tick(1); } 
+    while (h > l && *);
+  if (h <= l) break;
+  tick(1); /* swap elems. */ }
+\end{lstlisting}
 $XXX$
 \\[.4\baselineskip]
-      {\bf XXX}
+      {\bf t62}
     \end{center}
   \end{minipage}
 \vspace{1ex}
@@ -999,11 +1012,11 @@ again derive tight constant factors.
 As mentioned, the analysis also handles advanced control flow like
 \code{break} and \code{return} statements, and mutual recursion.
 Example \emph{t39} in \pref{fig:ex_list_2} contains two mutually-recursive functions with their
-automatically derived tick bounds.  The function \code{count\_down}
+automatically derived tick bounds.  The function \code{c\_down}
 decrements its first argument $x$ until it reaches the second argument
-$y$. It then recursively calls the function \code{count\_up},
-which is dual to \code{count\_down}.  Here, we
-count up $y$ by $2$ and recursively call \code{count\_down}.  $\toolname$ is 
+$y$. It then recursively calls the function \code{c\_up},
+which is dual to \code{c\_down}.  Here, we
+c up $y$ by $2$ and recursively call \code{c\_down}.  $\toolname$ is 
 the only available system that computes a tight
 bound.  \iffull{The analysis amounts to computing the meeting
 point of two trains that approach each other with different speeds.}{}
