@@ -287,7 +287,7 @@ Second, while all popular imperative programming languages
 provide a function or procedure abstraction, available
 tools are not able to abstract resource behavior
 and have to inline the procedure body to perform their
-analysis. 
+analysis.
 
 Tools in the second category originate form the potential method of
 amortized analysis and type systems for functional
@@ -398,7 +398,7 @@ more than 2000 lines of C code from the cBench benchmark suite.
 challenging loop and recursion patterns that we collected from open
 source software and the literature.  Our analysis can find
 asymptotically tight bounds for all but 1 of these patterns, and in
-most cases the derived constant factors are tight.  To compare $\toolname$ 
+most cases the derived constant factors are tight.  To compare $\toolname$
 with existing techniques, we tested our examples
 with tools such as KoAT~\cite{BrockschmidtEFFG14},
 Rank~\cite{AliasDFG10}, and LOOPUS~\cite{SinnZV14}.  Our experiments
@@ -410,7 +410,7 @@ Several micro benchmarks demonstrate the practicality and
 expressiveness of the user guided bound inference.  For example, we
 derive a logarithmic bound for a binary search function, a bound that
 depends on the contents of an array to describe the exact cost of a
-function that finds a maximal element in an array, and a bound 
+function that finds a maximal element in an array, and a bound
 that amortizes the cost of $k$ successive increments to a binary
 counter (see \pref{sec:anno}).
 
@@ -1217,13 +1217,13 @@ or additively, resulting in a loose quadratic bound or no bound at all.
 { \!\! B; R; (\Gamma, Q{+}M_t(n)) \vdash \code{tick}(n) \dashv (\Gamma, Q) \!\!}
 %
 \and }{}
-\Rule[leftskip=.2cm,rightskip=.1cm]{Q:Return}
+\Rule[leftskip=1.2cm,rightskip=.5cm]{Q:Return}
 { P = Q_R[\Vret/x]
 \\ \forall i \in \dom{P} . \, p_i = q_i
 }
 { B; (\Gamma_R,Q_R); (\Gamma_R[\Vret/x], Q) \vdash \code{return}~x \dashv (\Gamma',Q') }
 %
-\and \Rule[leftskip=.1cm,rightskip=.2cm]{Q:Update}
+\and \Rule[leftskip=.5cm,rightskip=1.2cm]{Q:Update}
 { q'_{xy}, q'_{yx} \in \Qplusz
 \\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
 }
@@ -1236,7 +1236,7 @@ or additively, resulting in a loose quadratic bound or no bound at all.
 \and \Rule[leftskip=.2cm,rightskip=.1cm]{Q:IncP}
 { \Gamma \models y \ge 0 \!
 \\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\} \!
-\\ \textstyle q'_{0y} = q_{0y}
+\\\\ \textstyle q'_{0y} = q_{0y}
       + \sum_{u \in \mathcal U} q_{xu}
       - \sum_{v \not\in \mathcal U} q_{vx} \!
 }
@@ -1244,7 +1244,7 @@ or additively, resulting in a loose quadratic bound or no bound at all.
   B; R; (\Gamma[x/x {+} y], Q {+} M_u {+} M_e(x {+} y)) \vdash x \gets x + y \dashv (\Gamma, Q')
 }
 %
-\and \Rule{Q:DecP}
+\and \Rule[leftskip=1cm,rightskip=.5cm]{Q:DecP}
 { \Gamma \models y \ge 0
 \\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
 \\\\ \textstyle q'_{y0} = q_{y0}
@@ -1255,7 +1255,7 @@ or additively, resulting in a loose quadratic bound or no bound at all.
   B; R; (\Gamma[x/x {-} y],Q {+} M_u {+} M_e(x {-} y)) \vdash x \gets x - y \dashv (\Gamma, Q')
 }
 %
-\and \Rule{Q:Inc}
+\and \Rule[leftskip=.5cm,rightskip=1cm]{Q:Inc}
 { M = M_u + M_e(x {\pm} y)
 \\\\ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
 \\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
@@ -1270,7 +1270,7 @@ or additively, resulting in a loose quadratic bound or no bound at all.
 }
 { B; R; (\Gamma, Q{+}M_e(e)) \vdash \code{if}(e)~S_1~\code{else}~S_2 \dashv (\Gamma',Q') }
 %
-\and\Rule{Q:Seq}
+\and \Rule{Q:Seq}
 {  B; R; (\Gamma, Q) \vdash S_1 \dashv (\Gamma', Q' {+} M_s)
 \\\\ B; R; (\Gamma', Q') \vdash S_2 \dashv (\Gamma'',Q'')
 }
