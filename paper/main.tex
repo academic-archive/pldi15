@@ -1516,7 +1516,7 @@ $u{\cdot}q_{xy}$ to the interval potential $q_{xy} {\cdot} |\inter x y|$
 without gaining potential.
 
 \sectskip
-\section{Automatic Inference via LP Solving.}
+\section{Automatic Inference via LP Solving}
 \label{sec:lp}
 \aftersectskip
 
@@ -1637,6 +1637,170 @@ LOOPUS &
   simplified to fit the table.  }
 \label{fig:compar}
 \end{figure*}
+
+\sectskip
+\section{Logical State and User Interaction}
+\label{sec:anno}
+\aftersectskip
+
+
+\jan{ the following should go somewhere here:
+
+Note that potential functions can access the whole program state, so
+this framework can readily be used to derive bounds that depend on the
+memory contents.
+}
+
+\begin{figure}
+\center
+\begin{minipage}[b]{0.8\linewidth}
+\begin{lstlisting}[numbers=left]
+${\color{blue}%
+  \mbox{logical state invariant } \{ na = \#_1(a)} \}$
+while (k > 0) {
+  x=0;
+  while (x < N && a[x] == 1) {
+    @assert(na > 0);@
+    a[x]=0; @na--;@
+    tick(1);
+    x++; }
+  if (x < N) {
+    a[x]=1; @na++;@
+    tick(1); }
+  k--;
+}
+\end{lstlisting}
+\end{minipage}
+\caption{Example of assisted bound derivation using logical state.  We write
+  $\#_1(a)$ for $\# \{ i \mid 0 \le i < N \land a[i] = 1 \}$ and use the
+  tick metric that assigns cost $n$ to the statement \code{tick(n)} and
+  0 to all other operations.  The bound derived automatically is
+  $2|[0,k]| + |[0,na]|$.
+  }
+\label{fig:xmplincaux}
+\end{figure}
+
+\begin{figure}
+\begin{lstlisting}[numbers=left]
+${\color{blue}%
+  \mbox{logical state invariant }
+  \{ lg > \log_2(h - l) \} }$
+bsearch(x,l,h@,lg@) {
+  if (h-l > 1) {
+    @assert(lg > 0);@
+    m = l + (h-l)/2;
+    @lg--;@ if (a[m]>x) h=m; else l=m;
+    tick($M_\code{bsearch}$);
+    l = bsearch(x,l,h@,lg@);
+    tick($-M_\code{bsearch}$);
+  } else return l;
+}
+\end{lstlisting}
+\caption{Example of assisted bound derivation using logical state.
+  We use the tick metric to model the stack consumption of the program.
+  Before a function call to \code{bsearch}, a tick statement pays for
+  the space used by stack frame of the function.  The space is recoverd
+  after the call.  We write $\log_2(x)$ for the integer part of
+  logarithm of $x$ in base 2.
+  The bound derived automatically is $|[0,lg]|$.
+  }
+\label{fig:xmplbsaux}
+\end{figure}
+
+While complete automation is often desirable, it cannot possibly
+be universal since the problem is undecidable.  In this section
+we present two techniques to derive complex resource bounds by
+leveraging our automation.
+
+When the resource bound of a program depends on the contents of the heap,
+or is non-linear (e.g. logarithmic, exponential), we propose to
+introduce \emph{logical state}.
+This technique is inspired by XXX (speed) and consists in introducing
+extra variables to the program that do not change its behavior, but help
+the automatic tool to figure out a bound.
+
+The systematic technique consists in the following steps. First,
+a program $P$ that fails to be analyzed automatically is enriched
+by extra variables $\vec x$ called logical variables to form a
+program $P_l(\vec x)$.  Second, an initial value $\vec X(\sigma)$
+for the logical variables is shown to be such that:
+$$
+\forall n\, \sigma\, \sigma'.\,
+  (\sigma, P_l(\vec X(\sigma))) \Downarrow_n \sigma'
+    {\implies}
+  \exists n' {\le} n.\,
+    (\sigma, P) \Downarrow_{n'} \sigma'.
+$$
+Since the annotated program and the original one are often
+syntactically close, the proof of this result goes
+by simple induction on the resource-aware evaluation judgement.
+Third, using existing automation tools, a bound $B(\vec x)$ for
+$P_l(\vec x)$ is derived.  Finally this bound, instantiated with
+$\vec X$, gives the final resource bound for the program $P$.
+
+This idea is illustrated by the program on \pref{fig:xmplincaux}.
+Parts of the code in blue are annotations that were added
+to the original program text.  The top-level loop increments
+a binary counter $k$ times.  A naive analysis of
+the algorithm yields the quadratic bound $k \cdot N$.
+However, the algorithm is in fact linear and its cost is bounded
+by $2k + \#_1(a)$ where $\#_1(a)$ denotes
+the number of one entries in the array $a$.  Since this
+number depends on the heap contents, no tool available
+for C is able to derive the linear bound.  However, it can be inferred
+by our automated tool if a logical variable $na$ is introduced.
+This logical variable is a reification, in the program, of the
+number $\#_1(a)$.  For example, on line 6 of the example
+we are setting \lstinline{a[x]} to 0 and because of the condition we
+know that this array entry was 1.  To reflect this change on
+$\#_1(a)$, the logical variable $na$ is decremented.
+Similarly, on line 10, an array entry which was 0 becomes 1, so
+$na$ is incremented.  To complete the step 2 of the systematic
+procedure described above, we must show that the extra assertion
+\lstinline{na > 0} on line 5 is always true.  It
+is done by proving inductively that $na = \#_1(a)$
+and remarking that since \lstinline{a[x] == 1} is true, we must have
+$\#_1(a) > 0$, thus the assertion \lstinline{na > 0} never fails. %  So the
+% test is in fact semantically equivalent to \lstinline{true}.
+
+Another simple example is given on \pref{fig:xmplbsaux} where
+a logarithmic bound on the stack consumption of a binary search
+program is proved using logical variable annotations.  Once again,
+annotations are in blue in the program text.  In this example,
+to ease the proof of equivalence between the annotated program
+and the original one, we use the inequality $lg >
+\log_2(h-l)$ as invariant.  This trick allows a simpler
+proof because, when working with integer arithmetic, it is not always
+the case that $\log_2(x-x/2) = \log_2(x)-1$ (take 3).
+
+On the other hand, it might be the case that even with annotations, a
+resource bound cannot be found automatically.  With existing tools, this
+situation requires a full rewrite of the program.  However, in our
+framework, it is possible to write a manual proof and combine it with
+bounds derived by the automatic analysis.  This interaction is made
+formal using our Quantitative Hoare Logic.  This resource aware program
+logic is an extension of the one presented in~\cite{veristack14} and
+was originally designed to prove the soundness of our automatic
+analysis.  To make it suitable for this end, we made it independent
+of the resource used (e.g. stack usage, heap usage, clock ticks) and
+implemented a smoother handling of the auxiliary state through a shallow
+embedding in Coq.  Despite being first a theoretical tool, the logic can
+be used directly as in~\cite{veristack14}.  Its judgements are inspired
+by typical Hoare logics and have the shape
+$$
+\Delta \vdash \htriple P S Q
+$$
+where $\Delta$ is a set of hypothesis on program functions, and $P, Q$
+are quantitative assertions, i.e. functions from the program states
+to $\Qplusz \cup \{\infty\}$.  The semantics of triples and the rules
+of the logic are described in further details in the extended version of
+this paper~\cite{anon_extended}.  Because our automated tool produces
+proofs of the resource bounds in the Quantitative Hoare Logic, it can
+be used as an assistant when deriving a complex bound by hand in the
+logic.  The interaction is guaranteed to be sound by the soundness
+theorem of our Quantitative Hoare Logic.
+
+
 
 \sectskip
 \section{Soundness Proof}
@@ -2190,170 +2354,6 @@ weakening because we have to show that the preconditions of the rules
 % To do: Give a combined formula for that (concise constraint system).
 %%
 
-
-
-
-\sectskip
-\section{Logical State and User Interaction}
-\label{sec:anno}
-\aftersectskip
-
-
-\jan{ the following should go somewhere here:
-
-Note that potential functions can access the whole program state, so
-this framework can readily be used to derive bounds that depend on the
-memory contents.
-}
-
-\begin{figure}
-\center
-\begin{minipage}[b]{0.8\linewidth}
-\begin{lstlisting}[numbers=left]
-${\color{blue}%
-  \mbox{logical state invariant } \{ na = \#_1(a)} \}$
-while (k > 0) {
-  x=0;
-  while (x < N && a[x] == 1) {
-    @assert(na > 0);@
-    a[x]=0; @na--;@
-    tick(1);
-    x++; }
-  if (x < N) {
-    a[x]=1; @na++;@
-    tick(1); }
-  k--;
-}
-\end{lstlisting}
-\end{minipage}
-\caption{Example of assisted bound derivation using logical state.  We write
-  $\#_1(a)$ for $\# \{ i \mid 0 \le i < N \land a[i] = 1 \}$ and use the
-  tick metric that assigns cost $n$ to the statement \code{tick(n)} and
-  0 to all other operations.  The bound derived automatically is
-  $2|[0,k]| + |[0,na]|$.
-  }
-\label{fig:xmplincaux}
-\end{figure}
-
-\begin{figure}
-\begin{lstlisting}[numbers=left]
-${\color{blue}%
-  \mbox{logical state invariant }
-  \{ lg > \log_2(h - l) \} }$
-bsearch(x,l,h@,lg@) {
-  if (h-l > 1) {
-    @assert(lg > 0);@
-    m = l + (h-l)/2;
-    @lg--;@ if (a[m]>x) h=m; else l=m;
-    tick($M_\code{bsearch}$);
-    l = bsearch(x,l,h@,lg@);
-    tick($-M_\code{bsearch}$);
-  } else return l;
-}
-\end{lstlisting}
-\caption{Example of assisted bound derivation using logical state.
-  We use the tick metric to model the stack consumption of the program.
-  Before a function call to \code{bsearch}, a tick statement pays for
-  the space used by stack frame of the function.  The space is recoverd
-  after the call.  We write $\log_2(x)$ for the integer part of
-  logarithm of $x$ in base 2.
-  The bound derived automatically is $|[0,lg]|$.
-  }
-\label{fig:xmplbsaux}
-\end{figure}
-
-While complete automation is often desirable, it cannot possibly
-be universal since the problem is undecidable.  In this section
-we present two techniques to derive complex resource bounds by
-leveraging our automation.
-
-When the resource bound of a program depends on the contents of the heap,
-or is non-linear (e.g. logarithmic, exponential), we propose to
-introduce \emph{logical state}.
-This technique is inspired by XXX (speed) and consists in introducing
-extra variables to the program that do not change its behavior, but help
-the automatic tool to figure out a bound.
-
-The systematic technique consists in the following steps. First,
-a program $P$ that fails to be analyzed automatically is enriched
-by extra variables $\vec x$ called logical variables to form a
-program $P_l(\vec x)$.  Second, an initial value $\vec X(\sigma)$
-for the logical variables is shown to be such that:
-$$
-\forall n\, \sigma\, \sigma'.\,
-  (\sigma, P_l(\vec X(\sigma))) \Downarrow_n \sigma'
-    {\implies}
-  \exists n' {\le} n.\,
-    (\sigma, P) \Downarrow_{n'} \sigma'.
-$$
-Since the annotated program and the original one are often
-syntactically close, the proof of this result goes
-by simple induction on the resource-aware evaluation judgement.
-Third, using existing automation tools, a bound $B(\vec x)$ for
-$P_l(\vec x)$ is derived.  Finally this bound, instantiated with
-$\vec X$, gives the final resource bound for the program $P$.
-
-This idea is illustrated by the program on \pref{fig:xmplincaux}.
-Parts of the code in blue are annotations that were added
-to the original program text.  The top-level loop increments
-a binary counter $k$ times.  A naive analysis of
-the algorithm yields the quadratic bound $k \cdot N$.
-However, the algorithm is in fact linear and its cost is bounded
-by $2k + \#_1(a)$ where $\#_1(a)$ denotes
-the number of one entries in the array $a$.  Since this
-number depends on the heap contents, no tool available
-for C is able to derive the linear bound.  However, it can be inferred
-by our automated tool if a logical variable $na$ is introduced.
-This logical variable is a reification, in the program, of the
-number $\#_1(a)$.  For example, on line 6 of the example
-we are setting \lstinline{a[x]} to 0 and because of the condition we
-know that this array entry was 1.  To reflect this change on
-$\#_1(a)$, the logical variable $na$ is decremented.
-Similarly, on line 10, an array entry which was 0 becomes 1, so
-$na$ is incremented.  To complete the step 2 of the systematic
-procedure described above, we must show that the extra assertion
-\lstinline{na > 0} on line 5 is always true.  It
-is done by proving inductively that $na = \#_1(a)$
-and remarking that since \lstinline{a[x] == 1} is true, we must have
-$\#_1(a) > 0$, thus the assertion \lstinline{na > 0} never fails. %  So the
-% test is in fact semantically equivalent to \lstinline{true}.
-
-Another simple example is given on \pref{fig:xmplbsaux} where
-a logarithmic bound on the stack consumption of a binary search
-program is proved using logical variable annotations.  Once again,
-annotations are in blue in the program text.  In this example,
-to ease the proof of equivalence between the annotated program
-and the original one, we use the inequality $lg >
-\log_2(h-l)$ as invariant.  This trick allows a simpler
-proof because, when working with integer arithmetic, it is not always
-the case that $\log_2(x-x/2) = \log_2(x)-1$ (take 3).
-
-On the other hand, it might be the case that even with annotations, a
-resource bound cannot be found automatically.  With existing tools, this
-situation requires a full rewrite of the program.  However, in our
-framework, it is possible to write a manual proof and combine it with
-bounds derived by the automatic analysis.  This interaction is made
-formal using our Quantitative Hoare Logic.  This resource aware program
-logic is an extension of the one presented in~\cite{veristack14} and
-was originally designed to prove the soundness of our automatic
-analysis.  To make it suitable for this end, we made it independent
-of the resource used (e.g. stack usage, heap usage, clock ticks) and
-implemented a smoother handling of the auxiliary state through a shallow
-embedding in Coq.  Despite being first a theoretical tool, the logic can
-be used directly as in~\cite{veristack14}.  Its judgements are inspired
-by typical Hoare logics and have the shape
-$$
-\Delta \vdash \htriple P S Q
-$$
-where $\Delta$ is a set of hypothesis on program functions, and $P, Q$
-are quantitative assertions, i.e. functions from the program states
-to $\Qplusz \cup \{\infty\}$.  The semantics of triples and the rules
-of the logic are described in further details in the extended version of
-this paper~\cite{anon_extended}.  Because our automated tool produces
-proofs of the resource bounds in the Quantitative Hoare Logic, it can
-be used as an assistant when deriving a complex bound by hand in the
-logic.  The interaction is guaranteed to be sound by the soundness
-theorem of our Quantitative Hoare Logic.
 
 
 
