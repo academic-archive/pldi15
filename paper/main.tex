@@ -1610,15 +1610,189 @@ LOOPUS &
 \label{sec:soundness}
 \aftersectskip
 
-The soundness of the analysis builds on the quantitative logic.  We
-translate judgements of the automatic amortized analysis as defined in
-\pref{fig:auto} into quantitative Hoare triples.  We define a
-translation function $\tr$, such that if a judgement $J$ in the
-automatic analysis is derivable, $\tr(J)$ is derivable in the
-quantitative logic.  By using $\tr$ to translate derivations of the
-automatic analysis to derivations in the quantitative logic we can
-automatically obtain a certified resource bound for the analyzed
-program.
+The soundness of the analysis builds on a new cost semantics for Clight
+and an extended Quantitative Logic.  Using these two tools, the soundness
+proof of \toolname is done by a exhibiting a translation morphism.
+
+\subsection{Cost Semantics for Clight}
+
+To base the soundness proof on a formal ground, we start by defining a
+new cost-aware operational semantics for Clight.  CompCert Clight's
+operational semantics is based on small-step transitions and
+continuations.  Expressions---which do not have side effects---are
+evaluated in a big-step fashion.
+
+A program state $\state = (\theta, \gamma)$ is composed of two maps
+from variable names to integers. The first map, $\theta : \text{Locals}
+\to \Z$, assigns integers to local variables of a function, and the
+second map, $\gamma : \text{Globals} \to \Z$, gives values to global
+variables of the program.  In this article, we assume that all values are
+integers but in the implementation we support all data types of Clight.
+The evaluation function \evalE{\cdot}{} maps an expression $e \in E$
+to a value $\evalE{e}{\state} \in \Z$ in the program state $\state$.
+% For simplicity, we assume that local variables and global variables
+% are disjoint.
+We write $\state(x)$ to obtain the value of $x$ in program state
+$\state$.
+% \iffull{Such a lookup is defined as
+% $$
+% (\theta, \gamma)(x) =
+% \left\{
+% \begin{array}{lr}
+% \theta(x) & \mbox{ if } x \in \dom \theta \\
+% \gamma(x) & \mbox{ if } x \in \dom \gamma
+% \end{array}
+% \right..
+% $$}{}
+Similarly, we write $\state[x \mapsto v]$ for the state based on $\state$
+where the value of $x$ is updated to $v$.
+
+The small-step semantics we define is standard, except that it tracks
+the resource consumption of a program.  The semantics is parametric in
+the resource of interest for the user of our system.  We achieve this
+independence by parameterizing evaluations with a resource \emph{metric}
+$M$; a tuple of nine rational numbers and two maps.  Each of these
+parameters indicates the amount of resource consumed by a corresponding
+step in the semantics.  Resources can be released by assigning a negative
+cost. %  The metric used in the implementation can also
+% depend on other information that is statically available such as the
+% name of the called function or the number of arguments.
+Two rules for update and tick follow.
+\begin{mathpar}
+\Rule[rightskip=0.3cm]{U}
+{ \state' = \state[x \mapsto \sem{e}_\state] }
+{ (\state, x \gets e, \cont, \cost)
+\rightarrow\\\\
+(\state', \code{skip}, \cont, \cost {-} M_u {-} M_e(e))
+}
+\and
+\Rule[leftskip=0.3cm,rightskip=0.2cm]{T}
+{ }
+{ (\state, \code{tick}(n), \cont, \cost)
+\rightarrow\\\\
+(\state, \code{skip}, \cont, \cost {-} M_t(n))
+}
+\end{mathpar}
+The rules keep track of the resource cost $\cost$ at all times, and
+all rules have as implicit side condition that $\cost$ in the start
+configuration is non-negative.  It makes it possible
+to detect a resource crash as a stuck configuration where $\cost<0$.
+
+% \pref{fig:opsem} contains \ifshort{selected}{the} reduction rules of the semantics.  The
+% rules define a rewrite system for program configurations of the form
+% $(\state, S, \cont, \cost)$, where $\state$ is the program state, $S$
+% is the statement being executed, $\cont$ is a continuation that
+% describes what remains to be done after the execution of $S$, and
+% $\cost \in \Q$ is the non-negative number of resources available for
+% further execution.  All rules that can decrease $\cost$ have the
+% implicit side condition that the resource quantity available
+% \emph{before} the step is non-negative.  This means that we allow
+% $(\state, S, \cont, \cost)$ with $c<0$ on the right-hand side
+% transition relation $\smallstep{M}^*$ to indicate that the execution
+% ran out of resources.  However, every execution that reaches such a
+% state is stuck.
+%
+% \iffull{
+% A continuation $\cont$ represents the context of the execution of a
+% given statement.  A continuation can be the empty continuation
+% $\Kstop$ (used to start a program), a sequenced computation $\Kseq S
+% \cont$, a loop continuation $\Kloop S \cont$, or the continuation
+% $\Kcall r \theta \cont$ of a function call.
+% $$
+% \cont := \Kstop
+% \mid \Kseq S \cont
+% \mid \Kloop S \cont
+% \mid \Kcall r \theta \cont
+% $$
+% %
+% During the execution we assume a fixed function context $\fenv$ that
+% maps function names to a list of variables and the statement that
+% defines the function body.  It is used in the rule \textsc{S:Call}.
+% }{}
+%
+% The intuitive meaning of an evaluation \iffull{judgement}{} $(\state,
+% S, \cont, \cost) \smallstep{M}^* (\state', S', \cont', \cost')$ is the
+% following.  If the statement $S$ is executed in program state
+% $\state$, with continuation $\cont$, and with $\cost$ resources
+% available then---after a finite number of steps---the evaluation will
+% reach the new machine state $(\state', S', \cont',\cost')$ and there
+% are $\cost'$ resources available.  If $\cost' \ge 0$ then the
+% execution did not run out of resources and the resource consumption up
+% to this point is $\cost - \cost'$.  If this difference is negative
+% then resource became available during the execution.  If however
+% $\cost' < 0$ then the execution ran out of resources and is stuck.
+% The cost of the execution is then $\cost \ge 0$.
+%
+% \iffull{
+% \pref{lem:sem1} summarizes the main properties of the resource
+% counter of the semantics.  It can be proved by induction on the number
+% of steps.
+% \begin{lemma}
+% \label{lem:sem1}
+% \itemskip
+%   \begin{enumerate}
+%   \item If $(\state, S, \cont, \cost) \smallstep{M}^k (\state', S',
+%     \cont', \cost')$ and $n\ge 0$ then $(\state, S, \cont, \cost {+} n)
+%     \smallstep{M}^k (\state', S', \cont', \cost' {+} n)$.
+% \itemskipIn
+%   \item If $(\state, S, \cont, \cost) \smallstep{M}^k (\state', S',
+%     \cont', \cost')$ and $(\state, S, \cont, d) \smallstep{M}^k (\state', S',
+%     \cont', d')$ then $\cost - \cost' = d - d'$.
+%   \end{enumerate}
+% \itemskip
+% \end{lemma}
+% %
+% If we assume that we have a \emph{positive resource metric}, that is,
+% a metric that assigns a positive cost to each evaluation step then we
+% can link bounds on the resource consumption under the metric to
+% termination.  This is formalized by \pref{lem:sem_term}.
+% %
+% \begin{lemma}
+%  \label{lem:sem_term}
+%  Let $M$ be a positive metric and assume that there exists $b \in
+%  \Qplusz$ such that $(\state, S, \cont, \cost) \smallstep{M}^*
+%  (\state', S', \cont', \cost') \implies \cost {-} \cost' {\leq} b$.
+%  Then there exists $B \in \N$ such that $(\state, S, \cont, d)
+%  \smallstep{M}^n (\state'', S', \cont', d')$ for some $n$, $d$, $d'$
+%  and $\state''$ implies $n \le B$.
+% \end{lemma}
+% }
+
+
+\subsection{Quantitative Hoare Logic}
+
+To prove the soundness of \toolname we found it useful to go through
+an intermediate step using a Quantitative Hoare Logic.  This logic
+is at the same time a convenient semantic tool and a clean way to
+interface manual proofs with our automation, as explained in XXX.
+The logic is an extension of the one presented in \cite{veristack14},
+it adds support for arbitrary resources and simplifies the
+handling of auxiliary state.
+
+Following the previous work, we define quantitative Hoare triples
+as $\Delta;B;R\vdash\htriple Q S {Q'}$ where $B$, $R$, $Q$, and $Q'$ are
+maps from program states to $\Qplusz\cup\{\infty\}$ in order to represent
+an amount of resources available.  The assertions $B$ and $R$ are
+postconditions for the case in which the block $S$ exits by a \code{break}
+or \code{return} statement.  Additionally, $R$ depends on an extra value
+that is returned by the function.  The meaning of the triple $\htriple Q S
+{Q'}$ is as follows: If $S$ is executed with starting state $\state$,
+the empty continuation \Kstop{} and at least $Q(\state)$ resource units
+available then the evaluation does not run out of resources and there
+are at least $Q(\state')$ resources left if the evaluation terminates
+in state $\state'$.  The logic rules are similar to the ones in previous
+work and are simply extended to account for all the costs found in
+our cost-aware semantics.
+
+\subsection{The Soundness Theorem}
+
+We translate judgements of the automatic amortized analysis as defined in
+\pref{fig:auto} into quantitative Hoare triples.  We define a translation
+function $\tr$, such that if a judgement $J$ in the automatic analysis
+is derivable, $\tr(J)$ is derivable in the quantitative logic.  By using
+$\tr$ to translate derivations of the automatic analysis to derivations
+in the quantitative logic we can automatically obtain a certified resource
+bound for the analyzed program.
 
 The translation of an assertion $(\Gamma, Q)$ in the automatic
 analysis is defined by
@@ -1632,15 +1806,14 @@ analysis.  We define $\tr(\Gamma_f, Q_f, \Gamma'_f, Q'_f) := \forall z \, \vec v
 %
 $$
 (
-  \lambda \_ \, \vec v \, \state .\, \tr(\Gamma_f, Q_f)(\state[\Vargs {\mapsto} \vec v]),
-  \lambda \_ \, v \, \state .\, \tr(\Gamma'_f, Q'_f)(\state[\Vret {\mapsto} v])
+  \lambda \vec v \, \state .\, \tr(\Gamma_f, Q_f)(\state[\Vargs {\mapsto} \vec v]),
+  \lambda v \, \state .\, \tr(\Gamma'_f, Q'_f)(\state[\Vret {\mapsto} v])
   )
 $$
 %
 These definitions let us translate the judgement $J = B; R; P \vdash
-S \dashv P'$ in the context $\Delta$ by
+S \dashv P'$ in the context $\Delta$ by $\tr(J) :=$
 $$
-  \tr(J) :=
   (\lambda f .\, \tr(\Delta(f))); \tr(B); \tr(R) \vdash
     \htriple{\tr(P)}{S}{\tr(P')}.
 $$
@@ -1660,39 +1833,39 @@ of the automatic analysis directly to its counterpart in the
 quantitative logic.  The most tricky parts are the translations of the
 rules for increments and decrements and the rule {\sc Q:Weak} for
 weakening because we have to show that the preconditions of the rules
-{\sc L:Weak} or {\sc L:Update}, respectively, are met.  \iffull{ For instance
-we prove the following lemma to show the soundness of the translation
-of {\sc Q:Weak}.
-
-\begin{lemma}[Relax]
-  If $Q' \succeq_\Gamma Q$ and $\state$ is a program state such that
-  $\state \models \Gamma$ then we have $\Phi_{Q'}(\state) \ge \Phi_Q(\state)$.
-\end{lemma}
-\begin{proof}
-We observe the following inequations.
-\begin{align*}
-\Phi_{Q'}(\state) &= \sum_i q'_i f_i(\state) \\
-&\ge q_0 + \sum_{i\in\mathcal U} u_i p_i - \sum_{i\in\mathcal L} l_i p_i
-  + \sum_{i\in\mathcal U} (q_i - p_i) f_i(\state)  \\ &
-  \;\;\;\;\;\;\;\; + \sum_{i\in\mathcal L} (q_i + p_i) f_i(\state)
-  + \sum_{i\not\in \mathcal U \cup \mathcal L} q_i \\
- &\ge \Phi_Q(\state)
-  + \sum_{i\in\mathcal U} (u_i - f_i(\state)) p_i
-  + \sum_{i\in\mathcal L} (f_i(\state) - l_i) p_i \\
- &\ge \Phi_Q(\state).
-\end{align*}
-Since $\state \models \Gamma$, using the transitivity of $\models$ and
-the definition of $\mathcal U$ and $\mathcal L$ we get
-$\forall i\in\mathcal L.\, l_i \le f_i(\state)$ and
-$\forall i\in\mathcal U.\, f_i(\state)\le u_i$.
-These two inequalities justify the last step.
-\end{proof}
+{\sc L:Weak} or {\sc L:Update}, respectively, are met. %  \iffull{ For instance
+% we prove the following lemma to show the soundness of the translation
+% of {\sc Q:Weak}.
 %
-\noindent
-We prove similar lemmas for the rules that deal with assignment.  With
-the computational content of the proof, we have an effective algorithm
-to construct certificates for upper bounds derived automatically.
-}{}
+% \begin{lemma}[Relax]
+%   If $Q' \succeq_\Gamma Q$ and $\state$ is a program state such that
+%   $\state \models \Gamma$ then we have $\Phi_{Q'}(\state) \ge \Phi_Q(\state)$.
+% \end{lemma}
+% \begin{proof}
+% We observe the following inequations.
+% \begin{align*}
+% \Phi_{Q'}(\state) &= \sum_i q'_i f_i(\state) \\
+% &\ge q_0 + \sum_{i\in\mathcal U} u_i p_i - \sum_{i\in\mathcal L} l_i p_i
+%   + \sum_{i\in\mathcal U} (q_i - p_i) f_i(\state)  \\ &
+%   \;\;\;\;\;\;\;\; + \sum_{i\in\mathcal L} (q_i + p_i) f_i(\state)
+%   + \sum_{i\not\in \mathcal U \cup \mathcal L} q_i \\
+%  &\ge \Phi_Q(\state)
+%   + \sum_{i\in\mathcal U} (u_i - f_i(\state)) p_i
+%   + \sum_{i\in\mathcal L} (f_i(\state) - l_i) p_i \\
+%  &\ge \Phi_Q(\state).
+% \end{align*}
+% Since $\state \models \Gamma$, using the transitivity of $\models$ and
+% the definition of $\mathcal U$ and $\mathcal L$ we get
+% $\forall i\in\mathcal L.\, l_i \le f_i(\state)$ and
+% $\forall i\in\mathcal U.\, f_i(\state)\le u_i$.
+% These two inequalities justify the last step.
+% \end{proof}
+% %
+% \noindent
+% We prove similar lemmas for the rules that deal with assignment.  With
+% the computational content of the proof, we have an effective algorithm
+% to construct certificates for upper bounds derived automatically.
+% }{}
 
 
 % \sectskip
@@ -2568,158 +2741,6 @@ negative).
 \end{figure*}
 }{}
 
-
-\paragraph{Semantics.}
-
-CompCert Clight's operational semantics is based on small-step
-transitions and continuations.  Expressions---which do not have side
-effects---are evaluated in a big-step fashion.  Here, we describe a
-simplified version of Clight's semantics for the subset we consider.
-
-A program state $\state = (\theta, \gamma)$ is composed of two maps from
-variable names to integers. The first map, $\theta : \text{Locals} \to
-\Z$, assigns integers to local variables of a function, and the second
-map, $\gamma : \text{Globals} \to \Z$, gives values to global variables
-of the program.  In this article, we assume that all values are
-integers but in the implementation we support all data types of
-Clight.
-%
-The evaluation function \evalE{\cdot}{} maps an expression $e \in
-E$ to a value $\evalE{e}{\state} \in \Z$ in the program state
-$\state$.
-
-For simplicity, we assume that local variables and global variables
-are always different.  We just write $\state(x)$ to obtain the value of
-$x$ in program state $\state$. \iffull{Such a lookup is defined as
-$$
-(\theta, \gamma)(x) =
-\left\{
-\begin{array}{lr}
-\theta(x) & \mbox{ if } x \in \dom \theta \\
-\gamma(x) & \mbox{ if } x \in \dom \gamma
-\end{array}
-\right..
-$$}{}
-\iffull{For a program state $\state$, we}{Similarly} we write $\state[x \mapsto v]$
-for the program state that maps $x$ to $v$ and behaves as $\state$ for
-all other variables, regardless whether $x \in \dom \theta$ or $x \in
-\dom \gamma$.
-
-The small-step semantics is standard, except that it tracks the
-resource consumption of a program.  The semantics is parametric in the
-resource of interest for the user of our system.  We achieve this
-independence by parameterizing evaluations with a resource
-\emph{metric} $M$; a tuple of nine rational numbers \ifshort{$M_a$, $M_b$, $M_r$, $\ldots$}{}, one map $M_e :
-\text{Expr} \to \Q$ from expressions to rational numbers, and one map
-$M_t : \Z \to \Q$ from integers to rational numbers.
-%
-\iffull{$$
-M = (
-M_a,
-M_b,
-M_r,
-M_u,
-M_f,
-M_l,
-M_c^1,
-M_c^2,
-M_s,
-M_e(E),
-M_t(n)
-)
-$$}{
-
-}
-Each of these rational numbers indicates the amount of resource
-consumed by a corresponding operation.  If the assigned resource cost
-is negative then it means that resources are released.  The metric
-that we use in the implementation can also depend on other information
-that is statically available such as the name of the called function
-or the number of arguments.
-
-\pref{fig:opsem} contains \ifshort{selected}{the} reduction rules of the semantics.  The
-rules define a rewrite system for program configurations of the form
-$(\state, S, \cont, \cost)$, where $\state$ is the program state, $S$
-is the statement being executed, $\cont$ is a continuation that
-describes what remains to be done after the execution of $S$, and
-$\cost \in \Q$ is the non-negative number of resources available for
-further execution.  All rules that can decrease $\cost$ have the
-implicit side condition that the resource quantity available
-\emph{before} the step is non-negative.  This means that we allow
-$(\state, S, \cont, \cost)$ with $c<0$ on the right-hand side
-transition relation $\smallstep{M}^*$ to indicate that the execution
-ran out of resources.  However, every execution that reaches such a
-state is stuck.
-
-\iffull{
-A continuation $\cont$ represents the context of the execution of a
-given statement.  A continuation can be the empty continuation
-$\Kstop$ (used to start a program), a sequenced computation $\Kseq S
-\cont$, a loop continuation $\Kloop S \cont$, or the continuation
-$\Kcall r \theta \cont$ of a function call.
-$$
-\cont := \Kstop
-\mid \Kseq S \cont
-\mid \Kloop S \cont
-\mid \Kcall r \theta \cont
-$$
-%
-During the execution we assume a fixed function context $\fenv$ that
-maps function names to a list of variables and the statement that
-defines the function body.  It is used in the rule \textsc{S:Call}.
-}{}
-
-The intuitive meaning of an evaluation \iffull{judgement}{} $(\state,
-S, \cont, \cost) \smallstep{M}^* (\state', S', \cont', \cost')$ is the
-following.  If the statement $S$ is executed in program state
-$\state$, with continuation $\cont$, and with $\cost$ resources
-available then---after a finite number of steps---the evaluation will
-reach the new machine state $(\state', S', \cont',\cost')$ and there
-are $\cost'$ resources available.  If $\cost' \ge 0$ then the
-execution did not run out of resources and the resource consumption up
-to this point is $\cost - \cost'$.  If this difference is negative
-then resource became available during the execution.  If however
-$\cost' < 0$ then the execution ran out of resources and is stuck.
-The cost of the execution is then $\cost \ge 0$.
-
-\iffull{
-\pref{lem:sem1} summarizes the main properties of the resource
-counter of the semantics.  It can be proved by induction on the number
-of steps.
-\begin{lemma}
-\label{lem:sem1}
-\itemskip
-  \begin{enumerate}
-  \item If $(\state, S, \cont, \cost) \smallstep{M}^k (\state', S',
-    \cont', \cost')$ and $n\ge 0$ then $(\state, S, \cont, \cost {+} n)
-    \smallstep{M}^k (\state', S', \cont', \cost' {+} n)$.
-\itemskipIn
-  \item If $(\state, S, \cont, \cost) \smallstep{M}^k (\state', S',
-    \cont', \cost')$ and $(\state, S, \cont, d) \smallstep{M}^k (\state', S',
-    \cont', d')$ then $\cost - \cost' = d - d'$.
-  \end{enumerate}
-\itemskip
-\end{lemma}
-%
-If we assume that we have a \emph{positive resource metric}, that is,
-a metric that assigns a positive cost to each evaluation step then we
-can link bounds on the resource consumption under the metric to
-termination.  This is formalized by \pref{lem:sem_term}.
-%
-\begin{lemma}
- \label{lem:sem_term}
- Let $M$ be a positive metric and assume that there exists $b \in
- \Qplusz$ such that $(\state, S, \cont, \cost) \smallstep{M}^*
- (\state', S', \cont', \cost') \implies \cost {-} \cost' {\leq} b$.
- Then there exists $B \in \N$ such that $(\state, S, \cont, d)
- \smallstep{M}^n (\state'', S', \cont', d')$ for some $n$, $d$, $d'$
- and $\state''$ implies $n \le B$.
-\end{lemma}
-}
-{
-The extended version of this article~\cite{anon_extended} contains all rules and
-lemmas that state the main properties of the cost semantics.
-}
 
 
 \iffull{
