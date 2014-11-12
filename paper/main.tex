@@ -926,7 +926,8 @@ for (; l > 0; l--)
   tick(1);
    \end{lstlisting}
 \vspace{-2.5ex}
-$XXX$
+$\;\;\;\;\;\;\;\;\;\;\;\;\;\frac{N}{8} |[0,l]|\;\;$ if $N \geq 8$\\
+$7\frac{8-N}{8} + \frac{N}{8}|[0,l]|\;\;$ if $N < 8$
 \\[.4\baselineskip]
       {\bf t61}
     \end{center}
@@ -950,22 +951,24 @@ for (;;) {
   if (h <= l) break;
   tick(1); /* swap elems. */ }
 \end{lstlisting}
-$XXX$
+$2+3|[l,h]|$
 \\[.4\baselineskip]
       {\bf t62}
     \end{center}
   \end{minipage}
 \vspace{1ex}
-\caption{Exampel \emph{t39} shows two mutually-recursive functions
-  with the computed tick bounds.  The derived constant factors are
-  tight.}
+\caption{Example \emph{t39} shows two mutually-recursive functions
+  with the computed tick bounds.  Example \emph{t61} and \emph{t62}
+  demonstrate the unique compositionality of our system. In \emph{61},
+  $N\geq 0$ is a fixed but arbitrary constant.  The derived constant factors
+  are tight.}
   \label{fig:ex_list_2}
 \end{figure*}
 
 
 
 \paraskip
-\paragraph{Examples: Challenging Loops.}
+\paragraph{Challenging Loops.}
 
 One might think that our set of potential functions is too simplistic
 to be able to express and prove bounds for realistic
@@ -989,6 +992,9 @@ find a bound manually.  However, using potential transfer reasoning as
 in amortized analysis, it is easy to prove the tight bound
 $|[x, n]| + |[z, n]|$.
 
+\paraskip
+\paragraph{Nested and Sequenced Loops.}
+
 Example \emph{t08a} shows the ability of the analysis to discover
 interaction between \emph{sequenced loops} through size change of
 variables.  We accurately track the size change of $y$ in the first
@@ -1009,6 +1015,9 @@ execution of the inner loop depends on the initial value of $y$.  We
 again derive tight constant factors.
 %
 
+\paraskip
+\paragraph{Mutual Recursive Functions.}
+
 As mentioned, the analysis also handles advanced control flow like
 \code{break} and \code{return} statements, and mutual recursion.
 Example \emph{t39} in \pref{fig:ex_list_2} contains two mutually-recursive functions with their
@@ -1024,6 +1033,48 @@ point of two trains that approach each other with different speeds.}{}
 % determination of the point at which to trains meet if they approach
 % each other with different speeds.
 
+\paraskip
+\paragraph{Compositionality.}
+
+With two concrete examples from open-source projects we demonstrate
+that the compositionality of our method is indeed crucial in practice.
+\jan{what projects?}
+
+Example \emph{t61} in \pref{fig:ex_list_2} is typical for implementations of block-based
+cryptographic primitives: Data of arbitrary length, is consumed in
+blocks and the leftover is stored in a buffer for future use when more
+data is available.  This looping pattern is particularly well handled
+by our method. If $N \geq 8$, $\toolname$ infers the bound
+$\frac{N}{8} |[0,l]|$, but if $N<8$ $\toolname$ infers $7\frac{8-N}{8}
++ \frac{N}{8}|[0,l]|$. The selection of the block size ($8$) and the
+cost in the second loop (\code{tick(1)}) are random choices and
+$\toolname$ would also derive tight bound for other values.
+
+To understand the resource bound for the case $N<8$, first note that the cost of
+the second loop is $|[0,l]|$.  After the first loop, we still have
+$\frac{N}{8}|[0,l]|$ potential available from the invariant.  So we have
+to raise the potential of $|[0,l]|$ from $\frac{N}{8}$ to 1, that is,
+we must pay $\frac{8-N}{8}|[0,l]|$.  But since we got out of the first
+loop, we know that $l<8$, so it is sound to only pay $7\frac{8-N}{8}$
+potential units instead.  
+%
+This level of precision and compositionality is only achieved by
+our novel analysis, no other available tool derives the aforementioned
+ tight bounds.
+
+Example \emph{t62} (\pref{fig:ex_list_2}) 
+is the inner loop of a quick sort implementation in cBench.  More
+precisely, it is the partitioning part of the algorithm.  This partition
+loop has linear complexity, and feeding into our analysis gives the
+correct and tight worst-case bound $2+3|[l,h]|.$  With the amortized
+analysis approach in mind, it is clear that the three loops get their
+potential from the same interval $[l,h]$.  However, KoAT fails to
+find a bound and LOOPUS derives the quadratic bound
+$(h-l-1)^2$.  Following the classical technique, these tools try to find one
+linear ranking-function for each loop and combine them multiplicatively
+or additively.
+
+
 \iffull{We only show a small selections of the programs that we can
   handle automatically here.}{} \iffull{In \pref{app:cat}}{In the
   extended version~\cite{anon_extended}} is a list of more than $30$
@@ -1031,81 +1082,6 @@ classes of challenging programs that we can automatically analyze.
 \pref{sec:exper} contains a more detailed comparison with other
 tools\iffull{ for automatic bound derivation.}{.}
 
-\paraskip
-\paragraph{Examples: Compositionality.}
-
-With two concrete examples from open-source projects we demonstrate
-that the compositionality of our method is indeed crucial in practice.
-
-The following example is typical in cryptographic primitives
-implementations.  These primitives work by block, so when data of
-arbitrary length needs to be processed, it is munched in blocks and
-the leftovers are stored in a buffer for future use when more data
-is available.  This looping pattern is particularly well handled by
-our tool because the LP solver is leveraged to generate a tight bound.
-The optimization problem it is given encodes that constant bounds are
-preferable to linear bounds.  Thus, if $N >= 8$, the bound given by
-\toolname is $\frac{N}{8} |[0,l]|$, but if $N<8$ it becomes $7\frac{8-N}{8}
-+ \frac{N}{8}|[0,l]|$, because the cost for the second loop is better
-counted as constant.
-%
-\jan{N is unbound above. The explanation must be much slower
-  here. Explain what the code does and how the ticks account for the
-  cost. Then: What is the resource bound?. Then: What do we derive?
-  Btw: Why do you use tick(1) and not tick(M)?}
-%
-\begin{lstlisting}
-for (; l >= 8; l -= 8)
-    // process one block
-    tick(N);
-for (; l > 0; l--)
-    // save leftovers
-    tick(1);
-\end{lstlisting}
-%
-It is worth taking some time to explain the constant contribution
-to the resource bound when $N<8$.  Remark first that the cost of
-the second loop is $|[0,l]|$, and after the first one, we still have
-$\frac{N}{8}|[0,l]|$ potential available from the invariant.  So we have
-to raise the potential of $|[0,l]|$ from $\frac{N}{8}$ to 1, that is,
-we must pay $\frac{8-N}{8}|[0,l]|$.  But since we got out of the first
-loop, we know that $l<8$, so it is sound to only pay $7\frac{8-N}{8}$
-potential units instead.  This explains the somewhat intriguing value
-of the constant term in the bound.  All this reasoning is done within
-our tool automatically and simply relies on general rules presented
-in further sections.
-
-This level of precision and compositionality is only achieved by
-our work, no other available tool will attain the above tight bounds
-on this common kind of looping code.  Thanks to the modularity of
-amortized analysis the intricate interactions between the bounds of
-the two loops can be modeled as one linear program, and because LP
-solvers can optimize the quality of the final bound we can keep
-it close to the actual resource consumption.
-
-A clean theoretical framework for compositional bounds sometimes
-even allow to get better asymptotic bounds.  During our experiments
-we found an example of this situation in some code from the cBench
-benchmark suite.
-%
-\begin{lstlisting}
-for (;;) {
-    do { l++; tick(1); } while (l < h && *);
-    do { h--; tick(1); } while (h > l && *);
-    if (h <= l) break;
-    tick(1); /* swap two elements */ }
-\end{lstlisting}
-%
-The above snippet is the inner loop of a Quicksort implementation, more
-precisely, it is the partitioning part of the algorithm.  This partition
-loop has linear complexity, and feeding into our analysis gives the
-correct and tight worst-case bound $2+3|[l,h]|$.  With the amortized
-analysis approach in mind, it is clear that the three loops get their
-potential from the same interval $[l,h]$.  However, KoAT fails to
-prove the termination of the loop and LOOPUS derives the quadratic bound
-$(h-l-1)^2$.  Following the classic technique, these tools try to find one
-linear ranking-function for each loop and combine them multiplicatively
-or additively, resulting in a loose quadratic bound or no bound at all.
 
 
 \iffull{
@@ -1316,6 +1292,7 @@ or additively, resulting in a loose quadratic bound or no bound at all.
 In the following we describe the local and compositional derivation
 rules of the automatic amortized analysis.
 
+\paraskip
 \paragraph{Judgements.}
 
 The derivation system for the automatic amortized analysis is defined
