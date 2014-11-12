@@ -1936,8 +1936,7 @@ The soundness of the analysis builds on a new cost semantics for Clight
 and an extended Quantitative Logic.  Using these two tools, the soundness
 proof of \toolname is done by a exhibiting a translation morphism.
 
-\subsection{Cost Semantics for Clight}
-
+\paragraph{Cost Semantics for Clight.}
 To base the soundness proof on a formal ground, we start by defining a
 new cost-aware operational semantics for Clight.  CompCert Clight's
 operational semantics is based on small-step transitions and
@@ -1975,11 +1974,11 @@ the resource of interest for the user of our system.  We achieve this
 independence by parameterizing evaluations with a resource \emph{metric}
 $M$; a tuple of nine rational numbers and two maps.  Each of these
 parameters indicates the amount of resource consumed by a corresponding
-step in the semantics.  Resources can be released by assigning a negative
+step in the semantics.  Resources can be released by using a negative
 cost. %  The metric used in the implementation can also
 % depend on other information that is statically available such as the
 % name of the called function or the number of arguments.
-Two rules for update and tick follow.
+Two sample rules for update and tick follow.
 \begin{mathpar}
 \Rule[rightskip=0.3cm]{U}
 { \state' = \state[x \mapsto \sem{e}_\state] }
@@ -2081,133 +2080,130 @@ to detect a resource crash as a stuck configuration where $\cost<0$.
 % }
 
 
-\subsection{Quantitative Hoare Logic}
+% \begin{figure*}
+% \small
+% \begin{mathpar}
+% %
+% \Rule{L:Update}
+% { }
+% { \Delta; B; R \vdash
+% \htriple
+%   { \lambda \state.\,M_u + M_e(e) + Q\,\state[x \mapsto \sem{e}_\state] }{ x \gets e }{ Q }
+% }
+% %
+% \and
+% \Rule{L:Assert}
+% { }
+% { \Delta; B; R \vdash
+% \htriple
+%   { \code{istrue}~\sem{e}_\state \implies Q + M_a }
+%   { \code{assert}~e }
+%   { Q }
+% }
+% %
+% \and
+% \Rule{L:Tick}
+% { }
+% { \Delta; B; R \vdash
+% \htriple
+%   { Q + M_t(n) }
+%   { \code{tick}(n) }
+%   { Q }
+% }
+% %
+% \and
+% \Rule{L:Loop}
+% { \Delta; Q; R \vdash
+% \htriple
+%   { I }{ S }{ I + M_l }
+% }
+% { \Delta; B; R \vdash
+% \htriple
+%   { I }{ \code{loop}~S }{ Q }
+% }
+% \and \Rule{L:Seq}
+% { \Delta; B; R \vdash
+% \htriple{ P }{ S_1 }{ Q' + M_s }
+% \\
+% \!\!  \Delta; B; R \vdash
+% \htriple{ Q' }{ S_2 }{ Q }
+% }
+% { \Delta; B; R \vdash
+% \htriple{ P }{ S_1;S_2 }{ Q }
+% }
+% %
+% \and
+% \Rule{L:Weaken}
+% {
+%   \!\! B' \models B \!\! \\
+%   \!\! \forall v.\, (R'\,v \models R\,v) \!\! \\\\
+%   \!\! P \models P' \!\! \\
+%   \!\! \Delta; B'; R' \vdash
+%   \htriple{ P' }{ S }{ Q' } \!\! \\
+%   \!\! Q' \models Q \!\!
+% }
+% { \Delta; B; R \vdash
+% \htriple{ P }{ S }{ Q }
+% }
+% %
+% \and
+% \Rule{L:Frame}
+% { \Delta; B; R \vdash
+% \htriple{ P }{ S }{ Q } \\
+%   x \in \Qplusz
+% }
+% { \!\! \Delta; B + x; R + x \vdash
+% \htriple{ P + x }{ S }{ Q + x } \!\!
+% }
+% %
+% \end{mathpar}
+% \caption{Selected rules of the Quantitative Hoare Logic}
+% \label{fig:logic}
+% \end{figure*}
 
-\begin{figure*}
-\small
-\begin{mathpar}
-%
-\Rule{L:Update}
-{ }
-{ \Delta; B; R \vdash
-\htriple
-  { \lambda \state.\,M_u + M_e(e) + Q\,\state[x \mapsto \sem{e}_\state] }{ x \gets e }{ Q }
-}
-%
-\and
-\Rule{L:Assert}
-{ }
-{ \Delta; B; R \vdash
-\htriple
-  { \code{istrue}~\sem{e}_\state \implies Q + M_a }
-  { \code{assert}~e }
-  { Q }
-}
-%
-\and
-\Rule{L:Tick}
-{ }
-{ \Delta; B; R \vdash
-\htriple
-  { Q + M_t(n) }
-  { \code{tick}(n) }
-  { Q }
-}
-%
-\and
-\Rule{L:Loop}
-{ \Delta; Q; R \vdash
-\htriple
-  { I }{ S }{ I + M_l }
-}
-{ \Delta; B; R \vdash
-\htriple
-  { I }{ \code{loop}~S }{ Q }
-}
-\and \Rule{L:Seq}
-{ \Delta; B; R \vdash
-\htriple{ P }{ S_1 }{ Q' + M_s }
-\\
-\!\!  \Delta; B; R \vdash
-\htriple{ Q' }{ S_2 }{ Q }
-}
-{ \Delta; B; R \vdash
-\htriple{ P }{ S_1;S_2 }{ Q }
-}
-%
-\and
-\Rule{L:Weaken}
-{
-  \!\! B' \models B \!\! \\
-  \!\! \forall v.\, (R'\,v \models R\,v) \!\! \\\\
-  \!\! P \models P' \!\! \\
-  \!\! \Delta; B'; R' \vdash
-  \htriple{ P' }{ S }{ Q' } \!\! \\
-  \!\! Q' \models Q \!\!
-}
-{ \Delta; B; R \vdash
-\htriple{ P }{ S }{ Q }
-}
-%
-\and
-\Rule{L:Frame}
-{ \Delta; B; R \vdash
-\htriple{ P }{ S }{ Q } \\
-  x \in \Qplusz
-}
-{ \!\! \Delta; B + x; R + x \vdash
-\htriple{ P + x }{ S }{ Q + x } \!\!
-}
-%
-\end{mathpar}
-\caption{Selected rules of the Quantitative Hoare Logic}
-\label{fig:logic}
-\end{figure*}
+\paragraph{Quantitative Hoare Logic.}
+To prove the soundness of \toolname we found it useful to go through an
+intermediate step using a Quantitative Hoare Logic.  This logic is at
+the same time a convenient semantic tool and a clean way to interface
+manual proofs with our automation.  We base it on the one presented in
+\cite{veristack14}, we add support for arbitrary resources and simplify
+the handling of auxiliary state.
 
-To prove the soundness of \toolname we found it useful to go through
-an intermediate step using a Quantitative Hoare Logic.  This logic
-is at the same time a convenient semantic tool and a clean way to
-interface manual proofs with our automation, as explained in XXX.
-The logic is an extension of the one presented in \cite{veristack14},
-it adds support for arbitrary resources and simplifies the
-handling of auxiliary state.
-
-Following the previous work, we define quantitative Hoare triples
-as $\Delta;B;R\vdash\htriple Q S {Q'}$ where $B$, $R$, $Q$, and $Q'$ are
-maps from program states to $\Qplusz\cup\{\infty\}$ in order to represent
+Following this previous work, we define quantitative Hoare triples
+as $B;R\vdash\htriple Q S {Q'}$ where $B$, $R$, $Q$, and $Q'$ are
+maps from program states to an element of $\Qplusz\cup\{\infty\}$ that represents
 an amount of resources available.  The assertions $B$ and $R$ are
 postconditions for the case in which the block $S$ exits by a \code{break}
-or \code{return} statement.  Additionally, $R$ depends on an extra value
-that is returned by the function.  The meaning of the triple $\htriple Q S
-{Q'}$ is as follows: If $S$ is executed with starting state $\state$,
-the empty continuation \Kstop{} and at least $Q(\state)$ resource units
-available then the evaluation does not run out of resources and there
-are at least $Q(\state')$ resources left if the evaluation terminates
-in state $\state'$.  The logic rules are similar to the ones in previous
-work and are simply extended to account for all the costs found in
-our cost-aware semantics.  Some rules are presented in \pref{fig:logic}.
+or \code{return} statement.  Additionally, $R$ depends on the return
+value of the current function.  The meaning of the triple $\htriple Q
+S {Q'}$ is as follows: If $S$ is executed with starting state $\state$,
+the empty continuation, and at least $Q(\state)$ resource units available
+then the evaluation does not run out of resources and there are at
+least $Q(\state')$ resources left if the evaluation terminates in
+state $\state'$.  The logic rules are similar to the ones in previous
+work and are simply extended to account for all the costs found in our
+cost-aware semantics.
 
-Finally, we define a continuation based
-soundness of triples and prove the soundness of all rules in Coq.  The
-full version of this paper \cite{anon_extended}, gives more explanations
-on the rules and provides a thorough overview of our soundness proof.
+Finally, we define a strong compositional continuation based soundness for
+triples and prove the validity of all the rules in Coq.  \ifshort{The full
+version of this paper \cite{anon_extended}, provides explanations for
+many rules and a thorough overview of our soundness proof.}{Details about
+the logic and its soundness proof are provided in the \pref{app:logic}.}
 
-\subsection{The Soundness Theorem}
-
-We use the
-logic from previous paragraph as the target of a translation
+\paragraph{The Soundness Theorem.}
+We use the logic from previous paragraph as the target of a translation
 function for the automatic derivation system.  This reveals two orthogonal
-aspects of the proof: on one side, it relies on amortized reasoning
-(the quantitative logic rules), and on the other side, it
-uses combinatorial properties of our linear potential functions
-(the automatic analysis rules).
+aspects of the proof: on one side, it relies on amortized reasoning (the
+quantitative logic rules), and on the other side, it uses combinatorial
+properties of our linear potential functions (the automatic analysis
+rules).
 
-Technically, we define a translation
-function $\tr$ such that if a judgement $J$ in the automatic analysis
-is derivable, $\tr(J)$ is derivable in the quantitative logic.  By using
-$\tr$ to translate derivations of the automatic analysis to derivations
-in the quantitative logic we can directly obtain a certified resource
-bound for the analyzed program.
+Technically, we define a translation function $\tr$ such that if
+a judgement $J$ in the automatic analysis is derivable, $\tr(J)$
+is derivable in the quantitative logic.  By using $\tr$ to translate
+derivations of the automatic analysis to derivations in the quantitative
+logic we can directly obtain a certified resource bound for the analyzed
+program.
 
 The translation of an assertion $(\Gamma, Q)$ in the automatic
 analysis is defined by
