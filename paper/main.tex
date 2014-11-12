@@ -1665,10 +1665,11 @@ To get a tight bound, we use modern LP solvers that allow constraint
 solving and minimization at the same time:  First we consider our initial
 constraint set as given in \pref{fig:derivation} and ask the
 solver to find a solution that satisfies the constraints and minimizes
-the linear expression
+the linear expression \ifshort{$L := 1{\cdot}q_{x,0} + 10000{\cdot}q_{0,x}
++ 11{\cdot}q_{x,10} + 9990{\cdot}q_{10,x}$.}{
 $$
-1{\cdot}q_{x,0} + 10000{\cdot}q_{0,x} + 11{\cdot}q_{x,10} + 9990{\cdot}q_{10,x} \; .
-$$
+L := 1{\cdot}q_{x,0} + 10000{\cdot}q_{0,x} + 11{\cdot}q_{x,10} + 9990{\cdot}q_{10,x} \; .
+$$}
 The penalties given to certain factors are used
 to prioritize certain intervals.  For example, a bound with
 $[10,x]$ will be prefered to another with $[0,x]$ because $|[10,x]|
@@ -1681,19 +1682,19 @@ instantiation}{}.  The solver also memorizes the optimization path that
 led to the optimal solution.  In this case, the objective value would
 be 5000
 since the LP solver assigns $q_{0,x} = 0.5$ and $q_{*} = 0$ otherwise.
-We now add the constraint
+We now add the constraint \ifshort{$L \le 5000$}{
 $$
 1{\cdot}q_{x,0} + 10000{\cdot}q_{0,x} + 11{\cdot}q_{x,10} + 9990{\cdot}q_{10,x}
  \le 5000
-$$
+$$}
 to our constraint set and ask the solver to optimize the objective
-function
+function \ifshort{$q_0 + 11{\cdot}q_{0,10}$.}{
 $$
 q_0 + 11{\cdot}q_{0,10} \; .
-$$
+$$}
 This happens in almost no time in practice.
-The final solution is $q_{0,x} = 0.5$ and $q_{*} = 0$ otherwise.  Thus
-the derived bound is $0.5 |[0,x]|$.
+The final solution is $q_{0,x} = 0.5$ and $q_{*} = 0$ otherwise, thus
+the bound is $0.5 |[0,x]|$.
 
 Another interesting note is that the constraints that we generate have
 a particularly simple form that is known as \emph{network problem}.
@@ -2144,6 +2145,87 @@ to detect a resource crash as a stuck configuration where $\cost<0$.
 
 \subsection{Quantitative Hoare Logic}
 
+\begin{figure*}
+\small
+\begin{mathpar}
+%
+\Rule{L:Update}
+{ }
+{ \Delta; B; R \vdash
+\htriple
+  { \lambda \state.\,M_u + M_e(e) + Q\,\state[x \mapsto \sem{e}_\state] }{ x \gets e }{ Q }
+}
+%
+\and
+\Rule{L:Assert}
+{ }
+{ \Delta; B; R \vdash
+\htriple
+  { \code{istrue}~\sem{e}_\state \implies Q + M_a }
+  { \code{assert}~e }
+  { Q }
+}
+%
+\and
+\Rule{L:Tick}
+{ }
+{ \Delta; B; R \vdash
+\htriple
+  { Q + M_t(n) }
+  { \code{tick}(n) }
+  { Q }
+}
+%
+\and
+\Rule{L:Loop}
+{ \Delta; Q; R \vdash
+\htriple
+  { I }{ S }{ I + M_l }
+}
+{ \Delta; B; R \vdash
+\htriple
+  { I }{ \code{loop}~S }{ Q }
+}
+\and \Rule{L:Seq}
+{ \Delta; B; R \vdash
+\htriple{ P }{ S_1 }{ Q' + M_s }
+\\
+\!\!  \Delta; B; R \vdash
+\htriple{ Q' }{ S_2 }{ Q }
+}
+{ \Delta; B; R \vdash
+\htriple{ P }{ S_1;S_2 }{ Q }
+}
+%
+\and
+\Rule{L:Weaken}
+{
+  \!\! B' \models B \!\! \\
+  \!\! \forall v.\, (R'\,v \models R\,v) \!\! \\\\
+  \!\! P \models P' \!\! \\
+  \!\! \Delta; B'; R' \vdash
+  \htriple{ P' }{ S }{ Q' } \!\! \\
+  \!\! Q' \models Q \!\!
+}
+{ \Delta; B; R \vdash
+\htriple{ P }{ S }{ Q }
+}
+%
+\and
+\Rule{L:Frame}
+{ \Delta; B; R \vdash
+\htriple{ P }{ S }{ Q } \\
+  x \in \Qplusz
+}
+{ \!\! \Delta; B + x; R + x \vdash
+\htriple{ P + x }{ S }{ Q + x } \!\!
+}
+%
+\end{mathpar}
+\caption{Selected rules of the Quantitative Hoare Logic}
+\label{fig:logic}
+\end{figure*}
+
 To prove the soundness of \toolname we found it useful to go through
 an intermediate step using a Quantitative Hoare Logic.  This logic
 is at the same time a convenient semantic tool and a clean way to
@@ -2165,12 +2247,24 @@ available then the evaluation does not run out of resources and there
 are at least $Q(\state')$ resources left if the evaluation terminates
 in state $\state'$.  The logic rules are similar to the ones in previous
 work and are simply extended to account for all the costs found in
-our cost-aware semantics.
+our cost-aware semantics.  Some rules are presented in \pref{fig:logic}.
+
+Finally, still following previous work, we define the a continuation based
+soundness of triples and prove the soundness of all rules in Coq.  The
+full version of this paper \cite{anon_extended}, gives more explanations
+on the rules and provides a thorough overview of our soundness proof.
 
 \subsection{The Soundness Theorem}
 
-We translate judgements of the automatic amortized analysis as defined in
-\pref{fig:auto} into quantitative Hoare triples.  We define a translation
+We use the
+logic described in the previous paragraph as the target of a translation
+function for the automatic derivation system.  This reveals two orthogonal
+aspects of our proof that relies, on one side, on amortized reasoning
+(as encoded in the quantitative logic), and on the other side, on
+combinatorial properties of the linear potential functions that we
+are using (as encoded in the automatic analysis).
+
+We define a translation
 function $\tr$, such that if a judgement $J$ in the automatic analysis
 is derivable, $\tr(J)$ is derivable in the quantitative logic.  By using
 $\tr$ to translate derivations of the automatic analysis to derivations
@@ -2249,88 +2343,6 @@ We prove similar lemmas for the rules that deal with assignment.  With
 the computational content of the proof, we have an effective algorithm
 to construct certificates for upper bounds derived automatically.
 }{}
-
-\begin{figure*}
-\small
-\begin{mathpar}
-%
-\Rule{L:Update}
-{ }
-{ \Delta; B; R \vdash
-\htriple
-  { \lambda \state.\,M_u + M_e(e) + Q\,\state[x \mapsto \sem{e}_\state] }{ x \gets e }{ Q }
-}
-%
-\and
-\Rule{L:Assert}
-{ }
-{ \Delta; B; R \vdash
-\htriple
-  { \code{istrue}~\sem{e}_\state \implies Q + M_a }
-  { \code{assert}~e }
-  { Q }
-}
-%
-\and
-\Rule{L:Tick}
-{ }
-{ \Delta; B; R \vdash
-\htriple
-  { Q + M_t(n) }
-  { \code{tick}(n) }
-  { Q }
-}
-%
-\and
-\Rule{L:Loop}
-{ \Delta; Q; R \vdash
-\htriple
-  { I }{ S }{ I + M_l }
-}
-{ \Delta; B; R \vdash
-\htriple
-  { I }{ \code{loop}~S }{ Q }
-}
-\and \Rule{L:Seq}
-{ \Delta; B; R \vdash
-\htriple{ P }{ S_1 }{ Q' + M_s }
-\\
-\!\!  \Delta; B; R \vdash
-\htriple{ Q' }{ S_2 }{ Q }
-}
-{ \Delta; B; R \vdash
-\htriple{ P }{ S_1;S_2 }{ Q }
-}
-%
-\and
-\Rule{L:Weaken}
-{
-  \!\! B' \models B \!\! \\
-  \!\! \forall v.\, (R'\,v \models R\,v) \!\! \\\\
-  \!\! P \models P' \!\! \\
-  \!\! \Delta; B'; R' \vdash
-  \htriple{ P' }{ S }{ Q' } \!\! \\
-  \!\! Q' \models Q \!\!
-}
-{ \Delta; B; R \vdash
-\htriple{ P }{ S }{ Q }
-}
-%
-\and
-\Rule{L:Frame}
-{ \Delta; B; R \vdash
-\htriple{ P }{ S }{ Q } \\
-  x \in \Qplusz
-}
-{ \!\! \Delta; B + x; R + x \vdash
-\htriple{ P + x }{ S }{ Q + x } \!\!
-}
-%
-\end{mathpar}
-
-\caption{Selected rules of the Quantitative Hoare Logic}
-\label{fig:logic}
-\end{figure*}
 
 
 
