@@ -891,8 +891,8 @@ variables unchanged by the loop) is sufficient to obtain good bounds.
 
 \begin{figure*}
   \centering
-\vspace{-1.8cm}
-\hspace{-0.4cm}
+\ifshort{\vspace{-1.8cm}
+\hspace{-0.4cm}}{}
   \begin{minipage}[b]{7cm}
     \begin{center}
    \begin{lstlisting}[]
@@ -3645,7 +3645,7 @@ $11|[n,0]| + 0.01|[0,y]|$
 
 
 \begin{figure*}
- \setlength{\progwidth}{.24\linewidth}
+ \setlength{\progwidth}{.18\linewidth}
   \centering
 
   \begin{minipage}[b]{\progwidth}
@@ -3734,6 +3734,29 @@ $|[0,x]|$
 $101|[y,x]|$
 \\[.7\baselineskip]
       {\bf t16}
+    \end{center}
+  \end{minipage}
+%
+%
+  \begin{minipage}[b]{\progwidth}
+    \begin{center}
+   \begin{lstlisting}
+  i=1;
+  j=0;
+  while (j<x) {
+    j++;
+    if (i>=4) {
+      i=1;
+      tick(40);
+    } else
+       i++;
+    tick(1);
+  }
+   \end{lstlisting}
+
+$11|[0,x]|$
+\\[.7\baselineskip]
+      {\bf t63}
     \end{center}
   \end{minipage}
 
@@ -3906,6 +3929,14 @@ instead of assigning \code{z=y}, we assign \code{z=2y+100}.  The analysis
 computes the linear bound $101|[0,x]|$.  The
 assignment of potential to the size interval $|[0,x]|$ in instead of
 $|[y,x]|$ is a random choice of the LP solver.
+
+Example \emph{t63} shows how amortized reasoning handles periodically
+expensive operations.  The top-level loop is iterated $x$ times in
+a regular fashion, but every 4 iterations of this loop an expensive
+opereation modeled by \code{tick(40)} is performed.  Taking the worst
+case of the loop body would yield the pessimistic bound $41|[0,x]|$,
+however our tool is able to amortize the expensive operation and derives
+instead the tight bound $11|[0,x]|$.
 
 Example \emph{t19} consists of two loops that decrement a variable
 $i$.  In the first loop, $i$ is decremented down to 100 and in the
