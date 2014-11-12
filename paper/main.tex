@@ -1439,9 +1439,8 @@ $\Gamma$ that $y \ge 0$.  Of course, we have symmetrical rules that
 can be applied for decrements and when $y$ is not positive.}
 The rules are all equivalent in the case where $y=0$.
 The rule {\sc Q:Inc} can be applied
-if we cannot deduce any information about $y$.  In the implementation,
-the rules for increments and decrements are combined into one syntax
-directed rule\iffull{ where the specialized rules take priority over {\sc Q:Inc}.}{.}
+if we cannot deduce any information about $y$.  In $\toolname$,
+the rules for increments and decrements are combined into one rule\iffull{ where the specialized rules take priority over {\sc Q:Inc}.}{.}
 
 \iffull{To explain how rules for increment and decrement work, it is
 sufficient to understand the rule {\sc Q:IncP}.  The others follow the
@@ -1518,7 +1517,7 @@ x y| \leq u$ for a constant $u$ then we can transfer constant potential
 $u{\cdot}q_{xy}$ to the interval potential $q_{xy} {\cdot} |\inter x y|$\iffull{ without gaining potential.}{.}
 
 \newcommand{\loopbody}[0]{\ensuremath{\code{if~(x - 10 \geq 0)~\{x=x{-}10; tick(5);\}~else~break;}}}
-\begin{figure*}
+\begin{figure*}[t]
 \vspace{-.6cm}
 \centering
 \footnotesize
@@ -1750,7 +1749,7 @@ Such problems can be solved in linear time in practice.
 \aftersectskip
 
 
-\begin{figure}
+\begin{figure}[t]
 \center
 \begin{minipage}[b]{0.8\linewidth}
 \begin{lstlisting}[numbers=left]
