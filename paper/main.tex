@@ -1372,12 +1372,6 @@ like $q_{xa}$ and $q_{ax}$ that contain $x$ after the assignment.
   function calls.}
 \jan{Here we have to say something about function specifications and
   function calls.}
-\jan{Here we have to say something about function specifications and
-  function calls.}
-\jan{Here we have to say something about function specifications and
-  function calls.}
-\jan{Here we have to say something about function specifications and
-  function calls.}
 
 \paraskip
 \paragraph{Derivation Rules.}
@@ -1650,7 +1644,22 @@ q^\text{de}_{10,x} |[10,x]| + q^\text{de}_{0,10} |[0,10]|$, where the
 variables such as $q^\text{de}_{x,10}$ are yet unknown and later
 instantiated by the LP solver.
 
-The rules are syntax directed and applied inductively.  For example,
+In general, the weakening rule can be applied after every syntax directed
+rule.  However, it can be left out in practice at some places to
+increase the efficiency of the tool.
+The weakening operation $\succeq_{\Gamma}$ is defined by the rule
+\textsc{Relax}, it is parameterized by a logical context that is
+used to gather information on interval sizes.  For example, we have
+$$
+\begin{array}{lll}
+P^\text{de} \succeq_{(\cdot)} P^\text{we}
+& \equiv &  p^\text{we}_{0,10} \leq p^\text{de}_{0,10} + u_{0,10} - v_{0.10}  \\
+& \land &   p^\text{we}_{0} \leq p^\text{de}_{0} - 10 {\cdot} u_{0,10} + 10 {\cdot} v_{0.10}  \\
+& \land &  \forall (\alpha, \beta) \neq (0,10)  . \, p^\text{we}_{\alpha,\beta} \leq p^\text{de}_{\alpha,\beta} \;\;\; .
+\end{array}
+$$
+%
+The other rules are syntax directed and applied inductively.  For example,
 the outermost expression is a loop, so we use the rule \text{Q:Loop}
 at the root of the derivation tree.  At this point, we don't know yet
 whether a loop invariant exists.  But we produce the constraints
@@ -1670,21 +1679,6 @@ $$}{.}
 This constraint expresses the fact that the potential before and
 after the loop body is equal and thus constitutes an invariant.
 
-In general, the weakening rule can be applied after every syntax directed
-rule.  However, it can be left out in practice at some places to
-increase the efficiency of the tool.
-The weakening operation $\succeq_{\Gamma}$ is defined by the rule
-\textsc{Relax}, it is parameterized by a logical context that is
-used to gather information on interval sizes.  For example, we have
-$$
-\begin{array}{lll}
-P^\text{de} \succeq_{(\cdot)} P^\text{we}
-& \equiv &  p^\text{we}_{0,10} \leq p^\text{de}_{0,10} + u_{0,10} - v_{0.10}  \\
-& \land &   p^\text{we}_{0} \leq p^\text{de}_{0} - 10 {\cdot} u_{0,10} + 10 {\cdot} v_{0.10}  \\
-& \land &  \forall (\alpha, \beta) \neq (0,10)  . \, p^\text{we}_{\alpha,\beta} \leq p^\text{de}_{\alpha,\beta} \;\;\; .
-\end{array}
-$$
-%
 After the constraint generation, the LP solver is provided with an
 objective function to minimize.  We wish to
 minimize the initial potential, which constitutes the resource bound on the
