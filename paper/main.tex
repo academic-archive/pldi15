@@ -2316,8 +2316,7 @@ while (i>100) {
 i += k+50;
 while (i>=0) {
   i--; tick(1);
-}
-\end{lstlisting}\hspace{-.5cm}
+}\end{lstlisting}\hspace{-.5cm}
 &
 \begin{lstlisting}[basicstyle=\tt\footnotesize]
 while (x>0) {
@@ -2711,28 +2710,36 @@ automatic bound analysis does not compute symbolic bounds.
 \label{sec:concl}
 \aftersectskip
 
-We have introduced an novel quantitative analysis system for CompCert
-Clight programs.  To the best of our knowledge, this article presents
-the first resource analysis framework for C that makes it possible to
-combine non-trivial automatically derived bounds with interactively
-derived bounds in a proof system that produces verifiable certificates
-for the bounds.  The main technical innovations are a quantitative
-Hoare logic for reasoning about user-defined resource cost and an
-automatic amortized analysis that derives bounds for programs whose
-resource consumption depends on (possibly negative) integers and
-non-sequential control flow as introduced by \code{break} and
-\code{return} statements.
+We have developed a novel analysis framework for compositional and
+certified worst-case resource bound analysis for C programs.  The
+framework combines ideas from existing abstract interpretation--based
+techniques with the potential method of amortized analysis.  The
+technical innovations are implemented in the publically available tool
+$\toolname$. To the best of our knowledge, $\toolname$ is the first
+analysis tool for C programs that automatically reduces the derivation
+of symbolic bounds to efficient LP solving.
 
-We will continue to improve our framework to reason more precisely
-about resource usage of system software such as the hypervisor kernel
-CertiKOS~\cite{GuVFSC11}, which \iffull{we are currently developing
-  and verifying}{is currently developed and verified}.  For one thing,
-we will improve the automation to derive \emph{polynomial bounds} and
-to handle non-linear size changes, as already developed for functional
-programs~\cite{HoffmannS13}.  For another thing, we will build on
-previous work~\cite{HoffmannMZ13} to generalize the quantitative
-Hoare logic to handle \emph{concurrent programs}\iffull{ with locks and
-lock-free data structures.}{.}
+We have demonstrated that our approach improves the state-of-the-art
+in resource bound analysis for C programs in three ways. First, our
+technique is naturally compositional, tracks size changes of
+variables, and can abstractly specify the resource cost of functions
+(\pref{sec:AAA}). Second, it is easily combinable with established
+qualitative verification to guide semi-automatic bound derivation
+(\pref{sec:anno}). Third, we have shown that the local inference rules
+of the derivation system automatically produce easily checkable
+certificates for the derived bounds (\pref{sec:soundness}).
+
+Our system is the first amortized resource analysis for C programs.
+It addresses the longstanding open problem of extending automatic
+amortized resource analysis to compute bounds for programs that loop
+on singed integers and to deal with non-linear control flow that is
+introduced by break and return statements.
+
+This work is the starting point for several projects that we plan to
+investigate in the future. Examples include the extension to
+concurrent programs, better integration of low-level features like
+hardware caches, and the extension of the automatic analysis to
+multivariate resource polynomials~\cite{HoffmannAH11}.
 
 % \acks
 
