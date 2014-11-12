@@ -2436,7 +2436,7 @@ loop is split in \lstinline{x--} and \lstinline{x -= y}. If we enter the
 loop then we know that $x>0$, so we can obtain constant potential from
 \lstinline{x--}.  Then we know that $x\geq y\geq 0$, as a consequence
 we can share the potential of $|[0,x]|$ between $|[0,x]|$ and $|[0,y]|$
-after \lstinline{x -= y}.  In this way, we derive a tight linear bound.
+after \lstinline{x -= y}.  % In this way, we derive a tight linear bound.
 
 Example \emph{t13} shows how amortization can be used to find linear
 bounds for nested loops.  The outer loop is iterated $|[0,x]|$ times.
@@ -2447,7 +2447,7 @@ counted back to $0$.  The analysis computes a tight bound.
   inner loop can as well be replace by something more interesting, say
   $9$ and $10$ like in example \emph{t08}.  Then we still obtain a
   tight linear bound.}{}
-
+%
 \ifdefined\fullversion
 \begin{figure}[t]
   \centering
@@ -2554,63 +2554,48 @@ and SPEED, we simply used the bounds that have been reported by the
 authors of the respective tools.  The results show that our automatic
 amortized analysis outperforms the existing tools on our example
 programs.  However, this experimental evaluation has to be taken with
-a grain of salt.  Our goal in this work is not to set a new standard
-for automatic bound analysis but only to show that our approach has
-advantages on examples with linear bounds.  Overall the existing tools
-are more powerful since they can derive polynomial bounds and support
+a grain of salt.  Existing tools complement $\toolname$
+since they can derive polynomial bounds and support
 more features of C.  We were particularly impressed by LOOPUS which is
 very robust, works on large C files, and derives very precise bounds.
-We did not include the running times of the tools in the table since
+\iffull{We did not include the running times of the tools in the table since
 all tested tools work very efficiently and need less then a second
-on every tested example.
+on every tested example.}{}
+
+\pref{tab:cbench} contains a compilation of the results of our
+experiments with the cBench benchmark suite. It shows a representative
+list of automatically derived function bounds. In total we analyzed
+more than 2000 lines of code.
+%
+In the LOC column
+where not only count the LOC of the analyzed function but
+also the LOC of all the function it calls. \iffull{The line count is
+computed on pre-processed C with all unnecessary declarations removed.}{}
+\jan{What is the cost measure?}
 
 Since we have a formal cost semantics, we can run our examples with
 this semantics for different inputs and measure the cost to compare it
 to our derived bound.  \pref{fig:3d} shows such a comparison for
 example \emph{t08}.  One can see that the derived constant factors are the
-best possible if the input variable $x$ is non-negative.  If $x$ is
-negative then the bound is only slightly off.
-
-\begin{table}[t]
-\centering
-\begin{tabular}{r|c|c|c}
-Function & LoC & Bound & Time (s) \\
-\hline
-\code{adpcm\_coder} & 145 & $1+|[0,\code{N}]|$ & 0.6 \\
-\code{adpcm\_decod} & 130 & $1+|[0,\code{N}]|$ & 0.2 \\
-\code{BF\_cfb64\_enc} & 151 & $1+2|[-1,\code{N}]|$ & 0.7 \\
-\code{BF\_cbc\_enc} & 180 & $2+0.25|[-8,\code{N}]|$ & 1.0 \\
-\code{mad\_bit\_crc} & 145 & $61.19{+}0.19|[-1,\code{N}]|$ & 0.4 \\
-\code{mad\_bit\_read} & 65 & $1+0.12|[0,\code{N}]|$ & 0.05 \\
-\code{MD5Update} & 200 & $133.95{+}1.05|[0,\code{N}]|$ & 1.0 \\
-\code{sha\_update} & 98 & $2 + 3.55|[0,\code{N}]|$ & 1.2 \\
-\end{tabular}
-\vspace{.1cm}
-\caption{Evaluation of our automatic amortized analysis on larger
-C code from the cBench benchmark suite. The function analyzed might
-be calling helper functions which do not appear in the list but have
-to be analyzed.  These functions are accounted for in the LoC column
-where not only the lines count of the analyzed function is called
-but also the line count of all the funtions it calls. The line count
-is computed on pre-processed C with all unnecessary declarations
-removed.}
-\label{tab:cbench}
-\end{table}
+best possible if the input variable $x$ is non-negative.  \iffull{If $x$ is
+negative then the bound is only slightly off.}{}
 
 \sectskip
 \section{Related Work}
 \label{sec:related}
 \aftersectskip
 
-Most closely related to this article is \iffull{our}{a} previous work
-on end-to-end stack-bound verification of Clight
-programs~\cite{veristack14}.  In that work, \iffull{we}{the authors}
-have implemented and verified a quantitative logic to reason about
-stack-space usage.  In this article, we present a more general
-quantitative Hoare logic that is parametric in the resource of
-interest.  The main innovation is the novel automatic amortized analysis for
-Clight programs that computes logical derivations for non-trivial
-bounds for programs with loops and recursion.
+A recent project~\cite{veristack14} has implemented and verified a
+quantitative logic to reason about stack-space usage, and modified the
+verified CompCert C compiler to translate C level bound to x86 stack
+bounds.  This quantitative logic is also based on the potential method
+but has very rudimentary support for automation that cannot
+automatically derive symbolic bounds and is not based on efficient LP
+solving.  In this article, we use a more general quantitative Hoare
+logic that is parametric in the resource of interest.  Our main
+contribution is the automatic amortized analysis for Clight that can
+be combined with~\cite{veristack14} to automatically derive parametric
+verified stack bounds for recursive functions.
 
 Our work has been inspired by type-based amortized resource analysis
 for functional programs~\cite{Jost03,HoffmannH10,HoffmannAH12}.  There
@@ -2622,8 +2607,13 @@ on (possibly negative) integers.  Second, we extended the analysis
 system to deal with non-linear control flow that is introduced by
 \code{break} and \code{return} statements.  Third, for the first time,
 we have combined an automatic amortized analysis with a system for
-interactively deriving bounds.
+interactively deriving bounds. In particular, recent
+systems~\cite{HoffmannS13} that deal with integers and arrays cannot
+derive bounds that depend on values in mutable locations or possibly
+negative integers, and thus do not apply to most of our example
+programs.
 
+\iffull{
 In the development of our quantitative Hoare logic we have drawn
 inspiration from mechanically verified Hoare logics.
 Nipkow's~\cite{Nipkow02} description of his implementations of Hoare
@@ -2648,6 +2638,26 @@ code by Aspinall et al.~\cite{AspinallBHLM07}.  Their logic is not
 Hoare-style, does not target C code, and is not designed for
 interactive bound development but to produce certificates for bounds
 derived for high-level functional programs.
+}{}
+\begin{table}[t]
+\centering
+\begin{tabular}{r|c|c|c}
+Function & LoC & Bound & Time (s) \\
+\hline
+\code{adpcm\_coder} & 145 & $1+|[0,\code{N}]|$ & 0.6 \\
+\code{adpcm\_decod} & 130 & $1+|[0,\code{N}]|$ & 0.2 \\
+\code{BF\_cfb64\_enc} & 151 & $1+2|[-1,\code{N}]|$ & 0.7 \\
+\code{BF\_cbc\_enc} & 180 & $2+0.25|[-8,\code{N}]|$ & 1.0 \\
+\code{mad\_bit\_crc} & 145 & $61.19{+}0.19|[-1,\code{N}]|$ & 0.4 \\
+\code{mad\_bit\_read} & 65 & $1+0.12|[0,\code{N}]|$ & 0.05 \\
+\code{MD5Update} & 200 & $133.95{+}1.05|[0,\code{N}]|$ & 1.0 \\
+\code{sha\_update} & 98 & $2 + 3.55|[0,\code{N}]|$ & 1.2 \\
+\end{tabular}
+\vspace{.1cm}
+\caption{Derived bounds for functions from cBench.}
+\label{tab:cbench}
+\end{table}
+
 
 \begin{figure}[t]
 \center
@@ -2669,19 +2679,12 @@ on realistic software.  The importance of amortization to derive tight
 bounds is well known in the resource analysis
 community~\cite{AlonsoG12,Moser14,SinnZV14}.  Currently, the only
 other available tools that can be directly applied to C code are Rank
-and LOOPUS.  Our analysis framework does not aim to set a new standard
-for automatic bound analysis.  Our contribution is rather a principled
-approach that produces certificates that are proved sound with respect
-to a formal cost semantics.  Moreover, we have a system that enables
-both automatic and interactive bound derivation, a formal soundness
-proof in Coq, and a method that can handle resources that can be
-released (e.g., memory).  However, as we have shown
-in~\pref{sec:exper}, our automatic amortized analysis matches the
-state of the art in automatic bound analysis for linear bounds and
-sometimes even derives better constant factors than the other tools.
-Since Rank and Loopus do not handle recursion, our automatic amortized
-analysis is also the only available tool that can derive bounds for
-recursive C programs.
+and LOOPUS.  As demonstrated, $\toolname$ is more compositional than
+the aforementioned tools. Our technique, is the only one that is able
+to generate resource specifications for functions, deal with resources
+like memory that might become available, generates proof certificates
+for the bounds, and has support for user guidance that separates
+qualitative and quantitative reasoning.
 
 There are techniques~\cite{Braberman08} that can compute the memory
 requirements of object oriented programs with region-based garbage
@@ -2689,7 +2692,7 @@ collection.  These systems infer invariants and use external tools
 that count the number of integer points in the corresponding polytopes
 to obtain bonds.  The described technique can handle loops but not
 recursive or composed functions.
-
+%
 We are only aware of two verified quantitative analysis systems.
 Albert et al.~\cite{AlbertBGHR12} rely on the KeY tool to
 automatically verify previously inferred loop invariants, size
