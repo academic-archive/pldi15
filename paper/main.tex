@@ -85,11 +85,12 @@
 \lstset{moredelim=[is][\color{blue}]{@}{@},keepspaces=true}
 
 %SHORT
-% \lstset{basicstyle=\tt\scriptsize}
-% \abovedisplayskip=3pt
-% \belowdisplayskip=3pt
-% \abovedisplayshortskip=3pt
-% \belowdisplayshortskip=3pt
+\ifx\fullversion\undefined
+\abovedisplayskip=3pt
+\belowdisplayskip=3pt
+\abovedisplayshortskip=3pt
+\belowdisplayshortskip=3pt
+\fi
 %SHORT
 
 \conferenceinfo{POPL} {January XX-XX, 2014, CITY, STATE, India.}
@@ -478,20 +479,15 @@ This can be composed as $\Phi(\state) \ge (n + m) + \Phi''(\state'')$.
 Note that the initial potential function $\Phi$ provides an upper bound
 on the resource consumption of the whole program.  What we have observed
 is that, if we define $\htriple{\Phi} {S}{\Phi'}$ to mean
-\itemskip
-\itemskip
 $$
 \forall \state\, n\, \state'.\, (\state, S) \Downarrow_n \state' \implies \Phi(\state) \ge
 n + \Phi'(\state') \; ,
-\vspace{-1.5ex}
 $$
 then we get the following familiar looking rule
-\itemskip
 $$
 \RuleNolabel
 {\htriple{\Phi}{S_1}{\Phi'} \\ \htriple{\Phi'}{S_2}{\Phi''}}
 {\htriple{\Phi} {S_1; S_2}  {\Phi''}} \;\; .
-\vspace{-1.5ex}
 $$
 %
 This rule already shows a departure from classical techniques that are
@@ -659,6 +655,7 @@ same set of variables.}{}
 \begin{figure*}
  \setlength{\progwidth}{.22\linewidth}
   \centering
+\vspace{-.6cm}
 \hspace{-0.4cm}
   \begin{minipage}[b]{.18\linewidth}
     \begin{center}
@@ -894,6 +891,7 @@ variables unchanged by the loop) is sufficient to obtain good bounds.
 
 \begin{figure*}
   \centering
+\vspace{-1.8cm}
 \hspace{-0.4cm}
   \begin{minipage}[b]{7cm}
     \begin{center}
@@ -1224,6 +1222,7 @@ tools\iffull{ for automatic bound derivation.}{.}
 \ifshort{
 \begin{figure*}
 \small
+\vspace{-.3cm}
 \begin{mathpar}
 \Rule{Q:Update}
 { q'_{xy}, q'_{yx} \in \Qplusz
@@ -1286,7 +1285,7 @@ tools\iffull{ for automatic bound derivation.}{.}
 \end{figure*}
 }{}
 
-
+\sectskip
 \section{Derivation System}
 
 In the following we describe the local and compositional derivation
@@ -1301,21 +1300,32 @@ $$
   (\Gamma_B, Q_B); (\Gamma_R, Q_R);
     (\Gamma, Q) \vdash S \dashv (\Gamma', Q').
 $$
+%
+The part $(\Gamma, Q) \vdash S \dashv (\Gamma', Q')$ of the judgement
+can be seen as a regular Hoare triple.  All assertions are split into
+two parts, the logical part and the quantitative part.  The
+quantitative part $Q$ represents a potential function as a collection
+of non-negative numbers $q_i$ indexed by the index set $I$.  The
+logical part $\Gamma$ is left abstract but is enforced by our
+derivation system to respect classic Hoare logic constraints.
+%
+The meaning of this basic judgment is as follows: If $S$ is executed
+with starting state $\state$, the assertions in $\Gamma$
+hold, and at least $Q(\state)$ resource units are available then the
+evaluation does not run out of resources and---if the execution
+terminates in state $\state'$---there are at least $Q(\state')$
+resources left and $\Gamma'$ holds for $\state'$.
 
-These judgements are similar to classic Hoare triples in the presence
-of the early exit statements \code{break} and \code{return}.  The part
-$(\Gamma_B, Q_B)$ is the postcondition used when breaking out of
-a loop.  For example, it is set upon entry of looping statements by
-the rule {\sc Q:Loop} and used before \code{break} statements by the
-rule {\sc Q:Break}.  Similarly $(\Gamma_R, Q_R)$ is the postcondition
-used before returning from a function call.  The part $(\Gamma, Q) \vdash
-S \dashv (\Gamma', Q')$ of the judgement can be seen as a regular
-Hoare triple.  All assertions are split into two parts, the logical
-part and the quantitative part.  The quantitative part $Q$ represents a
-potential function as a collection of non-negative numbers $q_i$ indexed
-by the index set $I$.  The logical part $\Gamma$ is left abstract but
-is enforced by our derivation system to respect classic Hoare logic
-constraints.
+The judgement is a bit more involved since we have to take into
+account the early exit statements \code{break} and \code{return}.
+This is similar to classical Hoare triples the presence of non-linear
+control flow. In the judgement, $(\Gamma_B, Q_B)$ is the postcondition
+that holds when breaking out of a loop using \code{break}.  % For example, it is set upon entry
+% of looping statements by the rule {\sc Q:Loop} and used before
+% \code{break} statements by the rule {\sc Q:Break}.  
+Similarly, $(\Gamma_R, Q_R)$ is the postcondition that holds when
+returning from a function call with \code{return}. (This becomes clear
+in the rules.)
 
 % These judgements correspond to the logic judgements $\Delta; B; R
 % \vdash \htriple P S Q$ where each assertion splits in two parts, a
@@ -1340,8 +1350,7 @@ The notation $Q \pm n$ used in many rules defines a new context $Q'$
 such that $q'_0 = q_0 \pm n$ and $\forall i \neq 0 .\, q'_i = q_i$.
 In all the rules, we have the implicit side condition that all rational
 coefficients are non-negative.  Finally, if a rule mentions $Q$ and $Q'$
-and leaves the latter undefined at some index $i$ we will implicitly
-assume that $q'_i = q_i$.
+and leaves the latter undefined at some index $i$ we assume that $q'_i = q_i$.
 
 We describe the automatic amortized analysis for a subset of
 expressions of Clight.  Assignments are restricted to the form $x \gets
@@ -1350,9 +1359,10 @@ program is converted into this form prior to analysis without changing
 the resource cost.  This is achieved by using a series of \emph{cost-free
   assignments} that do not result in additional cost in the
 semantics.  Non-linear operations such as $x \gets z*y$ or $x \gets
-a[y]$ are simply handled by assigning zero potential to coefficients
+a[y]$ are handled by assigning $0$ to coefficients
 like $q_{xa}$ and $q_{ax}$ that contain $x$ after the assignment.
 
+\paraskip
 \paragraph{Derivation Rules.}
 
 The rules of our derivation system must serve two purposes.  They must
@@ -1365,11 +1375,12 @@ operation, thus no potential has to be used to pay for the evaluation;
 second, the program state is not changed by
 the execution of a skip statement, thus all the potential available
 before the execution of the skip statement is still available after.
+\iffull{
 These two observations would also justify a rule with the side-condition
 $Q \ge Q'$, because some potential is always safely lost.  For the sake
 of orthogonality, it is not how we present the rule and this form of
 weakening is in fact expressed as the stand-alone rule {\sc Q:Weak}
-described later.
+described later.}{}
 
 % Most of the rules correspond exactly to the respective rules of the
 % quantitative Hoare logic.
@@ -1401,8 +1412,8 @@ described later.
 % $q'_{xy} = q_{\ret y}$ and $q'_{yx} = q_{y \ret}$ for all $y$ and
 % $q_i'=q_i$ otherwise.
 
-Most interesting are the rules {\sc Q:IncP}\iffull{, {\sc Q:DecP},}{} and {\sc Q:Inc}
-which describe how the potential is distributed after a size change of
+The rules {\sc Q:IncP}\iffull{, {\sc Q:DecP},}{} and {\sc Q:Inc}
+describe how the potential is distributed after a size change of
 a variable.
 \iffull{The rule {\sc Q:IncP} is for increments $x \gets x + y$
 and {\sc Q:DecP} is for decrements $x \gets x - y$, they both apply only
@@ -1413,10 +1424,10 @@ $x \gets x+y$, it applies when we can deduce from the logical context
 $\Gamma$ that $y \ge 0$.  Of course, we have symmetrical rules that
 can be applied for decrements and when $y$ is not positive.}
 The rules are all equivalent in the case where $y=0$.
-Finally, the rule {\sc Q:Inc} can be applied
+The rule {\sc Q:Inc} can be applied
 if we cannot deduce any information about $y$.  In the implementation,
 the rules for increments and decrements are combined into one syntax
-directed rule where the specialized rules take priority over {\sc Q:Inc}.
+directed rule\iffull{ where the specialized rules take priority over {\sc Q:Inc}.}{.}
 
 \iffull{To explain how rules for increment and decrement work, it is
 sufficient to understand the rule {\sc Q:IncP}.  The others follow the
@@ -1434,7 +1445,7 @@ guard that $x' \in \inter x u$.  Dually, the interval $\inter v x$ can
 get bigger with the update.  We know that $|\inter v {x'}| \le y +
 |\inter v x|$.  So we decrease the potential of $\inter 0 y$ by
 $q_{vx}$ to pay for this change.  The rule ensures this
-only for $v \not\in \mathcal U$ because we know that $x \le v$
+only for $v \not\in \mathcal U$ because $x \le v$
 otherwise, and thus $|\inter v x| = 0$.
 
 \iffull{
@@ -1490,11 +1501,11 @@ larger then a constant $l$ then we can transfer potential $q_{xy} {\cdot}
 |\inter x y|$ form the interval to constant potential $l{\cdot}q_{xy}$
 and guarantee that we do not gain potential.  Conversely, if $|\inter
 x y| \leq u$ for a constant $u$ then we can transfer constant potential
-$u{\cdot}q_{xy}$ to the interval potential $q_{xy} {\cdot} |\inter x y|$
-without gaining potential.
+$u{\cdot}q_{xy}$ to the interval potential $q_{xy} {\cdot} |\inter x y|$\iffull{ without gaining potential.}{.}
 
 \newcommand{\loopbody}[0]{\ensuremath{\code{if~(x - 10 \geq 0)~\{x=x{-}10; tick(5);\}~else~break;}}}
 \begin{figure*}
+\vspace{-.3cm}
 \centering
 \footnotesize
 \begin{mathpar}
@@ -1546,9 +1557,11 @@ without gaining potential.
 }
 { (\cdot, B); (\cdot, Q) \vdash \code{loop}~{\loopbody} \dashv (x {<} 10, P)
 }
+\vspace{-.3cm}
 \end{mathpar}
 \flushleft
 \begin{tabular}{l}Constraints:\end{tabular}
+\vspace{-.2cm}
 $$
 \begin{array}{lll}
 P {=} B^\text{lo} \land Q {=} Q^\text{lo} {=} P^\text{lo}
@@ -1581,6 +1594,7 @@ $$
     1{\cdot}q_0 + 11{\cdot}q_{0,10}
   $
 \end{tabular}
+\vspace{.1cm}
 \caption{An example derivation as produced by the automatic tool.}
 \label{fig:derivation}
 \end{figure*}
@@ -1591,23 +1605,25 @@ $$
 \aftersectskip
 
 We separate the search of a derivation into two steps.  As a first
-step we go through the whole program and apply inductively the
-derivation rules of the automatic amortized analysis.  During this
+step we go through the functions of the program and apply inductively
+the derivation rules of the automatic amortized analysis.  This is
+done in a bottom-up way, for each strongly connected component of the
+call graph.  During this
 process our tool uses symbolic names for the rational coefficients
 $(q_i)$ in the rules.  Every time a linear constraint must be
 satisfied by these coefficients, it is recorded in a global list using
 the symbolic names.  We then feed the collected constraints to an
-off the shelf LP solver. (We currently use Coin-Or's CLP.)
+off-the-shelf LP solver. (We currently use Coin-Or's CLP.)
 If the solver successfully finds a solution, we know that a derivation
 exists for the considered program.  We can then extract the initial
 $Q$ from the solver and get a resource bound for the program.  To get
 a full derivation we simply extract the complete solution from the
 solver, and apply it to the symbolic names $(q_i)$ of the coefficients
 in the derivation.  If the LP solver fails to find a solution, an
-error is reported to the user.
+error is reported.
 
 \pref{fig:derivation} contains an example derivation as it is produced
-by our automatic analyzer.  The upper case letters (with optional
+by our $\toolname$.  The upper case letters (with optional
 superscript) such as $Q^\text{de}$ are families of
 variables that are later part of the constraint system that is passed
 to the LP solver.  For example $Q^\text{de}$ stands for the potential
@@ -1651,9 +1667,9 @@ P^\text{de} \succeq_{(\cdot)} P^\text{we}
 & \land &  \forall (\alpha, \beta) \neq (0,10)  . \, p^\text{we}_{\alpha,\beta} \leq p^\text{de}_{\alpha,\beta} \;\;\; .
 \end{array}
 $$
-
-After the constraint generation, the LP solver is provided with a
-so-called objective function to minimize.  We wish to
+%
+After the constraint generation, the LP solver is provided with an
+objective function to minimize.  We wish to
 minimize the initial potential, which constitutes the resource bound on the
 whole program.  Here it is given by $Q$.  Moreover, we would like to
 express that minimization of linear potential such as
@@ -1665,11 +1681,15 @@ To get a tight bound, we use modern LP solvers that allow constraint
 solving and minimization at the same time:  First we consider our initial
 constraint set as given in \pref{fig:derivation} and ask the
 solver to find a solution that satisfies the constraints and minimizes
-the linear expression \ifshort{$L := 1{\cdot}q_{x,0} + 10000{\cdot}q_{0,x}
-+ 11{\cdot}q_{x,10} + 9990{\cdot}q_{10,x}$.}{
+the linear expression
+\iffull{
 $$
-L := 1{\cdot}q_{x,0} + 10000{\cdot}q_{0,x} + 11{\cdot}q_{x,10} + 9990{\cdot}q_{10,x} \; .
+1{\cdot}q_{x,0} + 10000{\cdot}q_{0,x} + 11{\cdot}q_{x,10} + 9990{\cdot}q_{10,x} \; .
 $$}
+{$
+1{\cdot}q_{x,0} + 10000{\cdot}q_{0,x} + 11{\cdot}q_{x,10} + 9990{\cdot}q_{10,x}
+$.}
+%
 The penalties given to certain factors are used
 to prioritize certain intervals.  For example, a bound with
 $[10,x]$ will be prefered to another with $[0,x]$ because $|[10,x]|
@@ -1682,21 +1702,31 @@ instantiation}{}.  The solver also memorizes the optimization path that
 led to the optimal solution.  In this case, the objective value would
 be 5000
 since the LP solver assigns $q_{0,x} = 0.5$ and $q_{*} = 0$ otherwise.
-We now add the constraint \ifshort{$L \le 5000$}{
+We now add the constraint
+\iffull{
 $$
 1{\cdot}q_{x,0} + 10000{\cdot}q_{0,x} + 11{\cdot}q_{x,10} + 9990{\cdot}q_{10,x}
  \le 5000
-$$}
+$$}{
+$
+1{\cdot}q_{x,0} + 10000{\cdot}q_{0,x} + 11{\cdot}q_{x,10} + 9990{\cdot}q_{10,x}
+ \le 5000
+$
+}
 to our constraint set and ask the solver to optimize the objective
-function \ifshort{$q_0 + 11{\cdot}q_{0,10}$.}{
+function
+\iffull{
 $$
 q_0 + 11{\cdot}q_{0,10} \; .
 $$}
+{$
+q_0 + 11{\cdot}q_{0,10}
+$.}
 This happens in almost no time in practice.
 The final solution is $q_{0,x} = 0.5$ and $q_{*} = 0$ otherwise, thus
 the bound is $0.5 |[0,x]|$.
 
-Another interesting note is that the constraints that we generate have
+The constraints that we generate have
 a particularly simple form that is known as \emph{network problem}.
 Such problems can be solved in linear time in practice.
 
