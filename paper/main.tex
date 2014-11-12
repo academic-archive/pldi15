@@ -1924,8 +1924,15 @@ the case that $\log_2(x-x/2) = \log_2(x)-1$ (take 3).
 \aftersectskip
 
 The soundness of the analysis builds on a new cost semantics for Clight
-and an extended Quantitative Logic.  Using these two tools, the soundness
-proof of \toolname is done by a exhibiting a translation morphism.
+and an extended quantitative logic.  Using these two tools, the soundness
+of the automatic analysis described in \pref{sec:AAA}
+is proved by a translation morphism to the logic.
+
+\iffull{}{ The main parts of the soundness proved are formalized with
+  Coq and available for download. The full definitions of the cost
+  semantics and the quantitative Hoare logic, and more details on the
+  soundness proof can be found in the extended version of this
+  article.}
 
 \paragraph{Cost Semantics for Clight.}
 To base the soundness proof on a formal ground, we start by defining a
@@ -1963,7 +1970,7 @@ The small-step semantics we define is standard, except that it tracks
 the resource consumption of a program.  The semantics is parametric in
 the resource of interest for the user of our system.  We achieve this
 independence by parameterizing evaluations with a resource \emph{metric}
-$M$; a tuple of nine rational numbers and two maps.  Each of these
+$M$; a tuple of rational numbers and two maps.  Each of these
 parameters indicates the amount of resource consumed by a corresponding
 step in the semantics.  Resources can be released by using a negative
 cost. %  The metric used in the implementation can also
@@ -2236,7 +2243,7 @@ formally with the following theorem.
 \end{theorem}
 %
 \noindent
-The proof of this theorem is constructive and basically maps each rule
+The proof of this theorem is constructive and maps each rule
 of the automatic analysis directly to its counterpart in the
 quantitative logic.  The most tricky parts are the translations of the
 rules for increments and decrements and the rule {\sc Q:Weak} for
