@@ -1870,6 +1870,29 @@ bsearch(x,l,h@,lg@) {
 \label{fig:xmplbsaux}
 \end{figure}
 
+\ifdefined\fullversion
+\begin{figure}
+\begin{lstlisting}
+${\color{blue}
+  \mbox{logical state invariant }
+  \{ nm = A(0) \} }$
+i=1; m=a[0];
+while (i < N) {
+  if (a[i] > m) {
+    @assert(nm > 0); nm--;@
+    m = a[i], tick(1);
+  } i++, tick(1);
+}
+\end{lstlisting}
+\caption{Example of assisted bound derivation using logical state.
+  We write $A(i)$ for
+  $\#\{ k \mid i \le k \le N \land \forall\, 0\le j<k.\, a[j] < a[k]\}$.
+  We use the tick metric.  The bound derived is $|[0,N]| + |[0,nm]|$.
+  }
+\label{fig:xmplmax}
+\end{figure}
+\fi
+
 While complete automation is often desirable, it cannot possibly
 be universal since the problem is undecidable.  In this section
 we present two techniques to derive complex resource bounds by
@@ -4521,7 +4544,7 @@ $x$ and $y$, and the interaction between \code{consume} and
 
 
 \begin{table*}
-\small
+\footnotesize
 
 \newcommand{\dir}[2]{\texttt{#1} \\ \texttt{#2}}
 \newcommand{\file}[2][c]{%
