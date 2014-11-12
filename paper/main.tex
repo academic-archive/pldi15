@@ -2301,7 +2301,7 @@ to construct certificates for upper bounds derived automatically.
 %
 \hline
 &
-\begin{lstlisting}[basicstyle=\tt\scriptsize]
+\begin{lstlisting}[basicstyle=\tt\footnotesize]
 while (y>x) {
   x++; tick(1);
 }
@@ -2310,16 +2310,16 @@ while (x>2) {
 }
 \end{lstlisting}
 &
-\begin{lstlisting}[basicstyle=\tt\scriptsize]
+\hspace{-.5cm}\begin{lstlisting}[basicstyle=\tt\footnotesize]
 while (i>100) {
   i--; tick(1) }
 i += k+50;
 while (i>=0) {
   i--; tick(1);
 }
-\end{lstlisting}
+\end{lstlisting}\hspace{-.5cm}
 &
-\begin{lstlisting}[basicstyle=\tt\scriptsize]
+\begin{lstlisting}[basicstyle=\tt\footnotesize]
 while (x>0) {
   x--;
   t=x, x=y, y=t;
@@ -2327,7 +2327,7 @@ while (x>0) {
 }
 \end{lstlisting}
 &
-\begin{lstlisting}[basicstyle=\tt\scriptsize]
+\begin{lstlisting}[basicstyle=\tt\footnotesize]
 assert(y>=0);
 while (x > y) {
   x -= y+1;
@@ -2337,14 +2337,14 @@ while (x > y) {
 }
 \end{lstlisting}
 &
-\begin{lstlisting}[basicstyle=\tt\scriptsize]
-  while (x>0) {
-    x--;
-    if (*) y++;
-    else
-      while (y>0)
-        y--, tick(1);
-    tick(1); }
+\begin{lstlisting}[basicstyle=\tt\footnotesize]
+while (x>0) {
+  x--;
+  if (*) y++;
+  else
+    while (y>0)
+      y--, tick(1);
+  tick(1); }
 \end{lstlisting}
 %
 \\
@@ -2353,8 +2353,8 @@ while (x > y) {
 %
 %
 \toolname
-  & {\small $1.33|[x,y]| {+} 0.33 |[0,x]|$ }
-  & {\small $50 {+} |\inter {-1} i| {+} |\inter 0 k|$ }
+  & {\small $\!\!\!1.33|[x,y]| {+} 0.33 |[0,x]|\!\!\!$ }
+  & {\small $\!\!\!\!\!50 {+} |\inter {-1} i| {+} |\inter 0 k|\!\!\!\!\!\!$ }
   & {\small $|\inter 0 x| {+} |\inter 0 y|$}
   & {\small $|\inter 0 x|$}
   & {\small $2 |\inter 0 x| {+} |\inter 0 y|$}
@@ -2369,7 +2369,7 @@ Rank
            % +0.5{\cdot}x^2\ldots$} % + 1{-}0.5{\cdot}y){-}0.5{\cdot}x $}
 \\
 %
-{\sc loopus}
+{\hspace{-.2cm}LOOPUS}
 &
 {\small
   \begin{tabular}{c}
@@ -2378,10 +2378,10 @@ Rank
 }
 &
 {\small
-  \begin{tabular}{c}
+  $\!\!\!\!$\begin{tabular}{c}
     $\max(0, i{-}100)$ \\
     $+ \max(0, k {+} i {+} 51)$
-  \end{tabular}
+  \end{tabular}$\!\!\!\!$
 }
 &
 {\small ---}% $1 + \max(x, y)$ (???)
