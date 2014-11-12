@@ -2727,7 +2727,7 @@ qualitative verification to guide semi-automatic bound derivation
 (\pref{sec:anno}). Third, we have shown that the local inference rules
 of the derivation system automatically produce easily checkable
 certificates for the derived bounds (\pref{sec:soundness}).
-
+%
 Our system is the first amortized resource analysis for C programs.
 It addresses the longstanding open problem of extending automatic
 amortized resource analysis to compute bounds for programs that loop
@@ -2754,6 +2754,197 @@ multivariate resource polynomials~\cite{HoffmannAH11}.
 \appendix
 
 \newpage
+
+\section{Syntax and Semantics}
+\label{app:sem}
+
+We implemented our cost semantics and the quantitative Hoare logic in
+Coq for \emph{CompCert Clight}.  Clight is the most abstract
+intermediate language used by CompCert.  Mainly, it is a subset of C
+in which loops can only be exited with a \code{break} statement and
+expressions are free of side effects.
+
+\paragraph{Syntax.}
+
+In this article, we describe our system for a subset of Clight that is
+sufficient to discuss the general ideas.  This subset is given by the
+following grammar.
+%
+\begin{align*}
+S &:= \code{assert}~E
+\mid \code{skip}
+\mid \code{break}
+\mid \code{return}~x
+\mid x \gets E
+\mid x \gets f(x^*)
+\\
+& \mid \code{loop}~S
+\mid \code{if}(E)~S~\code{else}~S
+\mid S;S
+\mid \code{tick}(n)
+\end{align*}
+%
+Expressions $E$ are left abstract in our presentation.  For our
+analysis framework, it is only important that they are side-effect
+free.
+%
+The most notable difference to full Clight is that we can only assign
+to variables and thus do not consider operations that update the heap.
+Moreover, function arguments and return values are assumed to be
+variables.  This is only for simplifying the presentation; in the
+implementation we can deal with heap updates and general function
+calls and returns.  However, we have not implemented our framework for function
+pointers, \code{goto} statements, \code{continue} statements, and
+\code{switch} statements.
+
+We include the built-in primitive $\code{assert}~e$ that terminates
+the program if the argument $e$ evaluates to false and has no effect
+otherwise.  This is useful to express assumptions on the inputs of a
+program for the automatic analysis.  We also add the built-in function
+\code{tick(n)} that can be called with a constant integer $n$ as a
+flexible way to model resource consumption or release (if $n$ is
+negative).
+
+
+\begin{figure*}[t!]
+\begin{mathpar}
+%
+\Rule{S:Assert}
+{ \code{istrue}~\sem{e}_\state }
+{ (\state, \code{assert}~e, \cont, \cost)
+\smallstep{M}
+(\state, \code{skip}, \cont, \cost {-} M_a)
+}
+%
+\and
+\Rule{S:BrkSeq}
+{}
+{ (\state, \code{break}, \Kseq S \cont, \cost)
+\smallstep{M}
+(\state, \code{break}, \cont, \cost)
+}
+%
+\and
+\Rule{S:BrkLoop}
+{}
+{ (\state, \code{break}, \Kloop S \cont, \cost)
+\smallstep{M}
+(\state, \code{skip}, \cont, \cost {-} M_b)
+}
+%
+\and
+\Rule{S:RetSeq}
+{}
+{ (\state, \code{return}~x, \Kseq S \cont, \cost)
+\smallstep{M}
+(\state, \code{return}~x, \cont, \cost)
+}
+\and
+%
+\and
+\Rule{S:RetLoop}
+{}
+{ (\state, \code{return}~x, \Kloop S \cont, \cost)
+\smallstep{M}
+(\state, \code{return}~x, \cont, \cost)
+}
+%
+\and
+\Rule{S:RetCall}
+{ \state = (\_, \gamma) \\
+  \state' = (\theta, \gamma)[r \mapsto \state(x)]
+}
+{ (\state, \code{return}~x, \Kcall r \theta \cont, \cost)
+\smallstep{M}
+(\state', \code{skip}, \cont, \cost {-} M_r)
+}
+%
+\and
+\Rule{S:Update}
+{ \state' = \state[x \mapsto \sem{e}_\state] }
+{ (\state, x \gets e, \cont, \cost)
+\smallstep{M}
+(\state', \code{skip}, \cont, \cost {-} M_u {-} M_e(e))
+}
+%
+\and
+\Rule{S:Call}
+{ \fenv f = (\vec x, S_f) \\
+  \state = (\theta, \gamma) \\
+  \state' = (\vec x \mapsto \state(\vec y), \gamma) \\
+}
+{ (\state, r \gets f(\vec y), \cont, \cost)
+\smallstep{M}
+(\state', S_f, \Kcall r \theta \cont, \cost {-} M_f)
+}
+%
+\and
+\Rule{S:Loop}
+{}
+{ (\state, \code{loop}~S, \cont, \cost)
+\smallstep{M}
+(\state, S, \Kloop S \cont, \cost)
+}
+%
+\and
+\Rule{S:SkipLoop}
+{}
+{ (\state, \code{skip}, \Kloop S \cont, \cost)
+\smallstep{M}
+(\state, \code{loop}~S, \cont, \cost {-} M_l)
+}
+%
+\and
+\Rule{S:IfTrue}
+{ \code{istrue}~\sem{e}_\sigma
+\\ \cost' = \cost {-} M_c^1 {-} M_e(e)
+}
+{ (\state, \code{if}(e)~S_1~\code{else}~S_2, \cont, \cost)
+\smallstep{M}
+(\state, S_1, \cont, \cost')
+}
+%
+\and
+\Rule{S:IfFalse}
+{ \code{isfalse}~\sem{e}_\sigma
+\\ \cost' = \cost {-} M_c^2 {-} M_e(e)
+}
+{ (\state, \code{if}(e)~S_1~\code{else}~S_2, \cont, \cost)
+\smallstep{M}
+(\state, S_2, \cont, \cost')
+}
+%
+\and
+\Rule{S:Seq}
+{ }
+{ (\state, S_1; S_2, \cont, \cost)
+\smallstep{M}
+(\state, S_1, \Kseq {S_2} \cont, \cost)
+}
+%
+\and
+\Rule{S:SkipSeq}
+{}
+{ (\state, \code{skip}, \Kseq S \cont, \cost)
+\smallstep{M}
+(\state, S, \cont, \cost {-} M_s)
+}
+%
+\and
+\Rule{S:Tick}
+{ }
+{ (\state, \code{tick}(n), \cont, \cost)
+\smallstep{M}
+(\state, \code{skip}, \cont, \cost {-} M_t(n))
+}
+
+\end{mathpar}
+\caption{Rules of the operational semantics of statements.}
+\label{fig:opsem}
+\end{figure*}
+
+
+
 
 \section{Quantitative Hoare Logic}
 \label{app:logic}
@@ -3279,9 +3470,9 @@ The resource safety of a continuation $\cont$ is defined using three
 assertions, one for each of the possible outcomes of a program
 statement.  We define it as follows.
 \begin{align*}
-\safeK n B R Q \cont & := & & \safe n B {\code{break}} \cont \\
-& & \land& \safe n {\lambda \state.\,R\,(\state(x))} {\code{return}~x} \cont \\
-& & \land& \safe n Q {\code{skip}} \cont
+\safeK n B R Q \cont & :=  \safe n B {\code{break}} \cont \\
+ \land& \safe n {\lambda \state.\,R\,(\state(x))} {\code{return}~x} \cont \\
+ \land& \safe n Q {\code{skip}} \cont
 \end{align*}
 %
 We can now define the \emph{semantic validity} of a judgement $B; R
@@ -3317,7 +3508,7 @@ soundness of the {\sc L:Extend} rule by induction.
 %
 We are now able to state the soundness of the quantitative logic.
 %
-\begin{theorem}[Soundness of the logic]
+\begin{theorem}[Soundness]
   If $\Delta; B; R \vdash \htriple P S Q$ is derivable then
   $
     \forall n .\, \validC n \Delta
@@ -3353,195 +3544,6 @@ setting is actually the main use case of the previous theorem
 which is stated as a stronger result to allow a proof by
 induction.
 
-
-
-\section{Syntax and Semantics}
-\label{app:sem}
-
-We implemented our cost semantics and the quantitative Hoare logic in
-Coq for \emph{CompCert Clight}.  Clight is the most abstract
-intermediate language used by CompCert.  Mainly, it is a subset of C
-in which loops can only be exited with a \code{break} statement and
-expressions are free of side effects.
-
-\paragraph{Syntax.}
-
-In this article, we describe our system for a subset of Clight that is
-sufficient to discuss the general ideas.  This subset is given by the
-following grammar.
-%
-\begin{align*}
-S &:= \code{assert}~E
-\mid \code{skip}
-\mid \code{break}
-\mid \code{return}~x
-\mid x \gets E
-\mid x \gets f(x^*)
-\\
-& \mid \code{loop}~S
-\mid \code{if}(E)~S~\code{else}~S
-\mid S;S
-\mid \code{tick}(n)
-\end{align*}
-%
-Expressions $E$ are left abstract in our presentation.  For our
-analysis framework, it is only important that they are side-effect
-free.
-%
-The most notable difference to full Clight is that we can only assign
-to variables and thus do not consider operations that update the heap.
-Moreover, function arguments and return values are assumed to be
-variables.  This is only for simplifying the presentation; in the
-implementation we can deal with heap updates and general function
-calls and returns.  However, we have not implemented our framework for function
-pointers, \code{goto} statements, \code{continue} statements, and
-\code{switch} statements.
-
-We include the built-in primitive $\code{assert}~e$ that terminates
-the program if the argument $e$ evaluates to false and has no effect
-otherwise.  This is useful to express assumptions on the inputs of a
-program for the automatic analysis.  We also add the built-in function
-\code{tick(n)} that can be called with a constant integer $n$ as a
-flexible way to model resource consumption or release (if $n$ is
-negative).
-
-
-\begin{figure}[t!]
-\begin{mathpar}
-%
-\Rule{S:Assert}
-{ \code{istrue}~\sem{e}_\state }
-{ (\state, \code{assert}~e, \cont, \cost)
-\smallstep{M}
-(\state, \code{skip}, \cont, \cost {-} M_a)
-}
-%
-\and
-\Rule{S:BrkSeq}
-{}
-{ (\state, \code{break}, \Kseq S \cont, \cost)
-\smallstep{M}
-(\state, \code{break}, \cont, \cost)
-}
-%
-\and
-\Rule{S:BrkLoop}
-{}
-{ (\state, \code{break}, \Kloop S \cont, \cost)
-\smallstep{M}
-(\state, \code{skip}, \cont, \cost {-} M_b)
-}
-%
-\and
-\Rule{S:RetSeq}
-{}
-{ (\state, \code{return}~x, \Kseq S \cont, \cost)
-\smallstep{M}
-(\state, \code{return}~x, \cont, \cost)
-}
-\and
-%
-\and
-\Rule{S:RetLoop}
-{}
-{ (\state, \code{return}~x, \Kloop S \cont, \cost)
-\smallstep{M}
-(\state, \code{return}~x, \cont, \cost)
-}
-%
-\and
-\Rule{S:RetCall}
-{ \state = (\_, \gamma) \\
-  \state' = (\theta, \gamma)[r \mapsto \state(x)]
-}
-{ (\state, \code{return}~x, \Kcall r \theta \cont, \cost)
-\smallstep{M}
-(\state', \code{skip}, \cont, \cost {-} M_r)
-}
-%
-\and
-\Rule{S:Update}
-{ \state' = \state[x \mapsto \sem{e}_\state] }
-{ (\state, x \gets e, \cont, \cost)
-\smallstep{M}
-(\state', \code{skip}, \cont, \cost {-} M_u {-} M_e(e))
-}
-%
-\and
-\Rule{S:Call}
-{ \fenv f = (\vec x, S_f) \\
-  \state = (\theta, \gamma) \\
-  \state' = (\vec x \mapsto \state(\vec y), \gamma) \\
-}
-{ (\state, r \gets f(\vec y), \cont, \cost)
-\smallstep{M}
-(\state', S_f, \Kcall r \theta \cont, \cost {-} M_f)
-}
-%
-\and
-\Rule{S:Loop}
-{}
-{ (\state, \code{loop}~S, \cont, \cost)
-\smallstep{M}
-(\state, S, \Kloop S \cont, \cost)
-}
-%
-\and
-\Rule{S:SkipLoop}
-{}
-{ (\state, \code{skip}, \Kloop S \cont, \cost)
-\smallstep{M}
-(\state, \code{loop}~S, \cont, \cost {-} M_l)
-}
-%
-\and
-\Rule{S:IfTrue}
-{ \code{istrue}~\sem{e}_\sigma
-\\ \cost' = \cost {-} M_c^1 {-} M_e(e)
-}
-{ (\state, \code{if}(e)~S_1~\code{else}~S_2, \cont, \cost)
-\smallstep{M}
-(\state, S_1, \cont, \cost')
-}
-%
-\and
-\Rule{S:IfFalse}
-{ \code{isfalse}~\sem{e}_\sigma
-\\ \cost' = \cost {-} M_c^2 {-} M_e(e)
-}
-{ (\state, \code{if}(e)~S_1~\code{else}~S_2, \cont, \cost)
-\smallstep{M}
-(\state, S_2, \cont, \cost')
-}
-%
-\and
-\Rule{S:Seq}
-{ }
-{ (\state, S_1; S_2, \cont, \cost)
-\smallstep{M}
-(\state, S_1, \Kseq {S_2} \cont, \cost)
-}
-%
-\and
-\Rule{S:SkipSeq}
-{}
-{ (\state, \code{skip}, \Kseq S \cont, \cost)
-\smallstep{M}
-(\state, S, \cont, \cost {-} M_s)
-}
-%
-\and
-\Rule{S:Tick}
-{ }
-{ (\state, \code{tick}(n), \cont, \cost)
-\smallstep{M}
-(\state, \code{skip}, \cont, \cost {-} M_t(n))
-}
-
-\end{mathpar}
-\caption{Rules of the operational semantics of statements.}
-\label{fig:opsem}
-\end{figure}
 
 
 
