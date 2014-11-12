@@ -1934,6 +1934,7 @@ is proved by a translation morphism to the logic.
   soundness proof can be found in the extended version of this
   article.}
 
+\paraskip
 \paragraph{Cost Semantics for Clight.}
 To base the soundness proof on a formal ground, we start by defining a
 new cost-aware operational semantics for Clight.  CompCert Clight's
@@ -2159,6 +2160,7 @@ to detect a resource crash as a stuck configuration where $\cost<0$.
 % \label{fig:logic}
 % \end{figure*}
 
+\paraskip
 \paragraph{Quantitative Hoare Logic.}
 To prove the soundness of \toolname we found it useful to go through an
 intermediate step using a Quantitative Hoare Logic.  This logic is at
@@ -2289,6 +2291,7 @@ to construct certificates for upper bounds derived automatically.
 
 \begin{figure*}
 \centering
+\vspace{-.5cm}
 \begin{tabular}{r|c|c|c|c|c}
 %
 & t08 (modified t08a) & t19 & t30 & t15 & t13\\
@@ -2411,7 +2414,7 @@ examples \iffull{together with the derived bounds is given in
 
 \pref{fig:compar} shows five representative loop patterns from the
 evaluation.  Example \emph{t08} is a slightly modified version of
-\emph{t08a}, which is described in~\pref{sec:inform}.  Example
+\emph{t08a}, which is described in~\pref{sec:AAA}.  Example
 \emph{t19} demonstrates the compositionaliy of the analysis.  The
 program consists of two loops that decrement a variable $i$.  In the
 first loop, $i$ is decremented down to 100 and in the second loop $i$
@@ -2447,7 +2450,8 @@ counted back to $0$.  The analysis computes a tight bound.
   inner loop can as well be replace by something more interesting, say
   $9$ and $10$ like in example \emph{t08}.  Then we still obtain a
   tight linear bound.}{}
-
+%
+\iffull{
 \begin{figure}[t]
   \centering
     \begin{minipage}[b]{.9\linewidth}
@@ -2499,6 +2503,11 @@ algorithm, which we can also analyze automatically.  We need the
 assertion since we do not infer any logical assertions on the contents
 of the heap.  Rank derives a complex quadratic bound and LOOPUS
 derives a linear bound.
+}
+%
+{The extended version also contains a discussion of the automatic
+  bound derivation for the Knuth-Morris-Pratt algorithm for string
+  search. $\toolname$ finds the tight linear bound $1+2|[0,n]|$.}
 
 
 To compare our tool with existing work, we focused on loop bounds and
@@ -2512,13 +2521,14 @@ have not been able to obtain this tool.
 KoAT~\cite{BrockschmidtEFFG14} and PUBS~\cite{AlbertAGPZ12} currently
 cannot operate on C code and the examples would need to be manually
 translated into a term-rewriting system to be analyzed by these tools.  For
-Rank it is not totally clear how the computed bound relates to the C
+Rank it is not completely clear how the computed bound relates to the C
 program since the computed bound is for transitions in an automaton
 that is derived from the C code.  For instance, the bound $2+y-x$ that
 is derived for \emph{t08} only applies to the first loop in the
 program.
 
 \begin{table}[t]
+\small
 \centering
 \begin{tabular}{r|c|c|c|c|c}
 & KoAT & Rank & LOOPUS & SPEED & \toolname \\
@@ -2532,12 +2542,8 @@ program.
 \#tested & 14 & 33 & 33 & 14 & 33
 \end{tabular}
 \vspace{.1cm}
-\caption{Comparison of our automatic amortized analysis with other
-  automatic tools.  We have not been able to obtain a version of
-  SPEED~\cite{GulwaniMC09} and just use the bounds that have been
-  reported by the authors. Similarly, KoAT~\cite{BrockschmidtEFFG14}
-  does currently not work on C programs and we use the bounds that
-  have been reported in the author's experimental evaluation.}
+\caption{Comparison of $\toolname$ with other
+  automatic tools.}
 \label{tab:compar}
 \end{table}
 
@@ -2592,7 +2598,7 @@ where not only the lines count of the analyzed function is called
 but also the line count of all the funtions it calls. The line count
 is computed on pre-processed C with all unnecessary declarations
 removed.}
-\label{tab:compar}
+\label{tab:cbench}
 \end{table}
 
 \sectskip
@@ -2652,7 +2658,7 @@ derived for high-level functional programs.
 \includegraphics[width=.9\linewidth]{fig/bound3d}
 \caption{The automatically derived bound $1.33|[x,y]| + 0.33 |[0,x]|$
   (blue lines) and the measured runtime cost (red crosses) for example
-  \emph{t08}. For $x\ge 0$ the derived bound is tight.}
+  \emph{t08}. For $x\ge 0$ the bound is tight.}
 \label{fig:3d}
 \end{figure}
 
@@ -3896,8 +3902,8 @@ otherwise.  If we enter the loop then we know that $x>0$ and we can
 obtain constant potential from the assignment \code{x=x-1}.  After the
 assignment we know that $x\geq y$ and $y\geq 0$.  As a consequence, we
 can share the potential $|[0,x]|$ before the assignment \code{x=x-y}
-between $|[0,x]|$ and $|[0,y]|$ after the assignment.  In this way, we
-derive a tight linear bound.
+between $|[0,x]|$ and $|[0,y]|$ after the assignment.  \iffull{In this way, we
+derive a tight linear bound.}{}
 
 Example \emph{t16} is an extension of example \emph{t15}. We again
 assume that $y$ is non-negative and use the same mechanism to iterate
