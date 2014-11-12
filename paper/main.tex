@@ -1366,12 +1366,15 @@ like $q_{xa}$ and $q_{ax}$ that contain $x$ after the assignment.
 \paraskip
 \paragraph{Function Specifications.}
 
-\jan{Here we have to say something about function specifications and
-  function calls.}
-\jan{Here we have to say something about function specifications and
-  function calls.}
-\jan{Here we have to say something about function specifications and
-  function calls.}
+During the analysis, function specifications are quadruples
+$(\Gamma_f, Q_f, \Gamma'_f, Q'_f)$ where $\Gamma_f, Q_f$ depend on
+$\Vargs$, and $\Gamma'_f, Q'_f$ depend on $\Vret$.  These parameters
+are instantiated by appropriate variables on call sites.  A distinctive
+feature of our analysis is that it respects the function abstraction:
+when deriving a function specification it generates a set of
+constraints and the above quadruple; once done, the constraint
+sets can readily be reused for every call site and the function need
+not be analyzed multiple times.
 
 \paraskip
 \paragraph{Derivation Rules.}
