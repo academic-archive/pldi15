@@ -2408,13 +2408,12 @@ Rank
            $+ \max(y, 0)$
         \end{tabular}}
 \end{tabular}
-\vspace{.1cm}
+\vspace{.01cm}
 \caption{ Comparison of resource bounds derived by different tools on
-  several examples with linear bounds.  The output of Rank has been manually
-  simplified to fit the table.  }
+  several examples with linear bounds.  \iffull{The output of Rank has been manually
+  simplified to fit the table.}{}  }
 \label{fig:compar}
 \end{figure*}
-
 
 \sectskip
 \section{Experimental Evaluation}
@@ -2555,7 +2554,7 @@ program.
 \\
 \#tested & 14 & 33 & 33 & 14 & 33
 \end{tabular}
-\vspace{.1cm}
+\vspace{.01cm}
 \caption{Comparison of $\toolname$ with other
   automatic tools.}
 \label{tab:compar}
@@ -2618,6 +2617,7 @@ input variable $x$ is non-negative.  \iffull{If $x$ is negative then
 \iffull{
 \begin{table}[t]
 \centering
+\small
 \begin{tabular}{r|c|c|c}
 Function & LoC & Bound & Time (s) \\
 \hline
@@ -2643,6 +2643,7 @@ Function & LoC & Bound & Time (s) \\
 }
 {
 \begin{table}[t]
+\small
 \centering
 \begin{tabular}{r|c|c|c}
 Function & LoC & Bound & Time (s) \\
@@ -2670,6 +2671,7 @@ Function & LoC & Bound & Time (s) \\
 
 \begin{figure}[t]
 \center
+\vspace{-.2cm}
 \includegraphics[width=.9\linewidth]{fig/bound3d}
 \caption{The automatically derived bound $1.33|[x,y]| + 0.33 |[0,x]|$
   (blue lines) and the measured runtime cost (red crosses) for example
@@ -2689,27 +2691,33 @@ verified CompCert C compiler to translate C level bound to x86 stack
 bounds.  This quantitative logic is also based on the potential method
 but has very rudimentary support for automation that cannot
 automatically derive symbolic bounds and is not based on efficient LP
-solving.  In this article, we use a more general quantitative Hoare
-logic that is parametric in the resource of interest.  Our main
-contribution is the automatic amortized analysis for Clight that can
-be combined with~\cite{veristack14} to automatically derive parametric
-verified stack bounds for recursive functions.
+solving.  In contrast, our main
+contribution is an automatic amortized analysis for C that can
+derive parametric bounds for loops
+and recursive functions fully automatically.
+%
+In this article, we also use a more general quantitative Hoare
+logic that is parametric in the resource of interest.  
 
 Our work has been inspired by type-based amortized resource analysis
-for functional programs~\cite{Jost03,HoffmannH10,HoffmannAH12}.  There
-are three major improvements over previous work in the current paper,
-which presents the first automatic amortized resource analysis for C.
-First, we solved the long-standing open problem of extending automatic
-amortized resource analysis to compute bounds for programs that loop
-on (possibly negative) integers.  Second, we extended the analysis
-system to deal with non-linear control flow that is introduced by
-\code{break} and \code{return} statements.  Third, for the first time,
-we have combined an automatic amortized analysis with a system for
-interactively deriving bounds. In particular, recent
-systems~\cite{HoffmannS13} that deal with integers and arrays cannot
-derive bounds that depend on values in mutable locations or possibly
-negative integers, and thus do not apply to most of our example
-programs.
+for functional programs~\cite{Jost03,HoffmannH10,HoffmannAH12}.  Here,
+we present the first automatic amortized resource analysis for
+C. None of the existing techniques can handle the example programs we
+describe in this work.
+%
+The automatic analysis of realistic C programs is enabled by three
+major improvements over previous work.  First, we solved the
+long-standing open problem of extending automatic amortized resource
+analysis to compute bounds for programs that loop on (possibly
+negative) integers without decreasing one individual number in each
+iteration.  Second, we extended the analysis system to deal with
+non-linear control flow that is introduced by \code{break} and
+\code{return} statements.  Third, for the first time, we have combined
+an automatic amortized analysis with a system for interactively
+deriving bounds. In particular, recent systems~\cite{HoffmannS13} that
+deal with integers and arrays cannot derive bounds that depend on
+values in mutable locations, possibly negative integers, or on
+differences between integers.
 
 \iffull{
 In the development of our quantitative Hoare logic we have drawn
