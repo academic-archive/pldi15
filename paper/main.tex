@@ -2566,13 +2566,27 @@ on every tested example.}{}
 \pref{tab:cbench} contains a compilation of the results of our
 experiments with the cBench benchmark suite. It shows a representative
 list of automatically derived function bounds. In total we analyzed
-more than 2000 lines of code.
-%
-In the LOC column
-where not only count the LOC of the analyzed function but
-also the LOC of all the function it calls. \iffull{The line count is
+more than 2000 lines of code.  In the LoC column
+we not only count the lines of the analyzed function but
+also the ones of all the function it calls. \iffull{The line count is
 computed on pre-processed C with all unnecessary declarations removed.}{}
-\jan{What is the cost measure?}
+We analyzed the functions using a metric that assigns a cost 1 to all
+the back-edges in the control flow (loops, and function calls).
+The functions that took the longest to analyze are often unrolled loops
+where many variables are assigned, this stresses our analysis because
+the number of LP variables has a quadratic growth in program variables.
+Even on these stressful examples, the analysis could finish in less
+than 2 seconds.  These times can even be greatly reduced by adding
+manual annotations to indicate $\toolname$ that certain variables do
+not have to be tracked.  We could also envision to implement heuristics.
+
+The trickiest of these benchmarks is the \code{sha\_update} function,
+it is composed of one loop calling two helper functions that in turn
+have 6 and 1 inner loops.  The essence of the SHA algorithm makes
+the compositionality of our analysis essential to get a tight bound
+since loops on the same index are sequenced 4 and 2 times without
+resetting it.  All other tools available have constant factors
+quadratically bigger than ours on this example.
 
 Since we have a formal cost semantics, we can run our examples with
 this semantics for different inputs and measure the cost to compare it
@@ -2658,7 +2672,8 @@ Function & LoC & Bound & Time (s) \\
 \code{build\_ycc\_rgb} & 68 & 257 & 0.05 \\
 \code{PackBitsDecode} & 61 & $1+65|[-129,\code{cc}]|$ & 0.6 \\
 \hline
-\code{ycc\_rgb\_conv} & 66 & $\code{nr}\cdot\code{nc}$ & 0.1
+\code{ycc\_rgb\_conv} & 66 & $\code{nr}\cdot\code{nc}$ & 0.1 \\
+\code{uv\_decode} & 31 & $\log_2(\code{UV\_NVS})+1$ & 0.1 \\
 \end{tabular}
 \vspace{.1cm}
 \caption{Derived bounds for functions from cBench. \jan{FUCKING backedge metric}}
