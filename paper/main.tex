@@ -2614,7 +2614,6 @@ input variable $x$ is non-negative.  \iffull{If $x$ is negative then
   the bound is only slightly off.}{}
 
 
-\iffull{
 \begin{table}[t]
 \centering
 \small
@@ -2632,6 +2631,7 @@ Function & LoC & Bound & Time (s) \\
 \code{sha\_update} & 98 & $2 + 3.55|[0,\code{N}]|$ & 1.2 \\
 \code{build\_ycc\_rgb} & 68 & 257 & 0.05 \\
 \code{PackBitsDecode} & 61 & $1+65|[-129,\code{cc}]|$ & 0.6 \\
+\code{KMPSearch} & 20 & $1+2|[0,n]|$ & 0.1 \\
 \hline
 \code{ycc\_rgb\_conv} & 66 & $\code{nr}\cdot\code{nc}$ & 0.1 \\
 \code{uv\_decode} & 31 & $\log_2(\code{UV\_NVS})+1$ & 0.1 \\
@@ -2640,32 +2640,32 @@ Function & LoC & Bound & Time (s) \\
 \caption{Derived bounds for functions from cBench.}
 \label{tab:cbench}
 \end{table}
-}
-{
-\begin{table}[t]
-\small
-\centering
-\begin{tabular}{r|c|c|c}
-Function & LoC & Bound & Time (s) \\
-\hline
-\code{adpcm\_coder} & 145 & $1+|[0,\code{N}]|$ & 0.6 \\
-\code{adpcm\_decod} & 130 & $1+|[0,\code{N}]|$ & 0.2 \\
-\code{BF\_cfb64\_enc} & 151 & $1+2|[-1,\code{N}]|$ & 0.7 \\
-\code{BF\_cbc\_enc} & 180 & $2+0.25|[-8,\code{N}]|$ & 1.0 \\
-\code{mad\_bit\_crc} & 145 & $61.19{+}0.19|[-1,\code{N}]|$ & 0.4 \\
-\code{mad\_bit\_read} & 65 & $1+0.12|[0,\code{N}]|$ & 0.05 \\
-\code{MD5Update} & 200 & $133.95{+}1.05|[0,\code{N}]|$ & 1.0 \\
-\code{sha\_update} & 98 & $2 + 3.55|[0,\code{N}]|$ & 1.2 \\
-\code{PackBitsDecode} & 61 & $1+65|[-129,\code{cc}]|$ & 0.6 \\
-\hline
-\code{ycc\_rgb\_conv} & 66 & $\code{nr}\cdot\code{nc}$ & 0.1 \\
-\code{uv\_decode} & 31 & $\log_2(\code{UV\_NVS})+1$ & 0.1 \\
-\end{tabular}
-\vspace{.1cm}
-\caption{Derived bounds for functions from cBench.}
-\label{tab:cbench}
-\end{table}
-}
+
+% \begin{table}[t]
+% \small
+% \centering
+% \begin{tabular}{r|c|c|c}
+% Function & LoC & Bound & Time (s) \\
+% \hline
+% \code{adpcm\_coder} & 145 & $1+|[0,\code{N}]|$ & 0.6 \\
+% \code{adpcm\_decod} & 130 & $1+|[0,\code{N}]|$ & 0.2 \\
+% \code{BF\_cfb64\_enc} & 151 & $1+2|[-1,\code{N}]|$ & 0.7 \\
+% \code{BF\_cbc\_enc} & 180 & $2+0.25|[-8,\code{N}]|$ & 1.0 \\
+% \code{mad\_bit\_crc} & 145 & $61.19{+}0.19|[-1,\code{N}]|$ & 0.4 \\
+% \code{mad\_bit\_read} & 65 & $1+0.12|[0,\code{N}]|$ & 0.05 \\
+% \code{MD5Update} & 200 & $133.95{+}1.05|[0,\code{N}]|$ & 1.0 \\
+% \code{sha\_update} & 98 & $2 + 3.55|[0,\code{N}]|$ & 1.2 \\
+% \code{PackBitsDecode} & 61 & $1+65|[-129,\code{cc}]|$ & 0.6 \\
+% \code{KMPSearch} & 20 & $1+2|[0,n]|$ & 0.1 \\
+% \hline
+% \code{ycc\_rgb\_conv} & 66 & $\code{nr}\cdot\code{nc}$ & 0.1 \\
+% \code{uv\_decode} & 31 & $\log_2(\code{UV\_NVS})+1$ & 0.1 \\
+% \end{tabular}
+% \vspace{.1cm}
+% \caption{Derived bounds for functions from cBench.}
+% \label{tab:cbench}
+% \end{table}
+
 
 
 
