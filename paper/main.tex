@@ -972,7 +972,7 @@ One might think that our set of potential functions is too simplistic
 to be able to express and prove bounds for realistic
 programs. Nevertheless, we can handle challenging example programs
 without special tricks or techniques.  Examples \emph{speed\_1} and
-\emph{speed\_2} in Figure~\ref{fig:ex_list_2}, which are taken from previous work~\cite{GulwaniMC09},
+\emph{speed\_2} in Figure~\ref{fig:ex_list}, which are taken from previous work~\cite{GulwaniMC09},
 demonstrate that our method can handle \emph{tricky iteration
   patterns}.  The SPEED tool~\cite{GulwaniMC09} derives the same
 bounds as our analysis but requires heuristics for its counter
@@ -993,7 +993,7 @@ $|[x, n]| + |[z, n]|$.
 \paraskip
 \paragraph{Nested and Sequenced Loops.}
 
-Example \emph{t08a} shows the ability of the analysis to discover
+Example \emph{t08a} in Figure~\ref{fig:ex_list} shows the ability of the analysis to discover
 interaction between \emph{sequenced loops} through size change of
 variables.  We accurately track the size change of $y$ in the first
 loop by transferring the potential $0.1$ from $|[y,z]|$ to $|[0,y]|$.
@@ -1003,7 +1003,8 @@ replace $0$ and $1$ with other constants like in the second loop and
 still derive a tight bound.  \iffull{The only information, that the analyzer
 needs is $y \geq c$ before assigning $y = y - c$.}{}
 %
-Example \emph{t27} shows how amortization can be used to handle
+Example \emph{t27} in Figure~\ref{fig:ex_list}
+shows how amortization can be used to handle
 \emph{interacting nested loops}.  In the outer loop we increment the
 variable $n$ until $n = 0$.  In each of the $|[n,0]|$ iterations, we
 increment the variable $y$ by $1000$.  Then we non-deterministically
