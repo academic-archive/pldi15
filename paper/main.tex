@@ -1384,6 +1384,10 @@ when deriving a function specification it generates a set of
 constraints and the above quadruple; once done, the constraint
 sets can readily be reused for every call site and the function need
 not be analyzed multiple times.
+%
+Therefore, the derivation rules are parametric in a function context $\Delta$
+that we leave implicit in the rules that we present here. More details
+can be found in the extended version.
 
 \paraskip
 \paragraph{Derivation Rules.}
@@ -1458,7 +1462,7 @@ variable $x$ with $x+y$ where $y \ge 0$.  Since $x$ is changed, the
 quantitative annotation must be updated to reflect the change of the
 program state.  We write $x'$ for the value of $x$ after the assignment.
 Since $x$ is the only variable changed, only intervals of the form
-$\inter u x$ and $\inter x u$ will be resized.  Note that for any $u$,
+$\inter u x$ and $\inter x u$ will be resized. Note that for any $u$,
 $\inter x u$ will get smaller with the update, and if $x' \in \inter x
 u$ we have $|\inter x u| = |\inter x {x'}| + |\inter {x'} u|$.  But
 $|\inter x {x'}| = |\inter 0 y|$ which means that the potential
@@ -1506,6 +1510,23 @@ the return value in the function's postcondition
 $(\Gamma'_f, Q'_f)$.
 }{}
 
+\iffull{The rule {\sc Q:Weak} is not syntax directed. In the implementation
+we apply {\sc Q:Weak} before loops and between the two statements of a
+sequential composition. We could integrate weakening into every
+syntax directed rule but this simple heuristic helps to make the analysis
+efficient.}{}  The high-level idea of {\sc Q:Weak} is the following: If
+we have a sound judgement, then it is sound to add more potential to the
+precondition and remove potential from the postcondition.  The concept of
+\emph{more potential} is formalized by the relation $Q' \succeq_\Gamma Q$
+that is defined in the rule {\sc Relax}\iffull{ that
+also deals with the important task of transferring constant potential
+(represented by $q_0$) to interval sizes and vice versa.  If we can deduce
+from the logical context that the interval size $|\inter x y| \geq l$ is
+larger then a constant $l$ then we can transfer potential $q_{xy} {\cdot}
+|\inter x y|$ form the interval to constant potential $l{\cdot}q_{xy}$
+and guarantee that we do not gain potential.  Conversely, if $|\inter
+x y| \leq u$ for a constant $u$ then we can transfer constant potential
+$u{\cdot}q_{xy}$ to the interval potential $q_{xy} {\cdot} |\inter x y|$ without gaining potential.}{.}
 
 \newcommand{\loopbody}[0]{\ensuremath{\code{if~(x - 10 \geq 0)~\{x=x{-}10; tick(5);\}~else~break;}}}
 \begin{figure*}[t]
@@ -1602,25 +1623,6 @@ $$
 \caption{An example derivation as produced by the automatic tool.}
 \label{fig:derivation}
 \end{figure*}
-
-The rule {\sc Q:Weak} is not syntax directed.  In the implementation
-we apply {\sc Q:Weak} before loops and between the two statements of a
-sequential composition.  \iffull{We could integrate weakening into every
-syntax directed rule but this simple heuristic helps to make the analysis
-efficient.}{}  The high-level idea of {\sc Q:Weak} is the following: If
-we have a sound judgement, then it is sound to add more potential to the
-precondition and remove potential from the postcondition.  The concept of
-\emph{more potential} is formalized by the relation $Q' \succeq_\Gamma Q$
-that is defined in the rule {\sc Relax}.  Here, $Q$ and $Q'$ are potential
-annotations and $\Gamma$ is a logical context.  The rule {\sc Relax}
-deals also with the important task of transferring constant potential
-(represented by $q_0$) to interval sizes and vice versa.  If we can deduce
-from the logical context that the interval size $|\inter x y| \geq l$ is
-larger then a constant $l$ then we can transfer potential $q_{xy} {\cdot}
-|\inter x y|$ form the interval to constant potential $l{\cdot}q_{xy}$
-and guarantee that we do not gain potential.  Conversely, if $|\inter
-x y| \leq u$ for a constant $u$ then we can transfer constant potential
-$u{\cdot}q_{xy}$ to the interval potential $q_{xy} {\cdot} |\inter x y|$\iffull{ without gaining potential.}{.}
 
 \sectskip
 \section{Automatic Inference via LP Solving}
@@ -1748,9 +1750,9 @@ This happens in almost no time in practice.
 The final solution is $q_{0,x} = 0.5$ and $q_{*} = 0$ otherwise, thus
 the bound is $0.5 |[0,x]|$.
 
-The constraints that we generate have
+\iffull{The constraints that we generate have
 a particularly simple form that is known as \emph{network problem}.
-Such problems can be solved in linear time in practice.
+Such problems can be solved in linear time in practice.}{}
 
 
 \sectskip
@@ -1775,6 +1777,7 @@ while (k > 0) {
   k--;
 }
 \end{lstlisting}
+\vspace{-.2cm}
 \end{minipage}
 \caption{Assisted bound derivation using logical state.  We write
   $\#_1(a)$ for $\# \{ i \mid 0 {\le} i {<} N {\land} a[i] {=} 1 \}$ and use the
@@ -1785,6 +1788,7 @@ while (k > 0) {
 \end{figure}
 
 \begin{figure}
+\vspace{-.3cm}
 \begin{lstlisting}[numbers=left]
 ${\color{blue}%
   \mbox{logical state invariant }
@@ -1800,6 +1804,7 @@ bsearch(x,l,h@,lg@) {
   } else return l;
 }
 \end{lstlisting}
+\vspace{-.2cm}
 \caption{Assisted bound derivation using logical state.
   % We use the tick metric to model the stack consumption of the program.
   % Before a function call to \code{bsearch}, a tick statement pays for
@@ -2579,21 +2584,22 @@ also the ones of all the function it calls. \iffull{The line count is
 computed on pre-processed C with all unnecessary declarations removed.}{}
 We analyzed the functions using a metric that assigns a cost 1 to all
 the back-edges in the control flow (loops, and function calls).
-The functions that took the longest to analyze are often unrolled loops
-where many variables are assigned, this stresses our analysis because
+The bounds for the functions \code{ycc\_rgb\_conv} and \code{uv\_decode} 
+have been inferred with user interaction as described in \pref{sec:anno}.
+The most challenging functions for $\toolname$ have unrolled loops
+where many variables are assigned.  This stresses our analysis because
 the number of LP variables has a quadratic growth in program variables.
 Even on these stressful examples, the analysis could finish in less
-than 2 seconds.  These times can even be greatly reduced by adding
+than 2 seconds.  \iffull{These times can be reduced by adding
 manual annotations to indicate $\toolname$ that certain variables do
-not have to be tracked.  We could also envision to implement heuristics.
-
-The trickiest of these benchmarks is the \code{sha\_update} function,
-it is composed of one loop calling two helper functions that in turn
+not have to be tracked.  We could also envision to implement heuristics.}{}
+%
+For example, the \code{sha\_update} function
+is composed of one loop calling two helper functions that in turn
 have 6 and 1 inner loops.  The essence of the SHA algorithm makes
 the compositionality of our analysis essential to get a tight bound
 since loops on the same index are sequenced 4 and 2 times without
-resetting it.  All other tools available have constant factors
-quadratically bigger than ours on this example.
+resetting it.  All other tools derive much larger constant factors.
 
 Since we have a formal cost semantics, we can run our examples with
 this semantics for different inputs and measure the cost to compare it
@@ -2674,9 +2680,9 @@ Function & LoC & Bound & Time (s) \\
 \code{mad\_bit\_crc} & 145 & $61.19{+}0.19|[-1,\code{N}]|$ & 0.4 \\
 \code{mad\_bit\_read} & 65 & $1+0.12|[0,\code{N}]|$ & 0.05 \\
 \code{MD5Update} & 200 & $133.95{+}1.05|[0,\code{N}]|$ & 1.0 \\
-\code{MD5Final} & 195 & 141 & 0.22 \\
+\iffull{\code{MD5Final} & 195 & 141 & 0.22 \\}{}
 \code{sha\_update} & 98 & $2 + 3.55|[0,\code{N}]|$ & 1.2 \\
-\code{build\_ycc\_rgb} & 68 & 257 & 0.05 \\
+\iffull{\code{build\_ycc\_rgb} & 68 & 257 & 0.05 \\}{}
 \code{PackBitsDecode} & 61 & $1+65|[-129,\code{cc}]|$ & 0.6 \\
 \hline
 \code{ycc\_rgb\_conv} & 66 & $\code{nr}\cdot\code{nc}$ & 0.1 \\
@@ -2717,10 +2723,11 @@ qualitative and quantitative reasoning.
 
 There are techniques~\cite{Braberman08} that can compute the memory
 requirements of object oriented programs with region-based garbage
-collection.  These systems infer invariants and use external tools
+collection.  \iffull{These systems infer invariants and use external tools
 that count the number of integer points in the corresponding polytopes
 to obtain bonds.  The described technique can handle loops but not
-recursive or composed functions.
+recursive or composed functions.}{ These systems can handle loops but not
+recursive or composed functions.}
 %
 We are only aware of two verified quantitative analysis systems.
 Albert et al.~\cite{AlbertBGHR12} rely on the KeY tool to
@@ -2729,9 +2736,10 @@ relations, and ranking functions for Java Card programs.  However,
 they do not have a formal cost semantics and do not prove the bounds
 correct with respect to a cost model.  Blazy et al.~\cite{Blazy13}
 have verified a loop bound analysis for CompCert's RTL intermediate
-language.  However, there is no way to interactively derive bounds or
-to deal with resources like memory usage.  Furthermore, Blazy et al.'s
-automatic bound analysis does not compute symbolic bounds.
+language.  However, this automatic bound analysis does not
+compute symbolic bounds. \iffull{Furthermore, there is no way to
+  interactively derive bounds or to deal with resources like memory
+  usage.}
 
 
 
@@ -2743,11 +2751,10 @@ automatic bound analysis does not compute symbolic bounds.
 We have developed a novel analysis framework for compositional and
 certified worst-case resource bound analysis for C programs.  The
 framework combines ideas from existing abstract interpretation--based
-techniques with the potential method of amortized analysis.  The
-technical innovations are implemented in the publicly available tool
+techniques with the potential method of amortized analysis.  It is implemented in the publicly available tool
 $\toolname$. To the best of our knowledge, $\toolname$ is the first
 analysis tool for C programs that automatically reduces the derivation
-of symbolic bounds to efficient LP solving.
+of symbolic bounds to LP solving.
 
 We have demonstrated that our approach improves the state-of-the-art
 in resource bound analysis for C programs in three ways. First, our
@@ -2762,13 +2769,13 @@ certificates for the derived bounds (\pref{sec:soundness}).
 Our system is the first amortized resource analysis for C programs.
 It addresses the longstanding open problem of extending automatic
 amortized resource analysis to compute bounds for programs that loop
-on signed integers and to deal with non-linear control flow that is
-introduced by break and return statements.
+on signed integers and to deal with non-linear control flow\ifshort{.}{ that is
+introduced by break and return statements.}
 
 This work is the starting point for several projects that we plan to
-investigate in the future. Examples include the extension to
-concurrent programs, better integration of low-level features like
-hardware caches, and the extension of the automatic analysis to
+investigate in the future, such as the extension to
+concurrency, better integration of low-level features like
+memory caches, and the extension of the automatic analysis to
 multivariate resource polynomials~\cite{HoffmannAH11}.
 
 % \acks
