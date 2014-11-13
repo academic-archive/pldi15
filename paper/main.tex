@@ -157,7 +157,7 @@
   tool $\toolname$. An experimental evaluation demonstrates the
   advantages of the new technique with a comparison of $\toolname$ with
   existing tools on challenging micro benchmarks and the analysis of
-  more than 2000 lines of C code from the cBench benchmark suite.
+  more than $\totalLoc$ lines of C code from the cBench benchmark suite.
 
 % Contrary to most available tools for
 % C, ours has a compositional design that provides the
@@ -402,7 +402,7 @@ We have implemented the analysis system in the tool
 \toolname and experimentally evaluated its effectiveness by
 analyzing system code and examples from the literature.
 \toolname has automatically derived global resource bounds for
-more than 2000 lines of C code from the cBench benchmark suite.
+more than $\totalLoc$ lines of C code from the cBench benchmark suite.
 %
 \iffull{\pref{app:cat}}{The extended version
   of this article~\cite{anon_extended}}{} contains more than $30$
@@ -451,7 +451,7 @@ In summary, we make the following \emph{contributions}.
 \item We implemented our resource bound analysis in the publicly-available tool $\toolname$.
 \itemskipIn
 \item We present experiments with $\toolname$ on more
-  than 2000 lines of C code. A detailed comparison shows that our
+  than $\totalLoc$ lines of C code. A detailed comparison shows that our
   prototype is the only tool that can derive global bounds for larger
   C programs while being as powerful as existing tools when deriving
   linear local bounds for tricky loop and recursion patterns.
@@ -2582,7 +2582,7 @@ on every tested example.}{}
 \pref{tab:cbench} contains a compilation of the results of our
 experiments with the cBench benchmark suite. It shows a representative
 list of automatically derived function bounds. In total we analyzed
-more than 2000 lines of code.  In the LoC column
+more than $\totalLoc$ lines of code.  In the LoC column
 we not only count the lines of the analyzed function but
 also the ones of all the function it calls. \iffull{The line count is
 computed on pre-processed C with all unnecessary declarations removed.}{}
