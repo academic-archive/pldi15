@@ -1,7 +1,7 @@
 % Comment for anonymization
 % Add preprint option for the extended version
 % Also look for "SHORT" comments
-% \def\fullversion{}
+\def\fullversion{}
 
 \documentclass[nocopyrightspace,preprint,pldi]{sigplanconf-pldi15}
 
@@ -2624,65 +2624,6 @@ can see that the derived constant factors are the best possible if the
 input variable $x$ is non-negative.  \iffull{If $x$ is negative then
   the bound is only slightly off.}{}
 
-\sectskip
-\section{Related Work}
-\label{sec:related}
-\aftersectskip
-
-A recent project~\cite{veristack14} has implemented and verified a
-quantitative logic to reason about stack-space usage, and modified the
-verified CompCert C compiler to translate C level bound to x86 stack
-bounds.  This quantitative logic is also based on the potential method
-but has very rudimentary support for automation that cannot
-automatically derive symbolic bounds and is not based on efficient LP
-solving.  In this article, we use a more general quantitative Hoare
-logic that is parametric in the resource of interest.  Our main
-contribution is the automatic amortized analysis for Clight that can
-be combined with~\cite{veristack14} to automatically derive parametric
-verified stack bounds for recursive functions.
-
-Our work has been inspired by type-based amortized resource analysis
-for functional programs~\cite{Jost03,HoffmannH10,HoffmannAH12}.  There
-are three major improvements over previous work in the current paper,
-which presents the first automatic amortized resource analysis for C.
-First, we solved the long-standing open problem of extending automatic
-amortized resource analysis to compute bounds for programs that loop
-on (possibly negative) integers.  Second, we extended the analysis
-system to deal with non-linear control flow that is introduced by
-\code{break} and \code{return} statements.  Third, for the first time,
-we have combined an automatic amortized analysis with a system for
-interactively deriving bounds. In particular, recent
-systems~\cite{HoffmannS13} that deal with integers and arrays cannot
-derive bounds that depend on values in mutable locations or possibly
-negative integers, and thus do not apply to most of our example
-programs.
-
-\iffull{
-In the development of our quantitative Hoare logic we have drawn
-inspiration from mechanically verified Hoare logics.
-Nipkow's~\cite{Nipkow02} description of his implementations of Hoare
-logics in Isabelle/HOL has been helpful to understand the interaction
-of auxiliary variables with the consequence rule.  Appel's separation
-logic for CompCert Clight~\cite{AppelLogic} has been a blueprint for
-the general structure of the quantitative logic.  \iffull{Since we do not deal
-with memory safety, our logic is much simpler and it would be possible
-to integrate it with Appel's logic.}{}  The continuation passing style
-that we use in the quantitative logic is not only used by
-Appel~\cite{AppelLogic} but also in Hoare logics for low-level
-code~\cite{NiS06,JensenBK13}.
-
-There exist quantitative logics that are integrated into separation
-logic~\cite{Atkey10,HoffmannMZ13} and they are closely related to our
-quantitative logic.  However, the purpose of these logics is slightly
-different since they focus on the verification of bounds that depend
-on the shape of heap data structures and they are not implemented for
-C.  Also closely related to our logic is a VDM-style logic for
-reasoning about resource usage of an abstract fragment of JVM byte
-code by Aspinall et al.~\cite{AspinallBHLM07}.  Their logic is not
-Hoare-style, does not target C code, and is not designed for
-interactive bound development but to produce certificates for bounds
-derived for high-level functional programs.
-}{}
 
 \iffull{
 \begin{table}[t]
@@ -2745,6 +2686,67 @@ Function & LoC & Bound & Time (s) \\
   \emph{t08}. For $x\ge 0$ the bound is tight.}
 \label{fig:3d}
 \end{figure}
+
+
+\sectskip
+\section{Related Work}
+\label{sec:related}
+\aftersectskip
+
+A recent project~\cite{veristack14} has implemented and verified a
+quantitative logic to reason about stack-space usage, and modified the
+verified CompCert C compiler to translate C level bound to x86 stack
+bounds.  This quantitative logic is also based on the potential method
+but has very rudimentary support for automation that cannot
+automatically derive symbolic bounds and is not based on efficient LP
+solving.  In this article, we use a more general quantitative Hoare
+logic that is parametric in the resource of interest.  Our main
+contribution is the automatic amortized analysis for Clight that can
+be combined with~\cite{veristack14} to automatically derive parametric
+verified stack bounds for recursive functions.
+
+Our work has been inspired by type-based amortized resource analysis
+for functional programs~\cite{Jost03,HoffmannH10,HoffmannAH12}.  There
+are three major improvements over previous work in the current paper,
+which presents the first automatic amortized resource analysis for C.
+First, we solved the long-standing open problem of extending automatic
+amortized resource analysis to compute bounds for programs that loop
+on (possibly negative) integers.  Second, we extended the analysis
+system to deal with non-linear control flow that is introduced by
+\code{break} and \code{return} statements.  Third, for the first time,
+we have combined an automatic amortized analysis with a system for
+interactively deriving bounds. In particular, recent
+systems~\cite{HoffmannS13} that deal with integers and arrays cannot
+derive bounds that depend on values in mutable locations or possibly
+negative integers, and thus do not apply to most of our example
+programs.
+
+\iffull{
+In the development of our quantitative Hoare logic we have drawn
+inspiration from mechanically verified Hoare logics.
+Nipkow's~\cite{Nipkow02} description of his implementations of Hoare
+logics in Isabelle/HOL has been helpful to understand the interaction
+of auxiliary variables with the consequence rule.  Appel's separation
+logic for CompCert Clight~\cite{AppelLogic} has been a blueprint for
+the general structure of the quantitative logic.  \iffull{Since we do not deal
+with memory safety, our logic is much simpler and it would be possible
+to integrate it with Appel's logic.}{}  The continuation passing style
+that we use in the quantitative logic is not only used by
+Appel~\cite{AppelLogic} but also in Hoare logics for low-level
+code~\cite{NiS06,JensenBK13}.
+
+There exist quantitative logics that are integrated into separation
+logic~\cite{Atkey10,HoffmannMZ13} and they are closely related to our
+quantitative logic.  However, the purpose of these logics is slightly
+different since they focus on the verification of bounds that depend
+on the shape of heap data structures and they are not implemented for
+C.  Also closely related to our logic is a VDM-style logic for
+reasoning about resource usage of an abstract fragment of JVM byte
+code by Aspinall et al.~\cite{AspinallBHLM07}.  Their logic is not
+Hoare-style, does not target C code, and is not designed for
+interactive bound development but to produce certificates for bounds
+derived for high-level functional programs.
+}{}
 
 There exist many tools that can automatically derive loop and
 recursion bounds for imperative programs such as
