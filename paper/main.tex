@@ -1474,60 +1474,6 @@ $q_{vx}$ to pay for this change.  The rule ensures this
 only for $v \not\in \mathcal U$ because $x \le v$
 otherwise, and thus $|\inter v x| = 0$.
 
-\iffull{
-Another interesting rule is {\sc Q:Call}.  It needs to account for the
-changes to the stack caused by the function call, the arguments/return
-value passing, and the preservation of local variables.  We can sum up
-the main ideas of the rule as follows.
-\itemskip
-\begin{itemize}
-\item The potential in the pre- and postcondition of the function
-  specification is equalized to its matching potential in the callee's
-  pre- and postcondition.
-\itemskipIn
-\item
-  $\!$The potential of intervals $|\inter x y|$ is preserved
-  if $x$ and $y$ are local\iffull{ variables.}{.}
-\item
-  The unknown potentials after the call (e.g.
-  $|\inter x g|$, with $x$ local and $g$ global)
-  are set to zero in the postcondition.
-\end{itemize}
-\itemskip
-If $x$ and $y$ are local variables and $f(x,y)$ is
-called, {\sc Q:Call} splits the potential of
-$|\inter x y|$ in two parts, one part to perform the
-computation in the function $f$ and one part to keep for
-later use after the function call.  This splitting is
-realized by the equations $Q = P {+} S$ and $Q' =
-P' {+} S'$.  Arguments in the function precondition
-$(\Gamma_f, Q_f)$ are named using a fixed vector $\Vargs$
-of names different from all program variables.  This
-prevents name conflicts from happening and ensures that
-the substitution $[\Vargs/\vec x]$ is meaningful.
-Symmetrically, we use the unique name $\Vret$ to represent
-the return value in the function's postcondition
-$(\Gamma'_f, Q'_f)$.
-}{}
-
-\iffull{The rule {\sc Q:Weak} is not syntax directed. In the implementation
-we apply {\sc Q:Weak} before loops and between the two statements of a
-sequential composition. We could integrate weakening into every
-syntax directed rule but this simple heuristic helps to make the analysis
-efficient.}{}  The high-level idea of {\sc Q:Weak} is the following: If
-we have a sound judgement, then it is sound to add more potential to the
-precondition and remove potential from the postcondition.  The concept of
-\emph{more potential} is formalized by the relation $Q' \succeq_\Gamma Q$
-that is defined in the rule {\sc Relax}\iffull{ that
-also deals with the important task of transferring constant potential
-(represented by $q_0$) to interval sizes and vice versa.  If we can deduce
-from the logical context that the interval size $|\inter x y| \geq l$ is
-larger then a constant $l$ then we can transfer potential $q_{xy} {\cdot}
-|\inter x y|$ form the interval to constant potential $l{\cdot}q_{xy}$
-and guarantee that we do not gain potential.  Conversely, if $|\inter
-x y| \leq u$ for a constant $u$ then we can transfer constant potential
-$u{\cdot}q_{xy}$ to the interval potential $q_{xy} {\cdot} |\inter x y|$ without gaining potential.}{.}
-
 \newcommand{\loopbody}[0]{\ensuremath{\code{if~(x - 10 \geq 0)~\{x=x{-}10; tick(5);\}~else~break;}}}
 \begin{figure*}[t]
 \vspace{-.75cm}
@@ -1623,6 +1569,60 @@ $$
 \caption{An example derivation as produced $\toolname$. The constraints are resolved by an off-the-shelf LP solver.}
 \label{fig:derivation}
 \end{figure*}
+
+\iffull{
+Another interesting rule is {\sc Q:Call}.  It needs to account for the
+changes to the stack caused by the function call, the arguments/return
+value passing, and the preservation of local variables.  We can sum up
+the main ideas of the rule as follows.
+\itemskip
+\begin{itemize}
+\item The potential in the pre- and postcondition of the function
+  specification is equalized to its matching potential in the callee's
+  pre- and postcondition.
+\itemskipIn
+\item
+  $\!$The potential of intervals $|\inter x y|$ is preserved
+  if $x$ and $y$ are local\iffull{ variables.}{.}
+\item
+  The unknown potentials after the call (e.g.
+  $|\inter x g|$, with $x$ local and $g$ global)
+  are set to zero in the postcondition.
+\end{itemize}
+\itemskip
+If $x$ and $y$ are local variables and $f(x,y)$ is
+called, {\sc Q:Call} splits the potential of
+$|\inter x y|$ in two parts, one part to perform the
+computation in the function $f$ and one part to keep for
+later use after the function call.  This splitting is
+realized by the equations $Q = P {+} S$ and $Q' =
+P' {+} S'$.  Arguments in the function precondition
+$(\Gamma_f, Q_f)$ are named using a fixed vector $\Vargs$
+of names different from all program variables.  This
+prevents name conflicts from happening and ensures that
+the substitution $[\Vargs/\vec x]$ is meaningful.
+Symmetrically, we use the unique name $\Vret$ to represent
+the return value in the function's postcondition
+$(\Gamma'_f, Q'_f)$.
+}{}
+
+\iffull{The rule {\sc Q:Weak} is not syntax directed. In the implementation
+we apply {\sc Q:Weak} before loops and between the two statements of a
+sequential composition. We could integrate weakening into every
+syntax directed rule but this simple heuristic helps to make the analysis
+efficient.}{}  The high-level idea of {\sc Q:Weak} is the following: If
+we have a sound judgement, then it is sound to add more potential to the
+precondition and remove potential from the postcondition.  The concept of
+\emph{more potential} is formalized by the relation $Q' \succeq_\Gamma Q$
+that is defined in the rule {\sc Relax}\iffull{ that
+also deals with the important task of transferring constant potential
+(represented by $q_0$) to interval sizes and vice versa.  If we can deduce
+from the logical context that the interval size $|\inter x y| \geq l$ is
+larger then a constant $l$ then we can transfer potential $q_{xy} {\cdot}
+|\inter x y|$ form the interval to constant potential $l{\cdot}q_{xy}$
+and guarantee that we do not gain potential.  Conversely, if $|\inter
+x y| \leq u$ for a constant $u$ then we can transfer constant potential
+$u{\cdot}q_{xy}$ to the interval potential $q_{xy} {\cdot} |\inter x y|$ without gaining potential.}{.}
 
 \sectskip
 \section{Automatic Inference via LP Solving}
