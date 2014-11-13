@@ -987,7 +987,7 @@ instrumentation.  These loops can also be handled with inference of
 community, these invariants are known to be notoriously difficult to
 generate.
 %
-In example \emph{speed\_1} we have one loop that first increments
+In Example \emph{speed\_1} we have one loop that first increments
 variable $y$ up to $m$ and then increments variable $x$ up to $n$.  We
 derive the tight bound $|[x, n]| + |[y, m]|$.
 %
@@ -1898,7 +1898,7 @@ and remarking that since \lstinline{a[x] == 1} is true, we must have
 $\#_1(a) > 0$, thus the assertion \lstinline{na > 0} never fails. %  So the
 % test is in fact semantically equivalent to \lstinline{true}.
 
-Another simple example is given on \pref{fig:xmplbsaux} where
+Another simple example is given in \pref{fig:xmplbsaux} where
 a logarithmic bound on the stack consumption of a binary search
 program is proved using logical variable annotations.  Once again,
 annotations are in blue in the program text.  In this example,
@@ -2459,7 +2459,7 @@ increment the variable $y$ or we execute an inner loop in which $y$ is
 counted back to $0$.  $\toolname$ computes a tight bound.
 \iffull{Again, the constants $0$ and $1$ in the
   inner loop can as well be replace by something more interesting, say
-  $9$ and $10$ like in example \emph{t08}.  Then we still obtain a
+  $9$ and $10$ like in Example \emph{t08}.  Then we still obtain a
   tight linear bound.}{}
 %
 \ifdefined\fullversion
@@ -2605,7 +2605,7 @@ resetting it.  All other tools derive much larger constant factors.
 Since we have a formal cost semantics, we can run our examples with
 this semantics for different inputs and measure the cost to compare it
 to our derived bound.  \pref{fig:3d} shows such a comparison for
-example \emph{t08}, a variant of \emph{t08a} from \pref{sec:AAA}.  One
+Example \emph{t08}, a variant of \emph{t08a} from \pref{sec:AAA}.  One
 can see that the derived constant factors are the best possible if the
 input variable $x$ is non-negative.  \iffull{If $x$ is negative then
   the bound is only slightly off.}{}
@@ -2671,7 +2671,7 @@ Function & LoC & Bound & Time (s) \\
 \vspace{-.2cm}
 \includegraphics[width=.9\linewidth]{fig/bound3d}
 \caption{The automatically derived bound $1.33|[x,y]| + 0.33 |[0,x]|$
-  (blue lines) and the measured runtime cost (red crosses) for example
+  (blue lines) and the measured runtime cost (red crosses) for Example
   \emph{t08}. For $x\ge 0$ the bound is tight.}
 \label{fig:3d}
 \end{figure}
@@ -3967,7 +3967,7 @@ $1$ with other constants like we did in the second loop and still
 derive a tight bound.  The only information, that the analyzer needs
 is $x \geq c$ before assigning $x = x - c$.
 
-In example \emph{t10} we also do not restrict the inputs $x$ and $y$.
+In Example \emph{t10} we also do not restrict the inputs $x$ and $y$.
 They can be negative, positive, or zero.  The star {\tt *} in the
 conditional, stands for an arbitrary assertion.  In each branch of the
 conditional we can obtain the constant potential $1$ since the interval
@@ -3980,10 +3980,10 @@ increment the variable $y$ or we execute an inner loop in which $y$ is
 counted back to $0$.  The analysis computes a tight linear bound for
 this program.  Again, the constants $0$ and $1$ in the inner loop can
 as well be replace by something more interesting, say $9$ and $10$
-like in example \emph{t08}.  Then we still obtain a tight linear
+like in Example \emph{t08}.  Then we still obtain a tight linear
 bound.
 
-Example \emph{t27} is similar to example \emph{t13}.  Instead of
+Example \emph{t27} is similar to Example \emph{t13}.  Instead of
 decrementing the variable $x$ in the outer loop we this time increment
 the variable $n$ till $n = 0$.  In each of the $|[n,0]|$ iterations,
 we increment the variable $y$ by $1000$.  We then execute an inner
@@ -4013,7 +4013,7 @@ can share the potential $|[0,x]|$ before the assignment \code{x=x-y}
 between $|[0,x]|$ and $|[0,y]|$ after the assignment.  \iffull{In this way, we
 derive a tight linear bound.}{}
 
-Example \emph{t16} is an extension of example \emph{t15}. We again
+Example \emph{t16} is an extension of Example \emph{t15}. We again
 assume that $y$ is non-negative and use the same mechanism to iterate
 the outer loop as in \emph{t15}.  In the inner loop, we also count the
 variable $z$ down to zero and perform $|[0,z]|$ iterations.  However,
@@ -4045,7 +4045,7 @@ contain absolute values like $|x-y|$.  The first loop body is only
 executed if $x<y$ and the second loop body is only executed if $y<x$.
 The analyzer finds a tight bound.
 
-At first sight, example \emph{t30} appears to be a simple loop that
+At first sight, Example \emph{t30} appears to be a simple loop that
 decrements the variable $x$ down to zero.  However, a closer look
 reveals that the loop actually decrements both input variables $x$ and
 $y$ down to zero before terminating.  In the loop body, first $x$ is
@@ -4410,7 +4410,7 @@ require inference of a \emph{disjunctive invariant}.  In the abstract
 interpretation community, these invariants are known to be notoriously
 difficult to handle.
 %
-In example \emph{fig2\_1} we have one loop that first increments
+In Example \emph{fig2\_1} we have one loop that first increments
 variable $y$ up to $m$ and then increments variable $x$ up to $n$.  We
 derive the tight bound $|[x, n]| + |[y, m]|$.
 %
@@ -4422,20 +4422,20 @@ involved invariant for the loop, our tool is simply reasoning locally
 and works without any clever tricks. We obtain the tight bound $|[x,
 n]| + |[z, n]|$.
 
-Example \emph{nested\_multiple} is similar to example \emph{fig2\_1}.
+Example \emph{nested\_multiple} is similar to Example \emph{fig2\_1}.
 Instead of incrementing variable $y$ in the outer loop, $y$ is here
 potentially incremented multiple times in each iteration of the outer
-loop.  The idea of example \emph{nested\_single} is similar.  However,
+loop.  The idea of Example \emph{nested\_single} is similar.  However,
 instead of incrementing variable $y$ in the inner loop, we increment
 $x$, the counter variable of the outer loop. Our analyzer derives a
 tight bound for both programs.  Note that a star \emph{*} in a
 branching condition denotes an arbitrary boolean condition that might
 of course change while iterating (non-deterministic choice).
 
-Example \emph{sequential\_single} is like example
+Example \emph{sequential\_single} is like Example
 \emph{nested\_single}.  The only difference is that the inner loop of
 \emph{nested\_single} is now evaluated after the outer loop.  Example
-\emph{simple\_multiple} is a variant of example \emph{fig2\_1} and
+\emph{simple\_multiple} is a variant of Example \emph{fig2\_1} and
 \emph{simple\_single} is a simple variant of \emph{nested\_single}.
 We derive tight bounds for all aforementioned programs.
 
@@ -4462,14 +4462,14 @@ unit).  In the \emph{else} branch, we use the potential $|[0,vb]|$
 and the fact $vb>0$ to obtain $1$ potential units to pay for the
 loop iteration.
 
-In example \emph{fig4\_4} it is essential that $m$ is positive.  That
+In Example \emph{fig4\_4} it is essential that $m$ is positive.  That
 ensures that we can obtain constant potential for the interval size
 $|[0,i]|$ in the \emph{else} branch of the conditional since $|[0,i]|$
 decreases.  Example \emph{fig4\_5} is an examples that we can not
 handle automatically.  The execution is bounded because the boolean
 value of the test \code{dir==fwd} does not change during the iteration
 of the loop.  As a result, the variable $i$ is either counted down to
-$0$ or up to $n$.  Our tool cannot handle example \emph{fig4\_5}
+$0$ or up to $n$.  Our tool cannot handle Example \emph{fig4\_5}
 because we don't do path sensitive reasoning.  Note however that it
 would be more efficient to move the test \code{dir==fwd} outside of
 the loop (this would be also done by an optimizing compiler).  The
@@ -4486,12 +4486,12 @@ amortized approach: In the if statement we know that $n>0$ and assign
 \code{n=n-1}.  So we can use the potential of the interval size $|[0,n]|$
 to pay for the tick.
 
-Similar to example \emph{ex1}, example \emph{ex2}
+Similar to Example \emph{ex1}, Example \emph{ex2}
 form~\cite{GulwaniZ10} focuses on the number of iterations of the
 \emph{outer loop}.  While the whole program is not terminating, the
 number of iterations of the outer loop is bounded by $|[0,n]|$.
-Finally, example \emph{ex2} is similar to example
-\emph{nested\_single}, and \emph{ex3} is a variant of example
+Finally, Example \emph{ex2} is similar to example
+\emph{nested\_single}, and \emph{ex3} is a variant of Example
 \emph{t47}.
 
 \begin{figure*}
@@ -4705,7 +4705,7 @@ The derived bound $3 + 2|[0, x]| +2|[0, y]|$ is for the function
 
 Example \emph{t39} uses mutual recursion.  The function
 \code{count\_down} is similar to the function with the same name in
-example \emph{t37}.  However, we do not count down to $0$ but to a
+Example \emph{t37}.  However, we do not count down to $0$ but to a
 variable $y$ that is passed as an argument and we call the function
 \code{count\_up} afterwards.  The function \code{count\_up} is dual to
 \code{count\_down}.  Here, we count up $y$ by $2$ and recursively call
@@ -5383,7 +5383,7 @@ that indicates the bounds of the values that are stored in the array
 Example \emph{Greatest Common Divisor} is the usual implementation of
 the GCD algorithm.  We automatically derive a linear bound.  Note that
 the two tests at the beginning that check if the inputs are positive
-are essential.  Finally, example \emph{Quick Sort} shows a skeleton of
+are essential.  Finally, Example \emph{Quick Sort} shows a skeleton of
 the quick sort sorting algorithm.  Since we can only derive linear
 bounds we left out the inner loop that swaps the array elements and
 determines the position \code{n+lo} of the pivot.  We only assert that
