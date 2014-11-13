@@ -2313,7 +2313,7 @@ to construct certificates for upper bounds derived automatically.
 \vspace{-.5cm}
 \begin{tabular}{r|c|c|c|c|c}
 %
-& t63 & t19 & t30 & t15 & t13\\
+& t09 & t19 & t30 & t15 & t13\\
 %
 \hline
 &
@@ -2430,7 +2430,7 @@ examples \iffull{together with the derived bounds is given in
 
 \pref{fig:compar} shows five representative loop patterns from the
 evaluation.
-Example \emph{t63} is a loop that performs an expensive operation every
+Example \emph{t09} is a loop that performs an expensive operation every
 4 steps.  $\toolname$ is the only tool able to amortize this cost over
 the input parameter $x$.
 Example \emph{t19}
@@ -3812,7 +3812,7 @@ $101|[y,x]|$
 
 $11|[0,x]|$
 \\[.7\baselineskip]
-      {\bf t63}
+      {\bf t09}
     \end{center}
   \end{minipage}
 
@@ -3986,7 +3986,7 @@ computes the linear bound $101|[0,x]|$.  The
 assignment of potential to the size interval $|[0,x]|$ in instead of
 $|[y,x]|$ is a random choice of the LP solver.
 
-Example \emph{t63} shows how amortized reasoning handles periodically
+Example \emph{t09} shows how amortized reasoning handles periodically
 expensive operations.  The top-level loop is iterated $x$ times in
 a regular fashion, but every 4 iterations of this loop an expensive
 operation modeled by \code{tick(40)} is performed.  Taking the worst
