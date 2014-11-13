@@ -1640,7 +1640,7 @@ every call from outside the SCC.
 
 
 We then feed the collected constraints to an
-off-the-shelf LP solver (currently Coin-Or's CLP).
+off-the-shelf LP solver (currently CLP~\cite{clp}).
 If the solver successfully finds a solution, we know that a derivation
 exists and extract the values for the initial
 $Q$ from the solver to get a resource bound for the program.  To get
