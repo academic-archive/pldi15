@@ -2685,20 +2685,6 @@ Function & LoC & Bound & Time (s) \\
 \label{sec:related}
 \aftersectskip
 
-A recent project~\cite{veristack14} has implemented and verified a
-quantitative logic to reason about stack-space usage, and modified the
-verified CompCert C compiler to translate C level bound to x86 stack
-bounds.  This quantitative logic is also based on the potential method
-but has very rudimentary support for automation that cannot
-automatically derive symbolic bounds and is not based on efficient LP
-solving.  In contrast, our main
-contribution is an automatic amortized analysis for C that can
-derive parametric bounds for loops
-and recursive functions fully automatically.
-%
-In this article, we also use a more general quantitative Hoare
-logic that is parametric in the resource of interest.  
-
 Our work has been inspired by type-based amortized resource analysis
 for functional programs~\cite{Jost03,HoffmannH10,HoffmannAH12}.  Here,
 we present the first automatic amortized resource analysis for
@@ -2706,18 +2692,32 @@ C. None of the existing techniques can handle the example programs we
 describe in this work.
 %
 The automatic analysis of realistic C programs is enabled by three
-major improvements over previous work.  First, we solved the
+major improvements over previous work.  First, we extended the
+analysis system to associate potential with not just individual
+program variables but also multivariate intervals
+and, more generally, auxiliary variables.  Second, we solved the
 long-standing open problem of extending automatic amortized resource
 analysis to compute bounds for programs that loop on (possibly
 negative) integers without decreasing one individual number in each
-iteration.  Second, we extended the analysis system to deal with
-non-linear control flow that is introduced by \code{break} and
-\code{return} statements.  Third, for the first time, we have combined
-an automatic amortized analysis with a system for interactively
-deriving bounds. In particular, recent systems~\cite{HoffmannS13} that
-deal with integers and arrays cannot derive bounds that depend on
-values in mutable locations, possibly negative integers, or on
-differences between integers.
+iteration.  Third, for the first time, we have combined an automatic
+amortized analysis with a system for interactively deriving bounds. In
+particular, recent systems~\cite{HoffmannS13} that deal with integers
+and arrays cannot derive bounds that depend on values in mutable
+locations, possibly negative integers, or on differences between
+integers.
+
+A recent project~\cite{veristack14} has implemented and verified a
+quantitative logic to reason about stack-space usage, and modified the
+verified CompCert C compiler to translate C level bound to x86 stack
+bounds.  This quantitative logic is also based on the potential method
+but has very rudimentary support for automation. It is not based on
+efficient LP solving so it cannot automatically derive symbolic
+bounds.  In contrast, our main contribution is an automatic amortized
+analysis for C that can derive parametric bounds for loops and
+recursive functions fully automatically.
+%
+In this article, we also use a more general quantitative Hoare
+logic that is parametric in the resource of interest.  
 
 \iffull{
 In the development of our quantitative Hoare logic we have drawn
@@ -2810,7 +2810,7 @@ of the derivation system automatically produce easily checkable
 certificates for the derived bounds (\pref{sec:soundness}).
 %
 Our system is the first amortized resource analysis for C programs.
-It addresses the longstanding open problem of extending automatic
+It addresses the long-standing open problem of extending automatic
 amortized resource analysis to compute bounds for programs that loop
 on signed integers and to deal with non-linear control flow\ifshort{.}{ that is
 introduced by break and return statements.}
