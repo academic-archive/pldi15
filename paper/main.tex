@@ -257,7 +257,7 @@ feedback for developers.
 Available techniques for automatically deriving worst-case resource bounds
 fall into two categories.  Techniques
 in the first category derive impressive bounds for
-numerical imperative programs, but are not fully compositional.
+numerical imperative programs, but are not compositional.
 This is problematic if one needs to derive global whole-program bounds.
 Techniques in the second category derive tight whole-program
 bounds for programs with regular loop and recursion patterns that
@@ -296,7 +296,7 @@ programs~\cite{Jost03,HoffmannAH12}. It has been shown that class
 definitions of object oriented programs~\cite{Jost06} and
 data-structure predicates of separation logic~\cite{Atkey10} can play
 the role of the type system in imperative programs. However, these
-techniques fail for numerical imperative programs because these programs lack
+techniques fail for numerical imperative programs because they lack
 fine-grained data-structure information to hook the analysis on.
 Another issue is that existing techniques associate \emph{potential}
 directly with single program variables.  In imperative programs, this
@@ -312,7 +312,7 @@ fails to find a resource bound for a program, there is no possibility
 for sound user interaction to guide the tool during bound
 derivation.
 For example, there is no concept of manual proofs of
-resource bounds and no framework that could support composition
+resource bounds and no framework can support composition
 of manually derived bounds with automatically inferred bounds.
 
 % Finally, the tools often operate on an abstract version of the and use
@@ -324,9 +324,9 @@ of manually derived bounds with automatically inferred bounds.
 
 This paper presents a new framework for automatically
 deriving resource bounds on C programs.  This new
-approach is an attempt to unify the two previous
+approach is an attempt to unify the two aforementioned
 categories: It solves the compositionality issues of techniques
-for numerical imperative code by adapting amortized-analysis based
+for numerical imperative code by adapting amortized-analysis--based
 techniques from the functional world.
 %
 Our automated analysis is able to infer
@@ -407,12 +407,12 @@ show that the bounds that we derive are often more precise than those
 derived by existing tools.  Only LOOPUS~\cite{SinnZV14}, which also
 uses amortization techniques, is able to achieve a similar precision.
 
-Several micro benchmarks demonstrate the practicality and
+Examples from cBench and micro benchmarks demonstrate the practicality and
 expressiveness of the user guided bound inference.  For example, we
-derive a logarithmic bound for a binary search function, a bound that
+derive a logarithmic bound for a binary search function\iffull{, a bound that
 depends on the contents of an array to describe the exact cost of a
-function that finds a maximal element in an array, and a bound
-that amortizes the cost of $k$ successive increments to a binary
+function that finds a maximal element in an array, }{ }and a bound
+that amortizes the cost of $k$\iffull{ successive }{ }increments to a binary
 counter (see \pref{sec:anno}).
 
 In summary, we make the following \emph{contributions}.
@@ -424,17 +424,23 @@ In summary, we make the following \emph{contributions}.
   functions, generates resource abstractions for functions, derives
   proof certificates, and handles resources that can
   become available during execution.
+\itemskipIn
 \item We show how to automatically reduce the inference of \emph{linear} resource
     bounds to efficient LP solving.
+\itemskipIn
 \item We describe a new method of harnessing existing qualitative
   verification techniques to guide the automatic amortized analysis
   to derive \emph{non-linear} resource bounds with LP solving.
+\itemskipIn
 \item We prove the soundness of the analysis with respect to a
   parametric cost semantics for C programs. The cost model can be
   further customized with function calls (\code{tick(n)}) that
   indicate resource usage. % This mechanism is also covered by the
   % soundness proof.
-\item We present experiments with a prototype implementation on more
+\itemskipIn
+\item We implemented our resource bound analysis in the publically-available tool $\toolname$.
+\itemskipIn
+\item We present experiments with $\toolname$ on more
   than 2000 lines of C code. A detailed comparison shows that our
   prototype is the only tool that can derive global bounds for larger
   C programs while being as powerful as existing tools when deriving
@@ -492,14 +498,14 @@ $$
 %
 This rule already shows a departure from classical techniques that are
 based on ranking functions.  Reasoning with two potential functions
-promotes compositional reasoning by considering the sequencing of
-program operations.  In the previous rule, $\Phi$ gives a bound for
+promotes compositional reasoning by focusing on the sequencing of
+programs.  In the previous rule, $\Phi$ gives a bound for
 $S_1; S_2$ through the intermediate potential $\Phi'$, even though it
 was derived on $S_1$ only.
 %
 Similarly, other language constructs lead to rules for the potential
 functions that look very similar to Hoare logic or effect system
-rules.  These rules enable interactive reasoning about resource usage
+rules.  These rules enable reasoning about resource usage
 in a flexible and compositional way, which, as a side effect, produces
 a certificate for the derived resource bound.
 
@@ -587,7 +593,7 @@ version of Example~1 in which we increment $x$ by a constant $K>0$ and
 consume $T>0$ resources in each iteration.  The reasoning is similar
 to the one of Example~1 except that we obtain the potential
 $K{\cdot}\frac{T}{K}$ after the assignment.  Note that the logical
-assertions in $\Gamma$ are only used in the rule for the assignment
+assertions are only used in the rule for the assignment
 \code{x=x+K}.
 
 To the best of our knowledge, no other implemented tool for C is
@@ -597,7 +603,7 @@ without a cost model) and $K=10$, KoAT computes the bound $|x| + |y| +
 10$, Rank computes the bound $y-x-7$, and LOOPUS computes the bound
 $y-x-9$.  Only PUBS computes the tight bound $0.1(y-x)$ if we
 translate the program into a term-rewriting system by
-hand. Nevertheless, we will show in \pref{sec:AAA} that the
+hand. We will show in the following sections that the
 potential method makes automatic bound derivation straightforward.
 
 % To automate the reasoning, we first introduce an unknown rational
@@ -633,15 +639,14 @@ calls).  However, a potential function is more flexible.  For example,
 we can use a potential function to prove that Example~2 does not
 consume any resources in the tick metric.
 \begin{lstlisting}[basicstyle=\tt\small]
-#\!\!\!\!\!# while (x<y) {tick(-1); x=x+1; tick(1)} #\hfill \textnormal{(Example 2)}#
+#\!\!\!\!\!#while (x<y) {tick(-1); x=x+1; tick(1)} #\hfill \textnormal{(Example 2)}#
+
+#\!\!\!\!\!#while (x<y) { x=x+1; tick(10); } #\hfill \textnormal{(Example 3)}#
 \end{lstlisting}
 Similarly we can prove that Example~3 can be bounded by $10|[x,y]|$.
 In both cases, we reason exactly like in the first version of the
 while loop to prove the bound.  Of course, such loops with different
 tick annotations can be seamlessly combined in a larger program.
-\begin{lstlisting}[basicstyle=\tt\small]
-while (x<y) { x=x+1; tick(10); } #\hfill \textnormal{(Example 3)}#
-\end{lstlisting}
 
 \iffull{In general, the potential based approach addresses several challenges
 in resource bound analysis. This includes amortized bounds in which
@@ -830,7 +835,7 @@ and motivate our design decisions.
 To find resource bounds automatically, we first need to restrict our
 search space.  In this work, we focus on a the following form of
 potential functions, which can express tight bounds for many typical
-programs and allows inference view \emph{linear programming}.
+programs and allows for inference with \emph{linear programming}.
 $$
   \Phi(\state) = q_0 + \sum_{x, y \in \dom\state \land x \neq y}
     q_{(x, y)} \cdot |\inter {\state(x)} {\state(y)}| \, .
@@ -881,7 +886,7 @@ In contrast to the quantitative annotations, logical contexts $\Gamma$
 in the presented inference system are left abstract.  This allows for
 simpler rules and leaves room for future improvements.
 Our implementation finds these logical contexts using abstract
-interpretation using the domain of linear inequalities.  We observed that
+interpretation with the domain of linear inequalities.  We observed that
 the rules of the analysis often requires only minimal local knowledge.
 This means that it is not necessary for us to compute precise loop
 invariants and only a rough fixpoint (e.g. keeping only inequalities on
@@ -957,7 +962,7 @@ $2+3|[l,h]|$
 \vspace{1ex}
 \caption{Example \emph{t39} shows two mutually-recursive functions
   with the computed tick bounds.  Example \emph{t61} and \emph{t62}
-  demonstrate the unique compositionality of our system. In \emph{61},
+  demonstrate the unique compositionality of our system. In \emph{t61},
   $N\geq 0$ is a fixed but arbitrary constant.  The derived constant factors
   are tight.}
   \label{fig:ex_list_2}
@@ -1307,7 +1312,7 @@ $$
 $$
 %
 The part $(\Gamma, Q) \vdash S \dashv (\Gamma', Q')$ of the judgement
-can be seen as a regular Hoare triple.  All assertions are split into
+can be seen as a quantitative Hoare triple.  All assertions are split into
 two parts, the logical part and the quantitative part.  The
 quantitative part $Q$ represents a potential function as a collection
 of non-negative numbers $q_i$ indexed by the index set $I$.  The
@@ -1323,7 +1328,7 @@ resources left and $\Gamma'$ holds for $\state'$.
 
 The judgement is a bit more involved since we have to take into
 account the early exit statements \code{break} and \code{return}.
-This is similar to classical Hoare triples the presence of non-linear
+This is similar to classical Hoare triples in the presence of non-linear
 control flow. In the judgement, $(\Gamma_B, Q_B)$ is the postcondition
 that holds when breaking out of a loop using \code{break}.  % For example, it is set upon entry
 % of looping statements by the rule {\sc Q:Loop} and used before
@@ -2678,7 +2683,7 @@ Function & LoC & Bound & Time (s) \\
 \code{uv\_decode} & 31 & $\log_2(\code{UV\_NVS})+1$ & 0.1 \\
 \end{tabular}
 \vspace{.1cm}
-\caption{Derived bounds for functions from cBench. \jan{FUCKING backedge metric}}
+\caption{Derived bounds for functions from cBench.}
 \label{tab:cbench}
 \end{table}
 
