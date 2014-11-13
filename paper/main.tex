@@ -1380,11 +1380,11 @@ are instantiated by appropriate variables on call sites.  A distinctive
 feature of our analysis is that it respects the function abstraction:
 when deriving a function specification it generates a set of
 constraints and the above quadruple; once done, the constraint
-sets can readily be reused for every call site and the function need
+set can readily be reused for every call site and the function need
 not be analyzed multiple times.
 %
 Therefore, the derivation rules are parametric in a function context $\Delta$
-that we leave implicit in the rules that we present here. More details
+that we leave implicit in the rules presented here. More details
 can be found in the extended version.
 
 \paraskip
@@ -1630,13 +1630,13 @@ $u{\cdot}q_{xy}$ to the interval potential $q_{xy} {\cdot} |\inter x y|$ without
 We separate the search of a derivation into two steps.  As a first
 step we go through the functions of the program and apply inductively
 the derivation rules of the automatic amortized analysis.  This is
-done in a bottom-up way, for each strongly connected component (SCC) of the
+done in a bottom-up way for each strongly connected component (SCC) of the
 call graph.  During this
 process our tool uses symbolic names for the rational coefficients
 $q_i$ in the rules.  Each time a linear constraint must be
 satisfied by these coefficients, it is recorded in a global list for the SCC using
-the symbolic names.  We instantiate this constraint list for every call of
-a function from this SCC.
+the symbolic names.  We reuse the constraint list for
+every call from outside the SCC.
 
 
 We then feed the collected constraints to an
