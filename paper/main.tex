@@ -320,7 +320,7 @@ fails to find a resource bound for a program, there is no possibility
 for sound user interaction to guide the tool during bound
 derivation.
 For example, there is no concept of manual proofs of
-resource bounds and no framework can support composition
+resource bounds; and no framework can support composition
 of manually derived bounds with automatically inferred bounds.
 
 % Finally, the tools often operate on an abstract version of the and use
@@ -1861,8 +1861,9 @@ established qualitative verification techniques.
 When the resource bound of a program depends on the contents of the
 heap, or is non-linear (e.g. logarithmic, exponential), we propose to
 introduce a \emph{logical state} using \emph{auxiliary variables}.
-Auxiliary variables do not change the behavior of the program and
-guide $\toolname$ during bound derivation.
+Auxiliary variables guide $\toolname$ during bound derivation
+but they do not change the behavior of the program and
+
 
 More precisely, the technique consists of the following steps. First,
 a program $P$ that fails to be analyzed automatically is enriched by
