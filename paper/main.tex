@@ -670,7 +670,7 @@ same set of variables.}{}
 \begin{figure*}
  \setlength{\progwidth}{.22\linewidth}
   \centering
-\vspace{-.4cm}
+\vspace{-.5cm}
 \hspace{-0.4cm}
   \begin{minipage}[b]{.18\linewidth}
     \begin{center}
@@ -902,7 +902,7 @@ variables unchanged by the loop) is sufficient to obtain good bounds.
 
 \begin{figure*}
   \centering
-\ifshort{\vspace{-1.6cm}
+\ifshort{\vspace{-.5cm}
 \hspace{-0.4cm}}{}
   \begin{minipage}[b]{7cm}
     \begin{center}
@@ -946,11 +946,6 @@ $7\frac{8-N}{8} + \frac{N}{8}|[0,l]|\;\;$ if $N < 8$
 %
   \begin{minipage}[b]{5.5cm}
     \begin{center}
-   \begin{lstlisting}
-
-
-   \end{lstlisting}
-\vspace{-2.5ex}
 \begin{lstlisting}
 for (;;) {
   do { l++; tick(1); }
@@ -1673,16 +1668,14 @@ rule.  However, it can be left out in practice at some places to
 increase the efficiency of the tool.
 The weakening operation $\succeq_{\Gamma}$ is defined by the rule
 \textsc{Relax}. It is parameterized by a logical context that is
-used to gather information on interval sizes.  For example, we have
-\small{
-$$
-\begin{array}{lll}
-P^\text{de} \succeq_{(\cdot)} P^\text{we}
-& \equiv &  p^\text{we}_{0,10} \leq p^\text{de}_{0,10} + u_{0,10} - v_{0.10}  \\
-& \land &   p^\text{we}_{0} \leq p^\text{de}_{0} - 10 {\cdot} u_{0,10} + 10 {\cdot} v_{0.10}  \\
-& \land &  \forall (\alpha, \beta) \neq (0,10)  . \, p^\text{we}_{\alpha,\beta} \leq p^\text{de}_{\alpha,\beta} \;\;\; .
-\end{array}
-$$}
+used to gather information on interval sizes.  For example, $P^\text{de} \succeq_{(\cdot)} P^\text{we} \equiv$
+{\small
+  \begin{align*}
+ p^\text{we}_{0,10} \leq p^\text{de}_{0,10} + u_{0,10} - v_{0.10} 
+\land  p^\text{we}_{0} \leq p^\text{de}_{0} - 10 {\cdot} u_{0,10} + 10 {\cdot} v_{0.10} \\
+\land  \forall (\alpha, \beta) \neq (0,10)  . \, p^\text{we}_{\alpha,\beta} \leq p^\text{de}_{\alpha,\beta} \;\;\; .
+  \end{align*}
+}
 %
 The other rules are syntax directed and applied inductively.  For example,
 the outermost expression is a loop, so we use the rule \text{Q:Loop}
