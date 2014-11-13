@@ -152,7 +152,7 @@
   bound inference to a linear optimization problem that can be solved
   by off-the-shelf LP solvers.
   %
-  The analysis framework is implemented in the publically-available
+  The analysis framework is implemented in the publicly-available
   tool $\toolname$. An experimental evaluation demonstrates the
   advantages of the new technique with a comparison of $\toolname$ with
   existing tools on challenging micro benchmarks and the analysis of
@@ -343,7 +343,7 @@ resource analysis technique for C that deals naturally with
 recursive functions and sequenced loops, and can handle resources that can
 become available during execution (e.g., when freeing
 memory).  Compared to more classical
-apporaches based on ranking functions, our tool inherits
+approaches based on ranking functions, our tool inherits
 the benefits of amortized reasoning.  Using only one
 simple mechanism, it handles:
 \itemskip
@@ -856,7 +856,7 @@ $\Phi$ as a \emph{quantitative annotation} $Q = (q_i)_{i \in I}$, that
 is, a family of \ifshort{non-negative}{} rational numbers where only
 a finite number of elements are not zero. \iffull{ For soundness, we
   require that potential functions always give non-negative results.
-  This is acheived by restricting coefficients in a quantitative
+  This is achieved by restricting coefficients in a quantitative
   annotation to be always non-negative.}{}
 
 In the potential functions, we treat constants as global variables
@@ -1708,7 +1708,7 @@ $.}
 %
 The penalties given to certain factors are used
 to prioritize certain intervals.  For example, a bound with
-$[10,x]$ will be prefered to another with $[0,x]$ because $|[10,x]|
+$[10,x]$ will be preferred to another with $[0,x]$ because $|[10,x]|
 \le |[0,x]|$.
 %
 The LP solver now returns a solution of the constraint set and an
@@ -2217,7 +2217,7 @@ $$
 $$
 where we write $\Phi_Q$ for the unique linear potential function
 defined by the quantitative annotation $Q$.  The logical context $\Gamma$
-is implicitely lifted to a quantitative assertion by mapping a state
+is implicitly lifted to a quantitative assertion by mapping a state
 $\state$ to 0 if $\Gamma(\state)$ holds and to $\infty$ otherwise.
 \iffull{We also need to
 translate the assumptions in function contexts of the automatic
@@ -2244,7 +2244,7 @@ The soundness of the automatic analysis can now be stated
 formally with the following theorem.
 %
 \begin{theorem}[Soundness of the automatic analysis]
-  If $J$ is a judgement derived by the automatic analyis,
+  If $J$ is a judgement derived by the automatic analysis,
   then $\tr(J)$ is a quantitative Hoare triple derivable
   in the quantitative logic.
 \end{theorem}
@@ -2418,7 +2418,7 @@ examples \iffull{together with the derived bounds is given in
 \pref{fig:compar} shows five representative loop patterns from the
 evaluation.  Example \emph{t08} is a slightly modified version of
 \emph{t08a}, which is described in~\pref{sec:AAA}.  Example \emph{t19}
-demonstrates the compositionaliy of the analysis.  The program consists
+demonstrates the compositionally of the analysis.  The program consists
 of two loops that decrement a variable $i$.  In the first loop, $i$ is
 decremented down to 100 and in the second loop $i$ is decremented further
 down to $-1$.  However, between the loops we assign \code{i=i+k+50}.
@@ -2722,7 +2722,7 @@ We have developed a novel analysis framework for compositional and
 certified worst-case resource bound analysis for C programs.  The
 framework combines ideas from existing abstract interpretation--based
 techniques with the potential method of amortized analysis.  The
-technical innovations are implemented in the publically available tool
+technical innovations are implemented in the publicly available tool
 $\toolname$. To the best of our knowledge, $\toolname$ is the first
 analysis tool for C programs that automatically reduces the derivation
 of symbolic bounds to efficient LP solving.
@@ -3164,7 +3164,7 @@ $$
 $$
 The assertion $P_f \, z \, \vec v$ is the precondition of the function
 $f$ and the assertion $Q_f \, z \, v$ is its postcondition.  They are
-both parameterized by an arbitary logical variable $z$ (which can be a
+both parameterized by an arbitrary logical variable $z$ (which can be a
 tuple) that relates the function arguments with the return value.  The
 precondition also depends on $\vec v$, the values of the arguments
 at the function invocation.  Similarly, the postcondition depends on
@@ -3956,7 +3956,7 @@ $|[y,x]|$ is a random choice of the LP solver.
 Example \emph{t63} shows how amortized reasoning handles periodically
 expensive operations.  The top-level loop is iterated $x$ times in
 a regular fashion, but every 4 iterations of this loop an expensive
-opereation modeled by \code{tick(40)} is performed.  Taking the worst
+operation modeled by \code{tick(40)} is performed.  Taking the worst
 case of the loop body would yield the pessimistic bound $41|[0,x]|$,
 however our tool is able to amortize the expensive operation and derives
 instead the tight bound $11|[0,x]|$.
