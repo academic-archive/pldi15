@@ -2686,15 +2686,15 @@ we present the first automatic amortized resource analysis for
 C. None of the existing techniques can handle the example programs we
 describe in this work.
 %
-The automatic analysis of realistic C programs is enabled by three
+The automatic analysis of realistic C programs is enabled by two
 major improvements over previous work.  First, we extended the
 analysis system to associate potential with not just individual
 program variables but also multivariate intervals
-and, more generally, auxiliary variables.  Second, we solved the
+and, more generally, auxiliary variables.  In this way, we solved the
 long-standing open problem of extending automatic amortized resource
 analysis to compute bounds for programs that loop on (possibly
 negative) integers without decreasing one individual number in each
-iteration.  Third, for the first time, we have combined an automatic
+iteration.  Second, for the first time, we have combined an automatic
 amortized analysis with a system for interactively deriving bounds. In
 particular, recent systems~\cite{HoffmannS13} that deal with integers
 and arrays cannot derive bounds that depend on values in mutable
@@ -2706,7 +2706,7 @@ quantitative logic to reason about stack-space usage, and modified the
 verified CompCert C compiler to translate C level bound to x86 stack
 bounds.  This quantitative logic is also based on the potential method
 but has very rudimentary support for automation. It is not based on
-efficient LP solving so it cannot automatically derive symbolic
+efficient LP solving and cannot automatically derive symbolic
 bounds.  In contrast, our main contribution is an automatic amortized
 analysis for C that can derive parametric bounds for loops and
 recursive functions fully automatically.
