@@ -2313,17 +2313,18 @@ to construct certificates for upper bounds derived automatically.
 \vspace{-.5cm}
 \begin{tabular}{r|c|c|c|c|c}
 %
-& t08 (modified t08a) & t19 & t30 & t15 & t13\\
+& t63 & t19 & t30 & t15 & t13\\
 %
 \hline
 &
 \begin{lstlisting}[basicstyle=\tt\footnotesize]
-while (y>x) {
-  x++; tick(1);
-}
-while (x>2) {
-  x -= 3; tick(1);
-}
+i=1; j=0;
+while (j<x) {
+  j++;
+  if (i>=4)
+    i=1, tick(40);
+  else i++;
+  tick(1); }
 \end{lstlisting}
 &
 \hspace{-.5cm}\begin{lstlisting}[basicstyle=\tt\footnotesize]
@@ -2368,7 +2369,7 @@ while (x>0) {
 %
 %
 \toolname
-  & {\small $\!\!\!1.33|[x,y]| {+} 0.33 |[0,x]|\!\!\!$ }
+  & {\small $11|[0,x]|$ }
   & {\small $\!\!\!\!\!50 {+} |\inter {-1} i| {+} |\inter 0 k|\!\!\!\!\!\!$ }
   & {\small $|\inter 0 x| {+} |\inter 0 y|$}
   & {\small $|\inter 0 x|$}
@@ -2376,7 +2377,7 @@ while (x>0) {
 \\
 %
 Rank
-  & {\small $2 {+} y {-} x (?)$ }
+  & {\small $23{\cdot}x - 14$ }
   & {\small $54+k+i$ }
   & {\small ---}
   & {\small $2+2x-y$ }
@@ -2387,15 +2388,13 @@ Rank
 {\hspace{-.2cm}LOOPUS}
 &
 {\small
-  \begin{tabular}{c}
-    $\max(0, x{-}2)$\\ $+ 2\max(0, y {-} x)$
-  \end{tabular}
+  $41\max(x,0)$
 }
 &
 {\small
   $\!\!\!\!$\begin{tabular}{c}
-    $\max(0, i{-}100)$ \\
-    $+ \max(0, k {+} i {+} 51)$
+    $\max(i{-}100, 0)$ \\
+    $+ \max(k {+} i {+} 51, 0)$
   \end{tabular}$\!\!\!\!$
 }
 &
@@ -2430,8 +2429,11 @@ examples \iffull{together with the derived bounds is given in
   version~\cite{anon_extended}.}
 
 \pref{fig:compar} shows five representative loop patterns from the
-evaluation.  Example \emph{t08} is a slightly modified version of
-\emph{t08a}, which is described in~\pref{sec:AAA}.  Example \emph{t19}
+evaluation.
+Example \emph{t63} is a loop that performs an expensive operation every
+4 steps.  $\toolname$ is the only tool able to amortize this cost over
+the input parameter $x$.
+Example \emph{t19}
 demonstrates the compositionally of the analysis.  The program consists
 of two loops that decrement a variable $i$.  In the first loop, $i$ is
 decremented down to 100 and in the second loop $i$ is decremented further
@@ -2586,7 +2588,7 @@ also the ones of all the function it calls. \iffull{The line count is
 computed on pre-processed C with all unnecessary declarations removed.}{}
 We analyzed the functions using a metric that assigns a cost 1 to all
 the back-edges in the control flow (loops, and function calls).
-The bounds for the functions \code{ycc\_rgb\_conv} and \code{uv\_decode} 
+The bounds for the functions \code{ycc\_rgb\_conv} and \code{uv\_decode}
 have been inferred with user interaction as described in \pref{sec:anno}.
 The most challenging functions for $\toolname$ have unrolled loops
 where many variables are assigned.  This stresses our analysis because
