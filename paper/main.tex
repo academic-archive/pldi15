@@ -299,11 +299,12 @@ programs~\cite{Jost03,HoffmannAH12}. It has been shown that class
 definitions of object-oriented programs~\cite{Jost06} and
 data-structure predicates of separation logic~\cite{Atkey10} can play
 the role of the type system in imperative programs.
-However, a fundamental weakness of these potential-based techniques
+However, a major weakness of existing potential-based techniques
 is that they can only associate \emph{potential}
-directly with single program variables. In imperative programs, this
+with individual program variable or data structure.
+For C programs, this
 fails for loops as simple as \lstinline{for(i=x;i<y;i++)} where
-$y - i$ decreases, but not $|i|$. %  Mutation is yet another problem.
+$y-i$ decreases, but not $|i|$. %  Mutation is yet another problem.
 % While functional programs relate multiple fixed inputs (the typing
 % context) with one output (the expression typed), imperative programs
 % can change the value of variables in scope, so the potential of these
@@ -315,7 +316,7 @@ $y - i$ decreases, but not $|i|$. %  Mutation is yet another problem.
 % Another issue is that existing techniques associate \emph{potential}
 % directly with single program variables.  
 
-A general problem with existing tools is user interaction. When a tool
+A general problem with existing tools (in both categories) is user interaction. When a tool
 fails to find a resource bound for a program, there is no possibility
 for sound user interaction to guide the tool during bound
 derivation.
