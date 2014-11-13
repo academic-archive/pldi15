@@ -670,7 +670,7 @@ same set of variables.}{}
 \begin{figure*}
  \setlength{\progwidth}{.22\linewidth}
   \centering
-\vspace{-.5cm}
+\vspace{-.3cm}
 \hspace{-0.4cm}
   \begin{minipage}[b]{.18\linewidth}
     \begin{center}
@@ -902,7 +902,7 @@ variables unchanged by the loop) is sufficient to obtain good bounds.
 
 \begin{figure*}
   \centering
-\ifshort{\vspace{-.5cm}
+\ifshort{\vspace{-.3cm}
 \hspace{-0.4cm}}{}
   \begin{minipage}[b]{7cm}
     \begin{center}
@@ -914,7 +914,7 @@ void c_up (int x, int y) {
   if (y+1<x) {tick(1); c_down(x,y+2);}
 }
    \end{lstlisting}
-\vspace{-2.5ex}
+\vspace{-2.7ex}
 $0.33 + 0.67 |[y,x]|\;\;$ (\code{c\_down(x,y)})\\
 $\;\;\;\;\;\;\,0.67 |[y,x]|\;\;$ (\code{c\_up(x,y)})
 \\[.4\baselineskip]
@@ -934,7 +934,7 @@ for (; l>0; l--)
   /* save leftovers */
   tick(1);
    \end{lstlisting}
-\vspace{-2.5ex}
+\vspace{-2.8ex}
 $\;\;\;\;\;\;\;\;\;\;\;\;\;\frac{N}{8} |[0,l]|\;\;$ if $N \geq 8$\\
 $7\frac{8-N}{8} + \frac{N}{8}|[0,l]|\;\;$ if $N < 8$
 \\[.4\baselineskip]
@@ -1048,10 +1048,10 @@ Example \emph{t61} in \pref{fig:ex_list_2} is typical for implementations
 of block-based cryptographic primitives: Data of arbitrary length, is
 consumed in blocks and the leftover is stored in a buffer for future use
 when more data is available.  It is present in all the block encryption
-routines of PGP.  The same pattern is also used in performance critical
-code to unroll a loop, for example we found it in a bit manipulating
+routines of PGP and also used in performance critical
+code to unroll a loop. For example we found it in a bit manipulating
 function of libtiff library and a CRC computation routine of MAD,
-an MPEG audio decoder.  This looping pattern is handled particularly well
+an MPEG decoder.  This looping pattern is handled particularly well
 by our method. If $N \geq 8$, $\toolname$ infers the bound
 $\frac{N}{8} |[0,l]|$, but if $N<8$, it infers $7\frac{8-N}{8} +
 \frac{N}{8}|[0,l]|$. The selection of the block size ($8$) and the cost
