@@ -1762,7 +1762,6 @@ Such problems can be solved in linear time in practice.}{}
 
 
 \begin{figure}[t]
-\center
 \begin{minipage}[b]{0.8\linewidth}
 \begin{lstlisting}[numbers=left]
 ${\color{blue}%
@@ -1888,7 +1887,7 @@ number $\#_1(a)$ in the program.  For example, on line 6 of the example
 we are setting \lstinline{a[x]} to 0 and because of the condition we
 know that this array entry was 1.  To reflect this change on
 $\#_1(a)$, the logical variable $na$ is decremented.
-Similarly, on line 10, an array entry which was 0 becomes 1, so
+Similarly, on line 8, an array entry which was 0 becomes 1, so
 $na$ is incremented.  To complete the step 2 of the systematic
 procedure described above, we must show that the extra assertion
 \lstinline{na > 0} on line 5 is always true.  It
