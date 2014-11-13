@@ -234,11 +234,11 @@ we often would like to have static information
 about the quantitative behavior of programs.
 For example, stack and heap-space bounds
 are important to ensure the reliability of
-safety-critical systems~\cite{veristack14,Regehr05}.
+safety-critical systems~\cite{Regehr05}.
 Static energy usage information is critical
 for autonomous systems and has applications in
 cloud computing~\cite{CohenZSL12,CarrollH10}.
-Worst-case time bounds can help to create
+Worst-case time bounds can help create
 constant-time implementations that prevent
 side-channel attacks~\cite{KasperS09,BartheBCLP14}.
 Loop and recursion-depth bounds are used to
@@ -286,8 +286,8 @@ resource bound on a sequence of loops and function calls in
 terms of the input parameters of a function.
 Second, while all popular imperative programming languages
 provide a function or procedure abstraction, available
-tools are not able to abstract resource behavior
-and have to inline the procedure body to perform their
+tools are not able to abstract resource behavior;
+instead, they have to inline the procedure body to perform their
 analysis.
 
 Tools in the second category originate form the potential method of
@@ -309,7 +309,7 @@ $y - i$ decreases, but not $|i|$. %  Mutation is yet another problem.
 
 A general problem with existing tools is user interaction. When a tool
 fails to find a resource bound for a program, there is no possibility
-for sound user interaction to guide the tool during during bound
+for sound user interaction to guide the tool during bound
 derivation.
 For example, there is no concept of manual proofs of
 resource bounds and no framework that could support composition
@@ -334,7 +334,7 @@ resource bounds on C programs with mutually-recursive functions and integer loop
 %
 The resource behavior of functions can be summarized
 in a function specification that can be used at every
-call-side without accessing the function body.
+call site without accessing the function body.
 %
 To our knowledge this is the first technique based on
 amortized analysis that is able to derive bounds that depend on negative numbers
@@ -972,7 +972,7 @@ One might think that our set of potential functions is too simplistic
 to be able to express and prove bounds for realistic
 programs. Nevertheless, we can handle challenging example programs
 without special tricks or techniques.  Examples \emph{speed\_1} and
-\emph{speed\_2}, that are taken from previous work~\cite{GulwaniMC09},
+\emph{speed\_2} in Figure~\ref{fig:ex_list_2}, which are taken from previous work~\cite{GulwaniMC09},
 demonstrate that our method can handle \emph{tricky iteration
   patterns}.  The SPEED tool~\cite{GulwaniMC09} derives the same
 bounds as our analysis but requires heuristics for its counter
@@ -1044,9 +1044,9 @@ when more data is available.  It is present in all the block encryption
 routines of PGP.  The same pattern is also used in performance critical
 code to unroll a loop, for example we found it in a bit manipulating
 function of libtiff library and a CRC computation routine of MAD,
-an MPEG audio decoder.  This looping pattern is particularly well
-handled by our method. If $N \geq 8$, $\toolname$ infers the bound
-$\frac{N}{8} |[0,l]|$, but if $N<8$ $\toolname$ infers $7\frac{8-N}{8} +
+an MPEG audio decoder.  This looping pattern is handled particularly well
+by our method. If $N \geq 8$, $\toolname$ infers the bound
+$\frac{N}{8} |[0,l]|$, but if $N<8$, $\toolname$ infers $7\frac{8-N}{8} +
 \frac{N}{8}|[0,l]|$. The selection of the block size ($8$) and the cost
 in the second loop (\code{tick(1)}) are random choices and $\toolname$
 would also derive tight bound for other values.
@@ -1500,24 +1500,6 @@ the return value in the function's postcondition
 $(\Gamma'_f, Q'_f)$.
 }{}
 
-The rule {\sc Q:Weak} is not syntax directed.  In the implementation
-we apply {\sc Q:Weak} before loops and between the two statements of a
-sequential composition.  \iffull{We could integrate weakening into every
-syntax directed rule but this simple heuristic helps to make the analysis
-efficient.}{}  The high-level idea of {\sc Q:Weak} is the following: If
-we have a sound judgement, then it is sound to add more potential to the
-precondition and remove potential from the postcondition.  The concept of
-\emph{more potential} is formalized by the relation $Q' \succeq_\Gamma Q$
-that is defined in the rule {\sc Relax}.  Here, $Q$ and $Q'$ are potential
-annotations and $\Gamma$ is a logical context.  The rule {\sc Relax}
-deals also with the important task of transferring constant potential
-(represented by $q_0$) to interval sizes and vice versa.  If we can deduce
-from the logical context that the interval size $|\inter x y| \geq l$ is
-larger then a constant $l$ then we can transfer potential $q_{xy} {\cdot}
-|\inter x y|$ form the interval to constant potential $l{\cdot}q_{xy}$
-and guarantee that we do not gain potential.  Conversely, if $|\inter
-x y| \leq u$ for a constant $u$ then we can transfer constant potential
-$u{\cdot}q_{xy}$ to the interval potential $q_{xy} {\cdot} |\inter x y|$\iffull{ without gaining potential.}{.}
 
 \newcommand{\loopbody}[0]{\ensuremath{\code{if~(x - 10 \geq 0)~\{x=x{-}10; tick(5);\}~else~break;}}}
 \begin{figure*}[t]
@@ -1614,6 +1596,25 @@ $$
 \caption{An example derivation as produced by the automatic tool.}
 \label{fig:derivation}
 \end{figure*}
+
+The rule {\sc Q:Weak} is not syntax directed.  In the implementation
+we apply {\sc Q:Weak} before loops and between the two statements of a
+sequential composition.  \iffull{We could integrate weakening into every
+syntax directed rule but this simple heuristic helps to make the analysis
+efficient.}{}  The high-level idea of {\sc Q:Weak} is the following: If
+we have a sound judgement, then it is sound to add more potential to the
+precondition and remove potential from the postcondition.  The concept of
+\emph{more potential} is formalized by the relation $Q' \succeq_\Gamma Q$
+that is defined in the rule {\sc Relax}.  Here, $Q$ and $Q'$ are potential
+annotations and $\Gamma$ is a logical context.  The rule {\sc Relax}
+deals also with the important task of transferring constant potential
+(represented by $q_0$) to interval sizes and vice versa.  If we can deduce
+from the logical context that the interval size $|\inter x y| \geq l$ is
+larger then a constant $l$ then we can transfer potential $q_{xy} {\cdot}
+|\inter x y|$ form the interval to constant potential $l{\cdot}q_{xy}$
+and guarantee that we do not gain potential.  Conversely, if $|\inter
+x y| \leq u$ for a constant $u$ then we can transfer constant potential
+$u{\cdot}q_{xy}$ to the interval potential $q_{xy} {\cdot} |\inter x y|$\iffull{ without gaining potential.}{.}
 
 \sectskip
 \section{Automatic Inference via LP Solving}
@@ -1841,7 +1842,7 @@ introduce a \emph{logical state} using \emph{auxiliary variables}.
 Auxiliary variables do not change the behavior of the program and
 guide $\toolname$ during bound derivation.
 
-More precisely, the technique consists in the following steps. First,
+More precisely, the technique consists of the following steps. First,
 a program $P$ that fails to be analyzed automatically is enriched by
 auxiliary variables $\vec x$ to form a program
 $P_l(\vec x)$.  Second, an initial value $\vec X(\sigma)$ for the
@@ -1860,7 +1861,7 @@ Third, using existing automation tools, a bound $B(\vec x)$ for
 $P_l(\vec x)$ is derived.  Finally this bound, instantiated with
 $\vec X$, gives the final resource bound for the program $P$.
 
-This idea is illustrated by the program on \pref{fig:xmplincaux}.
+This idea is illustrated by the program in \pref{fig:xmplincaux}.
 Parts of the code in blue are annotations that were added
 to the original program text.  The top-level loop increments
 a binary counter $k$ times.  A naive analysis of
@@ -1891,7 +1892,7 @@ program is proved using logical variable annotations.  Once again,
 annotations are in blue in the program text.  In this example,
 to ease the proof of equivalence between the annotated program
 and the original one, we use the inequality $lg >
-\log_2(h-l)$ as invariant.  This trick allows a simpler
+\log_2(h-l)$ as invariant.  This technique allows a simpler
 proof because, when working with integer arithmetic, it is not always
 the case that $\log_2(x-x/2) = \log_2(x)-1$ (take 3).
 
@@ -2755,7 +2756,7 @@ certificates for the derived bounds (\pref{sec:soundness}).
 Our system is the first amortized resource analysis for C programs.
 It addresses the longstanding open problem of extending automatic
 amortized resource analysis to compute bounds for programs that loop
-on singed integers and to deal with non-linear control flow that is
+on signed integers and to deal with non-linear control flow that is
 introduced by break and return statements.
 
 This work is the starting point for several projects that we plan to
