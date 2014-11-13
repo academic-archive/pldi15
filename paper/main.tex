@@ -660,7 +660,7 @@ same set of variables.}{}
 \begin{figure*}
  \setlength{\progwidth}{.22\linewidth}
   \centering
-\vspace{-.6cm}
+\vspace{-.8cm}
 \hspace{-0.4cm}
   \begin{minipage}[b]{.18\linewidth}
     \begin{center}
@@ -1052,7 +1052,7 @@ code to unroll a loop, for example we found it in a bit manipulating
 function of libtiff library and a CRC computation routine of MAD,
 an MPEG audio decoder.  This looping pattern is handled particularly well
 by our method. If $N \geq 8$, $\toolname$ infers the bound
-$\frac{N}{8} |[0,l]|$, but if $N<8$, $\toolname$ infers $7\frac{8-N}{8} +
+$\frac{N}{8} |[0,l]|$, but if $N<8$, it infers $7\frac{8-N}{8} +
 \frac{N}{8}|[0,l]|$. The selection of the block size ($8$) and the cost
 in the second loop (\code{tick(1)}) are random choices and $\toolname$
 would also derive tight bound for other values.
@@ -1311,7 +1311,7 @@ $$
     (\Gamma, Q) \vdash S \dashv (\Gamma', Q').
 $$
 %
-The part $(\Gamma, Q) \vdash S \dashv (\Gamma', Q')$ of the judgement
+The part $(\Gamma, Q) \vdash \!\! S \!\! \dashv (\Gamma', Q')$ of the judgement
 can be seen as a quantitative Hoare triple.  All assertions are split into
 two parts, the logical part and the quantitative part.  The
 quantitative part $Q$ represents a potential function as a collection
@@ -1321,10 +1321,10 @@ derivation system to respect classic Hoare logic constraints.
 %
 The meaning of this basic judgment is as follows: If $S$ is executed
 with starting state $\state$, the assertions in $\Gamma$
-hold, and at least $Q(\state)$ resource units are available then the
-evaluation does not run out of resources and---if the execution
-terminates in state $\state'$---there are at least $Q(\state')$
-resources left and $\Gamma'$ holds for $\state'$.
+hold, and at least $Q(\state)$ resources are available then the
+evaluation does not run out of resources and, if the execution
+terminates in state $\state'$, there are at least $Q(\state')$
+\mbox{resources left and $\Gamma'$ holds for $\state'$.}
 
 The judgement is a bit more involved since we have to take into
 account the early exit statements \code{break} and \code{return}.
@@ -1334,8 +1334,8 @@ that holds when breaking out of a loop using \code{break}.  % For example, it is
 % of looping statements by the rule {\sc Q:Loop} and used before
 % \code{break} statements by the rule {\sc Q:Break}.
 Similarly, $(\Gamma_R, Q_R)$ is the postcondition that holds when
-returning from a function call with \code{return}. (This becomes clear
-in the rules.)
+returning from a function call with \code{return}. \iffull{(This becomes clear
+in the rules.)}{}
 
 % These judgements correspond to the logic judgements $\Delta; B; R
 % \vdash \htriple P S Q$ where each assertion splits in two parts, a
