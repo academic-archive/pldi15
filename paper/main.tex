@@ -268,7 +268,7 @@ recursion patterns that decrease the size of an individual variable or
 data structure. They are highly compositional, scale for large
 programs, and work directly on the syntax.  However,
 they do not support multivariate interval-based resource bounds
-(e.g., $x-y$) which are common in C programs. Indeed, 
+(e.g., $x-y$) which are common in C programs. Indeed,
 it has been a long-time open problem to develop compositional
 resource analysis techniques that can work for typical imperative code
 with non-regular iteration patterns, signed integers, mutation, and non-linear
@@ -315,7 +315,7 @@ $y-i$ decreases, but not $|i|$. %  Mutation is yet another problem.
 % techniques fail for numerical imperative programs because they lack
 % fine-grained data-structure information to hook the analysis on.
 % Another issue is that existing techniques associate \emph{potential}
-% directly with single program variables.  
+% directly with single program variables.
 
 A general problem with existing tools (in both categories) is user interaction. When a tool
 fails to find a resource bound for a program, there is no possibility
@@ -368,8 +368,8 @@ simple mechanism, it handles:
   the Knuth-Morris-Pratt algorithm for string search.
 \end{itemize}
 \itemskip
-The main innovation that makes amortized analysis work
-on imperative languages is to base the analysis on a
+The main innovations that make amortized analysis work
+on imperative languages are to base the analysis on a
 Hoare-like logic and to track multivariate quantities instead
 of program variables.  This leads to precise bounds
 expressed as functions of sizes $|[x, y]| = \max(0, y-x)$ of
@@ -408,7 +408,7 @@ more than $\totalLoc$ lines of C code from the cBench benchmark suite.
   of this article~\cite{anon_extended}}{} contains more than $30$
 challenging loop and recursion patterns that we collected from open
 source software and the literature.  Our analysis can find
-asymptotically tight bounds for all but 1 of these patterns, and in
+asymptotically tight bounds for all but one of these patterns, and in
 most cases the derived constant factors are tight.  To compare $\toolname$
 with existing techniques, we tested our examples
 with tools such as KoAT~\cite{BrockschmidtEFFG14},
@@ -888,9 +888,8 @@ needed by our rules can be inferred by local reasoning (i.e. in
 basic blocks without recursion and loops) within usual theories
 (e.g. Presburger arithmetic or bit vectors).
 
-In contrast to the quantitative annotations, logical contexts $\Gamma$
-in the presented inference system are left abstract.  This allows for
-simpler rules and leaves room for future improvements.
+The abstract program state is represented as \emph{logical contexts} in the
+derivation system used by our automated tool.
 Our implementation finds these logical contexts using abstract
 interpretation with the domain of linear inequalities.  We observed that
 the rules of the analysis often requires only minimal local knowledge.
@@ -1021,7 +1020,7 @@ again derive tight constant factors.
 %
 
 \paraskip
-\paragraph{Mutual Recursive Functions.}
+\paragraph{Mutually Recursive Functions.}
 
 As mentioned, the analysis also handles advanced control flow like
 \code{break} and \code{return} statements, and mutual recursion.
@@ -1030,7 +1029,7 @@ automatically derived tick bounds.  The function \code{c\_down}
 decrements its first argument $x$ until it reaches the second argument
 $y$. It then recursively calls the function \code{c\_up},
 which is dual to \code{c\_down}.  Here, we
-c up $y$ by $2$ and recursively call \code{c\_down}.  $\toolname$ is
+count up $y$ by $2$ and call \code{c\_down}.  $\toolname$ is
 the only available system that computes a tight
 bound.  \iffull{The analysis amounts to computing the meeting
 point of two trains that approach each other with different speeds.}{}
@@ -1045,12 +1044,12 @@ With two concrete examples from open-source projects  we demonstrate
 that the compositionality of our method is indeed crucial in practice.
 
 Example \emph{t61} in \pref{fig:ex_list_2} is typical for implementations
-of block-based cryptographic primitives: Data of arbitrary length, is
+of block-based cryptographic primitives: Data of arbitrary length is
 consumed in blocks and the leftover is stored in a buffer for future use
 when more data is available.  It is present in all the block encryption
 routines of PGP and also used in performance critical
 code to unroll a loop. For example we found it in a bit manipulating
-function of libtiff library and a CRC computation routine of MAD,
+function of the libtiff library and a CRC computation routine of MAD,
 an MPEG decoder.  This looping pattern is handled particularly well
 by our method. If $N \geq 8$, $\toolname$ infers the bound
 $\frac{N}{8} |[0,l]|$, but if $N<8$, it infers $7\frac{8-N}{8} +
@@ -1074,8 +1073,8 @@ Example \emph{t62} (\pref{fig:ex_list_2})
 is the inner loop of a quick sort implementation in cBench.  More
 precisely, it is the partitioning part of the algorithm.  This partition
 loop has linear complexity, and feeding into our analysis gives the
-correct and tight worst-case bound $2+3|[l,h]|.$  With the amortized
-analysis approach in mind, it is clear that the three loops get their
+correct and tight worst-case bound $2+3|[l,h]|.$  With the potential
+method in mind, it is clear that the three loops get their
 potential from the same interval $[l,h]$.  However, KoAT fails to
 find a bound and LOOPUS derives the quadratic bound
 $(h-l-1)^2$.  Following the classical technique, these tools try to find one
@@ -1669,7 +1668,7 @@ The weakening operation $\succeq_{\Gamma}$ is defined by the rule
 used to gather information on interval sizes.  For example, $P^\text{de} \succeq_{(\cdot)} P^\text{we} \equiv$
 {\small
   \begin{align*}
- p^\text{we}_{0,10} \leq p^\text{de}_{0,10} + u_{0,10} - v_{0.10} 
+ p^\text{we}_{0,10} \leq p^\text{de}_{0,10} + u_{0,10} - v_{0.10}
 \land  p^\text{we}_{0} \leq p^\text{de}_{0} - 10 {\cdot} u_{0,10} + 10 {\cdot} v_{0.10} \\
 \land  \forall (\alpha, \beta) \neq (0,10)  . \, p^\text{we}_{\alpha,\beta} \leq p^\text{de}_{\alpha,\beta} \;\;\; .
   \end{align*}
@@ -2714,7 +2713,7 @@ analysis for C that can derive parametric bounds for loops and
 recursive functions fully automatically.
 %
 In this article, we also use a more general quantitative Hoare
-logic that is parametric in the resource of interest.  
+logic that is parametric in the resource of interest.
 
 \iffull{
 In the development of our quantitative Hoare logic we have drawn
