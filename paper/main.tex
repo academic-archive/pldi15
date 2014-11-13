@@ -2443,11 +2443,11 @@ Example \emph{t09} is a loop that performs an expensive operation every
 4 steps.  $\toolname$ is the only tool able to amortize this cost over
 the input parameter $x$.
 Example \emph{t19}
-demonstrates the compositionally of the analysis.  The program consists
+demonstrates the compositionality of the analysis.  The program consists
 of two loops that decrement a variable $i$.  In the first loop, $i$ is
 decremented down to 100 and in the second loop $i$ is decremented further
 down to $-1$.  However, between the loops we assign \code{i=i+k+50}.
-So in total the program performs $52 + |[-1,i]| + |[0,k]|$ increments.
+So in total the program performs $52 + |[-1,i]| + |[0,k]|$ ticks.
 Our analysis finds this tight bound because our amortized analysis
 naturally takes into account the relation between the two loops.
 Example \emph{t30} decrements both input variables $x$ and $y$ down to
@@ -2468,7 +2468,7 @@ Example \emph{t13} shows how amortization can be used to find linear
 bounds for nested loops.  The outer loop is iterated $|[0,x]|$ times.
 In the conditional, we either (the branching condition is arbitrary)
 increment the variable $y$ or we execute an inner loop in which $y$ is
-counted back to $0$.  The analysis computes a tight bound.
+counted back to $0$.  $\toolname$ computes a tight bound.
 \iffull{Again, the constants $0$ and $1$ in the
   inner loop can as well be replace by something more interesting, say
   $9$ and $10$ like in example \emph{t08}.  Then we still obtain a
@@ -2536,7 +2536,7 @@ To compare our tool with existing work, we focused on loop bounds and
 use a simple metric that counts the number of back edges (i.e., number
 of loop iterations) that are followed in the execution of the program
 because most other tools only bound this specific cost. In
-\pref{fig:compar}, we show the bounds we derived (\toolname) together with
+\pref{fig:compar}, we show the bounds we derived ($\toolname$) together with
 the bounds derived by LOOPUS~\cite{SinnZV14} and
 Rank~\cite{AliasDFG10}.  We also contacted the authors of SPEED but
 have not been able to obtain this tool.
@@ -2609,17 +2609,18 @@ not have to be tracked.  We could also envision to implement heuristics.}{}
 %
 For example, the \code{sha\_update} function
 is composed of one loop calling two helper functions that in turn
-have 6 and 1 inner loops.  The essence of the SHA algorithm makes
-the compositionality of our analysis essential to get a tight bound
+have 6 and 1 inner loops.  In the analysis of the SHA algorithm,
+the compositionality of our analysis is essential to get a tight bound
 since loops on the same index are sequenced 4 and 2 times without
 resetting it.  All other tools derive much larger constant factors.
 
 Since we have a formal cost semantics, we can run our examples with
 this semantics for different inputs and measure the cost to compare it
 to our derived bound.  \pref{fig:3d} shows such a comparison for
-example \emph{t08}.  One can see that the derived constant factors are the
-best possible if the input variable $x$ is non-negative.  \iffull{If $x$ is
-negative then the bound is only slightly off.}{}
+example \emph{t08}, a variant of \emph{t08a} from \pref{sec:AAA}.  One
+can see that the derived constant factors are the best possible if the
+input variable $x$ is non-negative.  \iffull{If $x$ is negative then
+  the bound is only slightly off.}{}
 
 \sectskip
 \section{Related Work}
