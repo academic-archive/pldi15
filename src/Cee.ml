@@ -133,10 +133,10 @@ let slice cost {fileName; globals; _} =
       Some v.vname
     | (Var _, _) ->
       None
-    | (_, _) -> E.s (
+    | (_, _) -> (* E.s *) ignore (
         E.error "%s:%d unsupported lvalue"
           loc.file loc.line
-      )
+      ); None
   in
 
   let rec seq a b =
@@ -274,10 +274,10 @@ let slice cost {fileName; globals; _} =
         , gid ()
         )
 
-    | Switch (_, _, _, loc) -> E.s (
+    | Switch (_, _, _, loc) -> (* E.s *) ignore (
         E.error "%s:%d unsupported switch"
           loc.file loc.line
-      )
+      ); PTick(0, gid ())
 
     | Loop (b, _, _, _) ->
       let true_cond =
@@ -290,7 +290,7 @@ let slice cost {fileName; globals; _} =
         | PCall (r, f, l, _) -> PCall (r, f, l, gid ())
         | _ -> assert false in
       let rec norm = function
-        | PSeq ((PTick _ | PInc _ | PSet _ | PCall _) as l, r, id) ->
+        | PSeq ((PTick _ | PInc _ | PSet _ (* | PCall _ *)) as l, r, id) ->
           PSeq (freshen l, norm (seq r l), id)
         | x -> PWhile (true_cond, x, gid ()) in
       norm (pay_post (cost OpLoop) (slice_block b))
@@ -355,12 +355,13 @@ let _ =
     if otick
     then (function OpTick n -> n | _ -> 0)
     else (function OpLoop|OpCall -> 1 | _ -> 0) in
-  let file = Tools.clean_file (slice metric file) in
-  (*
+  let file = (* Tools.clean_file *) (slice metric file) in
+  (**)
   print_string "Sliced program:\n";
   pp_file file;
   print_newline ();
-  *)
+  (**)
+  let file = Tools.clean_file file in
   let l = Hood.create_logctx file in
   Printf.printf "Analysis using the %s metric:\n"
     (if otick then "tick" else "back-edge");
