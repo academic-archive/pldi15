@@ -246,7 +246,8 @@ ensure the accuracy of programs that are executed
 on unreliable hardware~\cite{CarbinMR13} and
 complexity bounds are needed to verify cryptographic
 protocols~\cite{BartheGB09}.  In general, quantitative
-resource information at design time can provide useful
+resource information % at design time
+can provide useful
 feedback for developers.
 
 
@@ -254,19 +255,21 @@ feedback for developers.
 
 % NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW NEW
 
-Available techniques for automatically deriving worst-case resource bounds
-fall into two categories.  Techniques
-in the first category derive impressive bounds for
-numerical imperative programs, but are not compositional.
-This is problematic if one needs to derive global whole-program bounds.
-Techniques in the second category derive tight whole-program
-bounds for programs with regular loop and recursion patterns that
-decrease the size of an individual variable or data structure.
-They are highly compositional, scale for large
-programs, and work directly on the syntax.  However, % despite all
-% these theoretical and practical advantages,
-it has been
-a long-time open problem to make them work for typical imperative code
+Available techniques for {\em automatically} deriving worst-case
+resource bounds fall into two categories.  Techniques in the first
+category derive impressive bounds for numerical imperative programs,
+but are not compositional.  This is problematic if one needs to derive
+global whole-program bounds.
+%%%%%%
+Techniques in the second category derive
+tight whole-program bounds for programs with regular loop or
+recursion patterns that decrease the size of an individual variable or
+data structure. They are highly compositional, scale for large
+programs, and work directly on the syntax.  However,
+they do not support multivariate interval-based resource bounds
+(e.g., $x-y$) which are common in C programs. Indeed, 
+it has been a long-time open problem to develop compositional
+resource analysis techniques that can work for typical imperative code
 with non-regular iteration patterns, signed integers, mutation, and non-linear
 control flow. % As a result, they are not suitable for
 % typical imperative code.
@@ -290,22 +293,27 @@ tools are not able to abstract resource behavior;
 instead, they have to inline the procedure body to perform their
 analysis.
 
-Tools in the second category originate form the potential method of
-amortized analysis and type systems for functional
+Tools in the second category originate form the {\em potential method}
+of amortized analysis and type systems for functional
 programs~\cite{Jost03,HoffmannAH12}. It has been shown that class
-definitions of object oriented programs~\cite{Jost06} and
+definitions of object-oriented programs~\cite{Jost06} and
 data-structure predicates of separation logic~\cite{Atkey10} can play
-the role of the type system in imperative programs. However, these
-techniques fail for numerical imperative programs because they lack
-fine-grained data-structure information to hook the analysis on.
-Another issue is that existing techniques associate \emph{potential}
-directly with single program variables.  In imperative programs, this
+the role of the type system in imperative programs.
+However, a fundamental weakness of these potential-based techniques
+is that they can only associate \emph{potential}
+directly with single program variables. In imperative programs, this
 fails for loops as simple as \lstinline{for(i=x;i<y;i++)} where
 $y - i$ decreases, but not $|i|$. %  Mutation is yet another problem.
 % While functional programs relate multiple fixed inputs (the typing
 % context) with one output (the expression typed), imperative programs
 % can change the value of variables in scope, so the potential of these
 % variables has to be updated after mutations to ensure soundness.
+
+% these
+% techniques fail for numerical imperative programs because they lack
+% fine-grained data-structure information to hook the analysis on.
+% Another issue is that existing techniques associate \emph{potential}
+% directly with single program variables.  
 
 A general problem with existing tools is user interaction. When a tool
 fails to find a resource bound for a program, there is no possibility
