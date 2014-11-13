@@ -1530,7 +1530,7 @@ $u{\cdot}q_{xy}$ to the interval potential $q_{xy} {\cdot} |\inter x y|$ without
 
 \newcommand{\loopbody}[0]{\ensuremath{\code{if~(x - 10 \geq 0)~\{x=x{-}10; tick(5);\}~else~break;}}}
 \begin{figure*}[t]
-\vspace{-.6cm}
+\vspace{-.75cm}
 \centering
 \footnotesize
 \begin{mathpar}
@@ -1620,7 +1620,7 @@ $$
   $
 \end{tabular}
 \vspace{.1cm}
-\caption{An example derivation as produced by the automatic tool.}
+\caption{An example derivation as produced $\toolname$. The constraints are resolved by an off-the-shelf LP solver.}
 \label{fig:derivation}
 \end{figure*}
 
@@ -1632,23 +1632,27 @@ $$
 We separate the search of a derivation into two steps.  As a first
 step we go through the functions of the program and apply inductively
 the derivation rules of the automatic amortized analysis.  This is
-done in a bottom-up way, for each strongly connected component of the
+done in a bottom-up way, for each strongly connected component (SCC) of the
 call graph.  During this
 process our tool uses symbolic names for the rational coefficients
-$(q_i)$ in the rules.  Every time a linear constraint must be
-satisfied by these coefficients, it is recorded in a global list using
-the symbolic names.  We then feed the collected constraints to an
-off-the-shelf LP solver. (We currently use Coin-Or's CLP.)
+$q_i$ in the rules.  Each time a linear constraint must be
+satisfied by these coefficients, it is recorded in a global list for the SCC using
+the symbolic names.  We instantiate this constraint list for every call of
+a function from this SCC.
+
+
+We then feed the collected constraints to an
+off-the-shelf LP solver (currently Coin-Or's CLP).
 If the solver successfully finds a solution, we know that a derivation
-exists for the considered program.  We can then extract the initial
-$Q$ from the solver and get a resource bound for the program.  To get
-a full derivation we simply extract the complete solution from the
-solver, and apply it to the symbolic names $(q_i)$ of the coefficients
+exists and extract the values for the initial
+$Q$ from the solver to get a resource bound for the program.  To get
+a full derivation we extract the complete solution from the
+solver, and apply it to the symbolic names $q_i$ of the coefficients
 in the derivation.  If the LP solver fails to find a solution, an
 error is reported.
 
-\pref{fig:derivation} contains an example derivation as it is produced
-by our $\toolname$.  The upper case letters (with optional
+\pref{fig:derivation} contains an example derivation as produced
+by $\toolname$.  The upper case letters (with optional
 superscript) such as $Q^\text{de}$ are families of
 variables that are later part of the constraint system that is passed
 to the LP solver.  For example $Q^\text{de}$ stands for the potential
@@ -1662,7 +1666,7 @@ In general, the weakening rule can be applied after every syntax directed
 rule.  However, it can be left out in practice at some places to
 increase the efficiency of the tool.
 The weakening operation $\succeq_{\Gamma}$ is defined by the rule
-\textsc{Relax}, it is parameterized by a logical context that is
+\textsc{Relax}. It is parameterized by a logical context that is
 used to gather information on interval sizes.  For example, we have
 $$
 \begin{array}{lll}
@@ -1675,7 +1679,7 @@ $$
 %
 The other rules are syntax directed and applied inductively.  For example,
 the outermost expression is a loop, so we use the rule \text{Q:Loop}
-at the root of the derivation tree.  At this point, we don't know yet
+at the root of the derivation tree.  At this point, we do not know yet
 whether a loop invariant exists.  But we produce the constraints
 $Q^\text{lo} = P^\text{lo}$\iffull{ which is short for the following
 constraint set.
@@ -1690,12 +1694,12 @@ q^\text{lo}_{0,10}= p^\text{lo}_{0,10}
 \end{array}
 $$}{.}
 %
-This constraint expresses the fact that the potential before and
-after the loop body is equal and thus constitutes an invariant.
+These constraints express the fact that the potential functions before and
+after the loop body are equal and thus constitute an invariant.
 
 After the constraint generation, the LP solver is provided with an
-objective function to minimize.  We wish to
-minimize the initial potential, which constitutes the resource bound on the
+objective function to be minimized.  We wish to
+minimize the initial potential, which is a resource bound on the
 whole program.  Here it is given by $Q$.  Moreover, we would like to
 express that minimization of linear potential such as
 $q_{10,x} |[10,x]|$
@@ -1747,13 +1751,12 @@ $$}
 {$
 q_0 + 11{\cdot}q_{0,10}$.}
 This happens in almost no time in practice.
-The final solution is $q_{0,x} = 0.5$ and $q_{*} = 0$ otherwise, thus
-the bound is $0.5 |[0,x]|$.
+The final solution is $q_{0,x} = 0.5$ and $q_{*} = 0$ otherwise. Thus
+the derived bound is $0.5 |[0,x]|$.
 
 \iffull{The constraints that we generate have
 a particularly simple form that is known as \emph{network problem}.
 Such problems can be solved in linear time in practice.}{}
-
 
 \sectskip
 \section{Logical State and User Interaction}
