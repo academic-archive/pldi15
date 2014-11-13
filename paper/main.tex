@@ -1666,6 +1666,7 @@ increase the efficiency of the tool.
 The weakening operation $\succeq_{\Gamma}$ is defined by the rule
 \textsc{Relax}. It is parameterized by a logical context that is
 used to gather information on interval sizes.  For example, $P^\text{de} \succeq_{(\cdot)} P^\text{we} \equiv$
+\vspace{-.3cm}
 {\small
   \begin{align*}
  p^\text{we}_{0,10} \leq p^\text{de}_{0,10} + u_{0,10} - v_{0.10}
@@ -1673,7 +1674,9 @@ used to gather information on interval sizes.  For example, $P^\text{de} \succeq
 \land  \forall (\alpha, \beta) \neq (0,10)  . \, p^\text{we}_{\alpha,\beta} \leq p^\text{de}_{\alpha,\beta} \;\;\; .
   \end{align*}
 }
-%
+\vspace{-.8cm}
+
+\noindent
 The other rules are syntax directed and applied inductively.  For example,
 the outermost expression is a loop, so we use the rule \text{Q:Loop}
 at the root of the derivation tree.  At this point, we do not know yet
@@ -1750,6 +1753,12 @@ q_0 + 11{\cdot}q_{0,10}$.}
 This happens in almost no time in practice.
 The final solution is $q_{0,x} = 0.5$ and $q_{*} = 0$ otherwise. Thus
 the derived bound is $0.5 |[0,x]|$.
+
+A notable advantage of the LP-based approach compared to
+SMT-solver--based techniques is that a satisfying assignment is
+a proof certificate instead of a counter example.
+
+\vspace{-.24cm}
 
 \iffull{The constraints that we generate have
 a particularly simple form that is known as \emph{network problem}.
@@ -2555,6 +2564,33 @@ program.
 \label{tab:compar}
 \end{table}
 
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{r|c|c|c}
+Function & LoC & Bound & Time (s) \\
+\hline
+\code{adpcm\_coder} & 145 & $1+|[0,\code{N}]|$ & 0.6 \\
+\code{adpcm\_decod} & 130 & $1+|[0,\code{N}]|$ & 0.2 \\
+\code{BF\_cfb64\_enc} & 151 & $1+2|[-1,\code{N}]|$ & 0.7 \\
+\code{BF\_cbc\_enc} & 180 & $2+0.25|[-8,\code{N}]|$ & 1.0 \\
+\code{mad\_bit\_crc} & 145 & $61.19{+}0.19|[-1,\code{N}]|$ & 0.4 \\
+\code{mad\_bit\_read} & 65 & $1+0.12|[0,\code{N}]|$ & 0.05 \\
+\code{MD5Update} & 200 & $133.95{+}1.05|[0,\code{N}]|$ & 1.0 \\
+\code{MD5Final} & 195 & 141 & 0.22 \\
+\code{sha\_update} & 98 & $2 + 3.55|[0,\code{N}]|$ & 1.2 \\
+% \code{build\_ycc\_rgb} & 68 & 257 & 0.05 \\
+\code{PackBitsDecode} & 61 & $1+65|[-129,\code{cc}]|$ & 0.6 \\
+\code{KMPSearch} & 20 & $1+2|[0,n]|$ & 0.1 \\
+\hline
+\code{ycc\_rgb\_conv} & 66 & $\code{nr}\cdot\code{nc}$ & 0.1 \\
+\code{uv\_decode} & 31 & $\log_2(\code{UV\_NVS})+1$ & 0.1 \\
+\end{tabular}
+\vspace{.1cm}
+\caption{Derived bounds for functions from cBench.}
+\label{tab:cbench}
+\end{table}
+
 
 \pref{tab:compar} summarizes the results of our experiments.  It shows
 for each tool the number of derived bounds (\#bounds), the number of
@@ -2607,34 +2643,6 @@ Example \emph{t08}, a variant of \emph{t08a} from \pref{sec:AAA}.  One
 can see that the derived constant factors are the best possible if the
 input variable $x$ is non-negative.  \iffull{If $x$ is negative then
   the bound is only slightly off.}{}
-
-
-\begin{table}[t]
-\centering
-\small
-\begin{tabular}{r|c|c|c}
-Function & LoC & Bound & Time (s) \\
-\hline
-\code{adpcm\_coder} & 145 & $1+|[0,\code{N}]|$ & 0.6 \\
-\code{adpcm\_decod} & 130 & $1+|[0,\code{N}]|$ & 0.2 \\
-\code{BF\_cfb64\_enc} & 151 & $1+2|[-1,\code{N}]|$ & 0.7 \\
-\code{BF\_cbc\_enc} & 180 & $2+0.25|[-8,\code{N}]|$ & 1.0 \\
-\code{mad\_bit\_crc} & 145 & $61.19{+}0.19|[-1,\code{N}]|$ & 0.4 \\
-\code{mad\_bit\_read} & 65 & $1+0.12|[0,\code{N}]|$ & 0.05 \\
-\code{MD5Update} & 200 & $133.95{+}1.05|[0,\code{N}]|$ & 1.0 \\
-\code{MD5Final} & 195 & 141 & 0.22 \\
-\code{sha\_update} & 98 & $2 + 3.55|[0,\code{N}]|$ & 1.2 \\
-\code{build\_ycc\_rgb} & 68 & 257 & 0.05 \\
-\code{PackBitsDecode} & 61 & $1+65|[-129,\code{cc}]|$ & 0.6 \\
-\code{KMPSearch} & 20 & $1+2|[0,n]|$ & 0.1 \\
-\hline
-\code{ycc\_rgb\_conv} & 66 & $\code{nr}\cdot\code{nc}$ & 0.1 \\
-\code{uv\_decode} & 31 & $\log_2(\code{UV\_NVS})+1$ & 0.1 \\
-\end{tabular}
-\vspace{.1cm}
-\caption{Derived bounds for functions from cBench.}
-\label{tab:cbench}
-\end{table}
 
 % \begin{table}[t]
 % \small
