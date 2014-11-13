@@ -1034,19 +1034,22 @@ point of two trains that approach each other with different speeds.}{}
 \paraskip
 \paragraph{Compositionality.}
 
-With two concrete examples from open-source projects we demonstrate
+With two concrete examples from open-source projects  we demonstrate
 that the compositionality of our method is indeed crucial in practice.
-\jan{what projects?}
 
-Example \emph{t61} in \pref{fig:ex_list_2} is typical for implementations of block-based
-cryptographic primitives: Data of arbitrary length, is consumed in
-blocks and the leftover is stored in a buffer for future use when more
-data is available.  This looping pattern is particularly well handled
-by our method. If $N \geq 8$, $\toolname$ infers the bound
-$\frac{N}{8} |[0,l]|$, but if $N<8$ $\toolname$ infers $7\frac{8-N}{8}
-+ \frac{N}{8}|[0,l]|$. The selection of the block size ($8$) and the
-cost in the second loop (\code{tick(1)}) are random choices and
-$\toolname$ would also derive tight bound for other values.
+Example \emph{t61} in \pref{fig:ex_list_2} is typical for implementations
+of block-based cryptographic primitives: Data of arbitrary length, is
+consumed in blocks and the leftover is stored in a buffer for future use
+when more data is available.  It is present in all the block encryption
+routines of PGP.  The same pattern is also used in performance critical
+code to unroll a loop, for example we found it in a bit manipulating
+function of libtiff library and a CRC computation routine of MAD,
+an MPEG audio decoder.  This looping pattern is particularly well
+handled by our method. If $N \geq 8$, $\toolname$ infers the bound
+$\frac{N}{8} |[0,l]|$, but if $N<8$ $\toolname$ infers $7\frac{8-N}{8} +
+\frac{N}{8}|[0,l]|$. The selection of the block size ($8$) and the cost
+in the second loop (\code{tick(1)}) are random choices and $\toolname$
+would also derive tight bound for other values.
 
 To understand the resource bound for the case $N<8$, first note that the cost of
 the second loop is $|[0,l]|$.  After the first loop, we still have
@@ -2637,6 +2640,7 @@ Hoare-style, does not target C code, and is not designed for
 interactive bound development but to produce certificates for bounds
 derived for high-level functional programs.
 }{}
+
 \begin{table}[t]
 \centering
 \begin{tabular}{r|c|c|c}
@@ -2649,10 +2653,15 @@ Function & LoC & Bound & Time (s) \\
 \code{mad\_bit\_crc} & 145 & $61.19{+}0.19|[-1,\code{N}]|$ & 0.4 \\
 \code{mad\_bit\_read} & 65 & $1+0.12|[0,\code{N}]|$ & 0.05 \\
 \code{MD5Update} & 200 & $133.95{+}1.05|[0,\code{N}]|$ & 1.0 \\
+\code{MD5Final} & 195 & 141 & 0.22 \\
 \code{sha\_update} & 98 & $2 + 3.55|[0,\code{N}]|$ & 1.2 \\
+\code{build\_ycc\_rgb} & 68 & 257 & 0.05 \\
+\code{PackBitsDecode} & 61 & $1+65|[-129,\code{cc}]|$ & 0.6 \\
+\hline
+\code{ycc\_rgb\_conv} & 66 & $\code{nr}\cdot\code{nc}$ & 0.1
 \end{tabular}
 \vspace{.1cm}
-\caption{Derived bounds for functions from cBench.}
+\caption{Derived bounds for functions from cBench. \jan{FUCKING backedge metric}}
 \label{tab:cbench}
 \end{table}
 
