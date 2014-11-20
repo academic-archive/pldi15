@@ -2,8 +2,6 @@
 # to build against Clp and CIL.
 include config.mk
 
-YFLAGS = -v
-
 #SOURCES = Parse.ml Tools.ml Logic.ml Eval.ml clp_stubs.c Clp.ml Hood.ml Cee.ml
 SOURCES = Ast.ml Grammar.mly Parse.mll
 RESULT = app
