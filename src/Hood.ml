@@ -66,7 +66,7 @@ let _ =
     print_string "\n"; Logic.pp lpost
   in Parse.pp_file_hooks pre post f'
 
-(*
+
 (* indices we use to name lp variables *)
 module Idx : sig
   type t
@@ -124,7 +124,7 @@ end = struct
       Printf.printf "%.2f\n" k
     | Dst (v1, v2) ->
       Printf.printf "%.2f |[%a, %a]|\n" k
-        pp_var v1 pp_var v2
+        Parse.pp_var v1 Parse.pp_var v2
 end
 
 (* quantitative contexts and their operations *)
@@ -353,20 +353,18 @@ end = struct
 end
 
 
-let analyze negfrm lctx cost (fdefs, p) =
+let analyze negfrm (fdefs, p) =
   (* generate and resolve constraints *)
   let open Idx in
-  let open Eval in
 
   let glos =  VSet.add (VNum 0) (file_globals (fdefs, p)) in
-  let addconst q act = Q.set q const [(const, 1)] (cost act) in
   let tmpret = "%ret" and vret = VId "%ret" in
   let rec gen_ qfuncs qret qbrk qseq =
     let gen = gen_ qfuncs qret qbrk in function
 
-    | PTick (n, _) -> addconst qseq (CTick n)
-    | PAssert _ -> addconst qseq CAssert
-    | PBreak _ -> addconst qbrk CBreak
+    | PTick (n, _) -> Q.set qseq const [(const, 1)] n
+    | PAssert _ -> qseq
+    | PBreak _ -> qbrk
     | PReturn (v, _) ->
       let q = Q.lift qret qseq in
       Q.delv (Q.subst q [tmpret] [v]) ~zero:false (VSet.of_list [vret])
@@ -417,9 +415,8 @@ let analyze negfrm lctx cost (fdefs, p) =
 
       end
 
-    | PInc (x, op, y, pid) ->
+    | PInc (x, op, y, {lpre; lpost}) ->
       let vars = VSet.remove (VId x) (Q.vars qseq) in
-      let {lpre; lpost} = UidMap.find pid lctx in
       let z = LVar (VNum 0) in
       let eqs =
         let opy, iopyz, izopy =
@@ -458,43 +455,35 @@ let analyze negfrm lctx cost (fdefs, p) =
       if eqs = [] && Logic.entails lpre z CLt z then qseq else
       let q = Q.relax lpost qseq in
       (* transfer potential to +y or -y *)
-      let q = Q.setl q (List.map (fun (i,s) -> i,(i,1)::s,0) eqs) in
-      (* pay for the assignment *)
-      addconst q CSet
+      Q.setl q (List.map (fun (i,s) -> i,(i,1)::s,0) eqs)
 
-    | PSet (x, Some v, pid) ->
-      let q = addconst (Q.subst qseq [x] [v]) CSet in
+    | PSet (x, Some v, {lpre; _}) ->
+      let q = Q.subst qseq [x] [v] in
       (* relax constant differences *)
-      Q.relax (UidMap.find pid lctx).lpre q
+      Q.relax lpre q
 
     | PSet (x, None, _) ->
       let vars = VSet.remove (VId x) (Q.vars qseq) in
-      let q = VSet.fold begin fun u q ->
-          let q = Q.zero q (dst (VId x, u)) in
-          let q = Q.zero q (dst (u, VId x)) in
-          Q.free (Q.free q (dst (u, VId x))) (dst (VId x, u))
-        end vars qseq in
-      (* pay for the assignment *)
-      addconst q CSet
+      VSet.fold begin fun u q ->
+        let q = Q.zero q (dst (VId x, u)) in
+        let q = Q.zero q (dst (u, VId x)) in
+        Q.free (Q.free q (dst (u, VId x))) (dst (VId x, u))
+      end vars qseq
 
     | PSeq (p1, p2, _) ->
       let qpre2 = gen qseq p2 in
-      let qmid = addconst qpre2 CSeq2 in
-      let qpre1 = gen (Q.merge [qmid]) p1 in
-      let qpre = addconst qpre1 CSeq1 in
-      qpre
+      let qpre1 = gen (Q.merge [qpre2]) p1 in
+      qpre1
 
-    | PWhile (_, p, pid) ->
-      let qinv = Q.merge [addconst qseq CWhile3] in
-      let qseq1 = addconst qinv CWhile2 in
-      let qpre1 = gen_ qfuncs qret qseq qseq1 p in
-      let qinv' = addconst qpre1 CWhile1 in
+    | PLoop (p, {lpre; _}) ->
+      let qinv = Q.merge [qseq] in
+      let qinv' = gen_ qfuncs qret qseq qinv p in
       Q.eqc qinv qinv';
-      Q.relax (UidMap.find pid lctx).lpre qinv'
+      Q.relax lpre qinv'
 
     | PIf (_, p1, p2, _) ->
-      let qpre1 = addconst (gen qseq p1) CIf1 in
-      let qpre2 = addconst (gen qseq p2) CIf2 in
+      let qpre1 = gen qseq p1 in
+      let qpre2 = gen qseq p2 in
       Q.merge [qpre1; qpre2]
 
     in
@@ -505,13 +494,6 @@ let analyze negfrm lctx cost (fdefs, p) =
   Q.solve (Q.frame negfrm qpre q)
 
 let _ =
-  if Array.length Sys.argv > 1
-  && (Sys.argv.(1) = "-tq" || Sys.argv.(1) = "-tqtick") then
-  let negfrm, metric = List.assoc Sys.argv.(1)
-    [ "-tq", (true, Eval.set_metric)
-    ; "-tqtick", (false, Eval.tick_metric)
-    ] in
+  if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tq" then
   let f = Tools.clean_file (Parse.pa_file stdin) in
-  analyze negfrm (create_logctx f) metric f
-
-*)
+  analyze false (lannot f)
