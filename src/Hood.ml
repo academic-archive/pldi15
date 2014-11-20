@@ -1,6 +1,6 @@
 (* under the hood *)
 
-open Parse
+open Ast
 open Logic
 open Tools
 
@@ -11,63 +11,62 @@ open Tools
 *)
 let debug = 0
 
-module UidMap = struct
-  module M = Map.Make(struct type t = uid let compare = compare end)
-  include M
-  exception Overwrite
-  let add key value map =
-    if mem key map then raise Overwrite else
-    add key value map
-  let findp p = find (prog_id p)
-end
-
-
 (* compute the logical states *)
 type pstate = ineq list
 type lannot = { lpre: pstate; lpost: pstate }
 
-let create_logctx =
-  let rec f' locs m brk lpre prog =
+let lannot =
+  let rec f' locs brk lpre prog =
     let f = f' locs in
-    let addpost m id lpost = UidMap.add id { lpre; lpost } m in
+    let post lpost = {lpre; lpost} in
     match prog with
-    | PTick (_, id) -> addpost m id lpre
-    | PBreak id -> brk := lpre :: !brk; addpost m id bottom
-    | PAssert (c, id) -> addpost m id (Logic.conj (of_cond c) lpre)
-    | PReturn (_, id) -> addpost m id bottom
-    | PCall (ret, _, _, id) ->
+    | PTick (n, _) -> PTick (n, post lpre)
+    | PBreak _ -> brk := lpre :: !brk; PBreak (post bottom)
+    | PAssert (c, _) -> PAssert (c, post ((of_cond c) @ lpre))
+    | PReturn (v, _) -> PReturn (v, post bottom)
+    | PCall (ret, f, args, _) ->
       let locs = match ret with
         | None -> locs
         | Some x -> List.filter ((<>) x) locs in
-      addpost m id (Logic.call locs lpre)
-    | PInc (x, op, v, id) -> addpost m id (Logic.incr x op v lpre)
-    | PSet (x, vo, id) -> addpost m id (Logic.set x vo lpre)
-    | PWhile (c, p, id) ->
-      let itr pre = Logic.conj (of_cond c) pre in
-      let out pre = Logic.conj (of_cond (cond_neg c)) pre in
-      let g pre =
+      PCall (ret, f, args, post (Logic.call locs lpre))
+    | PInc (x, op, v, _) -> PInc (x, op, v, post (Logic.incr x op v lpre))
+    | PSet (x, vo, id) -> PSet (x, vo, post (Logic.set x vo lpre))
+    | PLoop (bdy, _) ->
+      let g ps =
         let brk = ref [] in
-        let m' = f m brk (itr pre) p in
-        let post = (UidMap.findp p m').lpost in
-        ((m', out post :: !brk), post) in
-      let (m', brk), inv = Logic.fix (itr lpre) g in
-      addpost m' id (List.fold_left Logic.merge (out lpre) brk)
-    | PIf (c, p1, p2, id) ->
-      let m = f m brk (Logic.conj (of_cond c) lpre) p1 in
-      let m = f m brk (Logic.conj (of_cond (cond_neg c)) lpre) p2 in
-      let post1 = (UidMap.findp p1 m).lpost
-      and post2 = (UidMap.findp p2 m).lpost
-      in addpost m id (Logic.merge post1 post2)
-    | PSeq (p1, p2, id) ->
-      let m1 = f m brk lpre p1 in
-      let m2 = f m1 brk (UidMap.findp p1 m1).lpost p2 in
-      addpost m2 id (UidMap.findp p2 m2).lpost
-  in let g m {fbody;fargs;flocs;_} =
-    f' (fargs@flocs) m (ref []) [] fbody
+        let bdy' = f brk ps bdy in
+        let post = (prog_data bdy').lpost in
+        ((bdy', !brk), post) in
+      let (bdy, brk), _ = Logic.fix lpre g in
+      PLoop (bdy, post (List.fold_left Logic.merge bottom brk))
+    | PIf (c, p1, p2, _) ->
+      let p1 = f brk (Logic.conj (of_cond c) lpre) p1 in
+      let p2 = f brk (Logic.conj (of_cond (cond_neg c)) lpre) p2 in
+      let post1 = (prog_data p1).lpost
+      and post2 = (prog_data p2).lpost
+      in PIf (c, p1, p2, post (Logic.merge post1 post2))
+    | PSeq (p1, p2, _) ->
+      let p1 = f brk lpre p1 in
+      let p2 = f brk (prog_data p1).lpost p2 in
+      PSeq (p1, p2, post (prog_data p2).lpost)
+  in let g ({fbody;fargs;flocs;_} as f) =
+    { f with fbody = f' (fargs@flocs) (ref []) [] fbody }
   in fun (fl, p) ->
-    List.fold_left g (f' [] UidMap.empty (ref []) [] p) fl
+    List.map g fl, f' [] (ref []) [] p
 
 
+let _ =
+  let open Parse in
+  if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tlannot" then
+  let f = Parse.pa_file stdin in
+  let f' = lannot f in
+  let pre {lpre; lpost} =
+    Logic.pp lpre; print_string "\n"
+  and post {lpre; lpost} =
+    print_string "\n"; Logic.pp lpost
+  in Parse.pp_file_hooks pre post f'
+
+(*
 (* indices we use to name lp variables *)
 module Idx : sig
   type t
@@ -505,19 +504,6 @@ let analyze negfrm lctx cost (fdefs, p) =
   let qpre = gen_ [] qret Q.empty q p in
   Q.solve (Q.frame negfrm qpre q)
 
-
-let _ =
-  if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tlannot" then
-  let f = Parse.pa_file stdin in
-  let l = create_logctx f in
-  let pre id =
-    let { lpre; lpost } = UidMap.find id l in
-    Logic.pp lpre; print_string "\n"
-  and post id =
-    let { lpre; lpost } = UidMap.find id l in
-    print_string "\n"; Logic.pp lpost
-  in Parse.pp_file_hooks pre post f
-
 let _ =
   if Array.length Sys.argv > 1
   && (Sys.argv.(1) = "-tq" || Sys.argv.(1) = "-tqtick") then
@@ -527,3 +513,5 @@ let _ =
     ] in
   let f = Tools.clean_file (Parse.pa_file stdin) in
   analyze negfrm (create_logctx f) metric f
+
+*)

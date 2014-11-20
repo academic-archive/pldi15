@@ -1,5 +1,5 @@
 (* Simplify and sanitize programs *)
-open Parse
+open Ast
 
 module VSet = struct
   include Set.Make(struct type t = var let compare = compare end)
@@ -27,7 +27,7 @@ let rec prog_vars p =
   | PCall (None, _, vl, _) -> VSet.of_list vl
   | PInc (id, _, v, _) -> VSet.of_list [VId id; v]
   | PSeq (p1, p2, _) -> VSet.union [prog_vars p1; prog_vars p2]
-  | PWhile (c, p, _) -> VSet.union [cvars c; prog_vars p]
+  | PLoop (p, _) -> prog_vars p
   | PIf (c, p1, p2, _) -> VSet.union [cvars c; prog_vars p1; prog_vars p2]
 
 let func_globals {fbody; flocs; fargs} =
@@ -70,8 +70,8 @@ let alpha_prog =
       PSet (assoc e x, Some (trvar e v), id)
     | PSet (x, None, id) ->
       PSet (assoc e x, None, id)
-    | PWhile (c, p, id) ->
-      PWhile (trcond e c, trprog e p, id)
+    | PLoop (p, id) ->
+      PLoop (trprog e p, id)
     | PIf (c, p1, p2, id) ->
       PIf (trcond e c, trprog e p1, trprog e p2, id)
     | PSeq (p1, p2, id) ->
@@ -127,7 +127,7 @@ let check_funcs (fdefs, p) =
         invalid ("function " ^ f ^ " is called with wrong arity")
       else
         ()
-    | PWhile (_, p, _) -> ckprog p
+    | PLoop (p, _) -> ckprog p
     | PSeq (p1, p2, _) | PIf (_, p1, p2, _) ->
       ckprog p1; ckprog p2 in
   List.iter (fun f -> ckprog f.fbody) fdefs; ckprog p
@@ -137,7 +137,7 @@ let check_control (fdefs, p) =
     | PTick _ | PAssert _ | PSet _ | PInc _ | PCall _
     | PReturn _ -> ()
     | PBreak _ -> invalid ("break cannot occur out of a loop")
-    | PWhile (_, p, _) -> ()
+    | PLoop (p, _) -> ()
     | PSeq (p1, p2, _) | PIf (_, p1, p2, _) ->
       ckprog p1; ckprog p2 in
   List.iter (fun f -> ckprog f.fbody) fdefs; ckprog p
@@ -155,6 +155,8 @@ let clean_file f =
   let () = check f in
   alpha_file f
 
+
+open Parse
 
 (* tests *)
 let _ =

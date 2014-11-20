@@ -2,7 +2,7 @@
 
 let show_progress = false
 
-open Parse
+open Ast
 
 module Id = struct type t = id let compare = compare end
 module S = Set.Make(Id)
@@ -216,14 +216,14 @@ let merge ps1 ps2 =
 
 let rec fix ps f =
   let x, ps' = f ps in
-  let rec residue trimmed r = function
+  let rec residue trim r = function
     | assn :: assns ->
       if imp ps' assn
-        then residue trimmed (assn :: r) assns
-        else residue true r assns
-    | [] -> (trimmed, r) in
-  let trimmed, ps'' = residue false [] ps in
-  if trimmed then fix ps'' f else (x, ps)
+      then residue trim (assn :: r) assns
+      else residue true r assns
+    | [] -> (trim, r) in
+  let trim, ps'' = residue false [] ps in
+  if trim then fix ps'' f else (x, ps)
 
 let entails ps l1 c l2 =
   match of_cond (CTest (l1, c, l2)) with

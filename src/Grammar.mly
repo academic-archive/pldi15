@@ -1,4 +1,4 @@
-%{
+%{ (* Grammar of while programs *)
 
 open Ast
 

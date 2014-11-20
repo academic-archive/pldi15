@@ -1,4 +1,4 @@
-{ (* Parsing of while programs *)
+{ (* Parsing and printing of while programs *)
 
 open Grammar
 exception LexError of char
@@ -33,23 +33,6 @@ rule tok = parse
   | eof                         { EOF }
 
 {
-
-let parse ic =
-  let open Lexing in
-  let lexbuf = from_channel stdin in
-  try Grammar.program tok lexbuf with
-  | Parsing.Parse_error ->
-    let e =
-      Printf.sprintf "line %d, character %d"
-        lexbuf.Lexing.lex_start_p.pos_lnum
-        (lexbuf.lex_start_p.pos_cnum -
-         lexbuf.lex_start_p.pos_bol + 1) in
-    raise (ParseError e)
-
-let _ = parse stdin
-
-
-(* pretty printing *)
 
 open Ast
 
@@ -114,7 +97,7 @@ let pp_file_hooks pre post (fl, prog) =
     | PSet (id, None, _) -> printf "%s = *" id
     | PInc (id, o, v, _) ->
       let op = match o with OPlus -> "+" | OMinus -> "-" in
-      printf "%s = %s %s %a" id id op pp_var v
+      printf "%s %s= %a" id op pp_var v
     | PSeq (p1,  p2, _) ->
       let lvl' = if prns
         then (idnt lvl; printf "(\n"; lvl + delta)
@@ -152,7 +135,7 @@ let pp_file_hooks pre post (fl, prog) =
     else
       printf "\n";
     g delta true fbody;
-    printf "\n"
+    printf ";\n"
   in
 
   begin
@@ -164,5 +147,24 @@ let pp_file_hooks pre post (fl, prog) =
 
 let pp_file x = let f _ = () in pp_file_hooks f f x
 let pp_prog p = pp_file ([], p)
+
+let pa_file ic =
+  let open Lexing in
+  let lexbuf = from_channel stdin in
+  try Grammar.program tok lexbuf with
+  | Parsing.Parse_error ->
+    let e =
+      Printf.sprintf "line %d, character %d"
+        lexbuf.Lexing.lex_start_p.pos_lnum
+        (lexbuf.lex_start_p.pos_cnum -
+         lexbuf.lex_start_p.pos_bol + 1) in
+    raise (ParseError e)
+
+let _ =
+  match try Sys.argv.(1) with _ -> "" with
+  | "-tparse" ->
+    let p = pa_file stdin in
+    pp_file p
+  | _ -> ()
 
 }
