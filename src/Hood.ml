@@ -95,7 +95,7 @@ end = struct
     | Dst (VNum _, a) | Dst (a, VNum _) -> VSet.mem a vs
     | Dst (a, b) -> VSet.mem a vs && VSet.mem b vs
   let obj = function
-    | Dst (VNum a, VNum b) -> max (b-a) 0 + 10
+    | Dst (VNum a, VNum b) -> max (b-a) 0 (* + 10 *) (* XXX this is will cause trouble :) *)
     | Dst (VNum n, _)
     | Dst (_, VNum n) -> 10_000 + abs n
     | Dst _ -> 10_000
@@ -132,10 +132,9 @@ module Q: sig
   type ctx
   val vars: ctx -> VSet.t
   val empty: ctx
-  val addv: ?zero: bool -> ctx -> VSet.t -> ctx
+  val addv: ?sign: int -> ctx -> VSet.t -> ctx
   val delv: ?zero: bool -> ctx -> VSet.t -> ctx
   val setl: ctx -> (Idx.t * (Idx.t * int) list * int) list -> ctx
-  val set: ctx -> Idx.t -> (Idx.t * int) list -> int -> ctx
   val zero: ctx -> Idx.t -> ctx
   val eqc: ctx -> ctx -> unit
   val relax: pstate -> ctx -> ctx
@@ -150,13 +149,15 @@ end = struct
   module M = Map.Make(Idx)
   type ctx = { cvars: VSet.t; cmap: int M.t }
 
-  let newv ?(sign=(+1)) () =
+  let newv ?(sign=0) () =
     Clp.add_column
       { Clp.column_obj = 0.
       ; Clp.column_lower = if sign <= 0 then -. max_float else 0.
       ; Clp.column_upper = if sign >= 0 then max_float else 0.
       ; Clp.column_elements = [| |]
       };
+    if false && debug > 1 then
+      Printf.printf "sign of %d is %d\n" (Clp.number_columns () - 1) sign;
     Clp.number_columns () - 1
 
   let mkrow ?(lo=0.) ?(up=0.) v' l k =
@@ -184,15 +185,14 @@ end = struct
   let empty = {cvars = VSet.empty; cmap = M.empty}
 
   let zv = let v = newv () in mkrow v [] 0; v (* lp variable set to 0 *)
-  let addv ?(zero=false) c vs =
+  let addv ?(sign=0) c vs =
     assert (VSet.is_empty (VSet.inter (vars c) vs));
     let cvars = VSet.union [vars c; vs] in
     let cmap = Idx.fold
       (fun m i ->
         let v =
           try M.find i c.cmap with
-          | Not_found when zero -> zv
-          | Not_found -> newv () in
+          | Not_found -> newv ~sign () in
         M.add i v m)
       M.empty cvars in
     {cvars; cmap}
@@ -206,8 +206,6 @@ end = struct
       end eqs in
     { c with cmap =
       List.fold_left (fun m (i, v) -> M.add i v m) m bdgs }
-
-  let set c id l k = setl c [id, l, k]
 
   let zero c id = mkrow (M.find id c.cmap) [] 0; c
 
@@ -338,11 +336,19 @@ end = struct
     end () cini.cvars;
     Clp.change_objective_coefficients obj;
     flush stdout;
-    Clp.set_log_level 0; (* use 0 to turn CLP output off *)
+    Clp.set_log_level 2; (* use 0 to turn CLP output off *)
     Clp.initial_solve ();
     match Clp.status () with
     | 0 ->
       let sol = Clp.primal_column_solution () in
+      if debug > 1 then begin
+        print_string "\nCoefficients:\n";
+        for i = 0 to Array.length sol - 1 do
+           if abs_float sol.(i) > 1e-6 then
+           Printf.printf "v%d = %.2f\n" i sol.(i)
+        done;
+        print_newline ()
+      end;
       let p c = Idx.fold
         (fun () i -> Idx.printk sol.(M.find i c.cmap) i)
         () (vars c) in
@@ -357,12 +363,12 @@ let analyze negfrm (fdefs, p) =
   (* generate and resolve constraints *)
   let open Idx in
 
-  let glos =  VSet.add (VNum 0) (file_globals (fdefs, p)) in
+  let glos = VSet.add (VNum 0) (file_globals (fdefs, p)) in
   let tmpret = "%ret" and vret = VId "%ret" in
   let rec gen_ qfuncs qret qbrk qseq =
     let gen = gen_ qfuncs qret qbrk in function
 
-    | PTick (n, _) -> Q.set qseq const [(const, 1)] n
+    | PTick (n, _) -> Q.setl qseq [const, [(const, 1)], n]
     | PAssert _ -> qseq
     | PBreak _ -> qbrk
     | PReturn (v, _) ->
@@ -373,7 +379,7 @@ let analyze negfrm (fdefs, p) =
       let varl = List.map (fun x -> VId x) in
       let f = List.find (fun x -> x.fname = fname) fdefs in
 
-      let tmps = List.map (fun x -> "%" ^ x) f.fargs in
+      let tmps = List.map ((^) "%") f.fargs in
       let tmpset = VSet.of_list (varl tmps) in
       let argset = VSet.of_list (varl f.fargs) in
       let locset = VSet.of_list (varl f.flocs) in
@@ -392,7 +398,7 @@ let analyze negfrm (fdefs, p) =
       | None -> (* unfold case *)
         let qcall = Q.addv Q.empty (VSet.union [tmpset; Q.vars qseq]) in
         let qfun = Q.delv qret ~zero:false (VSet.of_list [vret]) in
-        let qfun = Q.addv qfun (VSet.union [argset; locset]) in
+        let qfun = Q.addv ~sign:(+1) qfun (VSet.union [argset; locset]) in
         let qbdy = gen_
           ((fname, (qcall, qret)) :: qfuncs)
           qret Q.empty qfun f.fbody in
@@ -408,7 +414,7 @@ let analyze negfrm (fdefs, p) =
         let qcall = Q.subst (Q.lift qcallf qseq) tmps args in
         let qcall = Q.delv ~zero:false qcall tmpset in
         let vdiff = VSet.diff (Q.vars qseq) (Q.vars qretf) in
-        let qretf = Q.addv ~zero:true qretf vdiff in
+        let qretf = Q.addv ~sign:(-1) qretf vdiff in
         let locs = VSet.diff (Q.vars qseq) glos in
         let qretf = Q.restore qretf qcall locs in
         Q.eqc qret qretf; qcall
@@ -488,7 +494,7 @@ let analyze negfrm (fdefs, p) =
 
     in
 
-  let q = Q.addv Q.empty glos in
+  let q = Q.addv ~sign:(+1) Q.empty glos in
   let qret = Q.addv q (VSet.singleton (VId "%ret")) in
   let qpre = gen_ [] qret Q.empty q p in
   Q.solve (Q.frame negfrm qpre q)
