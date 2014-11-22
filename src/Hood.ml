@@ -9,7 +9,7 @@ open Tools
 	1 - output final annotation
 	2 - output final annotation and constraints
 *)
-let debug = 0
+let debug = 2
 
 (* compute the logical states *)
 type pstate = ineq list
@@ -95,7 +95,7 @@ end = struct
     | Dst (VNum _, a) | Dst (a, VNum _) -> VSet.mem a vs
     | Dst (a, b) -> VSet.mem a vs && VSet.mem b vs
   let obj = function
-    | Dst (VNum a, VNum b) -> max (b-a) 0 (* + 10 *) (* XXX this is will cause trouble :) *)
+    | Dst (VNum a, VNum b) -> max (b-a) 0 + 10
     | Dst (VNum n, _)
     | Dst (_, VNum n) -> 10_000 + abs n
     | Dst _ -> 10_000
@@ -134,7 +134,7 @@ module Q: sig
   val empty: ctx
   val addv: ?sign: int -> ctx -> VSet.t -> ctx
   val delv: ?zero: bool -> ctx -> VSet.t -> ctx
-  val setl: ctx -> (Idx.t * (Idx.t * int) list * int) list -> ctx
+  val inc: ctx -> (Idx.t * (Idx.t * Idx.t) list * int) list -> ctx
   val zero: ctx -> Idx.t -> ctx
   val eqc: ctx -> ctx -> unit
   val relax: pstate -> ctx -> ctx
@@ -166,6 +166,7 @@ end = struct
         (fun (i, w) -> (i, float_of_int (-w))) l
     end in
     if debug > 1 then begin
+      if lo <> 0. || up <> 0. then () else
       let open Printf in
       let c = function
         | (v, w) when w = 1 -> sprintf "v%d" v
@@ -179,6 +180,9 @@ end = struct
       ; Clp.row_upper = float_of_int k +. up
       ; row_elements
       }
+
+  let mkgerow v1 v2 c =
+    mkrow ~lo:0. ~up:max_float v1 [(v2, c)] 0
 
   let vars c = c.cvars
 
@@ -197,11 +201,19 @@ end = struct
       M.empty cvars in
     {cvars; cmap}
 
-  let setl ({cmap=m;_} as c) eqs =
+  let inc ({cmap=m;_} as c) eqs =
     let bdgs = List.map
       begin fun (id, l, k) ->
+        let mkmax (i1, i2) =
+          let v = newv () in
+          if debug > 1 then
+            Printf.printf "v%d >= max(v%d, -v%d)\n" v
+              (M.find i1 m) (M.find i2 m);
+          mkgerow v (M.find i1 m) (+1);
+          mkgerow v (M.find i2 m) (-1);
+          (v, 1) in
         let v = newv () in
-        mkrow v (List.map (fun (i, k) -> M.find i m, k) l) k;
+        mkrow v ((M.find id m, 1) :: List.map mkmax l) k;
         (id, v)
       end eqs in
     { c with cmap =
@@ -265,16 +277,10 @@ end = struct
     let m cmap' i =
       let v' = newv () in
       if debug > 1 then
-        List.iter (fun {cmap;_} ->
+        List.iter (fun {cmap;_} ->                                            (* XXX use max for readability *)
           Printf.printf "v%d >= v%d\n" v' (M.find i cmap)
         ) cl;
-      let mkrow {cmap;_} =
-        Clp.add_row
-          { Clp.row_lower = -. max_float
-          ; Clp.row_upper = 0.
-          ; Clp.row_elements = [|(M.find i cmap, 1.); (v', -1.)|]
-          } in
-      List.iter mkrow cl;
+      List.iter (fun {cmap;_} -> mkgerow v' (M.find i cmap) 1) cl;
       M.add i v' cmap' in
     let cvars = (List.hd cl).cvars in
     {cvars; cmap = Idx.fold m M.empty cvars}
@@ -328,15 +334,26 @@ end = struct
         {c with cmap = M.add i (M.find i c'.cmap) c.cmap}
       ) c (vars c)
 
+  let dbgdbg v1 =
+    if true then
+      Clp.add_row
+        { Clp.row_lower = -100.
+        ; Clp.row_upper = max_float
+        ; Clp.row_elements = [|(v1, 1.)|]
+        }
+    else ()
+
   let solve (cini, cfin) =
     let obj = Clp.objective_coefficients () in
     Idx.fold begin fun () i ->
       let o = float_of_int (Idx.obj i) in
-      obj.(M.find i cini.cmap) <- o
+      let v = M.find i cini.cmap in
+      mkrow ~lo:0. ~up:max_float v [] 0;
+      obj.(v) <- o
     end () cini.cvars;
     Clp.change_objective_coefficients obj;
     flush stdout;
-    Clp.set_log_level 2; (* use 0 to turn CLP output off *)
+    Clp.set_log_level (if debug > 1 then 2 else 0);
     Clp.initial_solve ();
     match Clp.status () with
     | 0 ->
@@ -368,7 +385,7 @@ let analyze negfrm (fdefs, p) =
   let rec gen_ qfuncs qret qbrk qseq =
     let gen = gen_ qfuncs qret qbrk in function
 
-    | PTick (n, _) -> Q.setl qseq [const, [(const, 1)], n]
+    | PTick (n, _) -> Q.inc qseq [const, [], n]
     | PAssert _ -> qseq
     | PBreak _ -> qbrk
     | PReturn (v, _) ->
@@ -430,14 +447,11 @@ let analyze negfrm (fdefs, p) =
           match op with
           | OPlus -> LVar y, iyz, izy
           | OMinus -> LMult (-1, LVar y), izy, iyz in
-        let xopy = LAdd (LVar (VId x), opy) in
-        let sum opy invx inxv = VSet.fold
+        let sum opy = VSet.fold
           begin fun v sum ->
-            if invx v then (dst (v, VId x), -1) :: sum else
-            if inxv v then (dst (VId x, v), -1) :: sum else
-            if opy > 0 then (dst (v, VId x), 1) :: sum else
-            if opy < 0 then (dst (VId x, v), 1) :: sum else
-            failwith "bug in increment rule"
+            if opy > 0
+            then (dst (v, VId x), dst (VId x, v)) :: sum
+            else (dst (VId x, v), dst (v, VId x)) :: sum
           end vars [] in
         match
           Logic.entails lpre opy CLe z,
@@ -445,23 +459,15 @@ let analyze negfrm (fdefs, p) =
         with
         | true, true -> []
         | false, false ->
-          let f _ = false
-          in [iopyz, sum (-1) f f; izopy, sum (+1) f f]
-        | true, false -> (* op y <= 0 *)
-          let sum = sum (-1)
-            (fun v -> Logic.entails lpre xopy CGe (LVar v))
-            (fun _ -> false)
-          in [iopyz, sum]
-        | false, true -> (* op y >= 0 *)
-          let sum = sum (+1)
-            (fun _ -> false)
-            (fun v -> Logic.entails lpre xopy CLe (LVar v))
-          in [izopy, sum]
+          [iopyz, sum (-1), 0; izopy, sum (+1), 0]
+        | true, false -> (* op y < 0 *)
+          [iopyz, sum (-1), 0]
+        | false, true -> (* op y > 0 *)
+          [izopy, sum (+1), 0]
       in
       if eqs = [] && Logic.entails lpre z CLt z then qseq else
       let q = Q.relax lpost qseq in
-      (* transfer potential to +y or -y *)
-      Q.setl q (List.map (fun (i,s) -> i,(i,1)::s,0) eqs)
+      Q.inc q eqs (* transfer potential to +y or -y *)
 
     | PSet (x, Some v, {lpre; _}) ->
       let q = Q.subst qseq [x] [v] in
