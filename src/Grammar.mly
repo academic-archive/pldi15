@@ -8,6 +8,10 @@ let mk_while cond bdy =
   let nc = Ast.cond_neg cond in
   PLoop (PSeq (PIf (nc, PBreak (), skip, ()), bdy, ()), ())
 
+let mk_neg = function
+  | LVar (VNum n) -> LVar (VNum (-n))
+  | l -> LMult (-1, l)
+
 %}
 
 %token ASSERT WHILE LOOP IF ELSE BREAK
@@ -57,7 +61,7 @@ lsum: var                  { LVar $1 }
     | LPAREN lsum RPAREN   { $2 }
     | lsum PLUS lsum       { LAdd ($1, $3) }
     | lsum MINUS lsum      { LSub ($1, $3) }
-    | MINUS lsum %prec NEG { LMult (-1, $2) }
+    | MINUS lsum %prec NEG { mk_neg $2 }
 ;
 
 cond: STAR         { CNonDet }
