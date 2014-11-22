@@ -160,7 +160,7 @@ end = struct
       Printf.printf "sign of %d is %d\n" (Clp.number_columns () - 1) sign;
     Clp.number_columns () - 1
 
-  let mkrow ?(lo=0.) ?(up=0.) v' l k =
+  let row ?(lo=0.) ?(up=0.) v' l k =
     let row_elements = Array.of_list begin
       (v', 1.) :: List.map
         (fun (i, w) -> (i, float_of_int (-w))) l
@@ -181,14 +181,14 @@ end = struct
       ; row_elements
       }
 
-  let mkgerow v1 v2 c =
-    mkrow ~lo:0. ~up:max_float v1 [(v2, c)] 0
+  let gerow v1 v2 c =
+    row ~lo:0. ~up:max_float v1 [(v2, c)] 0
 
   let vars c = c.cvars
 
   let empty = {cvars = VSet.empty; cmap = M.empty}
 
-  let zv = let v = newv () in mkrow v [] 0; v (* lp variable set to 0 *)
+  let zv = let v = newv () in row v [] 0; v (* lp variable set to 0 *)
   let addv ?(sign=0) c vs =
     assert (VSet.is_empty (VSet.inter (vars c) vs));
     let cvars = VSet.union [vars c; vs] in
@@ -209,17 +209,17 @@ end = struct
           if debug > 1 then
             Printf.printf "v%d >= max(v%d, -v%d)\n" v
               (M.find i1 m) (M.find i2 m);
-          mkgerow v (M.find i1 m) (+1);
-          mkgerow v (M.find i2 m) (-1);
+          gerow v (M.find i1 m) (+1);
+          gerow v (M.find i2 m) (-1);
           (v, 1) in
         let v = newv () in
-        mkrow v ((M.find id m, 1) :: List.map mkmax l) k;
+        row v ((M.find id m, 1) :: List.map mkmax l) k;
         (id, v)
       end eqs in
     { c with cmap =
       List.fold_left (fun m (i, v) -> M.add i v m) m bdgs }
 
-  let zero c id = mkrow (M.find id c.cmap) [] 0; c
+  let zero c id = row (M.find id c.cmap) [] 0; c
 
   let delv ?(zero=true) c vs =
     assert (VSet.subset vs (vars c));
@@ -227,21 +227,15 @@ end = struct
     let m _ vo vo' =
       match vo, vo' with
       | Some _, Some _ -> vo
-      | Some v, None -> if zero then mkrow v [] 0; None
+      | Some v, None -> if zero then row v [] 0; None
       | _, _ -> assert false in
     let c' = Idx.fold (fun m i -> M.add i 0 m) M.empty cvars in
     {cvars; cmap = M.merge m c.cmap c'}
 
   let eqc c1 c2 =
     assert (VSet.equal c1.cvars c2.cvars);
-    let eqv i =
-      if debug > 1 then
-        Printf.printf "v%d = v%d\n" (M.find i c1.cmap) (M.find i c2.cmap);
-      { Clp.row_lower = 0.; row_upper = 0.
-      ; row_elements =
-        [| (M.find i c1.cmap, -1.)
-         ; (M.find i c2.cmap, 1.) |] } in
-    Idx.fold (fun () i -> Clp.add_row (eqv i)) () c1.cvars
+    let eqv i = row (M.find i c1.cmap) [(M.find i c2.cmap, 1)] 0 in
+    Idx.fold (fun () -> eqv) () c1.cvars
 
   let relax ps c =
     let lo, eq, up =
@@ -263,11 +257,11 @@ end = struct
     let c = List.fold_left
       begin fun c (i, (ip, _)) ->
         let v' = newv () in
-        mkrow v' [(M.find i c.cmap, 1); (ip, -1)] 0;
+        row v' [(M.find i c.cmap, 1); (ip, -1)] 0;
         { c with cmap = M.add i v' c.cmap }
       end c l in
     let v' = newv () and ic = Idx.const in
-    mkrow v' ((M.find ic c.cmap, 1) :: List.map snd l) 0;
+    row v' ((M.find ic c.cmap, 1) :: List.map snd l) 0;
     { c with cmap = M.add ic v' c.cmap }
 
   let merge cl =
@@ -280,7 +274,7 @@ end = struct
         List.iter (fun {cmap;_} ->                                            (* XXX use max for readability *)
           Printf.printf "v%d >= v%d\n" v' (M.find i cmap)
         ) cl;
-      List.iter (fun {cmap;_} -> mkgerow v' (M.find i cmap) 1) cl;
+      List.iter (fun {cmap;_} -> gerow v' (M.find i cmap) 1) cl;
       M.add i v' cmap' in
     let cvars = (List.hd cl).cvars in
     {cvars; cmap = Idx.fold m M.empty cvars}
@@ -312,7 +306,7 @@ end = struct
         | [i'] -> M.add i (M.find i' cmap) m
         | payfor ->
           let v = newv () in
-          mkrow v (List.map (fun i -> (M.find i cmap,1)) payfor) 0;
+          row v (List.map (fun i -> (M.find i cmap,1)) payfor) 0;
           M.add i v m
       ) M.empty cvars in
     {cvars; cmap}
@@ -320,8 +314,8 @@ end = struct
   let frame neg c1 c2 =
     let sign = if neg then 0 else 1 in
     let vx = newv ~sign () and v1 = newv () and v2 = newv () in
-    mkrow v1 [(M.find Idx.const c1.cmap, 1); (vx, 1)] 0;
-    mkrow v2 [(M.find Idx.const c2.cmap, 1); (vx, 1)] 0;
+    row v1 [(M.find Idx.const c1.cmap, 1); (vx, 1)] 0;
+    row v2 [(M.find Idx.const c2.cmap, 1); (vx, 1)] 0;
     ( {c1 with cmap = M.add Idx.const v1 c1.cmap}
     , {c2 with cmap = M.add Idx.const v2 c2.cmap }
     )
@@ -334,21 +328,12 @@ end = struct
         {c with cmap = M.add i (M.find i c'.cmap) c.cmap}
       ) c (vars c)
 
-  let dbgdbg v1 =
-    if true then
-      Clp.add_row
-        { Clp.row_lower = -100.
-        ; Clp.row_upper = max_float
-        ; Clp.row_elements = [|(v1, 1.)|]
-        }
-    else ()
-
   let solve (cini, cfin) =
     let obj = Clp.objective_coefficients () in
     Idx.fold begin fun () i ->
       let o = float_of_int (Idx.obj i) in
       let v = M.find i cini.cmap in
-      mkrow ~lo:0. ~up:max_float v [] 0;
+      row ~lo:0. ~up:max_float v [] 0;
       obj.(v) <- o
     end () cini.cvars;
     Clp.change_objective_coefficients obj;
