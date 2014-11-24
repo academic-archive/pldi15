@@ -97,13 +97,7 @@ end = struct
       | [] -> a
     in pairs (f a const) vl
   let range l = function
-    | Dst (x1, x2) ->
-      let pdiff = function
-        | (Some a, Some b) -> Some (max (a - b) 0)
-        | _ -> None in
-      let lo1, hi1 = Logic.range l x1 in
-      let lo2, hi2 = Logic.range l x2 in
-      (pdiff (lo2, hi1), pdiff (hi2, lo1))
+    | Dst (x1, x2) -> Logic.irange l x1 x2
     | _ -> (None, None)
   let printk k i =
     if abs_float k < 1e-6 then () else

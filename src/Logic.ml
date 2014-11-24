@@ -236,16 +236,31 @@ let range ps = function
     let upd f a = function
       | Some x -> Some (f a x)
       | None -> Some a in
-    List.fold_left
-      begin fun (lb, ub) a ->
+    List.fold_left begin fun (lb, ub) a ->
         let c = L.coeff v a in
-        let pred v' n = v=v' || n=0 in
-        if c = 0 || not (L.for_all pred a.L.m)
-          then (lb, ub) else
-          if c < 0
-            then (upd max (a.L.k / -c) lb, ub)
-            else (lb, upd min (-a.L.k / c) ub)
+        let p v' n = v=v' || n=0 in
+        if c = 0 || not (L.for_all p a.L.m)
+        then (lb, ub) else
+        if c < 0
+        then (upd max (a.L.k / -c) lb, ub)
+        else (lb, upd min (-a.L.k / c) ub)
       end (None, None) ps
+
+let irange ps v1 v2 =
+  let m0 f = function
+    | Some x -> Some (max (f x) 0)
+    | None -> None in
+  match v2 with
+  | VNum n2 ->
+    let n2d = m0 (fun x -> n2 - x) in
+    let lo1, hi1 = range ps v1 in
+    (n2d hi1, n2d lo1)
+  | VId id2 ->
+    let ps' = incr id2 OMinus v1 ps in
+    let mxz = m0 (fun x -> x) in
+    let lo, hi = range ps' v2 in
+    (mxz lo, mxz hi)
+
 
 (* pretty printing *)
 let pp ps =
