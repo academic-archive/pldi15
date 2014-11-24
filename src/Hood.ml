@@ -55,18 +55,6 @@ let lannot =
     List.map g fl, f' [] (ref []) [] p
 
 
-let _ =
-  let open Parse in
-  if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tlannot" then
-  let f = Parse.pa_file stdin in
-  let f' = lannot f in
-  let pre {lpre; lpost} =
-    Logic.pp lpre; print_string "\n"
-  and post {lpre; lpost} =
-    print_string "\n"; Logic.pp lpost
-  in Parse.pp_file_hooks pre post f'
-
-
 (* indices we use to name lp variables *)
 module Idx : sig
   type t
@@ -490,10 +478,18 @@ let analyze negfrm (fdefs, p) =
   let qpre = gen_ [] qret Q.empty q p in
   Q.solve (Q.frame negfrm qpre q)
 
+
 let _ =
-  if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tq" then
   let f = Parse.pa_file stdin in
   let f = Tools.clean_file f in
-  let f = Tools.auto_tick f in
-  let f = lannot f in
-  analyze false f
+  if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tq" then
+    let f = Tools.auto_tick f in
+    let f = lannot f in
+    analyze false f
+  else if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tlannot" then
+    let f = lannot f in
+    let pre {lpre; lpost} =
+      Logic.pp lpre; print_string "\n"
+    and post {lpre; lpost} =
+      print_string "\n"; Logic.pp lpost
+    in Parse.pp_file_hooks pre post f
