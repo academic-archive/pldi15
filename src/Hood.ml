@@ -86,7 +86,7 @@ end = struct
     | Dst (VNum a, VNum b) -> max (b-a) 0 + 10
     | Dst (VNum n, _)
     | Dst (_, VNum n) -> 10_000 + abs n
-    | Dst _ -> 10_000
+    | Dst _ -> 11_000
     | _ -> 1
   let fold f a vs =
     let vl = VSet.elements vs in
@@ -490,6 +490,7 @@ let _ =
     let f = lannot f in
     analyze f
   else if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tlannot" then
+    let f = Tools.auto_tick f in
     let f = lannot f in
     let pre {lpre; lpost} =
       Logic.pp lpre; print_string "\n"
