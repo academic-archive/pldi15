@@ -9,7 +9,7 @@ open Tools
 	1 - output final annotation
 	2 - output final annotation and constraints
 *)
-let debug = 0
+let debug = 2
 
 (* compute the logical states *)
 type pstate = ineq list
@@ -258,10 +258,14 @@ end = struct
     );
     let m cmap' i =
       let v' = newv () in
-      if debug > 1 then
-        List.iter (fun {cmap;_} ->                                            (* XXX use max for readability *)
-          Printf.printf "v%d >= v%d\n" v' (M.find i cmap)
-        ) cl;
+      if debug > 1 then begin
+        Printf.printf "v%d >= max(" v';
+        ignore (List.fold_left (fun c {cmap=m;_} ->
+            Printf.printf "%sv%d" (if c then ", " else "") (M.find i m);
+            true
+          ) false cl);
+        Printf.printf ")\n";
+      end;
       List.iter (fun {cmap;_} -> gerow v' (M.find i cmap) 1) cl;
       M.add i v' cmap' in
     let cvars = (List.hd cl).cvars in
