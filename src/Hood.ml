@@ -123,7 +123,6 @@ module Q: sig
   val addv: ?sign: int -> ctx -> VSet.t -> ctx
   val delv: ?zero: bool -> ctx -> VSet.t -> ctx
   val inc: ctx -> (Idx.t * (Idx.t * Idx.t) list * int) list -> ctx
-  val zero: ctx -> Idx.t -> ctx
   val eqc: ctx -> ctx -> unit
   val relax: pstate -> ctx -> ctx
   val merge: ctx list -> ctx
@@ -207,8 +206,6 @@ end = struct
     { c with cmap =
       List.fold_left (fun m (i, v) -> M.add i v m) m bdgs }
 
-  let zero c id = row (M.find id c.cmap) [] 0; c
-
   let delv ?(zero=true) c vs =
     assert (VSet.subset vs (vars c));
     let cvars = VSet.diff (vars c) vs in
@@ -272,7 +269,9 @@ end = struct
     {cvars; cmap = Idx.fold m M.empty cvars}
 
   let free c idx =
-    { c with cmap = M.add idx (newv ()) c.cmap }
+    if debug > 1 then Printf.printf "v%d <= 0\n" (M.find idx c.cmap);
+    row ~lo:(-. max_float) ~up:0. (M.find idx c.cmap) [] 0;
+    { c with cmap = M.add idx (newv ~sign:(+1) ()) c.cmap }
 
   let lift q q' =
     (* assert (VSet.subset (vars q) (vars q')); *)
@@ -453,8 +452,6 @@ let analyze (fdefs, p) =
     | PSet (x, None, _) ->
       let vars = VSet.remove (VId x) (Q.vars qseq) in
       VSet.fold begin fun u q ->
-        let q = Q.zero q (dst (VId x, u)) in
-        let q = Q.zero q (dst (u, VId x)) in
         Q.free (Q.free q (dst (u, VId x))) (dst (VId x, u))
       end vars qseq
 
