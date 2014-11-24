@@ -360,7 +360,7 @@ let analyze (fdefs, p) =
   let rec gen_ qfuncs qret qbrk qseq =
     let gen = gen_ qfuncs qret qbrk in function
 
-    | PTick (n, _) -> Q.inc qseq [const, [], n]
+    | PTick (n, _) -> if n = 0 then qseq else Q.inc qseq [const, [], n]
     | PAssert _ -> qseq
     | PBreak _ -> qbrk
     | PReturn (v, _) ->
