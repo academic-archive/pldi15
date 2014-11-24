@@ -294,7 +294,7 @@ end = struct
     ) () cvars;
     let cmap = Idx.fold (fun m i ->
         match Hashtbl.find_all h i with
-        | [] -> M.add i (newv ()) m
+        | [] -> M.add i (newv ~sign:(+1) ()) m
         | [i'] -> M.add i (M.find i' cmap) m
         | payfor ->
           let v = newv () in
