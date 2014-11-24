@@ -150,7 +150,7 @@ let pp_prog p = pp_file ([], p)
 
 let pa_file ic =
   let open Lexing in
-  let lexbuf = from_channel stdin in
+  let lexbuf = from_channel ic in
   try Grammar.program tok lexbuf with
   | Parsing.Parse_error ->
     let e =

@@ -9,7 +9,7 @@ open Tools
 	1 - output final annotation
 	2 - output final annotation and constraints
 *)
-let debug = 2
+let debug = 0
 
 (* compute the logical states *)
 type pstate = ineq list
@@ -474,15 +474,13 @@ let analyze (fdefs, p) =
 
 
 let _ =
-  let f = Parse.pa_file stdin in
-  let f = Tools.clean_file f in
+  let f () = Tools.clean_file (Parse.pa_file stdin) in
   if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tq" then
-    let f = Tools.auto_tick f in
+    let f = Tools.auto_tick (f ()) in
     let f = lannot f in
     analyze f
   else if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tlannot" then
-    let f = Tools.auto_tick f in
-    let f = lannot f in
+    let f = lannot (f ()) in
     let pre {lpre; lpost} =
       Logic.pp lpre; print_string "\n"
     and post {lpre; lpost} =
