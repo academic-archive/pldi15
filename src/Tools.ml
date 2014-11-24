@@ -153,7 +153,7 @@ let check f =
 (* add tick on loops and function calls *)
 let auto_tick (fdefs, p) =
   let rec f = function
-    | PLoop (p, _) -> PLoop (Mk.seq p (PTick (1, ())), ())
+    | PLoop (p, _) -> PLoop (Mk.seq (f p) (PTick (1, ())), ())
     | PCall (_, _, _, _) as x -> Mk.seq (PTick (1, ())) x
     | PIf (c, p1, p2, _) -> PIf (c, f p1, f p2, ())
     | PSeq (p1, p2, _) -> Mk.seq (f p1) (f p2)
