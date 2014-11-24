@@ -49,3 +49,22 @@ let prog_data = function
   | PLoop (_, a)
   | PIf (_, _, _, a)
   | PSeq (_, _, a) -> a
+
+module Mk = struct
+  let rec seq a b =
+    match a with
+    | PSeq (a1, a2, _) ->
+      seq a1 (seq a2 b)
+    | PTick (n1, _) ->
+      begin match b with
+      | PTick (n2, _) -> PTick (n1 + n2, ())
+      | PSeq (PTick (n2, _), b', _) ->
+        PSeq (PTick (n1 + n2, ()), b', ())
+      | _ -> if n1 = 0 then b else PSeq (a, b, ())
+      end
+    | _ ->
+      begin match b with
+      | PTick (0, _) -> a
+      | _ -> PSeq (a, b, ())
+      end
+end

@@ -150,15 +150,25 @@ let check f =
   end
 
 
+(* add tick on loops and function calls *)
+let auto_tick (fdefs, p) =
+  let rec f = function
+    | PLoop (p, _) -> PLoop (Mk.seq p (PTick (1, ())), ())
+    | PCall (_, _, _, _) as x -> Mk.seq (PTick (1, ())) x
+    | PIf (c, p1, p2, _) -> PIf (c, f p1, f p2, ())
+    | PSeq (p1, p2, _) -> Mk.seq (f p1) (f p2)
+    | x -> x in
+  (List.map (fun d -> {d with fbody=f d.fbody}) fdefs, f p)
+
+
 (* sanitize a file *)
 let clean_file f =
   let () = check f in
   alpha_file f
 
 
-open Parse
-
 (* tests *)
 let _ =
+  let open Parse in
   if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tclean" then
   pp_file (clean_file (pa_file stdin))
