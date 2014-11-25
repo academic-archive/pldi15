@@ -247,20 +247,35 @@ let range ps = function
       end (None, None) ps
 
 let irange ps v1 v2 =
-  let m0 f = function
-    | Some x -> Some (max (f x) 0)
-    | None -> None in
-  match v2 with
-  | VNum n2 ->
-    let n2d = m0 (fun x -> n2 - x) in
-    let lo1, hi1 = range ps v1 in
-    (n2d hi1, n2d lo1)
-  | VId id2 ->
-    let ps' = incr id2 OMinus v1 ps in
-    let mxz = m0 (fun x -> x) in
-    let lo, hi = range ps' v2 in
-    (mxz lo, mxz hi)
+  let rng =
+    let m0 f = function
+      | Some x -> Some (max 0 (f x))
+      | None -> None in
+    match v2 with
+    | VNum n2 ->
+      let n2d = m0 (fun x -> n2 - x) in
+      let lo1, hi1 = range ps v1 in
+      (n2d hi1, n2d lo1)
+    | VId id2 ->
+      let ps' = incr id2 OMinus v1 ps in
+      let mxz = m0 (fun x -> x) in
+      let lo, hi = range ps' v2 in
+      (mxz lo, mxz hi) in
+  if entails ps (LVar v2) CLe (LVar v1)
+  then (None, Some 0)
+  else if fst rng = Some 0
+  then (None, snd rng)
+  else rng
 
+(* (* nice to debug the range functions *)
+let irange ps v1 v2 =
+  let r = irange ps v1 v2 in
+  if v1 = VId "b" || v2 = VId "b" then
+  let s = function Some n -> string_of_int n | None -> "?" in
+  Printf.printf "%s <= [%a,%a] <= %s\n"
+    (s (fst r)) Parse.pp_var v1 Parse.pp_var v2 (s (snd r)); r
+  else r
+*)
 
 (* pretty printing *)
 let pp ps =
