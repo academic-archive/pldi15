@@ -409,7 +409,6 @@ let analyze (fdefs, p) =
 
     | PInc (x, op, y, {lpre; lpost}) ->
       let vars = VSet.remove (VId x) (Q.vars qseq) in
-      let z = LVar (VNum 0) in
       let eqs =
         let opy, iopyz, izopy =
           let iyz = dst (y, VNum 0) and izy = dst (VNum 0, y) in
@@ -423,8 +422,8 @@ let analyze (fdefs, p) =
             else (dst (VId x, v), dst (v, VId x)) :: sum
           end vars [] in
         match
-          Logic.entails lpre opy CLe z,
-          Logic.entails lpre opy CGe z
+          Logic.entails lpre opy CLe (LVar (VNum 0)),
+          Logic.entails lpre opy CGe (LVar (VNum 0))
         with
         | true, true -> []
         | false, false ->
@@ -434,14 +433,13 @@ let analyze (fdefs, p) =
         | false, true -> (* op y > 0 *)
           [izopy, sum (+1), 0]
       in
-      if eqs = [] && Logic.entails lpre z CLt z then qseq else
       let q = Q.relax lpost qseq in
       Q.inc q eqs (* transfer potential to +y or -y *)
 
     | PSet (x, Some v, {lpre; _}) ->
       let q = Q.subst qseq [x] [v] in
       (* relax constant differences *)
-      Q.relax lpre q
+      (* Q.relax lpre q *) q
 
     | PSet (x, None, _) ->
       let vars = VSet.remove (VId x) (Q.vars qseq) in
