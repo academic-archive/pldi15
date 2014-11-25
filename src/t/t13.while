@@ -1,10 +1,10 @@
 
 while x > 0 (
-   x = x -1;
+   x -= 1;
    if * (
-   y = y +1
+   y += 1
 ) else (
 while y > 0
-   y = y -1
+   y -= 1
 )
 )

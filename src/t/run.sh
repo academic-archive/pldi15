@@ -1,6 +1,6 @@
 APP="./app"
 TDIR="t"
-TESTS="lex parse lannot eval q"
+TESTS="q"
 
 if [ "$1" = "update" ]; then
 	until
