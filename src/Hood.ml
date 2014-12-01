@@ -121,7 +121,7 @@ module Q: sig
   val relax: pstate -> ctx -> ctx
   val merge: ctx list -> ctx
   val free: ctx -> Idx.t -> ctx
-  val lift: ctx -> ctx -> ctx
+  val lift: ?sign: int -> ctx -> ctx -> ctx
   val subst: ctx -> id list -> var list -> ctx
   val frame: ctx -> ctx -> ctx * ctx
   val restore: ctx -> ctx -> VSet.t -> ctx
@@ -267,9 +267,9 @@ end = struct
     row ~lo:(-. max_float) ~up:0. (M.find idx c.cmap) [] 0;
     { c with cmap = M.add idx (newv ~sign:(+1) ()) c.cmap }
 
-  let lift q q' =
+  let lift ?(sign=(+1)) q q' =
     (* assert (VSet.subset (vars q) (vars q')); *)
-    addv q (VSet.diff (vars q') (vars q))
+    addv ~sign q (VSet.diff (vars q') (vars q))
 
   let subst {cvars; cmap} xl vl =
     let rename =
@@ -305,7 +305,7 @@ end = struct
     )
 
   let restore c c' locals =
-    assert (VSet.subset (vars c') (vars c));
+    assert (VSet.subset locals (vars c'));
     assert (VSet.subset locals (vars c));
     Idx.fold (fun c i ->
         if not (Idx.local locals i) then c else
@@ -370,7 +370,7 @@ let analyze (fdefs, p) =
       let argset = VSet.of_list (varl f.fargs) in
       let locset = VSet.of_list (varl f.flocs) in
 
-      let qret = Q.addv qseq (VSet.of_list [vret]) in
+      let qret = Q.addv ~sign:(+1) qseq (VSet.of_list [vret]) in
       let qret =
         match ret with
         | Some x -> Q.subst qret [x] [vret] (* XXX move *)
@@ -388,7 +388,7 @@ let analyze (fdefs, p) =
         let qbdy = gen_
           ((fname, (qcall, qret)) :: qfuncs)
           qret Q.empty qfun f.fbody in
-        let qcall' = Q.addv qbdy tmpset in
+        let qcall' = Q.addv ~sign:(+1) qbdy tmpset in
         let qcall' = Q.subst qcall' f.fargs (varl tmps) in (* XXX move *)
         let qcall' = Q.delv qcall' (VSet.union [argset; locset]) in
         Q.eqc qcall qcall';
@@ -397,12 +397,12 @@ let analyze (fdefs, p) =
 
       | Some (qcallf, qretf) -> (* recursive case *)
         let qcallf, qretf = Q.frame qcallf qretf in
-        let qcall = Q.subst (Q.lift qcallf qseq) tmps args in
+        let qcallf = Q.lift qcallf qseq in
+        let qcall = Q.subst qcallf tmps args in
         let qcall = Q.delv ~zero:false qcall tmpset in
-        let vdiff = VSet.diff (Q.vars qseq) (Q.vars qretf) in
-        let qretf = Q.addv ~sign:(-1) qretf vdiff in
+        let qretf = Q.lift ~sign:(-1) qretf qseq in
         let locs = VSet.diff (Q.vars qseq) glos in
-        let qretf = Q.restore qretf qcall locs in
+        let qretf = Q.restore qretf qcallf locs in
         Q.eqc qret qretf; qcall
 
       end

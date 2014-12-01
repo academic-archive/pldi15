@@ -1,4 +1,12 @@
-func produce() while x>0 ((-1); x=x-1; y=y+1)
-func consume() while y>0 (y=y-1; x=x+1; (1))
+# this is a negative test, the old implementation had
+# a bug that would allow this exponential function to
+# get the unsound linear bound 1 + 2 |[a, b]|.
 
-consume(); produce(); consume()           
+func f(x, y)
+  if x < y
+    ( x += 1
+    ; f(x, y)
+    ; f(x, y)
+    )
+
+; f(a, b)
