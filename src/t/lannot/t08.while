@@ -1,8 +1,20 @@
 { T }
-while z - y > 0
-{ y - z + 1 ≤ 0 }
-  y = y + 1;
-while y > 2
-{ -y + 3 ≤ 0 }
-  y = y - 3
+loop
+  (
+{ T }
+    if z - y <= 0
+{ -y + z ≤ 0 }
+      break;
+    y += 1
+{ y - z ≤ 0 }
+  );
+loop
+  (
+{ T }
+    if y <= 2
+{ y - 2 ≤ 0 }
+      break;
+    y -= 3
+{ -y ≤ 0 }
+  )
 { y - 2 ≤ 0 }
