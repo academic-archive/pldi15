@@ -439,7 +439,7 @@ let analyze (fdefs, p) =
     | PSet (x, Some v, {lpre; _}) ->
       let q = Q.subst qseq [x] [v] in
       (* relax constant differences *)
-      (* Q.relax lpre q *) q
+      Q.relax lpre q
 
     | PSet (x, None, _) ->
       let vars = VSet.remove (VId x) (Q.vars qseq) in
