@@ -1,19 +1,19 @@
 
 func first (x,y,z) local ()
 ( return x
-)
+);
 
 func second (x,y,z) local (a)
 ( a = 0;
   a = first (y,z,x);
   return a
-)
+);
 
 func third (x,y,z) local (a)
 ( a = 0;
   a = second (y,z,x);
   return a
-)
+);
 
 func iter (x,y,z) local (a,b,c)
 (
@@ -21,12 +21,12 @@ func iter (x,y,z) local (a,b,c)
   b = second(x,y,z);
   c = third(x,y,z);
   while a>b
-    a = a-1;
+    a -= 1;
   while b>c
-    c = c+1;
+    c += 1;
   while a<c
-    a = a+1
-)
+    a += 1
+);
 
 iter (x,y,z);
 

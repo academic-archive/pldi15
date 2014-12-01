@@ -3,17 +3,16 @@ func add (x,y) local (a,b)
 ( a = x;
   b = y;
   if a > 0 (
-    a = a-1;
-    b = b+1;
+    a -= 1;
+    b += 1;
     b = add(a,b)
   );
   return b
-)
+);
 
 x = add(y,z);
 x = add(x,100);
 x = add(x,x);
 
 while x > 0
-  x = x-1
-
+  x -= 1
