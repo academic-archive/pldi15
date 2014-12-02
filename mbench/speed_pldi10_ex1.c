@@ -1,3 +1,5 @@
+#pragma tick
+
 int nondet();
 
 void start(int n)
