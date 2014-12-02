@@ -466,7 +466,7 @@ let analyze (fdefs, p) =
     in
 
   let q = Q.addv ~sign:(+1) Q.empty glos in
-  let qret = Q.addv q (VSet.singleton (VId "%ret")) in
+  let qret = Q.addv ~sign:(+1) q (VSet.singleton (VId "%ret")) in
   let qpre = gen_ [] qret Q.empty q p in
   Q.solve (Q.frame qpre q)
 
