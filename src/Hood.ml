@@ -8,6 +8,7 @@ open Tools
 	0 - no output
 	1 - output final annotation
 	2 - output final annotation and constraints
+	4 - print sign of variables (ugly)
 *)
 let debug = 0
 
@@ -137,7 +138,7 @@ end = struct
       ; Clp.column_upper = if sign >= 0 then max_float else 0.
       ; Clp.column_elements = [| |]
       };
-    if false && debug > 1 then
+    if debug > 3 then
       Printf.printf "sign of %d is %d\n" (Clp.number_columns () - 1) sign;
     Clp.number_columns () - 1
 
@@ -169,7 +170,6 @@ end = struct
 
   let empty = {cvars = VSet.empty; cmap = M.empty}
 
-  let zv = let v = newv () in row v [] 0; v (* lp variable set to 0 *)
   let addv ?(sign=0) c vs =
     assert (VSet.is_empty (VSet.inter (vars c) vs));
     let cvars = VSet.union [vars c; vs] in
