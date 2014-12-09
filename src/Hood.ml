@@ -120,7 +120,7 @@ module Q: sig
   val inc: ctx -> (Idx.t * (Idx.t * Idx.t) list * int) list -> ctx
   val eqc: ctx -> ctx -> unit
   val relax: pstate -> ctx -> ctx
-  val merge: ctx list -> ctx
+  val merge: ?sign: int -> ctx list -> ctx
   val free: ctx -> Idx.t -> ctx
   val lift: ?sign: int -> ctx -> ctx -> ctx
   val subst: ctx -> id list -> var list -> ctx
@@ -138,7 +138,7 @@ end = struct
       ; Clp.column_upper = if sign >= 0 then max_float else 0.
       ; Clp.column_elements = [| |]
       };
-    if debug > 3 then
+    if debug > 3 && sign <> 0 then
       Printf.printf "sign of %d is %d\n" (Clp.number_columns () - 1) sign;
     Clp.number_columns () - 1
 
@@ -243,12 +243,12 @@ end = struct
     row v' ((M.find ic c.cmap, 1) :: List.map snd l) 0;
     { c with cmap = M.add ic v' c.cmap }
 
-  let merge cl =
+  let merge ?(sign=0) cl =
     assert (List.for_all
       (fun {cvars;_} -> VSet.equal cvars (List.hd cl).cvars) cl
     );
     let m cmap' i =
-      let v' = newv () in
+      let v' = newv ~sign () in
       if debug > 1 then begin
         Printf.printf "v%d >= max(" v';
         ignore (List.fold_left (fun c {cmap=m;_} ->
@@ -354,7 +354,10 @@ let analyze (fdefs, p) =
   let rec gen_ qfuncs qret qbrk qseq =
     let gen = gen_ qfuncs qret qbrk in function
 
-    | PTick (n, _) -> if n = 0 then qseq else Q.inc qseq [const, [], n]
+    | PTick (n, _) ->
+      if n = 0 then qseq else
+      let q = Q.inc qseq [const, [], n] in
+      if n < 0 then Q.merge ~sign:(+1) [q] else q
     | PAssert _ -> qseq
     | PBreak _ -> qbrk
     | PReturn (v, _) ->
