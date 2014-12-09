@@ -1,7 +1,7 @@
 % Comment for anonymization
 % Add preprint option for the extended version
 % Also look for "SHORT" comments
-% \def\fullversion{}
+ \def\fullversion{}
 
 \documentclass[nocopyrightspace,preprint,pldi]{sigplanconf-pldi15}
 
@@ -849,7 +849,7 @@ $$
 %
 Here $\state : (\text{Locals} \to \Z) \times (\text{Globals} \to \Z)$
 is a simplified program state that maps variable names to integers,
-$|\inter a b| = \max(0,b-a)$, and $q_i \in \Qplusz$.  To simplify the
+$|\inter a b| = \max(0,b-a)$, and $q_i \in \Q$.  To simplify the
 references to the linear coefficients $q_i$, we introduce an \emph{index
   set} $I$.  This set is defined to be $\{0\} \cup \{(x, y) \mid x, y
 \in \Var \land x \neq y \}$.  Each index $i$ corresponds to a \emph{base function}
@@ -864,11 +864,12 @@ index $(x,y)$.  \iffull{The family $(f_i)_{i\in I}$ is actually a basis (in
 the linear-algebra sense) for potential functions.}{}  This allows us to
 uniquely represent any linear potential function
 $\Phi$ as a \emph{quantitative annotation} $Q = (q_i)_{i \in I}$, that
-is, a family of \ifshort{non-negative}{} rational numbers where only
-a finite number of elements are not zero. \iffull{ For soundness, we
-  require that potential functions always give non-negative results.
-  This is achieved by restricting coefficients in a quantitative
-  annotation to be always non-negative.}{}
+is, a family of rational numbers where only
+a finite number of elements are not zero.  \iffull{As a notable difference from
+previous works based on amortized-analysis, we do not require all the coefficients
+of our potential function to be positive.  In practice, we will see using
+a semantic argument that despite this additional freedom, potential functions
+always remain positive.}{}
 
 In the potential functions, we treat constants as global variables
 that cannot be assigned to.  For example, if the program contains the
@@ -1095,17 +1096,17 @@ tools\iffull{ for automatic bound derivation.}{.}
 %
 \Rule[leftskip=.4cm,rightskip=.3cm]{Q:Skip}
 { }
-{ \!\! B; R; (\Gamma, Q) \vdash \code{skip} \dashv (\Gamma, Q) \!\!}
+{ B; R; (\Gamma, Q) \vdash \code{skip} \dashv (\Gamma, Q) }
 %
 \and
 \Rule{Q:Break}
 { }
-{\!\!  (\Gamma, Q_B); R; (\Gamma, Q_B {+} M_b) \vdash \code{break} \dashv (\Gamma', Q') \!\!}
+{ (\Gamma, Q_B); R; (\Gamma, Q_B) \vdash \code{break} \dashv (\Gamma', Q') }
 %
 \and
 \Rule[leftskip=.3cm,rightskip=.4cm]{Q:Tick}
-{ }
-{ \!\! B; R; (\Gamma, Q{+}M_t(n)) \vdash \code{tick}(n) \dashv (\Gamma, Q) \!\!}
+{ XXX }
+{ B; R; (\Gamma, Q{+}n) \vdash \code{tick}(n) \dashv (\Gamma, Q) }
 %
 \and
 \Rule{Q:Return}
@@ -1116,55 +1117,48 @@ tools\iffull{ for automatic bound derivation.}{.}
 { B; (\Gamma_R,Q_R); (\Gamma, Q) \vdash \code{return}~x \dashv (\Gamma',Q') }
 %
 \and \Rule{Q:Update}
-{ q'_{xy}, q'_{yx} \in \Qplusz
+{ q'_{xy}, q'_{yx} \in \Q
 \\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
 }
 { B; R; (\Gamma[x/y], Q {+} M_u {+} M_e(y)) \vdash x \gets y \dashv (\Gamma, Q') }
 %
 \\ \Rule[leftskip=.1cm,rightskip=.1cm]{Q:Loop}
-{ (\Gamma', Q'); R; (\Gamma,Q) \vdash S \dashv (\Gamma,  Q {+} M_l) }
+{ (\Gamma', Q'); R; (\Gamma,Q) \vdash S \dashv (\Gamma,  Q) }
 { B; R; (\Gamma, Q) \vdash \code{loop}~S \dashv (\Gamma', Q') }
 %
 \and \Rule[leftskip=.2cm,rightskip=.1cm]{Q:IncP}
-{ \Gamma \models y \ge 0 \!
-\\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\} \!
-\\ \textstyle q'_{0y} = q_{0y}
-      + \sum_{u \in \mathcal U} q_{xu}
-      - \sum_{v \not\in \mathcal U} q_{vx} \!
+{ \Gamma \models y \ge 0
+\\ \textstyle q'_{0y} = q_{0y} - \sum_u \max(q_{ux}, -q_{xu})
 }
 { \textstyle
-  B; R; (\Gamma[x/x {+} y], Q {+} M_u {+} M_e(x {+} y)) \vdash x \gets x + y \dashv (\Gamma, Q')
+  B; R; (\Gamma[x/x {+} y], Q) \vdash x \gets x + y \dashv (\Gamma, Q')
 }
 %
 \and \Rule{Q:DecP}
 { \Gamma \models y \ge 0
-\\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
-\\\\ \textstyle q'_{y0} = q_{y0}
-      + \sum_{u \in \mathcal U} q_{ux}
-      - \sum_{v \not\in \mathcal U} q_{xv}
+\\ \textstyle q'_{y0} = q_{y0} - \sum_u \max(q_{xu}, -q_{ux})
 }
 { \textstyle
-  B; R; (\Gamma[x/x {-} y],Q {+} M_u {+} M_e(x {-} y)) \vdash x \gets x - y \dashv (\Gamma, Q')
+  B; R; (\Gamma[x/x {-} y],Q) \vdash x \gets x - y \dashv (\Gamma, Q')
 }
 %
 \and \Rule{Q:Inc}
-{ M = M_u + M_e(x {\pm} y)
-\\\\ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
-\\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
+{  \textstyle q'_{0y} = q_{0y} - \sum_u \max(q_{ux}, -q_{xu})
+\\\\ \textstyle q'_{y0} = q_{y0} - \sum_u \max(q_{xu}, -q_{ux})
 }
 { \textstyle
-  B; R; (\Gamma[x/x {\pm} y], Q {+} M) \vdash x \gets x \pm y \dashv (\Gamma, Q')
+  B; R; (\Gamma[x/x {\pm} y], Q) \vdash x \gets x \pm y \dashv (\Gamma, Q')
 }
 %
 \and \Rule{Q:If}
-{ B; R; (\Gamma \land e, Q {-} M_c^1) \vdash S_1 \dashv (\Gamma',Q')
-\\\\ B; R; (\Gamma \land \neg e, Q {-} M_c^2) \vdash S_2 \dashv (\Gamma',Q')
+{ B; R; (\Gamma \land e, Q) \vdash S_1 \dashv (\Gamma',Q')
+\\\\ B; R; (\Gamma \land \neg e, Q) \vdash S_2 \dashv (\Gamma',Q')
 }
 { B; R; (\Gamma, Q{+}M_e(e)) \vdash \code{if}(e)~S_1~\code{else}~S_2 \dashv (\Gamma',Q') }
 %
 \and\Rule{Q:Seq}
-{  B; R; (\Gamma, Q) \vdash S_1 \dashv (\Gamma', Q' {+} M_s)
-\\ B; R; (\Gamma', Q') \vdash S_2 \dashv (\Gamma'',Q'')
+{  B; R; (\Gamma, Q) \vdash S_1 \dashv (\Gamma', Q')
+\\\\ B; R; (\Gamma', Q') \vdash S_2 \dashv (\Gamma'',Q'')
 }
 { B; R; (\Gamma, Q) \vdash S_1;S_2 \dashv (\Gamma'',Q'') }
 %
@@ -1183,15 +1177,15 @@ tools\iffull{ for automatic bound derivation.}{.}
 \\ \forall i \not\in \text{Loc}
   .\, s_i = 0
 }
-{ B; R; (\Gamma_f[\Vargs / \vec x] \land \Gamma_{\text{Loc}}, Q {+} c {+} M_f)
+{ B; R; (\Gamma_f[\Vargs / \vec x] \land \Gamma_{\text{Loc}}, Q {+} c)
   \vdash r \gets f(\vec x) \dashv
-  (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c {-} M_r)
+  (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c)
 }
 %
 \and
 \Rule[leftskip=.2cm,rightskip=.2cm]{Q:Assert}
 { }
-{ B; R; (\Gamma, Q {+} M_a) \vdash \code{assert}~e \dashv (\Gamma \land e, Q) }
+{ B; R; (\Gamma, Q) \vdash \code{assert}~e \dashv (\Gamma \land e, Q) }
 %
 \and
 \Rule[leftskip=.2cm,rightskip=.2cm]{Q:Extend}
