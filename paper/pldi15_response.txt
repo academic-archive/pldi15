@@ -1,0 +1,118 @@
+Main criticisms:
+  1 - Limited to linear bounds
+  2 - Supported language features
+  3 - Analysis of large programs
+
+Points to address:
+  1 - Describe Q:Loop
+
+
+
+
++++ 2 - Supported language features
+
+We understand the concerns of the reviewer about our claim that
+the analysis we developed only works for a subset of Clight.
+However, despite our presentation only focusing on a fragment of Clight,
+the implementation does work with real idiomatic C programs
+with the only restriction that local variables (stored on the stack) must
+not have their address taken.  Under this restriction any kind of C code
+can be handled, and when an operation not described by our system is
+performed, we simply zero the potential of the associated variables.
+For example
+
+    x = *p * 2;
+    /* or */
+    x = foo->bar;
+
+will effectively set to 0 all the potential associated to 'x', because
+our current system cannot know what he value of 'x' will be after the
+assignment.  This sound fallback system is described at the end of
+the first paragraph on page 6.
+
+Another presentation issue that can be perceived as a lack of generality
+is the specific form of increments/decrements that our analysis handles.
+In practice, it is not a problem, because in a preliminary phase, we
+transform statements such that
+
+    x += y + 2;
+
+into
+
+    x += y;
+    x += 2;  /* cost free */
+
+where we made the second increment cost free to make the transformation
+cost preserving.  This transformation is described at the end of the first
+paragraph on page 6.
+
+
+
+Technical details:
+  Why no address taken of stack variables?
+
+  Because our rule for function calls assume that the value of local
+  variables is unchanged across function calls (and this restriction
+  is not so bad in practice).
+
+
+
+
+
++++ 3 - Analysis of large programs
+
+There are several reasons that explain why it was hard to run our analysis
+on bigger programs than the ones we used:
+
+  1) Our analysis needs the definition of all functions used.
+     This means that if some code uses standard library function 'memcpy', we
+     have to redefine it by hand to be able to run our analysis (we did this).
+
+  2) Many programs loops available in the wild are on C strings, i.e. they
+     have a termination condition like (*p != 0).  Our analysis cannot make
+     sense out of this termination condition because it relies on a heap
+     invariant (which is sometimes wrong and explains why so many C programs
+     often have out of bounds bugs).
+
+  3) More generally, any program that loops over a linked-list or a tree or
+     any heap data structure needs to be instrumented with logical state, which
+     takes a lot of time and effort.
+
+  4) Finally, any program with super-linear complexity will also need to be
+     instrumented.
+
+XXX                OK, I don't know about what follows...                XXX
+Concerning the final point, we have good clues how to make our analysis derive
+polynomial bounds.  For the points 1, 2, and 3, it is mostly a matter of changing
+some idioms and using libraries that are already instrumented and ready to be
+analyzed by our tool.  Unfortunatly, doing these changes would take more time
+than we could realistically envision for this submission.
+
+Because of all the above constraints, it is hard to come up with a real-life
+large program that would be readily (or with small modifications) analyzable.
+
+To strengthen our scalability claims, we tried a new macro-benchmark.  This
+benchmark first decrypts a chunk of 'len' bytes using the IDEA algorithm in
+CFB block mode, then computs a MD5 hash of the resulting plaintext.  We ran
+three experiments:
+
+   Run 1 - MD5 part only:  495 lines analyzed in 1.135 sec
+   Run 2 - IDEA part only: 240 lines analyzed in 4.632 sec
+   Run 3 - MD5 + IDEA:     735 lines analyzed in 6.721 sec
+
+According to these tests, analyzing the sequence of the MD5 and IDEA parts costs
+roughly as much as the sum of the costs for the two parts.  This suggests a quasi-linear
+complexity in practice for our tool.  On the other side, while the IDEA part is
+shorter, it takes a lot more time to be analyzed than the MD5 part.  This is
+because the IDEA code uses a lot of integer variables for computations (but a lot
+are non-critical for termination).
+
+The conclusion of this little experiment is that our analysis performs almost linearly
+in function of lines of code but, but quadratically in function of the number of variables
+tracked.  Please note that cryptographic code is possibly the worst kind
+of code for our tool because plenty of integer variables are used for bit computations
+and pollute the analysis.  Despite this, our tool always answers within, we think, very
+reasonable time frames.
+
+XXX Something like "we regret not being able to provide more real-life/convincing example",
+XXX or not?
