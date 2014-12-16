@@ -270,10 +270,20 @@ let slice cost {fileName; globals; _} =
         , ()
         )
 
-    | Switch (_, _, _, loc) -> (* E.s *) ignore (
-        E.error "%s:%d unsupported switch"
-          loc.file loc.line
-      ); PTick(0, ())
+    | Switch (_, b, _, _) ->
+      let mkif p = PIf (CNonDet, p, PTick (0, ()), ()) in
+      let cases, _ =
+        List.fold_right (fun s (cases, p) ->
+          let s' = seq (slice_stmt s) p in
+          if List.exists
+               (function
+                 | Case _ | Default _ -> true
+                 | _ -> false)
+               s.labels
+          then (seq (mkif s') cases, PTick (0, ()))
+          else (cases, s')
+        ) b.bstmts (PBreak (), PTick (0, ())) in
+      PLoop (cases, ())
 
     | Loop (b, _, _, _) ->
       let freshen = function
