@@ -118,34 +118,21 @@ Review #41A:
 > is it? It would be helpful to state the tight bound and explain why
 > the computed bound is not tight.
 
-This is an excellent remark.  Indeed, the bound is not tight and the
-example stresses our analysis.  A tight bound would be 1 + 1.5 |[l,h]|.
-To analyze this loop the pre-processor of our tool rewrites it as
+Indeed, the bound is not tight and the example stresses our analysis.
+A tight bound would be 1 + 1.5 |[l,h]|.  Meanwhile, we made some
+improvements that, with the help of an inital assertion (l < h),
+allow to derive the aforementioned bound.
 
-    l++; tick(1);
-    for (;;) {
-      while (l<h && *) { l++; tick(1); }
-      h--; tick(1);
-      while (l<h && *) { h--; tick(1); }
-      if (h <= l) break;
-      tick(1);
-      l++; tick(1);
-    }
-
-Every inc/decrement in the inner loops can get potential out of [l,h]
-to pay for the ticks.  The last 'l++' of the loop, however, needs to
-pay for the 3 ticks of the inner loops, hence the need to have 3 as
-potential for [l,h].
+The interaction between the three loops is subtle, we will explain
+it in the paper.
 
 > In section 4, the break and return postconditions were unclear. If
 > they are postconditions, why are they written before the term with
 > the preconditions, not after?
 
-Much like the function context \Gamma, these two assertions are often
-unchanged in the derivation rules, they are very similar to global
-parameters.  Following standard the standard habit for parameters,
-we keep them in front of the triples.  Since they are also some kind
-of postconditions, we understand the confusion of the reviewer.
+Because they are not changed by many rules, we decided to have them
+as parameters in front of the Hoare triple.  It is true that they
+are also postconditions, so we understand the confusion.
 
 Maybe a notation B; R \vdash { P } s { Q } would be easier to read
 for the final version?
@@ -186,9 +173,9 @@ system is as follows:
 
   ( X can be anything, since we never go through a break )
   ------------------------------
-  B; R \vdash { B } break { X }
+  Q'; R \vdash { Q' } break { X }
 
-So we are sure that, when break is executed, at least B resource units
+So we are sure that, when break is executed, at least Q' resource units
 are still available.  This is what ensures that Q' (in the Q:Loop rule)
 can be soundly used as a postcondition of the loop.
 
@@ -211,12 +198,12 @@ Review #41B:
 The subset handled by our tool only excludes function pointers, variables
 on the stack that have their address taken and goto statements.
 
-We will make this information explicit in the final version.  Thank you
+We would make this information explicit in the final version.  Thank you
 for reporting this imprecision.
 
 > There is a missing citation for Clight.
 
-That is true, we will include one in the final version.
+That is true, we would include one in the final version.
 
 
 Review #41C:
@@ -241,5 +228,29 @@ We addressed these two points above.
 > familiar with this area, it will help if you explain the background a
 > bit more at the beginning of the paper.
 
-Thank you for reporting this error, we will make sure it is not in the
-final version.
+We would improve this in the final version.
+
+
+
+
+
+
+
+STASH:
+
+To analyze this loop the pre-processor of our tool rewrites it as
+
+    l++; tick(1);
+    for (;;) {
+      while (l<h && *) { l++; tick(1); }
+      h--; tick(1);
+      while (l<h && *) { h--; tick(1); }
+      if (h <= l) break;
+      tick(1);
+      l++; tick(1);
+    }
+
+Every inc/decrement in the inner loops can get potential out of [l,h]
+to pay for the ticks.  The last 'l++' of the loop, however, needs to
+pay for the 3 ticks of the inner loops, hence the need to have 3 as
+potential for [l,h].
