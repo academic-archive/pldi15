@@ -105,6 +105,141 @@ out-of-the-box tool for large existing C programs.
   4) Any program with super-linear complexity also needs to be
      instrumented.
 
+
 +++ Point-By-Point Response
 
+Review #41A:
 
+> Example t62 and paragraph describing it: "the three loops get their
+> potential from the same interval" This was unclear because two of the
+> loops are nested in the third. You should explain further whether
+> each loop has cost |l-h|, or whether somehow the combination of the
+> three loops happens to add up to 3|l-h|. Also, the bound is not tight,
+> is it? It would be helpful to state the tight bound and explain why
+> the computed bound is not tight.
+
+This is an excellent remark.  Indeed, the bound is not tight and the
+example stresses our analysis.  A tight bound would be 1 + 1.5 |[l,h]|.
+To analyze this loop the pre-processor of our tool rewrites it as
+
+    l++; tick(1);
+    for (;;) {
+      while (l<h && *) { l++; tick(1); }
+      h--; tick(1);
+      while (l<h && *) { h--; tick(1); }
+      if (h <= l) break;
+      tick(1);
+      l++; tick(1);
+    }
+
+Every inc/decrement in the inner loops can get potential out of [l,h]
+to pay for the ticks.  The last 'l++' of the loop, however, needs to
+pay for the 3 ticks of the inner loops, hence the need to have 3 as
+potential for [l,h].
+
+> In section 4, the break and return postconditions were unclear. If
+> they are postconditions, why are they written before the term with
+> the preconditions, not after?
+
+Much like the function context \Gamma, these two assertions are often
+unchanged in the derivation rules, they are very similar to global
+parameters.  Following standard the standard habit for parameters,
+we keep them in front of the triples.  Since they are also some kind
+of postconditions, we understand the confusion of the reviewer.
+
+Maybe a notation B; R \vdash { P } s { Q } would be easier to read
+for the final version?
+
+> How does the Q:Loop rule work? Does Q' mean the postcondition *if*
+> S exits with a break?
+
+Yes, it does.  Q' is the postcondition of the whole 'loop S' statement,
+and the only way to get out of the loop is through 'break'.  This is
+made explicit by relating the break 'postcondition' in the derivation
+for S with the regular postcondition of the loop statement.  SInce
+there is no other way to get out of a loop than to use break, there
+is no relation between Q+M_l and Q'.
+
+Here is a quick informal explanation of Q:Loop.  Assume that we derived
+{ Q } S { Q+M_l}, then we know Q is enough to pay for any number of
+sequences of S.  To see this consider the meaning of the previous
+triple:
+
+If (S, h) --> h', then
+  * Q(h) resource units are enough for the execution and,
+  * Q(h') + M_l resource units remain.
+
+So after runing S on the heap h with Q(h) resource units, we have
+M_l resource units available to pay for the "loop back" and we can
+continue execute S with Q(h') resources.  This can be unfolded any
+number of times.
+
+This means that if we start the program 'P := loop S' on a heap h
+with Q(h) resource units available, then P will not run out of
+resource.  So Q alone is able to account for the cost of the loop
+no matter how many rounds it runs.
+
+Since Q(h) is finite, there is a catch.  This is because the
+program can break.  If break is called into the loop, what follows
+the loop in the program must be executed.  The break rule in our
+system is as follows:
+
+  ( X can be anything, since we never go through a break )
+  ------------------------------
+  B; R \vdash { B } break { X }
+
+So we are sure that, when break is executed, at least B resource units
+are still available.  This is what ensures that Q' (in the Q:Loop rule)
+can be soundly used as a postcondition of the loop.
+
+> You should say what Clight is (with a citation) the first time
+> you mention it. It is first mentioned on page 6, but only on
+> page 8 do you say that it is the langauge for CompCert, and
+> without a citation.
+
+We will do it, thank you for reporting this error.
+
+
+Review #41B:
+
+> You claim that this applies "for C programs", but what you actually
+> deal with seems to be a fragment of the Clight language of CompCert,
+> not general idiomatic C code, so that is really not the case.  It would
+> be better to be more accurate in the claim and explain up-front what
+> aspects of C you do and do not handle.
+
+The subset handled by our tool only excludes function pointers, variables
+on the stack that have their address taken and goto statements.
+
+We will make this information explicit in the final version.  Thank you
+for reporting this imprecision.
+
+> There is a missing citation for Clight.
+
+That is true, we will include one in the final version.
+
+
+Review #41C:
+
+> The authors only test their method for small programs with several
+> hundreds of code lines. Not sure how they would perform for larger
+> programs.
+>
+> If I understand correctly, this approach chooses linear potential
+> function. I can understand that since it can be conveniently solved
+> by existing linear programming solvers. But if the resource bound
+> of a program is not linear, which is typical for a lot of real-world
+> applications such as sort, how can its resource bound be computed?
+
+We addressed these two points above.
+
+> There is a minor issue in the organization of the paper. The authors
+> should introduce the framework briefly at the beginning of the paper. For
+> instance, in Fig. 1, the coefficient T/K of |[x,y]| was given without any
+> explanation and the paper did not specify why there is a 0 for |[y,x]|. I
+> did not find the answer until Section 3 and 5. For audience who are not
+> familiar with this area, it will help if you explain the background a
+> bit more at the beginning of the paper.
+
+Thank you for reporting this error, we will make sure it is not in the
+final version.
