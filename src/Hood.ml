@@ -359,7 +359,7 @@ let analyze (fdefs, p) =
       let q = Q.inc qseq [const, [], n] in
       if n < 0 then Q.merge ~sign:(+1) [q] else q
     | PAssert _ -> qseq
-    | PBreak _ -> qbrk
+    | PBreak {lpre; _} -> Q.relax lpre qbrk
     | PReturn (v, _) ->
       let q = Q.lift qret qseq in
       Q.delv (Q.subst q [tmpret] [v]) ~zero:false (VSet.of_list [vret])
