@@ -456,7 +456,7 @@ let analyze (fdefs, p) =
       qpre1
 
     | PLoop (p, {lpre; _}) ->
-      let qinv = Q.merge [qseq] in
+      let qinv = Q.addv Q.empty (Q.vars qseq) in
       let qinv' = gen_ qfuncs qret qseq qinv p in
       Q.eqc qinv qinv';
       Q.relax lpre qinv'
@@ -471,7 +471,7 @@ let analyze (fdefs, p) =
   let q = Q.addv ~sign:(+1) Q.empty glos in
   let qret = Q.addv ~sign:(+1) q (VSet.singleton (VId "%ret")) in
   let qpre = gen_ [] qret Q.empty q p in
-  Q.solve (Q.frame qpre q)
+  Q.solve (qpre, q)
 
 
 let _ =
