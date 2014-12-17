@@ -9,8 +9,8 @@ chair.
 
 While our presentation indeed focuses on a fragment of Clight, our
 analysis is implemented for idiomatic C programs. Currently, the only
-language features that are not support are function pointers, goto,
-and local variables (stored on the stack) that have their address
+language features that are not supported are function pointers, goto,
+and stack-allocated local variables that have their addresses
 taken. However, our technique is in principle suitable to handle these
 features.
 
