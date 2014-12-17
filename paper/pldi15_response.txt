@@ -1,11 +1,9 @@
 
 We thank the reviewers for the positive and precise evaluation. We
 first comment on three main points and then respond to each review
-individually. Since we are not annonymous anymore, we would also like
-to point the reviewers to the easy-to-use web interface of the
-analysis at
-
-  http://www.cs.yale.edu/homes/qcar/aaa/
+individually. We also invite the reviewers to test our analysis with
+the easy-to-use web interface. The URL has been emailed to the PC
+chair.
 
 +++ Supported language features
 
@@ -80,25 +78,11 @@ possible to combine the analysis with program slicing and taint
 analysis to identify the integer variables that influence the control
 flow before the analysis.
 
-There are still some implementation issues that prevent C4B from being
-an out-of-the-box tool for large existing C programs.
-
-  1) Our analysis needs the definition of all functions used.  This
-     means that if some code uses standard library function like
-     'memcpy', we have to replace the library function with its source
-     code.
-
-  2) Many loops in the wild are on C strings, i.e., they have a
-     termination condition like (*p != 0).  Our analysis cannot bound
-     such loops because a bound would rely on a sophisticated (and
-     sometimes doubtful) heap invariant.
-
-  3) Any program that loops over a linked-list, a tree, or another
-     heap data structure needs to be instrumented with logical state.
-
-  4) Any program with super-linear complexity also needs to be
-     instrumented.
-
+Since C4B performs a global whole-program analysis it is still hard to
+use it as an automatic out-of-the-box tool for large existing C
+programs: Library functions whose code is not available, non-linear
+loops, and loops that iterate over strings (while (*p != 0) ...) or
+heap data structures still require user interaction to be analyzed.
 
 +++ Point-By-Point Response
 
@@ -218,28 +202,3 @@ We addressed these two points at the beginning of the response.
 > bit more at the beginning of the paper.
 
 We would improve this in the final version.
-
-
-
-
-
-
-
-STASH:
-
-To analyze this loop the pre-processor of our tool rewrites it as
-
-    l++; tick(1);
-    for (;;) {
-      while (l<h && *) { l++; tick(1); }
-      h--; tick(1);
-      while (l<h && *) { h--; tick(1); }
-      if (h <= l) break;
-      tick(1);
-      l++; tick(1);
-    }
-
-Every inc/decrement in the inner loops can get potential out of [l,h]
-to pay for the ticks.  The last 'l++' of the loop, however, needs to
-pay for the 3 ticks of the inner loops, hence the need to have 3 as
-potential for [l,h].
