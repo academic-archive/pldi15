@@ -78,12 +78,6 @@ possible to combine the analysis with program slicing and taint
 analysis to identify the integer variables that influence the control
 flow before the analysis.
 
-Since C4B performs a global whole-program analysis it is still hard to
-use it as an automatic out-of-the-box tool for large existing C
-programs: Library functions whose code is not available, non-linear
-loops, and loops that iterate over strings (while (*p != 0) ...) or
-heap data structures still require user interaction to be analyzed.
-
 +++ Point-By-Point Response
 
 Review #41A:
