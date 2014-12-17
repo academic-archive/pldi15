@@ -456,10 +456,10 @@ let analyze (fdefs, p) =
       qpre1
 
     | PLoop (p, {lpre; _}) ->
-      let qinv = Q.addv Q.empty (Q.vars qseq) in
+      let qinv = Q.addv ~sign:(+1) Q.empty (Q.vars qseq) in
       let qinv' = gen_ qfuncs qret qseq qinv p in
       Q.eqc qinv qinv';
-      Q.relax lpre qinv'
+      (* Q.relax lpre qinv' *) qinv'
 
     | PIf (_, p1, p2, _) ->
       let qpre1 = gen qseq p1 in
