@@ -1,0 +1,245 @@
+
+We thank the reviewers for the positive and precise evaluation. We
+first comment on three main points and then respond to each review
+individually. Since we are not annonymous anymore, we would also like
+to point the reviewers to the easy-to-use web interface of the
+analysis at
+
+  http://www.cs.yale.edu/homes/qcar/aaa/
+
++++ Supported language features
+
+While our presentation indeed focuses on a fragment of Clight, our
+analysis is implemented for idiomatic C programs. Currently, the only
+language features that are not support are function pointers, goto,
+and local variables (stored on the stack) that have their address
+taken. However, our technique is in principle suitable to handle these
+features.
+
+Technically, we support C by using CIL to compile C to Clight prior
+the analysis. This is briefly described in the 4th paragraph of page
+6. There are two technical issues. First, there are operations that we
+do not track in our potential functions, such as pointer arithmetic
+and multiplication.  We simply set the potential of the associated
+variables to zero. Second, we break up linear expressions into
+sequences that can be handled by the described rules without changing
+the execution cost. For example, we split
+
+    x += y + 2;
+
+into
+
+    x += y;
+    x += 2;  /* cost free */
+
+where we made the second increment cost free to make the transformation
+cost preserving.
+
+Will provide more details in the updated version of the paper.
+
++++ Non-linear bounds
+
+A unique advantage of the potential-based approach is that it allows
+the automatic inference of multivariate *polynomial* bounds by using
+efficient LP solving only. This technique has been described in the
+paper "Multivariate Amortized Resource Analysis" at POPL'11. The
+derived bounds are so-called multivariate resource polynomials.
+
+We designed the present analysis system with an extension to these
+multivariate resource polynomials in mind.  However, we have realized
+that the polynomial version of the system makes the rules
+mathematically quite involved while not being necessary to describe
+the main novel ideas. As a result, we decided report on the extension
+to polynomial bounds in a separate paper.
+
+It is also possible to semi-automatically derive non-polynomial and
+polynomial bounds using user-defined logical variables and assertions
+as described in Section 6.
+
++++ Analysis for large programs
+
+In general, the analysis scales well to larger programs. For example,
+we performed an experiment with a new macro-benchmark. This benchmark
+first decrypts a chunk of 'len' bytes using the IDEA algorithm in CFB
+block mode, then computes a MD5 hash of the resulting plaintext.  We
+ran three experiments:
+
+   Run 1 - MD5 part only:  495 lines analyzed in 1.135 sec
+   Run 2 - IDEA part only: 240 lines analyzed in 4.632 sec
+   Run 3 - MD5 + IDEA:     735 lines analyzed in 6.721 sec
+
+According to these tests, analyzing the sequence of the MD5 and IDEA
+parts costs roughly as much as the sum of the costs for the two parts.
+This quasi-linear behavior seems to be typical in practice.
+Nevertheless, the runtime of our analysis grows quadratically in the
+number of integer variables tracked. Right now, we track all variables
+and cryptographic code is challenging because plenty of integer
+variables are used for bit. Regardless, C4B runs still efficiently on
+medium sized programs. To improve the efficiency further, it would be
+possible to combine the analysis with program slicing and taint
+analysis to identify the integer variables that influence the control
+flow before the analysis.
+
+There are still some implementation issues that prevent C4B from being
+an out-of-the-box tool for large existing C programs.
+
+  1) Our analysis needs the definition of all functions used.  This
+     means that if some code uses standard library function like
+     'memcpy', we have to replace the library function with its source
+     code.
+
+  2) Many loops in the wild are on C strings, i.e., they have a
+     termination condition like (*p != 0).  Our analysis cannot bound
+     such loops because a bound would rely on a sophisticated (and
+     sometimes doubtful) heap invariant.
+
+  3) Any program that loops over a linked-list, a tree, or another
+     heap data structure needs to be instrumented with logical state.
+
+  4) Any program with super-linear complexity also needs to be
+     instrumented.
+
+
++++ Point-By-Point Response
+
+Review #41A:
+
+> Example t62 and paragraph describing it: "the three loops get their
+> potential from the same interval" This was unclear because two of the
+> loops are nested in the third. You should explain further whether
+> each loop has cost |l-h|, or whether somehow the combination of the
+> three loops happens to add up to 3|l-h|. Also, the bound is not tight,
+> is it? It would be helpful to state the tight bound and explain why
+> the computed bound is not tight.
+
+Indeed, the bound is not tight.  A tight bound would be 0.5 + 1.5
+|[l,h]|.  Meanwhile, we made some improvements that enable C4B to
+derive the tight bound if we provide the inital assertion (l < h).
+The code is available in the aformentioned web interface.
+
+The interaction between the three loops is subtle, we will explain
+it in the paper.
+
+> In section 4, the break and return postconditions were unclear. If
+> they are postconditions, why are they written before the term with
+> the preconditions, not after?
+
+Because these assertions are not changed by many rules, we decided to
+have them as parameters in front of the Hoare triple.  It is true that
+they are also postconditions.  
+
+We will swith to the notation B; R \vdash { P } s { Q }.
+
+> How does the Q:Loop rule work? Does Q' mean the postcondition *if*
+> S exits with a break?
+
+Yes, it does.  Q' is the postcondition of the whole 'loop S' statement,
+and the only way to get out of the loop is through 'break'.  This is
+made explicit by relating the break 'postcondition' in the derivation
+for S with the regular postcondition of the loop statement.  SInce
+there is no other way to get out of a loop than to use break, there
+is no relation between Q+M_l and Q'.
+
+Here is a quick informal explanation of Q:Loop.  Assume that we derived
+{ Q } S { Q+M_l}, then we know Q is enough to pay for any number of
+sequences of S.  To see this consider the meaning of the previous
+triple:
+
+If (S, h) --> h', then
+  * Q(h) resource units are enough for the execution and,
+  * Q(h') + M_l resource units remain.
+
+So after runing S on the heap h with Q(h) resource units, we have
+M_l resource units available to pay for the "loop back" and we can
+continue execute S with Q(h') resources.  This can be unfolded any
+number of times.
+
+This means that if we start the program 'P := loop S' on a heap h
+with Q(h) resource units available, then P will not run out of
+resource.  So Q alone is able to account for the cost of the loop
+no matter how many rounds it runs.
+
+Since Q(h) is finite, there is a catch.  This is because the
+program can break.  If break is called into the loop, what follows
+the loop in the program must be executed.  The break rule in our
+system is as follows:
+
+  ( X can be anything, since we never go through a break )
+  ------------------------------
+  Q'; R \vdash { Q' } break { X }
+
+So we are sure that, when break is executed, at least Q' resource units
+are still available.  This is what ensures that Q' (in the Q:Loop rule)
+can be soundly used as a postcondition of the loop.
+
+> You should say what Clight is (with a citation) the first time
+> you mention it. It is first mentioned on page 6, but only on
+> page 8 do you say that it is the langauge for CompCert, and
+> without a citation.
+
+We will do it. Thank you for reporting this error.
+
+
+Review #41B:
+
+> You claim that this applies "for C programs", but what you actually
+> deal with seems to be a fragment of the Clight language of CompCert,
+> not general idiomatic C code, so that is really not the case.  It would
+> be better to be more accurate in the claim and explain up-front what
+> aspects of C you do and do not handle.
+
+See our response at the beginning.
+
+> There is a missing citation for Clight.
+
+That is true, we will include it.
+
+
+Review #41C:
+
+> The authors only test their method for small programs with several
+> hundreds of code lines. Not sure how they would perform for larger
+> programs.
+>
+> If I understand correctly, this approach chooses linear potential
+> function. I can understand that since it can be conveniently solved
+> by existing linear programming solvers. But if the resource bound
+> of a program is not linear, which is typical for a lot of real-world
+> applications such as sort, how can its resource bound be computed?
+
+We addressed these two points at the beginning of the response.
+
+> There is a minor issue in the organization of the paper. The authors
+> should introduce the framework briefly at the beginning of the paper. For
+> instance, in Fig. 1, the coefficient T/K of |[x,y]| was given without any
+> explanation and the paper did not specify why there is a 0 for |[y,x]|. I
+> did not find the answer until Section 3 and 5. For audience who are not
+> familiar with this area, it will help if you explain the background a
+> bit more at the beginning of the paper.
+
+We would improve this in the final version.
+
+
+
+
+
+
+
+STASH:
+
+To analyze this loop the pre-processor of our tool rewrites it as
+
+    l++; tick(1);
+    for (;;) {
+      while (l<h && *) { l++; tick(1); }
+      h--; tick(1);
+      while (l<h && *) { h--; tick(1); }
+      if (h <= l) break;
+      tick(1);
+      l++; tick(1);
+    }
+
+Every inc/decrement in the inner loops can get potential out of [l,h]
+to pay for the ticks.  The last 'l++' of the loop, however, needs to
+pay for the 3 ticks of the inner loops, hence the need to have 3 as
+potential for [l,h].
