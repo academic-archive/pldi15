@@ -33,7 +33,7 @@ into
 where we made the second increment cost free to make the transformation
 cost preserving.
 
-Will provide more details in the updated version of the paper.
+We will provide more details in the updated version of the paper.
 
 +++ Non-linear bounds
 
@@ -47,8 +47,8 @@ We designed the present analysis system with an extension to these
 multivariate resource polynomials in mind.  However, we have realized
 that the polynomial version of the system makes the rules
 mathematically quite involved while not being necessary to describe
-the main novel ideas. As a result, we decided report on the extension
-to polynomial bounds in a separate paper.
+the main novel ideas. As a result, we decided to report on the
+extension to polynomial bounds in a separate paper.
 
 It is also possible to semi-automatically derive non-polynomial and
 polynomial bounds using user-defined logical variables and assertions
@@ -72,11 +72,11 @@ This quasi-linear behavior seems to be typical in practice.
 Nevertheless, the runtime of our analysis grows quadratically in the
 number of integer variables tracked. Right now, we track all variables
 and cryptographic code is challenging because plenty of integer
-variables are used for bit. Regardless, C4B runs still efficiently on
-medium sized programs. To improve the efficiency further, it would be
-possible to combine the analysis with program slicing and taint
-analysis to identify the integer variables that influence the control
-flow before the analysis.
+variables are used for bit operations. Regardless, C4B runs still
+efficiently on medium sized programs. To improve the efficiency
+further, it would be possible to combine the analysis with program
+slicing and taint analysis to identify the integer variables that
+influence the control flow before the analysis.
 
 +++ Point-By-Point Response
 
@@ -90,13 +90,13 @@ Review #41A:
 > is it? It would be helpful to state the tight bound and explain why
 > the computed bound is not tight.
 
-Indeed, the bound is not tight.  A tight bound would be 0.5 + 1.5
+Indeed, the bound is not tight.  A tight bound would be 2 + 1.5
 |[l,h]|.  Meanwhile, we made some improvements that enable C4B to
-derive the tight bound if we provide the inital assertion (l < h).
-The code is available in the aformentioned web interface.
+derive the tight bound if we provide the inital assertion l < h.  The
+code is available via the aformentioned web interface.
 
-The interaction between the three loops is subtle, we will explain
-it in the paper.
+The interaction between the three loops is subtle, we will explain it
+in detail in the paper.
 
 > In section 4, the break and return postconditions were unclear. If
 > they are postconditions, why are they written before the term with
@@ -111,17 +111,18 @@ We will swith to the notation B; R \vdash { P } s { Q }.
 > How does the Q:Loop rule work? Does Q' mean the postcondition *if*
 > S exits with a break?
 
-Yes, it does.  Q' is the postcondition of the whole 'loop S' statement,
-and the only way to get out of the loop is through 'break'.  This is
-made explicit by relating the break 'postcondition' in the derivation
-for S with the regular postcondition of the loop statement.  SInce
-there is no other way to get out of a loop than to use break, there
-is no relation between Q+M_l and Q'.
+Yes, it does.  Q' is the postcondition of the whole 'loop S'
+statement, and in Clight the only way to get out of the loop is
+through 'break' (or 'return').  This is made explicit by relating the
+break 'postcondition' in the derivation for S with the regular
+postcondition of the loop statement.  Since there is no other way to
+get out of a loop than to use break, there is no relation between
+Q+M_l and Q'.
 
-Here is a quick informal explanation of Q:Loop.  Assume that we derived
-{ Q } S { Q+M_l}, then we know Q is enough to pay for any number of
-sequences of S.  To see this consider the meaning of the previous
-triple:
+Here is a quick informal explanation of Q:Loop.  Assume that we
+derived { Q } S { Q+M_l}. Then we know Q is sufficient to pay for any
+number of sequences of S (under the changing program state).  To see
+this consider the meaning of the previous triple:
 
 If (S, h) --> h', then
   * Q(h) resource units are enough for the execution and,
@@ -134,8 +135,7 @@ number of times.
 
 This means that if we start the program 'P := loop S' on a heap h
 with Q(h) resource units available, then P will not run out of
-resource.  So Q alone is able to account for the cost of the loop
-no matter how many rounds it runs.
+resource.
 
 Since Q(h) is finite, there is a catch.  This is because the
 program can break.  If break is called into the loop, what follows
