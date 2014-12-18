@@ -1942,87 +1942,6 @@ The rules have as implicit side condition that $\cost$ is
 non-negative.  This makes it possible to detect a resource crash as a
 stuck configuration where $\cost<0$.
 
-% \pref{fig:opsem} contains \ifshort{selected}{the} reduction rules of the semantics.  The
-% rules define a rewrite system for program configurations of the form
-% $(\state, S, \cont, \cost)$, where $\state$ is the program state, $S$
-% is the statement being executed, $\cont$ is a continuation that
-% describes what remains to be done after the execution of $S$, and
-% $\cost \in \Q$ is the non-negative number of resources available for
-% further execution.  All rules that can decrease $\cost$ have the
-% implicit side condition that the resource quantity available
-% \emph{before} the step is non-negative.  This means that we allow
-% $(\state, S, \cont, \cost)$ with $c<0$ on the right-hand side
-% transition relation $\smallstep{M}^*$ to indicate that the execution
-% ran out of resources.  However, every execution that reaches such a
-% state is stuck.
-%
-% \iffull{
-% A continuation $\cont$ represents the context of the execution of a
-% given statement.  A continuation can be the empty continuation
-% $\Kstop$ (used to start a program), a sequenced computation $\Kseq S
-% \cont$, a loop continuation $\Kloop S \cont$, or the continuation
-% $\Kcall r \theta \cont$ of a function call.
-% $$
-% \cont := \Kstop
-% \mid \Kseq S \cont
-% \mid \Kloop S \cont
-% \mid \Kcall r \theta \cont
-% $$
-% %
-% During the execution we assume a fixed function context $\fenv$ that
-% maps function names to a list of variables and the statement that
-% defines the function body.  It is used in the rule \textsc{S:Call}.
-% }{}
-%
-% The intuitive meaning of an evaluation \iffull{judgement}{} $(\state,
-% S, \cont, \cost) \smallstep{M}^* (\state', S', \cont', \cost')$ is the
-% following.  If the statement $S$ is executed in program state
-% $\state$, with continuation $\cont$, and with $\cost$ resources
-% available then---after a finite number of steps---the evaluation will
-% reach the new machine state $(\state', S', \cont',\cost')$ and there
-% are $\cost'$ resources available.  If $\cost' \ge 0$ then the
-% execution did not run out of resources and the resource consumption up
-% to this point is $\cost - \cost'$.  If this difference is negative
-% then resource became available during the execution.  If however
-% $\cost' < 0$ then the execution ran out of resources and is stuck.
-% The cost of the execution is then $\cost \ge 0$.
-%
-% \iffull{
-% \pref{lem:sem1} summarizes the main properties of the resource
-% counter of the semantics.  It can be proved by induction on the number
-% of steps.
-% \begin{lemma}
-% \label{lem:sem1}
-% \itemskip
-%   \begin{enumerate}
-%   \item If $(\state, S, \cont, \cost) \smallstep{M}^k (\state', S',
-%     \cont', \cost')$ and $n\ge 0$ then $(\state, S, \cont, \cost {+} n)
-%     \smallstep{M}^k (\state', S', \cont', \cost' {+} n)$.
-% \itemskipIn
-%   \item If $(\state, S, \cont, \cost) \smallstep{M}^k (\state', S',
-%     \cont', \cost')$ and $(\state, S, \cont, d) \smallstep{M}^k (\state', S',
-%     \cont', d')$ then $\cost - \cost' = d - d'$.
-%   \end{enumerate}
-% \itemskip
-% \end{lemma}
-% %
-% If we assume that we have a \emph{positive resource metric}, that is,
-% a metric that assigns a positive cost to each evaluation step then we
-% can link bounds on the resource consumption under the metric to
-% termination.  This is formalized by \pref{lem:sem_term}.
-% %
-% \begin{lemma}
-%  \label{lem:sem_term}
-%  Let $M$ be a positive metric and assume that there exists $b \in
-%  \Qplusz$ such that $(\state, S, \cont, \cost) \smallstep{M}^*
-%  (\state', S', \cont', \cost') \implies \cost {-} \cost' {\leq} b$.
-%  Then there exists $B \in \N$ such that $(\state, S, \cont, d)
-%  \smallstep{M}^n (\state'', S', \cont', d')$ for some $n$, $d$, $d'$
-%  and $\state''$ implies $n \le B$.
-% \end{lemma}
-% }
-
-
 % \begin{figure*}
 % \small
 % \begin{mathpar}
@@ -2769,9 +2688,9 @@ expressions are free of side effects.
 
 \paragraph{Syntax.}
 
-In this article, we describe our system for a subset of Clight that is
-sufficient to discuss the general ideas.  This subset is given by the
-following grammar.
+We describe our system for a subset of Clight that is sufficient to
+discuss the general ideas.  This subset is given by the following
+grammar.
 %
 \begin{align*}
 S &:= \code{assert}~E
@@ -2792,21 +2711,23 @@ analysis framework, it is only important that they are side-effect
 free.
 %
 The most notable difference to full Clight is that we can only assign
-to variables and thus do not consider operations that update the heap.
+to variables and thus do not consider operations that update the heap
+or the stack through a pointer.
 Moreover, function arguments and return values are assumed to be
 variables.  This is only for simplifying the presentation; in the
 implementation we can deal with heap updates and general function
 calls and returns.  However, we have not implemented our framework for function
 pointers, \code{goto} statements, \code{continue} statements, and
-\code{switch} statements.
+stack variables that have their address taken.
 
 We include the built-in primitive $\code{assert}~e$ that terminates
 the program if the argument $e$ evaluates to false and has no effect
 otherwise.  This is useful to express assumptions on the inputs of a
 program for the automatic analysis.  We also add the built-in function
-\code{tick(n)} that can be called with a constant integer $n$ as a
-flexible way to model resource consumption or release (if $n$ is
+\code{tick(n)} that can be called with a constant rational number $n$
+as a flexible way to model resource consumption or release (if $n$ is
 negative).
+
 
 
 \begin{figure*}[t!]
@@ -2815,40 +2736,40 @@ negative).
 \Rule{S:Assert}
 { \code{istrue}~\sem{e}_\state }
 { (\state, \code{assert}~e, \cont, \cost)
-\smallstep{M}
-(\state, \code{skip}, \cont, \cost {-} M_a)
+\smallstep
+(\state, \code{skip}, \cont, \cost)
 }
 %
 \and
 \Rule{S:BrkSeq}
-{}
+{ }
 { (\state, \code{break}, \Kseq S \cont, \cost)
-\smallstep{M}
+\smallstep
 (\state, \code{break}, \cont, \cost)
 }
 %
 \and
 \Rule{S:BrkLoop}
-{}
+{ }
 { (\state, \code{break}, \Kloop S \cont, \cost)
-\smallstep{M}
-(\state, \code{skip}, \cont, \cost {-} M_b)
+\smallstep
+(\state, \code{skip}, \cont, \cost)
 }
 %
 \and
 \Rule{S:RetSeq}
-{}
+{ }
 { (\state, \code{return}~x, \Kseq S \cont, \cost)
-\smallstep{M}
+\smallstep
 (\state, \code{return}~x, \cont, \cost)
 }
 \and
 %
 \and
 \Rule{S:RetLoop}
-{}
+{ }
 { (\state, \code{return}~x, \Kloop S \cont, \cost)
-\smallstep{M}
+\smallstep
 (\state, \code{return}~x, \cont, \cost)
 }
 %
@@ -2858,16 +2779,16 @@ negative).
   \state' = (\theta, \gamma)[r \mapsto \state(x)]
 }
 { (\state, \code{return}~x, \Kcall r \theta \cont, \cost)
-\smallstep{M}
-(\state', \code{skip}, \cont, \cost {-} M_r)
+\smallstep
+(\state', \code{skip}, \cont, \cost)
 }
 %
 \and
 \Rule{S:Update}
 { \state' = \state[x \mapsto \sem{e}_\state] }
 { (\state, x \gets e, \cont, \cost)
-\smallstep{M}
-(\state', \code{skip}, \cont, \cost {-} M_u {-} M_e(e))
+\smallstep
+(\state', \code{skip}, \cont, \cost))
 }
 %
 \and
@@ -2877,74 +2798,153 @@ negative).
   \state' = (\vec x \mapsto \state(\vec y), \gamma) \\
 }
 { (\state, r \gets f(\vec y), \cont, \cost)
-\smallstep{M}
-(\state', S_f, \Kcall r \theta \cont, \cost {-} M_f)
+\smallstep
+(\state', S_f, \Kcall r \theta \cont, \cost)
 }
 %
 \and
 \Rule{S:Loop}
-{}
+{ }
 { (\state, \code{loop}~S, \cont, \cost)
-\smallstep{M}
+\smallstep
 (\state, S, \Kloop S \cont, \cost)
 }
 %
 \and
 \Rule{S:SkipLoop}
-{}
+{ }
 { (\state, \code{skip}, \Kloop S \cont, \cost)
-\smallstep{M}
-(\state, \code{loop}~S, \cont, \cost {-} M_l)
+\smallstep
+(\state, \code{loop}~S, \cont, \cost)
 }
 %
 \and
 \Rule{S:IfTrue}
 { \code{istrue}~\sem{e}_\sigma
-\\ \cost' = \cost {-} M_c^1 {-} M_e(e)
 }
 { (\state, \code{if}(e)~S_1~\code{else}~S_2, \cont, \cost)
-\smallstep{M}
-(\state, S_1, \cont, \cost')
+\smallstep
+(\state, S_1, \cont, \cost)
 }
 %
 \and
 \Rule{S:IfFalse}
 { \code{isfalse}~\sem{e}_\sigma
-\\ \cost' = \cost {-} M_c^2 {-} M_e(e)
 }
 { (\state, \code{if}(e)~S_1~\code{else}~S_2, \cont, \cost)
-\smallstep{M}
-(\state, S_2, \cont, \cost')
+\smallstep
+(\state, S_2, \cont, \cost)
 }
 %
 \and
 \Rule{S:Seq}
 { }
 { (\state, S_1; S_2, \cont, \cost)
-\smallstep{M}
+\smallstep
 (\state, S_1, \Kseq {S_2} \cont, \cost)
 }
 %
 \and
 \Rule{S:SkipSeq}
-{}
+{ }
 { (\state, \code{skip}, \Kseq S \cont, \cost)
-\smallstep{M}
-(\state, S, \cont, \cost {-} M_s)
+\smallstep
+(\state, S, \cont, \cost)
 }
 %
 \and
 \Rule{S:Tick}
 { }
 { (\state, \code{tick}(n), \cont, \cost)
-\smallstep{M}
-(\state, \code{skip}, \cont, \cost {-} M_t(n))
+\smallstep
+(\state, \code{skip}, \cont, \cost - n)
 }
 
 \end{mathpar}
 \caption{Rules of the operational semantics of statements.}
 \label{fig:opsem}
 \end{figure*}
+
+
+\paragraph{Semantics.}
+
+\pref{fig:opsem} contains the reduction rules of the semantics.  The rules
+define a rewrite system for program configurations of the form $(\state,
+S, \cont, \cost)$, where $\state$ is the program state, $S$ is the
+statement being executed, $\cont$ is a continuation that describes what
+remains to be done after the execution of $S$, and $\cost \in \Q$ is
+the amount of resources available for further execution.  All the rules
+have the implicit side condition that the resource quantity available
+\emph{before} the step is non-negative.  This means that we allow
+$(\state, S, \cont, \cost)$ with $c<0$ on the right-hand side transition
+relation $\smallstep^*$ to indicate that the execution ran out of
+resources.  However, every execution that reaches such a state is stuck.
+
+A continuation $\cont$ represents the context of the execution of a
+given statement.  A continuation can be the empty continuation
+$\Kstop$ (used to start a program), a sequenced computation $\Kseq S
+\cont$, a loop continuation $\Kloop S \cont$, or the continuation
+$\Kcall r \theta \cont$ of a function call.
+$$
+\cont := \Kstop
+\mid \Kseq S \cont
+\mid \Kloop S \cont
+\mid \Kcall r \theta \cont
+$$
+%
+During the execution we assume a fixed function context $\fenv$ that
+maps function names to a list of variables and the statement that
+defines the function body.  It is used in the rule \textsc{S:Call}.
+
+The intuitive meaning of an evaluation $(\state,
+S, \cont, \cost) \smallstep^* (\state', S', \cont', \cost')$ is the
+following.  If the statement $S$ is executed in program state
+$\state$, with continuation $\cont$, and with $\cost$ resources
+available then---after a finite number of steps---the evaluation will
+reach the new machine state $(\state', S', \cont',\cost')$ and there
+are $\cost'$ resources available.  If $\cost' \ge 0$ then the
+execution did not run out of resources and the resource consumption up
+to this point is $\cost - \cost'$.  If this difference is negative
+then resource became available during the execution.  If however
+$\cost' < 0$ then the execution ran out of resources and is stuck.
+The cost of the execution is then $\cost \ge 0$.
+
+\pref{lem:sem1} summarizes the main properties of the resource
+counter of the semantics.  It can be proved by induction on the number
+of steps.
+\begin{lemma}
+\label{lem:sem1}
+\itemskip
+  \begin{enumerate}
+  \item If $(\state, S, \cont, \cost) \smallstep^k (\state', S',
+    \cont', \cost')$ and $n\ge 0$ then $(\state, S, \cont, \cost {+} n)
+    \smallstep^k (\state', S', \cont', \cost' {+} n)$.
+\itemskipIn
+  \item If $(\state, S, \cont, \cost) \smallstep^k (\state', S',
+    \cont', \cost')$ and $(\state, S, \cont, d) \smallstep^k (\state', S',
+    \cont', d')$ then $\cost - \cost' = d - d'$.
+  \end{enumerate}
+\itemskip
+\end{lemma}
+
+
+% OOPS this is no longer true... This is an argument agains a presentation
+% with ticks only. XXX
+%
+% If we assume that we have a \emph{positive resource metric}, that is,
+% a metric that assigns a positive cost to each evaluation step then we
+% can link bounds on the resource consumption under the metric to
+% termination.  This is formalized by \pref{lem:sem_term}.
+%
+% \begin{lemma}
+%  \label{lem:sem_term}
+%  Let $M$ be a positive metric and assume that there exists $b \in
+%  \Qplusz$ such that $(\state, S, \cont, \cost) \smallstep^*
+%  (\state', S', \cont', \cost') \implies \cost {-} \cost' {\leq} b$.
+%  Then there exists $B \in \N$ such that $(\state, S, \cont, d)
+%  \smallstep^n (\state'', S', \cont', d')$ for some $n$, $d$, $d'$
+%  and $\state''$ implies $n \le B$.
+% \end{lemma}
 
 
 
@@ -2967,8 +2967,18 @@ negative).
 { }
 { \Delta; B; R \vdash
 \htriple
-  { M_b + B }{ \code{break} }{ Q }
+  { B }{ \code{break} }{ Q }
 }
+\and
+\Rule{L:Tick}
+{ n < 0 \implies Q \ge 0}
+{ \Delta; B; R \vdash
+\htriple
+  { Q }
+  { \code{tick}(n) }
+  { Q - n }
+}
+%
 %
 \and
 \Rule{L:Return}
@@ -2979,64 +2989,28 @@ negative).
 }
 %
 \and
-\Rule[leftskip=.0cm,rightskip=.0cm]{L:Update}
-{ }
-{ \Delta; B; R \vdash
-\htriple
-  { \lambda \state.\,M_u + M_e(e) + Q\,\state[x \mapsto \sem{e}_\state] }{ x \gets e }{ Q }
-}
-%
-\and
-\Rule[leftskip=.0cm,rightskip=.0cm]{L:Seq}
-{ \Delta; B; R \vdash
-\htriple{ P }{ S_1 }{ Q' + M_s }
-\\
-\!\!  \Delta; B; R \vdash
-\htriple{ Q' }{ S_2 }{ Q }
-}
-{ \Delta; B; R \vdash
-\htriple{ P }{ S_1;S_2 }{ Q }
-}
-%
-\and
-\Rule{L:Call}
-{
-  \Delta(f) = \forall z\,\vec v\,v.(P_f\,z\,\vec v, Q_f\,z\,v) \\
-  P \models P_f \, y \, (\state(\vec x)) \land A \\
-  \forall v.\, (Q_f \, y \, v \land A \models \lambda \state.\, Q \, \state[r \mapsto v])
-}
-{ \Delta; B; R \vdash
-\htriple
-  { M_f + P }
-  { r \gets f(\vec x) }
-  { Q - M_r }
-}
-%
-\and
 \Rule{L:Assert}
 { }
 { \Delta; B; R \vdash
 \htriple
-  { \code{istrue}~\sem{e}_\state \implies Q + M_a }
+  { \code{istrue}~\sem{e}_\state \implies Q }
   { \code{assert}~e }
   { Q }
 }
 %
 \and
-\Rule{L:Tick}
+\Rule{L:Update}
 { }
 { \Delta; B; R \vdash
 \htriple
-  { Q + M_t(n) }
-  { \code{tick}(n) }
-  { Q }
+  { \lambda \state.\, Q\,\state[x \mapsto \sem{e}_\state] }{ x \gets e }{ Q }
 }
 %
 \and
 \Rule{L:Loop}
-{ \Delta; Q; R \vdash
-\htriple
-  { I }{ S }{ I + M_l }
+{ I \ge Q
+\\ \Delta; Q; R \vdash
+   \htriple { I }{ S }{ I }
 }
 { \Delta; B; R \vdash
 \htriple
@@ -3047,48 +3021,52 @@ negative).
 \Rule{L:If}
 { \Delta; B; R \vdash
 \htriple
-  { \code{istrue}~\sem{e}_\state + P - M_c^1}
+  { \code{istrue}~\sem{e}_\state + P }
   { S_1 }{ Q }
-\\
+\\\\
   \Delta; B; R \vdash
 \htriple
-  { \code{isfalse}~\sem{e}_\state + P - M_c^2 }
+  { \code{isfalse}~\sem{e}_\state + P }
   { S_2 }{ Q }
 }
 { \Delta; B; R \vdash
 \htriple
-  { P + M_e(e) }{ \code{if}(e)~S_1~\code{else}~S_2 }{ Q }
+  { P }{ \code{if}(e)~S_1~\code{else}~S_2 }{ Q }
 }
 %
 \and
-\Rule{L:Weaken}
+\Rule{L:Seq}
+{ \Delta; B; R \vdash
+\htriple{ P }{ S_1 }{ Q' }
+\\
+  \Delta; B; R \vdash
+\htriple{ Q' }{ S_2 }{ Q }
+}
+{ \Delta; B; R \vdash
+\htriple{ P }{ S_1;S_2 }{ Q }
+}
+%
+\and
+\Rule{L:Call}
 {
-  \!\! P \models P' \!\! \\
-  \!\! \Delta; B'; R' \vdash
-  \htriple{ P' }{ S }{ Q' } \!\! \\
-  \!\! Q' \models Q \!\! \\
-  \!\! B' \models B \!\! \\
-  \!\! \forall v.\, (R'\,v \models R\,v) \!\!
+  \Delta(f) = \forall z\,\vec v\,v.(P_f\,z\,\vec v, Q_f\,z\,v) \\
+  P \ge P_f \, y \, (\state(\vec x)) + A \\
+  \forall v.\, (Q_f \, y \, v + A \ge \lambda \state.\, Q \, \state[r \mapsto v])
 }
 { \Delta; B; R \vdash
-\htriple{ P }{ S }{ Q }
-}
-%
-\and
-\Rule{L:Frame}
-{ \Delta; B; R \vdash
-\htriple{ P }{ S }{ Q } \\
-  x \in \Qplusz
-}
-{ \!\! \Delta; B + x; R + x \vdash
-\htriple{ P + x }{ S }{ Q + x } \!\!
+\htriple
+  { P }
+  { r \gets f(\vec x) }
+  { Q }
 }
 %
 \and
 \Rule{L:Extend}
-{ \Delta \cup \Delta'; B; R \vdash
+{  \Delta \cup \Delta'; B; R \vdash
   \htriple{ P }{ S }{ Q }
 \\
+  P_f \ge 0
+\\\\
   \forall f\,P_f\,Q_f.\,
   \Delta'(f) = \forall z\,\vec v\,v.(P_f\,z\,\vec v, Q_f\,z\,v)
   \rightarrow
@@ -3098,6 +3076,29 @@ negative).
 }
 { \Delta; B; R \vdash
 \htriple{ P }{ S }{ Q }
+}
+%
+\and
+\Rule{L:Weaken}
+{
+  \Delta; B'; R' \vdash \htriple{ P' }{ S }{ Q' } \\\\
+  P \ge P' \!\! \\
+  \!\! Q' \ge Q \!\! \\
+  \!\! B' \ge B \!\! \\
+  \!\! \forall v.\, (R'\,v \ge R\,v)
+}
+{ \Delta; B; R \vdash
+\htriple{ P }{ S }{ Q }
+}
+%
+\and
+\Rule{L:Frame}
+{ \Delta; B; R \vdash
+\htriple{ P }{ S }{ Q } \\
+  x \in \Q
+}
+{ \!\! \Delta; B + x; R + x \vdash
+\htriple{ P + x }{ S }{ Q + x } \!\!
 }
 %
 \end{mathpar}
@@ -3114,17 +3115,17 @@ boolean-valued assertions but also assertions that talk about the
 future resource usage.  Instead of the usual assertions $P : \State
 \to \mathit{bool}$ of Hoare logic we use assertions
 $$
-P : \State \to \Qplusz \cup \{ \infty \} \; .
+P : \State \to \Q \cup \{ \infty \} \; .
 $$
 This can be understood as a refinement of boolean assertions where
 $\mathit{false}$ is $\infty$ and $\mathit{true}$ is refined by $\Qplusz$.
-We write $\Assn$ for $\State \to \Qplusz \cup \{ \infty \}$ and $\bot$ for
+We write $\Assn$ for $\State \to \Q \cup \{ \infty \}$ and $\bot$ for
 $\lambda \state . \, \infty$.  We sometimes call assertions
 \emph{potential functions}.  To use Coq's support for propositional
-reasoning, assertions have the type $\State \to \Qplusz \to \mathrm{Prop}$
+reasoning, assertions have the type $\State \to \Q \to \mathrm{Prop}$
 in the implementation.  For a given $\state \in \State$, such an
-assertion can be seen as a set $B \subseteq \Qplusz$ of valid bounds.
-However, we find the presentation in this article easier to read.
+assertion can be seen as a set $B \subseteq \Q$.  However, we find
+the presentation in this article easier to read.
 
 Due to \code{break} and \code{return} statements of Clight, there are
 different possible ways to exit a block of code.  We also have to keep
@@ -3140,10 +3141,10 @@ $$
 The triple $\htriple{ Q }{ S }{ Q' }$ consists of a statement $S$ and
 two assertions $Q,Q' : \Assn$.  It corresponds to triples in classic
 Hoare logic and the intuitive meaning is as follows.  If $S$ is
-executed with starting state $\state$, the empty continuation
-$\Kstop$, and at least $P(\state)$ resources available then the
+executed with starting state $\state$, with the empty continuation
+$\Kstop$, $Q' \ge 0$, and at least $Q(\state)$ resources available then the
 evaluation does not run out of resources and there are at least
-$Q(\state')$ resources left if the evaluation terminates in state
+$Q'(\state')$ resources left if the evaluation terminates in state
 $\state'$.  The assertion $B : \Assn$ provides the
 postcondition for the case in which the code block $S$ is exited by a
 \code{break} statement.  So if the execution is terminated in state
@@ -3171,8 +3172,8 @@ the local variables on the stack, that is, $\forall z \, \vec v
 \, \theta \, \theta' \, \gamma . \, P_f \, z \, \vec v \,
 (\theta,\gamma) = P_f \, z \, \vec v \, (\theta',\gamma)$.
 
-For two assertions $P,Q : \Assn$, we write $P \models Q$ to if for all
-program state $\state$ $P(\state) \ge Q(\state)$.
+For two assertions $P,Q : \Assn$, we write $P \ge Q$ to if for all
+program state $\state$, $P(\state) \ge Q(\state)$.
 
 \paragraph{Rules of the Quantitative Logic.}
 
@@ -3274,10 +3275,9 @@ resources available after its execution, then it can very well run
 with $P + c$ resources and return $Q + c$ resources.  The consequence
 {\sc L:Conseq} rule is directly imported from classical Hoare logic
 except that instead of using the logical implication $\Rightarrow$ we
-use the quantitative $\models$ that point-wise applies $\ge$.  This
-rule indeed weakens the statement since it requires more resource to
-run the statement and yields less than what has been proved to be
-available after its termination.
+use the quantitative $\ge$.  This rule indeed weakens the statement
+since it requires more resource to run the statement and yields less
+than what has been proved to be available after its termination.
 
 \paragraph{Logical Variables and Shallow Embedding.}
 
@@ -3452,7 +3452,7 @@ derived in the logic.  To make it formal, we define the
 and a program configuration as $\forall \state \, \cost \, m \, \cost' .$
 \begin{align*}
   (m {\le} n \land P(\state) {\le} \cost \land
-    (\state, S, \cont, \cost) \smallstep{M}^m (\_, \_, \_, \cost'))
+    (\state, S, \cont, \cost) \smallstep^m (\_, \_, \_, \cost'))
   \implies \cost' {\ge} 0.
 \end{align*}
 This predicate is step indexed by an integer $n$ that is used for
