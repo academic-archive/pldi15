@@ -1393,52 +1393,52 @@ change on $q_{y0}$.
 \footnotesize
 \begin{mathpar}
 \inferrule*[right={\scriptsize (Q:Loop)},leftskip=0cm,rightskip=0cm,width=20cm]
-{ \inferrule*[right={\scriptsize (Q:If)},leftskip=0cm,rightskip=0cm,width=20cm]
-  { \inferrule*[right={\scriptsize (Q:Weak)},leftskip=2cm,rightskip=4cm, vdots=1cm]
+{ \inferrule*[right={\scriptsize (Q:If)},leftskip=0cm,rightskip=1cm,width=20cm]
+  { \inferrule*[right={\scriptsize (Q:Weak)},leftskip=2.5cm,rightskip=2.5cm, vdots=1cm]
     { \inferrule*[right={\scriptsize (Q:Seq)},leftskip=0cm,rightskip=0cm]
       { \inferrule*[right={\scriptsize (Q:Weak)},leftskip=0cm,rightskip=0cm]
-        { \inferrule*[right={\scriptsize (Q:DecP)},leftskip=0cm,rightskip=0cm]
+        { \inferrule*[right={\scriptsize (Q:Dec)},leftskip=0cm,rightskip=0cm]
           {
           }
-          { (x {<} 10, B^\text{de}); ((x {\geq} 10,Q^\text{de})  \vdash \code{x = x - 10}
-            \dashv (\cdot, P^\text{de})
+          { (\cdot, B^\text{de}); ((x {\geq} 10,Q^\text{de})  \vdash \code{x = x - 10}
+            \dashv (x {\ge} 0, P^\text{de})
           }
         }
-        { (x {<} 10, B^\text{we}); ((x {\geq} 10,Q^\text{we})  \vdash \code{x = x - 10}
+        { (\cdot, B^\text{we}); ((x {\geq} 10,Q^\text{we})  \vdash \code{x = x - 10}
           \dashv (\cdot, P^\text{we})
         }
         \and
         \inferrule*[right={\scriptsize (Q:Tick)},leftskip=0cm,rightskip=0cm]
         {
         }
-        { (x {<} 10, B^\text{ti}); (\cdot,Q^\text{ti})  \vdash \code{tick(5)}
+        { (\cdot, B^\text{ti}); (\cdot,Q^\text{ti})  \vdash \code{tick(5)}
           \dashv (\cdot, P^\text{ti})
         }
       }
-      { (x {<} 10, B^\text{sq}); ((x {\geq} 10,Q^\text{sq}) \vdash
+      { (\cdot, B^\text{sq}); ((x {\geq} 10,Q^\text{sq}) \vdash
         \code{x=x{-}10; tick(5);} \dashv (\cdot,P^\text{sq})
       }
     }
-    { (x {<} 10, B^\text{if}); ((x {\geq} 10,Q^\text{if}) \vdash
+    { (\cdot, B^\text{if}); ((x {\geq} 10,Q^\text{if}) \vdash
       \code{x=x{-}10; tick(5);} \dashv (\cdot,P^\text{if})
     }
     \and
     \inferrule*[right={\scriptsize (Q:Weak)},leftskip=4.5cm,rightskip=4cm]
     { \inferrule*[right={\scriptsize (Q:Break)},leftskip=0cm,rightskip=0cm]
       { }
-      { (x {<} 10, B^\text{br}); (x {<} 10,Q^\text{br}) \vdash
+      { (\cdot, B^\text{br}); (\cdot,Q^\text{br}) \vdash
         \code{break} \dashv (\bot,P^\text{br})
       }
     }
-    { (x {<} 10, B^\text{el}); (x {<} 10,Q^\text{el}) \vdash
+    { (\cdot, B^\text{el}); (x {<} 10,Q^\text{el}) \vdash
       \code{break} \dashv (\cdot,P^\text{el})
     }
   }
-  { \hspace{3cm} (x {<} 10, B^\text{lo}); (\cdot,Q^\text{lo}) \vdash
+  { \hspace{3cm} (\cdot, B^\text{lo}); (\cdot,Q^\text{lo}) \vdash
     \loopbody \dashv (\cdot,P^\text{lo}) \hspace{3cm}
   }
 }
-{ (\cdot, B); (\cdot, Q) \vdash \code{loop}~{\loopbody} \dashv (x {<} 10, P)
+{ (\cdot, B); (\cdot, Q) \vdash \code{loop}~{\loopbody} \dashv (\cdot, P)
 }
 \vspace{-.3cm}
 \end{mathpar}
@@ -1462,7 +1462,7 @@ B^\text{br} {=} Q^\text{br}
 \\
 Q^\text{ti} {=} P^\text{ti} + 5
 & B^\text{we} {=} B^\text{de} \land Q^\text{we} \succeq_{(x{<}10)} Q^\text{de}
-    \land P^\text{de} \succeq_{(\cdot)} P^\text{we}
+    \land P^\text{de} \succeq_{(x{\ge}0)} P^\text{we}
 & p^\text{de}_{0,10} {=} q^\text{de}_{0,10} + q^\text{de}_{0,x}
     \land p^\text{de}_{0} {=} q^\text{de}_{0}
     \land \forall (\alpha, \beta) \neq (0,10)  . \,
@@ -1578,17 +1578,22 @@ In general, the weakening rule can be applied after every syntax directed
 rule.  However, it can be left out in practice at some places to
 increase the efficiency of the tool.
 The weakening operation $\succeq_{\Gamma}$ is defined by the rule
-\textsc{Relax}. It is parameterized by a logical context that is
-used to gather information on interval sizes.  For example, $P^\text{de} \succeq_{(\cdot)} P^\text{we} \equiv$
-\vspace{-.3cm}
+\textsc{Relax}. It is parameterized by a logical context
+used to gather information on interval sizes.  For example,
+$P^\text{de} \succeq_{(x{\ge}0)} P^\text{we} \equiv$
+% SSS SPACING
+%\vspace{-.3cm}
 {\small
-  \begin{align*}
- p^\text{we}_{0,10} \leq p^\text{de}_{0,10} + u_{0,10} - v_{0.10}
-\land  p^\text{we}_{0} \leq p^\text{de}_{0} - 10 {\cdot} u_{0,10} + 10 {\cdot} v_{0.10} \\
-\land  \forall (\alpha, \beta) \neq (0,10)  . \, p^\text{we}_{\alpha,\beta} \leq p^\text{de}_{\alpha,\beta} \;\;\; .
-  \end{align*}
+\begin{align*}
+  p^\text{we}_{0,10} \leq p^\text{de}_{0,10} + u_{0,10} - v_{0,10}
+  \land p^\text{we}_{x,0} \leq p^\text{de}_{x,0} + u_{x,0} - v_{0,x} \land \;\;
+  \\
+  p^\text{we}_{0} \leq p^\text{de}_{0} - 10 {\cdot} u_{0,10} + 10 {\cdot} v_{0.10}
+  \bigwedge_{(\alpha, \beta) \neq (0,10), (x,0)} p^\text{we}_{\alpha,\beta} \leq p^\text{de}_{\alpha,\beta} \;.
+\end{align*}
 }
-\vspace{-.8cm}
+% SSS SPACING
+%\vspace{-.8cm}
 
 \noindent
 The other rules are syntax directed and applied inductively.  For example,
@@ -1672,7 +1677,8 @@ A notable advantage of the LP-based approach compared to
 SMT-solver--based techniques is that a satisfying assignment is
 a proof certificate instead of a counter example.
 
-\vspace{-.24cm}
+% SSS SPACING
+%\vspace{-.24cm}
 
 \iffull{The constraints that we generate have
 a particularly simple form that is known as \emph{network problem}.
@@ -1867,7 +1873,7 @@ and an extended quantitative logic.  Using these two tools, the soundness
 of the automatic analysis described in \pref{sec:AAA}
 is proved by a translation morphism to the logic.
 
-\iffull{}{ The main parts of the soundness proof are formalized with
+\iffull{}{The main parts of the soundness proof are formalized with
   Coq and available for download. The full definitions of the cost
   semantics and the quantitative Hoare logic, and more details on the
   soundness proof can be found in the extended version of this
@@ -1909,27 +1915,27 @@ where the value of $x$ is updated to $v$.
 The small-step semantics is standard, except that it tracks
 the resource consumption of a program.  The semantics is parametric in
 the resource of interest for the user of our system.  We achieve this
-independence by parameterizing evaluations with a resource \emph{metric}
-$M$; a tuple of rational numbers and two maps.  Each of these
-parameters indicates the amount of resource consumed by a corresponding
-step in the semantics.  Resources can be released by using a negative
-cost. %  The metric used in the implementation can also
-% depend on other information that is statically available such as the
-% name of the called function or the number of arguments.
-Two sample rules for update and tick follow.
+independence by using a tick instruction that allows the programmer
+to specify how much and when resource is consumed.  If the resource
+usage is bound to the programming language (e.g. stack usage, number
+loop iterations and function calls), the tick statements can
+be inserted automatically by a pre-processing phase.  Resources can be
+released by using a negative tick.
+Two sample rules of the semantics for update and tick follow.
+
 \begin{mathpar}
-\Rule[rightskip=0.3cm]{U}
+\Rule{U}
 { \state' = \state[x \mapsto \sem{e}_\state] }
 { (\state, x \gets e, \cont, \cost)
 \rightarrow\\\\
-(\state', \code{skip}, \cont, \cost {-} M_u {-} M_e(e))
+(\state', \code{skip}, \cont, \cost)
 }
 \and
 \Rule[leftskip=0.3cm,rightskip=0.2cm]{T}
 { }
 { (\state, \code{tick}(n), \cont, \cost)
 \rightarrow\\\\
-(\state, \code{skip}, \cont, \cost {-} M_t(n))
+(\state, \code{skip}, \cont, \cost {-} n)
 }
 \end{mathpar}
 The rules have as implicit side condition that $\cost$ is
@@ -2109,18 +2115,17 @@ resources, and simplify the handling of auxiliary state.
 
 We define quantitative Hoare triples
 as $B;R\vdash\htriple Q S {Q'}$ where $B$, $R$, $Q$, and $Q'$ are
-maps from program states to an element of $\Qplusz\cup\{\infty\}$ that represents
+maps from program states to an element of $\Q\cup\{\infty\}$ that represents
 an amount of resources available.  The assertions $B$ and $R$ are
 postconditions for the case in which the block $S$ exits by a \code{break}
 or \code{return} statement.  Additionally, $R$ depends on the return
 value of the current function.  The meaning of the triple $\htriple Q
 S {Q'}$ is as follows: If $S$ is executed with starting state $\state$,
-the empty continuation, and at least $Q(\state)$ resource units available
+the empty continuation, $Q'(\state) \ge 0$ for all state $\sigma$, and at least $Q(\state)$ resource units available
 then the evaluation does not run out of resources and there are at
-least $Q(\state')$ resources left if the evaluation terminates in
+least $Q'(\state')$ resources left if the evaluation terminates in state
 $\state'$.  The logic rules are similar to the ones in previous
-work and generalized to account for the cost introduced by  our
-cost-aware semantics.
+work.
 
 Finally, we define a strong compositional continuation based soundness for
 triples and prove the validity of all the rules in Coq.  \ifshort{The full
@@ -2154,15 +2159,15 @@ is implicitly lifted to a quantitative assertion by mapping a state
 $\state$ to 0 if $\Gamma(\state)$ holds and to $\infty$ otherwise.
 \iffull{We also need to
 translate the assumptions in function contexts of the automatic
-analysis.  We define $\tr(\Gamma_f, Q_f, \Gamma'_f, Q'_f) :=
-\forall z \, \vec v \, v . $
+analysis.  We define $\tr(\Gamma_f, Q_f, \Gamma'_f, Q'_f) :=$
 %
-$$
+\begin{multline*}
+\forall z \, \vec v \, v . \,
 (
-  \lambda \vec v \, \state .\, \tr(\Gamma_f, Q_f)(\state[\Vargs {\mapsto} \vec v]),
+  \lambda \vec v \, \state .\, \tr(\Gamma_f, Q_f)(\state[\Vargs {\mapsto} \vec v]), \\
   \lambda v \, \state .\, \tr(\Gamma'_f, Q'_f)(\state[\Vret {\mapsto} v])
   )
-$$}{}
+\end{multline*}}{}%
 %
 \iffull{These definitions let}{This lets} us translate the judgement
 $J := B; R; P \vdash S \dashv P'$\iffull{ in the context $\Delta$ by $\tr(J) :=$}{ by}
@@ -2173,7 +2178,7 @@ $$}{%
 $$
   \tr(J) := \tr(B); \tr(R) \vdash \htriple{\tr(P)} S {\tr(P')}.
 $$}%
-\noindent{}The soundness of the automatic analysis can now be stated
+The soundness of the automatic analysis can now be stated
 formally with the following theorem.
 %
 \begin{theorem}[Soundness of the automatic analysis]
