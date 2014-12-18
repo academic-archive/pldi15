@@ -1117,13 +1117,14 @@ tools\iffull{ for automatic bound derivation.}{.}
 { B; (\Gamma_R,Q_R); (\Gamma, Q) \vdash \code{return}~x \dashv (\Gamma',Q') }
 %
 \and \Rule{Q:Update}
-{ q'_{xy}, q'_{yx} \in \Q
-\\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
+{ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
 }
 { B; R; (\Gamma[x/y], Q {+} M_u {+} M_e(y)) \vdash x \gets y \dashv (\Gamma, Q') }
 %
 \and \Rule[leftskip=.1cm,rightskip=.1cm]{Q:Loop}
-{ (\Gamma', Q'); R; (\Gamma,Q) \vdash S \dashv (\Gamma,  Q) }
+{ Q \ge Q'
+\\ (\Gamma', Q'); R; (\Gamma,Q) \vdash S \dashv (\Gamma,  Q)
+}
 { B; R; (\Gamma, Q) \vdash \code{loop}~S \dashv (\Gamma', Q') }
 %
 \and \Rule{Q:Inc}
@@ -1180,7 +1181,7 @@ tools\iffull{ for automatic bound derivation.}{.}
 %
 \and \Rule[leftskip=.2cm,rightskip=.2cm]{Q:Extend}
 { \fenv f = (\vec y, S_f)
-\\ Q' \ge 0
+\\ Q_f \ge 0
 \\ Q'_f \ge 0
 \\\\ B; (\Gamma_f', Q'_f); (\Gamma_f[\Vargs/\vec y], Q_f[\Vargs/ \vec y] ) \vdash S_f \dashv (\Gamma', Q')
 }
@@ -1214,7 +1215,7 @@ tools\iffull{ for automatic bound derivation.}{.}
 
 
 \ifshort{
-                    \jan{XXX PLEASE INSERT FIGURE HERE XXX}
+                    \jan{XXX THIS FIGURE NEEDS TO BE UPDATED XXX}
 }{}
 
 \sectskip
