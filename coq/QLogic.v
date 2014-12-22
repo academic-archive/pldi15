@@ -6,10 +6,10 @@ Notation "x ≥ y" := (Z.ge x y) (at level 70, no associativity).
 
 Section QLOGIC.
 Open Scope Z.
-Context `{Sem: BaseSemantics} (ge: genv) (M: revent → Z).
+Context `{Sem: BaseSemantics} (ge: genv).
 
 (** Resource safety of a program configuration. *)
-Definition pay t c := List.fold_left (λ c e, c - M e) t c.
+Definition pay t c := List.fold_left (λ c e, c - e) t c.
 
 Reserved Notation "C ↓ n" (at level 60).
 Inductive runs: nat → (stmt * cont * mstate * Z) → Prop :=
@@ -44,7 +44,7 @@ Delimit Scope Logic_scope with L.
 Definition assn := mstate → Z → Prop.
 
 Definition assn_addZ (P: assn) (x: Z) :=
-  λ m c, 0 ≤ c - x ∧ P m (c - x).
+  λ m c, P m (c - x).
 
 Definition assn_bottom: assn := λ _ _, False.
 
@@ -61,7 +61,7 @@ Notation "⊥" := assn_bottom: Logic_scope.
 Class StackIndep (P: assn): Prop :=
   stack_indep: ∀ σ σ' θ c, P (σ, θ) c → P (σ', θ) c.
 
-Lemma assn_addZ_props:
+(* Lemma assn_addZ_props:
 
   (* Weak associative *)
   (∀ (P: assn) (x y: Z) (XSGN: 0 ≤ x) (YSGN: 0 ≤ y) m c,
@@ -79,12 +79,13 @@ Qed.
 
 Definition assn_addZ_pos  := (proj1 assn_addZ_props).
 Definition assn_addZ_comm := (proj2 assn_addZ_props).
+*)
 
 
 (** Logic semantics in terms of resource safety. *)
 Definition safe n (P: assn) (sk: stmt * cont) :=
   let (s, k) := sk in
-  ∀ m c (INI: P m c) , 0 ≤ c → (s, k, m, c) ↓ n.
+  ∀ m c (INI: P m c), 0 ≤ c ∧ (s, k, m, c) ↓ n.
 
 Definition safek n (B: assn) (R: option rval → assn) (Q: assn) k :=
     safe n B (SBreak, k)
@@ -95,8 +96,8 @@ Definition valid n (B: assn) (R: option rval → assn) (P: assn) s (Q: assn) :=
   (∀ x k p
      (LE: le p n)
      (XSGN: 0 ≤ x)
-     (SAFEK: safek p (B + M EBreak + x) (λ r, R r + x) (Q + x) k),
-    safe p (P + x) (s, k)
+     (SAFEK: safek p (B + x) (λ r, R r + x) (Q + x) k),
+   safe p (P + x) (s, k)
   )%L.
 
 Notation "n \ B \ R ⊨ {{ P }} S {{ Q }}" :=
@@ -156,19 +157,33 @@ Definition validC (n: nat) (Δ: fun_ctx): Prop :=
   ∀ f spec bdy,
     Δ f = Some spec →
     find_func ge f = Some bdy →
-    ∀ y a, n\ ⊥\ λ r, fpost spec y r + M (EReturn f)
+    ∀ y a, n\ ⊥\ λ r, fpost spec y r
       ⊨ {{ fpre spec y a }} bdy {{ ⊥ }}.
 
 (* Various weakening lemmas. *)
 Lemma safe_le:
   ∀ n n' P s k (LE: le n' n), safe n P (s, k) → safe n' P (s, k).
-Proof. unfold safe; intuition; eauto using runs_le. Qed.
+Proof. unfold safe; intros.
+       destruct (H m c INI); eauto using runs_le. Qed.
 Lemma safek_le:
   ∀ n n' B R Q k (LE: le n' n), safek n B R Q k → safek n' B R Q k.
 Proof. unfold safek; intuition; eauto using safe_le. Qed.
 
 
 (** Soundness of logic rules. *)
+
+(* Try to prove a goal '0 ≤ c' by using the
+ * safety of one continuation in the context.
+ *)
+Ltac fuel :=
+  match goal with
+  | [ S: safek _ _ _ _ _ |- 0 ≤ ?c ] =>
+    destruct S as [S1 [S2 S3]];
+      try (eapply S1; now eauto);
+      try (eapply S2; now eauto);
+      try (eapply S3; now eauto);
+      fail 1
+  end.
 
 (* Prove safety of a configuration by trying to
  * make a step.
@@ -180,7 +195,7 @@ Ltac step :=
     [ let hstep := fresh in
       intros ? ? ? ? hstep;
       inversion hstep; subst; clear hstep
-    | simpl; try omega ]
+    | fuel || auto ]
   | [ |- _ ↓ (S _) ] => fail 1
   | [ |- _ ↓ 0 ] => constructor
   | [ |- _ ↓ ?n ] => destruct n; step
@@ -206,7 +221,7 @@ Qed.
 
 Lemma sound_LBreak:
   ∀ n B R Q,
-  n\ B\ R ⊨ {{ B + M EBreak }} SBreak {{ Q }}.
+  n\ B\ R ⊨ {{ B }} SBreak {{ Q }}.
 Proof.
 unfold valid; intros.
 apply SAFEK.
@@ -220,23 +235,61 @@ unfold valid, safek, safe, assn_addZ; intros.
 apply SAFEK; intuition; eapply INI.
 Qed.
 
+Lemma sound_LTick:
+  ∀ n B R (Q: assn) q
+    (QNNEG: q < 0 → ∀ m c, Q m c → 0 ≤ c),
+  n\ B\ R ⊨ {{ Q }} STick q {{ Q + -q }}.
+Proof.
+intros. unfold valid, safe; intros.
+assert (CNNEG: 0 ≤ c).
+{ assert (QD: q < 0 ∨ 0 ≤ q) by omega.
+  destruct QD as [HQ | HQ].
+  + cut (0 ≤ c - x).
+    intro. omega.
+    eapply QNNEG. exact HQ. exact INI.
+  + destruct SAFEK as [_ [_ S]].
+    cut (0 ≤ c - q). intro. omega.
+    eapply S. unfold assn_addZ.
+    replace (c - q - x - -q)
+    with (c - x) by omega.
+    exact INI.
+}
+split; [ assumption | step ].
+apple SAFEK. unfold assn_addZ. simpl.
+replace (c - q - x - - q)
+with (c - x) by omega.
+exact INI.
+Qed.
+
 Lemma sound_LLoop:
   ∀ n B R I Q s
-    (BDY: n\ Q\ R ⊨ {{ I }} s {{ I + M ELoop }}),
+    (BDY: n\ Q\ R ⊨ {{ I }} s {{ I }})
+    (INVQ: ∀ m c, I m c → Q m c),
   n\ B\ R ⊨ {{ I }} SLoop s {{ Q }}.
 Proof.
 unfold valid; intros.
 induction p as [p IND] using lt_wf_rec.
 
-unfold safe; intros. step.
+unfold safe; intros.
+
+Ltac invq I :=
+  match goal with
+  | [ S: safek _ _ _ _ _ |- 0 ≤ _ ] =>
+    destruct S as [_ [_ S]];
+    eapply S; unfold assn_addZ in *;
+    now eauto using I
+  | [ |- 0 ≤ _ ] => fuel
+  end.
+
+assert (CNNEG: 0 ≤ c). invq INVQ.
+split; [ assumption | step ].
 apply BDY with (x := x); eauto. omega.
 clear INI.
-unfold safek, safe; intuition; step.
-+ apply assn_addZ_comm in INI; auto.
-  apple SAFEK; apply INI.
+unfold safek, safe; intuition;
+  try step; try invq INVQ.
++ apple SAFEK; apply INI.
 + apple SAFEK; assumption.
-+ apply assn_addZ_comm in INI; auto.
-  apply (IND p); eauto; try apply INI.
++ apply (IND p); eauto; try apply INI.
   omega.
   apple SAFEK.
 Qed.
@@ -250,7 +303,7 @@ unfold valid, safe; intros.
 apply PRE with (x := x + x0); try omega.
 clear INI.
 unfold safek, safe;
-  intuition; apply SAFEK; eauto.
+  intuition; try apply SAFEK; eauto.
 + unfold assn_addZ in *.
   repeat split; try omega.
   replace (c0 - x0 - M EBreak - x)
