@@ -52,34 +52,10 @@ Infix "+" := assn_addZ: Logic_scope.
 Notation "⊥" := assn_bottom: Logic_scope.
 
 (* Stack independent assertions are used
- * for function calls.  It is stated as
- * a typeclass so, when we define compound
- * assertions it will be possible to derive
- * stack independence with the class
- * resolution mechanism of Coq.
+ * for function calls.
  *)
-Class StackIndep (P: assn): Prop :=
-  stack_indep: ∀ σ σ' θ c, P (σ, θ) c → P (σ', θ) c.
-
-(* Lemma assn_addZ_props:
-
-  (* Weak associative *)
-  (∀ (P: assn) (x y: Z) (XSGN: 0 ≤ x) (YSGN: 0 ≤ y) m c,
-    ((P + x) + y)%L m c ↔ (P + (x + y))%L m c)
-
-  (* Weak commutative *)
-∧ (∀ (P: assn) (x y: Z) (YSGN: 0 ≤ y) m c,
-    ((P + x) + y)%L m c → ((P + y) + x)%L m c).
-
-Proof with assumption.
-unfold assn_addZ; intuition;
-match goal with [ H: ?P _ ?x |- ?P _ ?y ] =>
-  replace y with x by omega end...
-Qed.
-
-Definition assn_addZ_pos  := (proj1 assn_addZ_props).
-Definition assn_addZ_comm := (proj2 assn_addZ_props).
-*)
+Definition StackIndep (P: assn): Prop :=
+  ∀ σ σ' θ c, P (σ, θ) c → P (σ', θ) c.
 
 
 (** Logic semantics in terms of resource safety. *)
@@ -155,11 +131,10 @@ Infix "∪" := ctx_add (at level 60).
 (* This defines the validity of a set of hypothesis. *)
 Definition validC (n: nat) (Δ: fun_ctx): Prop :=
   ∀ f spec (DEF: Δ f = Some spec),
-  (∀ y a m c, fpre spec y a m c → 0 ≤ c) ∧
   (∀ bdy y a,
      find_func ge f = Some bdy →
      n\ ⊥\ λ r, fpost spec y r
-       ⊨ {{ fpre spec y a }} bdy {{ ⊥ }}).
+       ⊨ {{ λ m c, 0 ≤ c ∧ fpre spec y a m c }} bdy {{ ⊥ }}).
 
 (* Various weakening lemmas. *)
 Lemma safe_le:
@@ -319,8 +294,7 @@ Lemma sound_LSeq:
 Proof with try (intros; fuel).
 unfold valid at 3, safe; intros.
 assert (C: 0 ≤ c).
-{ Ltac t := intros; fuel.
-  eapply (valid_nneg n B R P Q' s1 x XSGN PRE1)...
+{ eapply (valid_nneg n B R P Q' s1 x XSGN PRE1)...
   eapply (valid_nneg n B R Q' Q s2 x XSGN PRE2)...
   eassumption.
 }
@@ -378,17 +352,13 @@ End LIF.
 
 Lemma sound_LExtend:
   ∀ (Δ Δ': fun_ctx)
-    (POS: ∀ f spec y a m c,
-            Δ' f = Some spec →
-            fpre spec y a m c →
-            0 ≤ c)
     (PRE: ∀ f spec bdy,
             Δ' f = Some spec →
             find_func ge f = Some bdy →
             ∀ y a n,
               validC n (Δ ∪ Δ') →
               S n\ ⊥\ λ r, fpost spec y r
-                ⊨ {{ fpre spec y a }} bdy {{ ⊥ }})
+                ⊨ {{ λ m c, 0 ≤ c ∧ fpre spec y a m c }} bdy {{ ⊥ }})
     (VALID: ∀ n, validC n Δ),
   ∀ n, validC n (Δ ∪ Δ').
 Proof.
@@ -397,13 +367,11 @@ unfold validC, ctx_add.
 intros until 0.
 case_eq (Δ' f).
 + inversion 2; subst.
-  split; intros; eauto.
+  intros.
   destruct n.
   - unfold valid, safe; intros.
     replace p with O by omega.
-    split.
-    cut (0 ≤ c - x);
-      [ intro; omega | eauto ].
+    split. destruct INI as [? _]; omega.
     constructor.
   - apply PRE with (f := f); auto.
 + intros.
@@ -417,9 +385,8 @@ Lemma sound_LCall:
     (A: stack -> Prop),
   let P (m: mstate) c :=
     0 ≤ c ∧
-    let (σ, _) := m in
     ∀ vl, eval_list ge m args vl →
-          fpre spec y vl m c ∧ A σ
+          fpre spec y vl m c ∧ A (fst m)
   in
   let Q (m: mstate) c :=
     let (σ, θ) := m in
@@ -435,7 +402,7 @@ assert (CNNEG: 0 ≤ c) by omega.
 split; [ exact CNNEG | step ].
 refine (_ (PREC vl _)); auto. clear PREC. intros [PRE FRAME].
 eapply VCTX with (x := x) (y := y); simpl;
-  (eassumption || omega || idtac).
+  try eassumption; try omega.
 + unfold safek, safe.
   intuition; try destruct INI.
   step. apple SAFEK.
@@ -444,6 +411,7 @@ eapply VCTX with (x := x) (y := y); simpl;
   destruct spec as [? ? ? ? STKINDEP].
   eapply STKINDEP. apply H0. eauto.
 + destruct spec as [? ? ? STKINDEP ?].
+  split; [ assumption |].
   eapply STKINDEP. apply PRE.
 Qed.
 
