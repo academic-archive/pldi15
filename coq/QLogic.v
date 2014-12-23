@@ -89,7 +89,7 @@ Definition safe n (P: assn) (sk: stmt * cont) :=
 
 Definition safek n (B: assn) (R: option rval → assn) (Q: assn) k :=
     safe n B (SBreak, k)
-  ∧ (∀ r, safe n (λ m c, (∀ v, evalo ge m r v → R v m c)) (SReturn r, k))
+  ∧ (∀ r, safe n (λ m c, 0 ≤ c ∧ ∀ v, evalo ge m r v → R v m c) (SReturn r, k))
   ∧ safe n Q (SSkip, k).
 
 Definition valid n (B: assn) (R: option rval → assn) (P: assn) s (Q: assn) :=
@@ -154,11 +154,12 @@ Infix "∪" := ctx_add (at level 60).
 
 (* This defines the validity of a set of hypothesis. *)
 Definition validC (n: nat) (Δ: fun_ctx): Prop :=
-  ∀ f spec bdy,
-    Δ f = Some spec →
-    find_func ge f = Some bdy →
-    ∀ y a, n\ ⊥\ λ r, fpost spec y r
-      ⊨ {{ fpre spec y a }} bdy {{ ⊥ }}.
+  ∀ f spec (DEF: Δ f = Some spec),
+  (∀ y a m c, fpre spec y a m c → 0 ≤ c) ∧
+  (∀ bdy y a,
+     find_func ge f = Some bdy →
+     n\ ⊥\ λ r, fpost spec y r
+       ⊨ {{ fpre spec y a }} bdy {{ ⊥ }}).
 
 (* Various weakening lemmas. *)
 Lemma safe_le:
@@ -192,8 +193,7 @@ Lemma valid_nneg:
   ∀ n B R P Q s x (XSGN: 0 ≤ x)
     (TRIP: n\ B\ R ⊨ {{ P }} s {{ Q }})
     (QPOS: ∀ m c, (Q + x)%L m c → 0 ≤ c)
-    (BPOS: ∀ m c, (B + x)%L m c → 0 ≤ c)
-    (RPOS: ∀ r m c, (∀ v, evalo ge m r v → (R v + x)%L m c) → 0 ≤ c),
+    (BPOS: ∀ m c, (B + x)%L m c → 0 ≤ c),
   ∀ m c, (P + x)%L m c → 0 ≤ c.
 Proof.
 unfold valid; intros.
@@ -250,7 +250,7 @@ Qed.
 
 Lemma sound_LReturn:
   ∀ n B R Q r,
-  n\ B\ R ⊨ {{ λ m c, ∀ v, evalo ge m r v → R v m c }} SReturn r {{ Q }}.
+  n\ B\ R ⊨ {{ λ m c, 0 ≤ c ∧ ∀ v, evalo ge m r v → R v m c }} SReturn r {{ Q }}.
 Proof.
 unfold valid, safek, safe, assn_addZ; intros.
 apply SAFEK; intuition; eapply INI.
@@ -305,7 +305,7 @@ clear INI.
 unfold safek, safe; intuition;
   try step; try invq IGEQ.
 + apple SAFEK; apply INI.
-+ apple SAFEK; assumption.
++ simpl; apple SAFEK; now auto.
 + apply (IND p); eauto; try apply INI.
   omega.
   apple SAFEK.
@@ -329,11 +329,11 @@ apply PRE1 with (x := x); try (omega || assumption).
 clear INI.
 unfold safek, safe; intuition; try step; try fuel.
 + apple SAFEK; assumption.
-+ apple SAFEK; assumption.
++ simpl; apple SAFEK; auto.
 + eapply (valid_nneg n B R Q' Q s2 x XSGN PRE2)...
   eassumption.
 + eapply PRE2 with (x := x); try (omega || apply INI).
-  apple SAFEK; assumption.
+  simpl; apple SAFEK; now auto.
 + eapply (valid_nneg n B R Q' Q s2 x XSGN PRE2)...
   eassumption.
 Qed.
@@ -352,6 +352,7 @@ intuition; rewrite Z.sub_add_distr in *;
 rewrite Z.sub_add_distr; exact INI.
 Qed.
 
+Section LIF.
 Let evalb m e b: Prop :=
   ∃ v, evalr ge m e v ∧ val_bool v b.
 
@@ -363,28 +364,31 @@ Lemma sound_LIf:
               if b then st else sf
             {{ Q  }}),
   n\ B\ R ⊨ {{ P }} SIf e st sf {{ Q }}.
-Proof with
-  match goal with
-    [ HP: (_ + ?x)%L _ _ |- 0 ≤ ?c ] =>
-    cut (0 ≤ c - x); [intro; omega | eapply PGEZ; exact HP ]
-  end.
+Proof.
 unfold valid at 2, safe; intros.
-assert (CNNEG: 0 ≤ c). idtac...
+assert (CNNEG: 0 ≤ c).
+now cut (0 ≤ c - x);
+  [ intro; omega | eapply PGEZ; exact INI ].
 split; [ exact CNNEG | step ]; simpl.
 apply PRE with (x := x); try omega.
 apple SAFEK.
 repeat esplit; eauto.
 Qed.
+End LIF.
 
 Lemma sound_LExtend:
   ∀ (Δ Δ': fun_ctx)
+    (POS: ∀ f spec y a m c,
+            Δ' f = Some spec →
+            fpre spec y a m c →
+            0 ≤ c)
     (PRE: ∀ f spec bdy,
-      Δ' f = Some spec →
-      find_func ge f = Some bdy →
-      ∀ y a n,
-        validC n (Δ ∪ Δ') →
-        S n\ ⊥\ λ r, fpost spec y r + M (EReturn f)
-          ⊨ {{ fpre spec y a }} bdy {{ ⊥ }})
+            Δ' f = Some spec →
+            find_func ge f = Some bdy →
+            ∀ y a n,
+              validC n (Δ ∪ Δ') →
+              S n\ ⊥\ λ r, fpost spec y r
+                ⊨ {{ fpre spec y a }} bdy {{ ⊥ }})
     (VALID: ∀ n, validC n Δ),
   ∀ n, validC n (Δ ∪ Δ').
 Proof.
@@ -393,10 +397,13 @@ unfold validC, ctx_add.
 intros until 0.
 case_eq (Δ' f).
 + inversion 2; subst.
-  intros.
+  split; intros; eauto.
   destruct n.
   - unfold valid, safe; intros.
     replace p with O by omega.
+    split.
+    cut (0 ≤ c - x);
+      [ intro; omega | eauto ].
     constructor.
   - apply PRE with (f := f); auto.
 + intros.
@@ -409,6 +416,7 @@ Lemma sound_LCall:
     n (VCTX: validC n Δ)
     (A: stack -> Prop),
   let P (m: mstate) c :=
+    0 ≤ c ∧
     let (σ, _) := m in
     ∀ vl, eval_list ge m args vl →
           fpre spec y vl m c ∧ A σ
@@ -418,34 +426,24 @@ Lemma sound_LCall:
     ∃ v σ', ret_stack ge f ret v σ' σ
           ∧ fpost spec y v (σ', θ) c ∧ A σ'
   in
-  S n\ B\ R ⊨ {{ P + M (ECall f) }} SCall ret f args {{ Q }}.
+  S n\ B\ R ⊨ {{ P }} SCall ret f args {{ Q }}.
 Proof.
 unfold valid, safe; intros.
-step.
 unfold assn_addZ in INI.
-destruct INI as [C0 [C1 PREC]].
+destruct INI as [CSGN PREC].
+assert (CNNEG: 0 ≤ c) by omega.
+split; [ exact CNNEG | step ].
 refine (_ (PREC vl _)); auto. clear PREC. intros [PRE FRAME].
 eapply VCTX with (x := x) (y := y); simpl;
   (eassumption || omega || idtac).
-
-+ clear C0 C1 PRE H c.
-  unfold safek, safe; intuition; step.
-  refine (_ (INI vr _)); auto. clear INI.
-  intros [C0 [C1 POST]].
-  apple SAFEK. clear SAFEK.
-  unfold assn_addZ; simpl.
++ unfold safek, safe.
+  intuition; try destruct INI.
+  step. apple SAFEK.
+  unfold assn_addZ in *; simpl.
   repeat eexists; eauto; try omega.
-  replace (c - M (EReturn f) - x)
-     with (c - x - M (EReturn f)) by omega.
   destruct spec as [? ? ? ? STKINDEP].
-  eapply STKINDEP. apply POST.
-  simpl; omega.
-
-
-+ split. omega.
-  replace (c - M (ECall f) - x)
-     with (c - x - M (ECall f)) by omega.
-  destruct spec as [? ? ? STKINDEP ?].
+  eapply STKINDEP. apply H0. eauto.
++ destruct spec as [? ? ? STKINDEP ?].
   eapply STKINDEP. apply PRE.
 Qed.
 
