@@ -170,8 +170,6 @@ Lemma safek_le:
 Proof. unfold safek; intuition; eauto using safe_le. Qed.
 
 
-(** Soundness of logic rules. *)
-
 (* Try to prove a goal '0 ≤ c' by using the
  * safety of one continuation in the context.
  *)
@@ -200,6 +198,29 @@ Ltac step :=
   | [ |- _ ↓ 0 ] => constructor
   | [ |- _ ↓ ?n ] => destruct n; step
   end.
+
+
+(* An powerful property of the validity. *)
+Lemma valid_nneg:
+  ∀ n B R P Q s x (XSGN: 0 ≤ x)
+    (TRIP: n\ B\ R ⊨ {{ P }} s {{ Q }})
+    (QPOS: ∀ m c, (Q + x)%L m c → 0 ≤ c)
+    (BPOS: ∀ m c, (B + x)%L m c → 0 ≤ c)
+    (RPOS: ∀ r m c, (∀ v, evalo ge m r v → (R v + x)%L m c) → 0 ≤ c),
+  ∀ m c, (P + x)%L m c → 0 ≤ c.
+Proof.
+unfold valid; intros.
+eapply (TRIP x KStop n).
++ omega.
++ assumption.
++ unfold safek, safe, assn_addZ. clear c m H.
+  intuition; eauto; step; eauto.
++ unfold assn_addZ.
+  eassumption.
+Qed.
+
+
+(** Soundness of logic rules. *)
 
 (* Useful to combine a weakening and an hypothesis
  * in the context.
@@ -278,8 +299,7 @@ Ltac invq I :=
     destruct S as [_ [_ S]];
     eapply S; unfold assn_addZ in *;
     now eauto using I
-  | [ |- 0 ≤ _ ] => fuel
-  end.
+  end || fuel.
 
 assert (CNNEG: 0 ≤ c). invq INVQ.
 split; [ assumption | step ].
@@ -292,6 +312,33 @@ unfold safek, safe; intuition;
 + apply (IND p); eauto; try apply INI.
   omega.
   apple SAFEK.
+Qed.
+
+Lemma sound_LSeq:
+  ∀ n B R P s1 Q' s2 Q
+    (PRE1: n\ B\ R ⊨ {{ P }} s1 {{ Q' }})
+    (PRE2: n\ B\ R ⊨ {{ Q' }} s2 {{ Q }}),
+  n\ B\ R ⊨ {{ P }} SSeq s1 s2 {{ Q }}.
+Proof.
+unfold valid at 3, safe; intros.
+assert (C: 0 ≤ c).
+{ Ltac t := intros; fuel.
+  eapply (valid_nneg n B R P Q' s1 x XSGN PRE1); try t.
+  eapply (valid_nneg n B R Q' Q s2 x XSGN PRE2); try t.
+  eassumption.
+}
+split; [ assumption | step ].
+apply PRE1 with (x := x); try (omega || assumption).
+clear INI.
+unfold safek, safe; intuition; try step; try fuel.
++ apple SAFEK; assumption.
++ apple SAFEK; assumption.
++ eapply (valid_nneg n B R Q' Q s2 x XSGN PRE2); try t.
+  eassumption.
++ eapply PRE2 with (x := x); try (omega || apply INI).
+  apple SAFEK; assumption.
++ eapply (valid_nneg n B R Q' Q s2 x XSGN PRE2); try t.
+  eassumption.
 Qed.
 
 Lemma sound_LFrame:
@@ -313,24 +360,6 @@ unfold safek, safe;
 + intros; rewrite assn_addZ_pos; auto.
 + rewrite assn_addZ_pos; auto.
 + rewrite <- assn_addZ_pos; auto.
-Qed.
-
-Lemma sound_LSeq:
-  ∀ n B R P s1 Q' s2 Q
-    (PRE1: n\ B\ R ⊨ {{ P }} s1 {{ Q' + M ESeq }})
-    (PRE2: n\ B\ R ⊨ {{ Q' }} s2 {{ Q }}),
-  n\ B\ R ⊨ {{ P }} SSeq s1 s2 {{ Q }}.
-Proof.
-unfold valid at 3, safe; intros.
-step.
-apply PRE1 with (x := x); try (omega || assumption).
-clear INI.
-unfold safek, safe; intuition; step.
-+ apple SAFEK; assumption.
-+ apple SAFEK; assumption.
-+ apply assn_addZ_comm in INI; try assumption.
-  eapply PRE2 with (x := x); try (omega || apply INI).
-  apple SAFEK; assumption.
 Qed.
 
 Lemma sound_LIf:
