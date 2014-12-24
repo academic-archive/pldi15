@@ -2644,7 +2644,7 @@ We have demonstrated that our approach improves the state-of-the-art
 in resource bound analysis for C programs in three ways. First, our
 technique is naturally compositional, tracks size changes of
 variables, and can abstractly specify the resource cost of functions
-(\pref{sec:AAA}). Second, it is easily combinable with established
+(\pref{sec:AAA}). Second, it is easily combined with established
 qualitative verification to guide semi-automatic bound derivation
 (\pref{sec:anno}). Third, we have shown that the local inference rules
 of the derivation system automatically produce easily checkable
@@ -2957,7 +2957,7 @@ of steps.
 %
 \Rule{L:Skip}
 { }
-{ \Delta; B; R \vdash
+{ \Delta; B; R \ldash
 \htriple
   { Q }{ \code{skip} }{ Q }
 }
@@ -2965,14 +2965,14 @@ of steps.
 \and
 \Rule{L:Break}
 { }
-{ \Delta; B; R \vdash
+{ \Delta; B; R \ldash
 \htriple
   { B }{ \code{break} }{ Q }
 }
 \and
 \Rule{L:Tick}
 { n < 0 \implies Q \ge 0}
-{ \Delta; B; R \vdash
+{ \Delta; B; R \ldash
 \htriple
   { Q }
   { \code{tick}(n) }
@@ -2983,7 +2983,7 @@ of steps.
 \and
 \Rule{L:Return}
 { }
-{ \Delta; B; R \vdash
+{ \Delta; B; R \ldash
 \htriple
   { R\,(\state(x)) }{ \code{return}~x }{ Q }
 }
@@ -2991,7 +2991,7 @@ of steps.
 \and
 \Rule{L:Assert}
 { }
-{ \Delta; B; R \vdash
+{ \Delta; B; R \ldash
 \htriple
   { \code{istrue}~\sem{e}_\state \implies Q }
   { \code{assert}~e }
@@ -3001,7 +3001,7 @@ of steps.
 \and
 \Rule{L:Update}
 { }
-{ \Delta; B; R \vdash
+{ \Delta; B; R \ldash
 \htriple
   { \lambda \state.\, Q\,\state[x \mapsto \sem{e}_\state] }{ x \gets e }{ Q }
 }
@@ -3009,41 +3009,43 @@ of steps.
 \and
 \Rule{L:Loop}
 { I \ge Q
-\\ \Delta; Q; R \vdash
+\\ \Delta; Q; R \ldash
    \htriple { I }{ S }{ I }
 }
-{ \Delta; B; R \vdash
+{ \Delta; B; R \ldash
 \htriple
   { I }{ \code{loop}~S }{ Q }
 }
 %
 \and
+\Rule{L:Seq}
+{ \Delta; B; R \ldash
+\htriple{ P }{ S_1 }{ Q' }
+\\\\
+  \Delta; B; R \ldash
+\htriple{ Q' }{ S_2 }{ Q }
+}
+{ \Delta; B; R \ldash
+\htriple{ P }{ S_1;S_2 }{ Q }
+}
+%
+\and
 \Rule{L:If}
-{ \Delta; B; R \vdash
-\htriple
+{% P \ge 0
+%\\
+  \Delta; B; R \ldash
+  \htriple
   { \code{istrue}~\sem{e}_\state + P }
   { S_1 }{ Q }
-\\\\
-  \Delta; B; R \vdash
+\\
+  \Delta; B; R \ldash
 \htriple
   { \code{isfalse}~\sem{e}_\state + P }
   { S_2 }{ Q }
 }
-{ \Delta; B; R \vdash
+{ \Delta; B; R \ldash
 \htriple
   { P }{ \code{if}(e)~S_1~\code{else}~S_2 }{ Q }
-}
-%
-\and
-\Rule{L:Seq}
-{ \Delta; B; R \vdash
-\htriple{ P }{ S_1 }{ Q' }
-\\
-  \Delta; B; R \vdash
-\htriple{ Q' }{ S_2 }{ Q }
-}
-{ \Delta; B; R \vdash
-\htriple{ P }{ S_1;S_2 }{ Q }
 }
 %
 \and
@@ -3053,7 +3055,7 @@ of steps.
   P \ge P_f \, y \, (\state(\vec x)) + A \\
   \forall v.\, (Q_f \, y \, v + A \ge \lambda \state.\, Q \, \state[r \mapsto v])
 }
-{ \Delta; B; R \vdash
+{ \Delta; B; R \ldash
 \htriple
   { P }
   { r \gets f(\vec x) }
@@ -3062,7 +3064,7 @@ of steps.
 %
 \and
 \Rule{L:Extend}
-{  \Delta \cup \Delta'; B; R \vdash
+{  \Delta \cup \Delta'; B; R \ldash
   \htriple{ P }{ S }{ Q }
 \\
   P_f \ge 0
@@ -3071,38 +3073,37 @@ of steps.
   \Delta'(f) = \forall z\,\vec v\,v.(P_f\,z\,\vec v, Q_f\,z\,v)
   \rightarrow
   \forall y\,\vec v.\,
-  (\Delta \cup \Delta'; \bot; Q_f\,y \vdash
+  (\Delta \cup \Delta'; \bot; Q_f\,y \ldash
     \htriple{ P_f\,y\,\vec v }{ S_f }{ \bot })
 }
-{ \Delta; B; R \vdash
+{ \Delta; B; R \ldash
 \htriple{ P }{ S }{ Q }
 }
 %
 \and
 \Rule{L:Weaken}
 {
-  \Delta; B'; R' \vdash \htriple{ P' }{ S }{ Q' } \\\\
+  \Delta; B'; R' \ldash \htriple{ P' }{ S }{ Q' } \\\\
   P \ge P' \!\! \\
   \!\! Q' \ge Q \!\! \\
   \!\! B' \ge B \!\! \\
   \!\! \forall v.\, (R'\,v \ge R\,v)
 }
-{ \Delta; B; R \vdash
+{ \Delta; B; R \ldash
 \htriple{ P }{ S }{ Q }
 }
 %
 \and
 \Rule{L:Frame}
-{ \Delta; B; R \vdash
+{ \Delta; B; R \ldash
 \htriple{ P }{ S }{ Q } \\
   x \in \Qplusz
 }
-{ \!\! \Delta; B + x; R + x \vdash
+{ \!\! \Delta; B + x; R + x \ldash
 \htriple{ P + x }{ S }{ Q + x } \!\!
 }
 %
 \end{mathpar}
-
 \caption{Rules of the Quantitative Hoare Logic}
 \label{fig:logicapp}
 \end{figure*}
@@ -3132,7 +3133,7 @@ different possible ways to exit a block of code.  We also have to keep
 track of the resource specifications of functions.  To account for
 this in the logic, our quantitative Hoare triples have the form
 $$
-\Delta; B; R \vdash
+\Delta; B; R \ldash
 \htriple
   { Q }
   { S }
@@ -3191,31 +3192,34 @@ The potential functions $B$ for the \code{break} and $R$ for the
 \code{return} part of the postcondition are not reachable and can
 therefore be arbitrary.
 
+The {\sc L:Tick} rule accounts for the cost $n$ of the tick statement.
+This rule is the only one to account directly for a cost on in the
+assertions because calling the \code{tick} function is the only way to
+change the amount of resource available.
+The rule also has a side condition that ensures that the potential
+remains positive during all the program execution.  It is an
+essential semantic property of this system.
+
 In the rule {\sc L:Assert}, we use the notation
-$\code{istrue}~\sem{e}_\state \implies Q + M_a$ to express that we
-require potential $Q + M_a$ in the precondition if $e$ evaluates to
+$\code{istrue}~\sem{e}_\state \implies Q$ to express that we
+require potential $Q$ in the precondition if $e$ evaluates to
 $\mathit{true}$ in the current program state.  If $e$ evaluates to
-$\mathit{false}$ then the potential in the precondition can be
-arbitrary since the program will be terminated.
+$\mathit{false}$ then the potential in the precondition can be any
+non-negative number since the program will be terminated.
 
 In the rules {\sc L:Break} and {\sc L:Return}, the postcondition can
 be arbitrary since it is unreachable.  Instead, we have to justify the
 potential functions $B$ and $R$ that hold after a \code{return} and a
 \code{break}, respectively.  In {\sc L:Break}, we require to have
-potential $M_b+B$ in the precondition: $M_b$ to pay for the execution
-cost of \code{break} and $B$ to pay for the potential after the
+potential $B$ in the precondition to pay for the potential after the
 \code{break}.  In {\sc L:Return} we only require to have potential
 $R$ in the precondition to pay for the potential after the
-\code{return}.  The reason is that we found it to be more convenient
-to account for the execution cost $M_r$ of the return in rule {\sc
-  L:Call} for function calls.
+\code{return}.
 
 The rule {\sc L:Update} is the standard assignment rule of Hoare
 logic.  With the substitution $\state[x \mapsto \sem{e}_\state]$ in
 the precondition we ensure that $Q$ evaluates to the same number as in
-the postcondition.  We also require that have we the constant
-potential $M_u + M_e(e)$ available in the precondition to pay for the
-cost of the evaluation of $e$ and the update.
+the postcondition.
 
 The rule {\sc L:Seq} rule is crucial to understand how the
 quantitative Hoare logic works.  To account for early exits of
@@ -3223,8 +3227,7 @@ statements, we must ensure in the \code{break} part $B$ of $S_1$'s
 judgement that the \code{break} part $B$ of of $S_1;S_2$ holds. The
 same is true for the return part $R$ of the judgements for $S_1$ and
 $S_2$.  The interaction between the actual pre- and postconditions is
-analogous to standard Hoare logic.  In the postcondition of $S_1$ we
-account for the cost $M_s$ of the execution of the sequence.
+analogous to standard Hoare logic.
 
 In the rule {\sc L:Loop}, the \code{break} part of the
 loop body $S$ becomes the postcondition of the loop statement. We use
@@ -3233,23 +3236,16 @@ $\code{loop}\, S$ since its operational semantics ensures that it can
 only terminate with a \code{skip} or a \code{return}.  The
 precondition $I$ of the loop is the loop invariant.  That is why we
 require to have potential $I$ available in the precondition of the
-loop body $S$.  In the postcondition of $S$, the potential must be
-sufficient to pay for the invariant $I$ and the cost $M_l$ of the loop
-iteration.
+loop body $S$.
 
 The {\sc L:If} is similar to the rule for the conditional in classic
 Hoare logic.  In the preconditions of the judgments for the two
 branches $S_1$ and $S_2$ we lift the boolean assertions
 $\code{isfalse}~\sem{e}_\state$ and $\code{isfalse}~\sem{e}_\state$ to
-quantitative assertions.  In the precondition of the rule {\sc L:Tick}
-we account for the execution cost $M_t(n)$ of the \code{tick}
-statement that depends on the integer $n$.
+quantitative assertions.
 
-The rule {\sc L:Call} accounts for the execution cost of both $M_f$
-for function calls and $M_r$ for \code{return} statements.
-This justifies that the {\sc L:Return} rule does not account
-  for resource consumption. The pre- and postcondition $P_f$ and
-$Q_f$ are taken from the function context $\Delta$.  The assertions in
+The pre- and postcondition $P_f$ and $Q_f$ used in the {\sc L:Call} rule
+are taken from the function context $\Delta$.  The assertions in
 the context are parametric with respect to both the values of the
 function arguments and the return value. This allows us to specify a
 bound for a function whose resource consumption depends on its
@@ -3298,14 +3294,14 @@ deep embedding, or use the assertions of the host theory to get a
 shallow embedding.  Because of its flexibility, we used the latter
 approach in our development.  This choice makes it possible to have
 logical variables almost for free: we can simply use the variable and
-binding mechanisms of Coq, our host theory.  When an logical variable
+binding mechanisms of Coq, our host theory.  When a logical variable
 is needed we introduce it using a universal quantifier of Coq before
 using the logic to derive triples.  For example, the Coq theorem for
 the above example would look as follows.
 %
 \begin{lstlisting}
 Theorem dbl_triple: forall Z,
-  qtriple ($\lambda\sigma$.$\sigma$(x) = Z) ($\code{double}()$) ($\lambda\sigma$.$\sigma$(x) = 2*Z).
+  qtriple ($\lambda\sigma$.$\sigma$(x)=Z) ($\code{double}()$) ($\lambda\sigma$.$\sigma$(x)=2*Z).
 \end{lstlisting}
 %
 However, this trick alone is often not sufficient when working with a
@@ -3328,11 +3324,10 @@ In the following we demonstrate the use of the logic with two example
 derivations.
 
 In the example in~\pref{fig:xmplmax} we derive a precise runtime
-bound on a program that searches a maximal element in an array.  The
-cost metric that we use simply counts the assignments performed by the
-program.  Hence, the resource cost is closely related to the
-number of times the test \code{a[i] > m} is true during the
-execution.
+bound on a program that searches a maximal element in an array.
+Because of the location of the tick statements, the resource cost
+is closely related to the number of times the test \code{a[i] > m}
+is true during the execution.
 %
 If we define
 $$
@@ -3351,20 +3346,20 @@ $(m = \max_{k \in [0, i-1]} a[k]) + A(i) + (N-i)$ for the while loop.
 When the condition \code{a[i] > m} is true, we know that we
 encountered a ``maximum so far'' because $m$ is a maximal element of
 \code{a[0 \dots i]}, thus $A(i) = 1 + A(i+1)$ and we get one
-potential unit to pay for the assignment.  In the other case, no
+potential unit to pay for the tick in the conditional.  In the other case, no
 maximum so far is encountered so $A(i) = A(i+1)$.
-% As a side remark, if $K \ge 0$, it is possible to
-% have $\{ A(0) + N + K \}$ and $\{ K \}$ as pre- and postcondition
-% of the same program.  It can be done either by adapting the proof or by
-% applying the {\sc L:Frame} rule one top of the triple already derived.
-% More generally, without function calls, the {\sc L:Frame}
-% rule is admissible in our system.
+As a side remark, if $K \ge 0$, it is possible to
+have $\{ A(0) + N + K \}$ and $\{ K \}$ as pre- and postcondition
+of the same program.  It can be done either by adapting the proof or by
+applying the {\sc L:Frame} rule one top of the triple already derived.
+More generally, without function calls, the {\sc L:Frame}
+rule is admissible in our system.
 
 The example in~\pref{fig:xmplbs} shows a use case for logical
-variables as well as a metric for stack consumption. In a stack
-metric, we account a constant cost for a function call ($M_f>0$) that
-is returned after the call ($M_r = -M_f <0$).  All other resource cost
-are $0$.  We are interested in showing that a binary search function
+variables. On this example, we model the stack consumption:
+we account a constant cost for a function call ($M_f>0$) that
+is returned after the call ($M_r = -M_f <0$).
+We are interested in showing that a binary search function
 $\code{bsearch}$ has logarithmic stack consumption.  We use a logical
 variable $Z$ in the function specification $\htriple{(Z = \log_2(h-l))
   + Z \cdot M_\code{bsearch}}{}{Z \cdot M_\code{bsearch}}$ to express that the stack required by the
@@ -3381,35 +3376,34 @@ $
 $.
 %
 Using the rule {\sc L:Call} it is possible to instantiate $y$ with $Z
-- 1$, and because $M_f = M_\code{bsearch}$ and $M_r =
--M_\code{bsearch}$ in the stack metric.  The rest of the proof does
-not involve any resource manipulation and is just bookkeeping of
-logical assertions.
+- 1$.  The rest of the proof is here to make sure that the first tick
+can be paid for using regular algebra on the $\log_2$ function.
 
 
 
 \begin{figure}
 \begin{lstlisting}
 ${\color{blue} \{ A(0) + N \} }$
-i=1; m=a[0];
-${\color{blue}%
-  \{ (i {=} 1 \land m=a[0]) + A(1) + (N-1) \} }$
+i=1; tick(1); m=a[0]; tick(1);
 while (i < N) {
   ${\color{blue}%
     \{ (m = \max_{k \in [0, i-1]} a[k]) + A(i) + (N-i) \} }$
   if (a[i] > m)
-    m=a[i];
+    m=a[i], tick(1);
   ${\color{blue}%
     \{ (m = \max_{k \in [0, i]} a[k]) + A(i+1) + (N-i) \} }$
   i=i+1;
+  ${\color{blue}%
+    \{ (m = \max_{k \in [0, i-1]} a[k]) + A(i) + (N-i) + 1 \} }$
+  tick(1);
   ${\color{blue}%
     \{ (m = \max_{k \in [0, i-1]} a[k]) + A(i) + (N-i) \} }$
 } ${\color{blue} \{ 0 \} }$
 \end{lstlisting}
 \caption{Example derivation where we wrote $A(i)$
   for $\#\{ k \mid i \le k \le N \land \forall\, 0\le j<k.\, a[j] < a[k]\}$,
-  the metric used here assigns a cost of 1 to every assignment
-  and 0 to all other operations.
+  we use ticks in this example to count the number of assignments performed
+  by the program.
   }
 \label{fig:xmplmax}
 \end{figure}
@@ -3417,7 +3411,7 @@ while (i < N) {
 \begin{figure}
 \begin{lstlisting}
 ${\color{blue}%
-  \{ (Z = \log_2(h-l)) + Z \cdot M_\code{bsearch} \} }$
+  P(Z) := \{ (Z = \log_2(h-l)) + Z \cdot M_\code{bsearch} \} }$
 bsearch(x,l,h) {
   if (h-l > 1) {
     ${\color{blue}%
@@ -3428,17 +3422,18 @@ bsearch(x,l,h) {
     if (a[m]>x) h=m; else l=m;
     ${\color{blue}%
       \{ (Z - 1 = \log_2(h-l)) + (Z-1) \cdot M_\code{bsearch} + M_\code{bsearch} \} }$
-    l = bsearch(x,l,h); }
-  ${\color{blue}%
+    tick($M_\code{bsearch}$);
+    ${\color{blue}\{ P(Z-1) \}}$ l = bsearch(x,l,h); ${\color{blue}\{ Q(Z-1) \}}$
+    tick($-M_\code{bsearch}$);
+  } ${\color{blue}%
     \{ (Z-1) \cdot M_\code{bsearch} - (-M_\code{bsearch}) \} }$
   return l;
-} ${\color{blue} \{ Z \cdot M_\code{bsearch} \} }$
+} ${\color{blue} Q(Z) := \{ Z \cdot M_\code{bsearch} \} }$
 \end{lstlisting}
 \caption{Example derivation of a stack usage bound for a binary
-  search program.  The used resource metric defines the cost $M_\code{bsearch}$ before
+  search program.  The stack usage is modeled by adding a cost $M_\code{bsearch}$ before
   the function call and $-M_\code{bsearch}$ after the call.  $M_\code{bsearch}$ is the stack
-  frame size of the function $\code{bsearch}$.  $Z$ is a
-  logical variable.
+  frame size of the function $\code{bsearch}$.  $Z$ is a logical variable.
   }
 \label{fig:xmplbs}
 \end{figure}
@@ -3447,44 +3442,54 @@ bsearch(x,l,h) {
 \paragraph{Soundness of Quantitative Hoare Triples.}
 
 We already gave an intuition of the meaning of judgements
-derived in the logic.  To make it formal, we define the
-\emph{resource safety} $\safe n P S \cont$ of an assertion
-and a program configuration as $\forall \state \, \cost \, m \, \cost' .$
-\begin{align*}
-  (m {\le} n \land P(\state) {\le} \cost \land
-    (\state, S, \cont, \cost) \smallstep^m (\_, \_, \_, \cost'))
-  \implies \cost' {\ge} 0.
-\end{align*}
-This predicate is step indexed by an integer $n$ that is used for
-induction in the soundness proof for the function-call and loop cases.
-The constraint $\cost' \geq 0$ imposed by the definition ensures that
-the program does not stop because of a resource error (recall that a
-negative resource counter on the right-hand side is a resource
-failure).  However, it does not rule out memory safety errors or
-assertion failures. This is because our logic does not prove any
-safety or correctness theorems but only focuses on resource usage.
+derived in the logic.  We start by defining an indexed
+predicate $\cdot \downarrow_n$ that defines a \emph{resource-safe}
+program configuration:
+\begin{multline*}
+  (\state, S, K, c) \downarrow_n \, := \\
+  \forall m \le n.\, \forall c'.\,
+    (\state, S, K, c) \smallstep^m
+    (\_, \_, \_, c') \implies 0 \le c'.
+\end{multline*}
+This predicate means that a program configuration can execute
+for a certain number of steps without running out of resources.
+Note that nothing is said about the program safety, i.e. a stuck
+configuration $C$ will satisfy $\forall n.\, C\downarrow_n$. This
+is because our logic does not prove any safety or correctness
+theorems but only focuses on resource usage.
+We can now be used to define the resource safety
+of a configuration with respect to a quantitative assertion.
+\begin{multline*}
+  \safe n P S \cont \, := \\
+  \forall \state\, c.\, P(\state) \le c \implies
+    0 \le c \wedge (\state, S, K, c) \downarrow_n.
+\end{multline*}
+Once again, we use an index in the definition of the predicate, it
+is used to perform proofs by induction for the function-call and
+loop rules of the logic.
 %
-An interesting detail in the definition is the natural number $m$.  We
-simply use it to ensure that $\safe {n+1} P S \cont \implies \safe n P S
-\cont $.  This would not be the case if we replaced all occurrences of
-$m$ by $n$ in the definition of validity.
+An interesting and essential property of the previous predicate is
+that $\safe {n+1} P S \cont \implies \safe n P S \cont$.  To prove
+this weakening property, we use the quantification over all numbers
+smaller than $n$ in the definition of $\cdot \downarrow_n$.
 
 The resource safety of a continuation $\cont$ is defined using three
 assertions, one for each of the possible outcomes of a program
 statement.  We define it as follows.
 \begin{align*}
 \safeK n B R Q \cont & :=  \safe n B {\code{break}} \cont \\
- \land& \safe n {\lambda \state.\,R\,(\state(x))} {\code{return}~x} \cont \\
+ \land& \forall x. \safe n {\lambda \state.R\,(\state(x))} {\code{return}~x} \cont \\
  \land& \safe n Q {\code{skip}} \cont
 \end{align*}
 %
 We can now define the \emph{semantic validity} of a judgement $B; R
-\vdash \htriple P S Q$ of the quantitative logic without function
+\ldash \htriple P S Q$ of the quantitative logic without function
 context as $\valid n B R P S Q :=$
-\begin{align*}
-& \forall m \, \cont \, x \geq 0 .\, (m \le n \land \safeK m {B{+}M_b{+}x} {R{+}x} {Q{+}x} \cont) \\
-& \implies \safe m {P+x} S \cont \; .
-\end{align*}
+\begin{multline*}
+\forall m \le n.\, \forall x \geq 0 .\, \forall \cont . \\
+  \safeK m {B{+}x} {R{+}x} {Q{+}x} \cont \\
+  \implies \safe m {P+x} S \cont .
+\end{multline*}
 Note how the validity of a triple embeds the frame rule of
 our logic. This refinement is necessary to have a stronger
 induction hypothesis available during the proof.
@@ -3496,7 +3501,7 @@ Using the semantic validity of triples we define the validity
 of a function context $\Delta$, written $\validC n \Delta$, as
 \begin{align*}
   &\forall f .\, \Delta(f) =
-    \forall z \, \vec v \, v .(P_f \, z \, \vec v, Q_f \, z \, v)
+    \forall z \, \vec v \, v .\, (P_f \, z \, \vec v, Q_f \, z \, v)
     \implies \\
   &\qquad \forall z \, \vec v .\,
   \valid n \bot {Q_f \, z} {P_f \, z \, \vec v} {S_f} \bot ,
@@ -3512,10 +3517,11 @@ soundness of the {\sc L:Extend} rule by induction.
 We are now able to state the soundness of the quantitative logic.
 %
 \begin{theorem}[Soundness]
-  If $\Delta; B; R \vdash \htriple P S Q$ is derivable then
+  \label{thm:sound}
+  If $\Delta; B; R \ldash \htriple P S Q$ is derivable then
   $
     \forall n .\, \validC n \Delta
-      \implies \valid {n {+} 1} B R P S Q.
+      {\implies} \valid {n {+} 1} B R P S Q.
   $
 \end{theorem}
 %
@@ -3536,10 +3542,11 @@ $\delta$ to be exactly one in the theorem statement.
 
 Assume that $S$ is a complete program and $\Delta$ is empty.  By
 expanding the definitions we see that $\Delta$ is valid
-for every $n$ and that $\Kstop$ is safe for every $n$. So
-we derive
+for every $n$ and that $\Kstop$ is safe for every $n$ if both
+$Q$, $R$, and $B$ are non-negative on all possible program
+states. So the \pref{thm:sound} becomes
 $$
-\Delta; B; R \vdash \htriple P S Q \implies   \forall n .\, \safe n P S \Kstop.
+\Delta; B; R \ldash \htriple P S Q \implies   \forall n .\, \safe n P S \Kstop.
 $$
 This means that from any starting state $\state$, $P(\state)$
 provides enough resources for any run of the program $S$.  This
