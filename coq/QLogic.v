@@ -187,12 +187,11 @@ Qed.
 (* Try to prove a goal '0 ≤ c' by using the
  * safety of one continuation in the context.
  *)
-Ltac fuel :=
+Ltac ksgn :=
   match goal with
   | [ S: safek _ _ _ _ _ |- 0 ≤ ?c ] =>
-    destruct S as [S1 [S2 S3]];
+    destruct S as [S1 [_ S3]];
       try (eapply S1; now eauto);
-      try (eapply S2; now eauto);
       try (eapply S3; now eauto);
       fail 1
   end.
@@ -233,7 +232,7 @@ Qed.
 
 Lemma sound_LTick:
   ∀ n B R (Q: assn) q
-    (QNNEG: q < 0 → ∀ m c, Q m c → 0 ≤ c),
+    (QGEZ: q < 0 → ∀ m c, Q m c → 0 ≤ c),
   n\ B\ R ⊨ {{ Q }} STick q {{ Q + -q }}.
 Proof.
 intros. unfold valid, safe; intros.
@@ -242,7 +241,7 @@ assert (CNNEG: 0 ≤ c).
   destruct QD as [HQ | HQ].
   + cut (0 ≤ c - x).
     intro. omega.
-    eapply QNNEG. exact HQ. exact INI.
+    eapply QGEZ. exact HQ. exact INI.
   + destruct SAFEK as [_ [_ S]].
     cut (0 ≤ c - q). intro. omega.
     eapply S. unfold assn_addZ.
@@ -250,7 +249,7 @@ assert (CNNEG: 0 ≤ c).
     with (c - x) by omega.
     exact INI.
 }
-split; [ assumption | step ].
+split; [ exact CNNEG | step ].
 apple SAFEK. unfold assn_addZ. simpl.
 replace (c - q - x - - q)
 with (c - x) by omega.
@@ -272,9 +271,9 @@ Ltac invq H :=
     destruct S as [_ [_ S]];
     eapply S; unfold assn_addZ in *;
     now eauto using H
-  end || fuel.
+  end || ksgn.
 assert (CNNEG: 0 ≤ c). invq IGEQ.
-split; [ assumption | step ].
+split; [ exact CNNEG | step ].
 apply BDY with (x := x); eauto. omega.
 clear INI.
 unfold safek, safe; intuition;
@@ -291,17 +290,18 @@ Lemma sound_LSeq:
     (PRE1: n\ B\ R ⊨ {{ P }} s1 {{ Q' }})
     (PRE2: n\ B\ R ⊨ {{ Q' }} s2 {{ Q }}),
   n\ B\ R ⊨ {{ P }} SSeq s1 s2 {{ Q }}.
-Proof with try (intros; fuel).
+Proof with try (intros; ksgn).
 unfold valid at 3, safe; intros.
-assert (C: 0 ≤ c).
+assert (CNNEG: 0 ≤ c).
 { eapply (valid_nneg n B R P Q' s1 x XSGN PRE1)...
   eapply (valid_nneg n B R Q' Q s2 x XSGN PRE2)...
   eassumption.
 }
-split; [ assumption | step ].
+split; [ exact CNNEG | step ].
 apply PRE1 with (x := x); try (omega || assumption).
 clear INI.
-unfold safek, safe; intuition; try step; try fuel.
+unfold safek, safe; intuition;
+  try step; try ksgn.
 + apple SAFEK; assumption.
 + simpl; apple SAFEK; auto.
 + eapply (valid_nneg n B R Q' Q s2 x XSGN PRE2)...
@@ -322,7 +322,7 @@ apply PRE with (x := x + k); try omega.
 clear INI c m.
 unfold safek, safe.
 intuition; rewrite Z.sub_add_distr in *;
-  try fuel; try apply SAFEK; auto.
+  try (ksgn || apply SAFEK; auto).
 rewrite Z.sub_add_distr; exact INI.
 Qed.
 
@@ -398,11 +398,10 @@ Proof.
 unfold valid, safe; intros.
 unfold assn_addZ in INI.
 destruct INI as [CSGN PREC].
-assert (CNNEG: 0 ≤ c) by omega.
-split; [ exact CNNEG | step ].
+split; [| step ]; try omega.
 refine (_ (PREC vl _)); auto. clear PREC. intros [PRE FRAME].
 eapply VCTX with (x := x) (y := y); simpl;
-  try eassumption; try omega.
+  try (eassumption || omega).
 + unfold safek, safe.
   intuition; try destruct INI.
   step. apple SAFEK.
