@@ -307,7 +307,11 @@
                      \@setflag \@explicitsize = \@true
 		     \@setflag \@authoryear = \@true
                      \@setflag \@squareay = \@true
-                     \@setflag \@blind = \@true
+
+		     % XXX
+                     %\@setflag \@blind = \@true
+		     % XXX
+
                      \@setflag \@preprint = \@true
                      \@setflag \@clearpagebib = \@true
 		     }
