@@ -543,9 +543,9 @@ a certificate for the derived resource bound.
 
 
 The derivation of a resource bound using potential functions is best
-explained by example.  If we use the tick metric that assigns cost $n$
-to the function call \code{tick(n)} and cost $0$ to all other
-operations then the cost of the following example can be bounded by
+explained by example.  If we use a cost model that assigns cost $n$ to
+the function call \code{tick(n)} and cost $0$ to all other operations
+then the cost of the following example can be bounded by
 $|[x,y]| = \max(y{-}x,0)$.% \footnote{Note that there are no restrictions on
   % the signs of the input variables in the examples.}
 \begin{lstlisting}[basicstyle=\tt\small]
@@ -643,11 +643,11 @@ potential method makes automatic bound derivation straightforward.
 
 The concept of a potential function is a generalization of the
 concept of a ranking function.  A potential function can be used like
-a ranking function if we use the tick metric and add the statement
+a ranking function if we add the statement
 \code{tick(1)} to every back edge of the program (loops and function
 calls).  However, a potential function is more flexible.  For example,
 we can use a potential function to prove that Example~2 does not
-consume any resources in the tick metric.
+consume any resources.
 \begin{lstlisting}[basicstyle=\tt\small]
 #\!\!\!\!\!#while (x<y) {tick(-1); x=x+1; tick(1)} #\hfill \textnormal{(Example 2)}#
 
@@ -1708,8 +1708,8 @@ while (k > 0) {
 \vspace{-.2cm}
 \end{minipage}
 \caption{Assisted bound derivation using logical state.  We write
-  $\#_1(a)$ for $\# \{ i \mid 0 {\le} i {<} N {\land} a[i] {=} 1 \}$ and use the
-  tick metric.  The derived bound  is
+  $\#_1(a)$ for $\# \{ i \mid 0 {\le} i {<} N {\land} a[i] {=} 1 \}$.
+  The derived bound is
   $2|[0,k]| + |[0,na]|$.
   }
 \label{fig:xmplincaux}
@@ -1734,7 +1734,7 @@ bsearch(x,l,h@,lg@) {
 \end{lstlisting}
 \vspace{-.2cm}
 \caption{Assisted bound derivation using logical state.
-  % We use the tick metric to model the stack consumption of the program.
+  % We model the stack consumption of the program using tick statements.
   % Before a function call to \code{bsearch}, a tick statement pays for
   % the space used by stack frame of the function.  The space is recoverd
   % after the call.
@@ -1762,7 +1762,7 @@ while (i < N) {
 \caption{Example of assisted bound derivation using logical state.
   We write $A(i)$ for
   $\#\{ k \mid i \le k \le N \land \forall\, 0\le j<k.\, a[j] < a[k]\}$.
-  We use the tick metric.  The bound derived is $|[0,N]| + |[0,nm]|$.
+  The bound derived is $|[0,N]| + |[0,nm]|$.
   }
 \label{fig:xmplmax}
 \end{figure}
@@ -2366,7 +2366,7 @@ search. $\toolname$ finds the tight linear bound $1+2|[0,n]|$.
 
 
 To compare our tool with existing work, we focused on loop bounds and
-use a simple metric that counts the number of back edges (i.e., number
+use tick statements to counts the number of back edges (i.e., number
 of loop iterations) that are followed in the execution of the program
 because most other tools only bound this specific cost. In
 \pref{fig:compar}, we show the bounds we derived ($\toolname$) together with
@@ -2455,7 +2455,7 @@ more than $\totalLoc$ lines of code.  In the LoC column
 we not only count the lines of the analyzed function but
 also the ones of all the function it calls. \iffull{The line count is
 computed on pre-processed C with all unnecessary declarations removed.}{}
-We analyzed the functions using a metric that assigns a cost 1 to all
+We analyzed the functions by giving a cost 1 to all
 the back-edges in the control flow (loops, and function calls).
 The bounds for the functions \code{ycc\_rgb\_conv} and \code{uv\_decode}
 have been inferred with user interaction as described in \pref{sec:anno}.
@@ -3562,15 +3562,12 @@ induction.
 
 In this appendix we provide a non-exhaustive catalog of classes of
 programs that can be automatically analyzed by our system.  For
-simplicity, and to compare our analysis with existing tools, we use a
-cost metric that counts the number of loop iterations and function
-calls.  This is the only cost metric supported by tools like
+simplicity, and to compare our analysis with existing tools, we use
+tick statements to count the number of loop iterations and function
+calls.  This is the only resource that can be measured by tools like
 KoAT~\cite{BrockschmidtEFFG14} and LOOPUS~\cite{SinnZV14}.  Sometimes
-we also use the \emph{tick metric} if we want to discuss features such as
-resource restitution.  The tick metric assigns cost $n$ to the
-statement \code{tick(n)} and cost $0$ to all other statements. Of
-course, the examples can also be analyzed with any other cost metric
-in our system.
+we also use (negative) tick statements to discuss features such as
+resource restitution.
 
 We assume that free variables in the code snippets are the inputs of
 the program. Some of the examples contain constants on which the
@@ -4408,7 +4405,7 @@ the loop (this would be also done by an optimizing compiler).  The
 resulting program can then be analyzed by our tool.
 
 Example \emph{ex1} from~\cite{GulwaniZ10} specifically focuses on the
-code in the \emph{if} statement.  So we use the \emph{tick metric} and
+code in the \emph{if} statement.  So we
 insert \code{tick(1)} inside the if statement to derive a bound on
 the number of times the code in the if statement is executed.  Note
 that we cannot derive a bound for the whole program since the outer
@@ -4651,7 +4648,7 @@ variable $y$ that is passed as an argument and we call the function
 0.67 |[z,y]|$.
 
 Example \emph{t46} shows a program that uses and returns resources.
-Again, we use the \emph{tick metric} and the function \code{tick} to
+Again, we use the function \code{tick} to
 describe the resource usage.  The function \code{produce} produces
 $|[0,x]|$ resources, that is, in each of the $|[0,x]|$ iterations, it
 receives one resource unit.  Similarly, the function \code{consume}
