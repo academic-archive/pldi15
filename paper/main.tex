@@ -1764,7 +1764,7 @@ while (i < N) {
   $\#\{ k \mid i \le k \le N \land \forall\, 0\le j<k.\, a[j] < a[k]\}$.
   The bound derived is $|[0,N]| + |[0,nm]|$.
   }
-\label{fig:xmplmax}
+% \label{fig:xmplmax2}
 \end{figure}
 \fi
 
@@ -3562,11 +3562,12 @@ induction.
 
 In this appendix we provide a non-exhaustive catalog of classes of
 programs that can be automatically analyzed by our system.  For
-simplicity, and to compare our analysis with existing tools, we use
-tick statements to count the number of loop iterations and function
-calls.  This is the only resource that can be measured by tools like
+simplicity, and to compare our analysis with existing tools,
+the examples are automatically instrumented with tick statements
+to count the number of loop iterations and function calls.
+This is the only resource that can be measured by tools like
 KoAT~\cite{BrockschmidtEFFG14} and LOOPUS~\cite{SinnZV14}.  Sometimes
-we also use (negative) tick statements to discuss features such as
+we use tick statements explicitely to discuss features such as
 resource restitution.
 
 We assume that free variables in the code snippets are the inputs of
@@ -4613,7 +4614,7 @@ $1 + 2 |\inter 0 {\code{len}}|$
   \end{minipage}
 
    \caption{Well-Known Algorithms}
-  \label{fig:cat3}
+  \label{fig:wknown}
 \end{figure*}
 
 
@@ -5307,7 +5308,7 @@ $1 {+} |\inter 0 n|$
 
 \paragraph{Well-Known Algorithms}
 
-\pref{fig:cat3} shows well-known algorithms that can be automatically
+\pref{fig:wknown} shows well-known algorithms that can be automatically
 analyzed in our framework.  Example \emph{Knuth-Morris-Pratt} shows
 the search function of the Knuth-Morris-Pratt algorithm for string
 search.  To derive a bound for this algorithm we have add an assertion
