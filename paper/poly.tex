@@ -1,3 +1,44 @@
+\documentclass[nocopyrightspace,preprint,pldi]{sigplanconf-pldi15}
+
+\usepackage[utf8]{inputenc} %for utf8 input
+\usepackage{amssymb} %for shift symbol
+\usepackage{amsmath}
+\usepackage{listings} %for code
+\usepackage{mathpartir} %for typing rules
+\usepackage{microtype} %better micro typing
+\usepackage{stmaryrd} %for llbracket
+\usepackage{mathabx} % for boxes
+\usepackage{graphicx} %to include png images
+\usepackage{xcolor} %for colors
+\usepackage{url}
+\usepackage{enumitem}
+\usepackage{array} %for stupid tables
+
+%----------------------------------------------------
+
+\usepackage{prettyref}
+\newcommand{\pref}[1]{\prettyref{#1}}
+\newcommand{\Pref}[1]{\prettyref{#1} \vpageref[]{#1}}
+\newcommand{\ppref}[1]{\vpageref[]{#1}}
+\newrefformat{fig}{Figure~\ref{#1}}
+\newrefformat{app}{Appendix~\ref{#1}}
+\newrefformat{tab}{Table~\ref{#1}}
+\newrefformat{cha}{Challenge~\ref{#1}}
+\newrefformat{compiler}{Point~\ref{#1} of \pref{thm:compiler}}
+
+%----------------------------------------------------
+
+\usepackage{amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+
+%----------------------------------------------------
+
+\input{definitions}
+\begin{document}
+
 \section{Polynomial Potential}
 
 \paragraph{Index Sets}
@@ -146,6 +187,34 @@ $$
   Then $Q' = \shift_{U_1,\ldots,U_n}(Q)$.
 \end{lemma}
 
+\subsection{Binomial basis}
+
+\begin{lemma}
+  There exists a family $(c^{i,j}_k)_k$, such that
+  $$
+  \sum_k c^{i,j}_k \binom n k = \binom n i \binom n j,
+  $$
+  and $c^{i,j}_k = \binom m j \binom j {i+j - m}$.
+\end{lemma}
+\begin{proof}
+  \begin{align*}
+    \binom n i \binom n j
+      &= \sum_k \binom {n-j} k \binom j {i-k} \binom n j \\
+      &= \sum_k \binom {n-j} {k-j} \binom n j \binom j {i+j-k} \\
+      &= \sum_k \binom n k \binom k j \binom j {i+j-k}.
+  \end{align*}
+  In the first equality, we use Vandermonde's convolution
+  formula on $\binom n i$.  In the second equality we change
+  the summation variable to $k-j$.  And in the third equation
+  we use the identity proved below.
+  \begin{align*}
+    \binom {n-j} {k-j} \binom n j
+      &= \frac {(n-j)!} {(n-k)! (k-j)!} \; \frac {n!} {(n-j)! j!} \\
+      &= \frac {n!} {(n-k)! (k-j)! j!} \\
+      &= \frac {n!} {(n-k)! k!} \; \frac {k!} {(k-j)! j!} \\
+      &= \binom n k \binom k j.
+  \end{align*}
+\end{proof}
 
 
 
@@ -154,3 +223,5 @@ $$
 %   Q' = shift_{x,y} (shift_{x,u} (Q))
 % To do: Give a combined formula for that (concise constraint system).
 %%
+
+\end{document}
