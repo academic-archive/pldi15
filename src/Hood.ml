@@ -130,17 +130,14 @@ end = struct
       | [] -> a
     in pairs (f a const) vl
   let range l i =
-    let f b k = match b with
-      | Dst (x1, x2) ->
-        let lo, hi = Logic.irange l x1 x2 in
-        let p = function Some n -> Some (pow n k) | None -> None in
-        (p lo, p hi) in
-    let m (l1, u1) (l2, u2) =
-      let m = function
-        | (Some a, Some b) -> Some (a * b)
+    let f b k (rl, ru) =
+      let (l, u) = match b with
+        | Dst (x1, x2) -> Logic.irange l x1 x2 in
+      let f = function
+        | (Some a, Some b) -> Some (pow a k * b)
         | _ -> None in
-      (m (l1, l2), m (u1, u2)) in
-    I.fold (fun b k r -> m (f b k) r) i (Some 1, Some 1)
+      (f (l, rl), f (u, ru)) in
+    I.fold f i (Some 1, Some 1)
   let printk k i =
     if abs_float k < 1e-6 then () else
     let f b k = match b with
@@ -275,7 +272,7 @@ end = struct
       List.map (fun (i, k) -> (i, (newv ~sign:(-1) (), k))) lo @
       List.map (fun (i, k) -> (i, (newv ~sign:0 (), k))) eq @
       List.map (fun (i, k) -> (i, (newv ~sign:(+1) (), k))) up in
-    if List.length l = 0 then c else                                                                           (* YYY *)
+    if l = [] then c else
     let c = List.fold_left
       begin fun c (i, (ip, _)) ->
         let v' = newv () in
@@ -409,7 +406,7 @@ let analyze (fdefs, p) =
 
     | PCall (ret, fname, args, _) ->
       let varl = List.map (fun x -> VId x) in
-      let f = List.find (fun x -> 0 = String.compare x.fname fname) fdefs in                                         (* YYY *)
+      let f = List.find (fun x -> x.fname = fname) fdefs in
 
       let tmps = List.map ((^) "%") f.fargs in
       let tmpset = VSet.of_list (varl tmps) in
