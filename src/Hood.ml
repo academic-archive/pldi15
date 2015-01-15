@@ -55,11 +55,11 @@ let lannot =
   in fun (fl, p) ->
     List.map g fl, f' [] (ref []) [] p
 
-
 (* indices we use to name lp variables *)
 module Idx : sig
   type t
   val compare: t -> t -> int
+  val eq: t -> t -> bool
   val const: t
   val dst: var * var -> t
   val map: (var -> var) -> t -> t option
@@ -69,26 +69,58 @@ module Idx : sig
   val range: pstate -> t -> (int option * int option)
   val printk: float -> t -> unit
 end = struct
-  type t = Const | Dst of var * var
-  let compare = compare
-  let const = Const
-  let dst (u, v) = assert (u <> v); Dst (u, v)
-  let map f = function
-    | Const -> Some Const
-    | Dst (a, b) ->
-      let a' = f a and b' = f b in
-      if a' = b' then None else
-      Some (Dst (a', b'))
-  let local vs = function
-    | Const -> false
-    | Dst (VNum _, a) | Dst (a, VNum _) -> VSet.mem a vs
-    | Dst (a, b) -> VSet.mem a vs && VSet.mem b vs
-  let obj = function
-    | Dst (VNum a, VNum b) -> max (b-a) 0 + 10
-    | Dst (VNum n, _)
-    | Dst (_, VNum n) -> 10_000 + abs n
-    | Dst _ -> 11_000
-    | _ -> 1
+  type base = Dst of var * var
+  module I = struct
+    include Map.Make (struct
+      type t = base
+      let compare = compare
+    end)
+    type indice = int t
+    let add k v m =                                                                   (* XXX check if really needed. *)
+      if v <> 0 then add k v m else m
+    let k b i =
+      try find b i with Not_found -> 0
+    let deg i =
+      fold (fun _ -> (+)) i 0
+    let mult =
+      let a _ x y =
+        let f = function Some n -> n | None -> 0 in
+        let z = f x + f y in
+        if z = 0 then None else Some z in
+      merge a
+  end
+  type t = I.indice
+  let compare = I.compare compare
+  let eq i j = compare i j = 0
+  let const = I.empty
+  let dst (u, v) =
+    assert (u <> v);
+    I.add (Dst (u, v)) 1 const
+  let map f i =
+    let g = function
+      | Dst (a, b) ->
+        let a' = f a and b' = f b in
+        if a' = b' then None else
+        Some (Dst (a', b')) in
+    I.fold (fun b k i' ->
+      match (g b, i') with
+      | (Some b', Some i') -> Some (I.add b' k i')
+      | _ -> None
+    ) i (Some const)
+  let local vs i =
+    let f = function
+      | Dst (VNum _, a) | Dst (a, VNum _) -> VSet.mem a vs
+      | Dst (a, b) -> VSet.mem a vs && VSet.mem b vs in
+    if I.deg i = 0 then false else
+    I.for_all (fun b _ -> f b) i
+  let rec pow a b = if b = 0 then 1 else a * pow a (b-1)
+  let obj i =
+    let f = function
+      | Dst (VNum a, VNum b) -> max (b-a) 0 + 10
+      | Dst (VNum n, _)
+      | Dst (_, VNum n) -> 100 + abs n
+      | Dst _ -> 100 in
+    I.fold (fun b k o -> o + pow (f b) k) i 1
   let fold f a vs =
     let vl = VSet.elements vs in
     let rec pairs a = function
@@ -97,18 +129,29 @@ end = struct
         pairs (List.fold_left g a vl) tl
       | [] -> a
     in pairs (f a const) vl
-  let range l = function
-    | Dst (x1, x2) -> Logic.irange l x1 x2
-    | _ -> (None, None)
+  let range l i =
+    let f b k = match b with
+      | Dst (x1, x2) ->
+        let lo, hi = Logic.irange l x1 x2 in
+        let p = function Some n -> Some (pow n k) | None -> None in
+        (p lo, p hi) in
+    let m (l1, u1) (l2, u2) =
+      let m = function
+        | (Some a, Some b) -> Some (a * b)
+        | _ -> None in
+      (m (l1, l2), m (u1, u2)) in
+    I.fold (fun b k r -> m (f b k) r) i (Some 1, Some 1)
   let printk k i =
     if abs_float k < 1e-6 then () else
-    match i with
-    | Const ->
-      Printf.printf "%.2f\n" k
-    | Dst (v1, v2) ->
-      Printf.printf "%.2f |[%a, %a]|\n" k
-        Parse.pp_var v1 Parse.pp_var v2
+    let f b k = match b with
+      | Dst (v1, v2) ->
+        Printf.printf " |[%a, %a]|"
+          Parse.pp_var v1 Parse.pp_var v2;
+        if k <> 1 then Printf.printf "^%d" k in
+    Printf.printf "%.2f" k; I.iter f i; print_newline ()
 end
+
+(* let ( = ): int -> int -> bool = ( = ) *)
 
 (* quantitative contexts and their operations *)
 module Q: sig
@@ -232,7 +275,7 @@ end = struct
       List.map (fun (i, k) -> (i, (newv ~sign:(-1) (), k))) lo @
       List.map (fun (i, k) -> (i, (newv ~sign:0 (), k))) eq @
       List.map (fun (i, k) -> (i, (newv ~sign:(+1) (), k))) up in
-    if l = [] then c else
+    if List.length l = 0 then c else                                                                           (* YYY *)
     let c = List.fold_left
       begin fun c (i, (ip, _)) ->
         let v' = newv () in
@@ -366,7 +409,7 @@ let analyze (fdefs, p) =
 
     | PCall (ret, fname, args, _) ->
       let varl = List.map (fun x -> VId x) in
-      let f = List.find (fun x -> x.fname = fname) fdefs in
+      let f = List.find (fun x -> 0 = String.compare x.fname fname) fdefs in                                         (* YYY *)
 
       let tmps = List.map ((^) "%") f.fargs in
       let tmpset = VSet.of_list (varl tmps) in
