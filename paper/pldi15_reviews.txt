@@ -97,7 +97,7 @@ There is a missing citation for Clight.
 
 ===========================================================================
                            PLDI '15 Review #41C
-                     Updated 11 Dec 2014 6:37:58pm EST
+                     Updated 20 Dec 2014 2:11:30am EST
 ---------------------------------------------------------------------------
             Paper #41: Compositional Certified Resource Bounds
 ---------------------------------------------------------------------------
@@ -107,7 +107,7 @@ There is a missing citation for Clight.
 
                          ===== Paper summary =====
 
-This paper proposes a compositional method to derive resource bounds for C programs. The resources in this paper (mainly) refer to computation time.  The idea is to use the linear potential function from amortized analysis to represent resource bound since the amortized analysis model has nice composition property. 
+This paper proposes a compositional method to derive resource bounds for C programs. The resources in this paper (mainly) refer to computation time.  The idea is to use the linear potential function from amortized analysis to represent resource bound since the amortized analysis model has nice composition property.
 
 In order to get the resource bound, it only needs to solve for all coefficients of the linear potential function. First, this model derives the resource bound for each strongly connected component in the call graph with predefined inference rules. Then it collects the constraints of coefficients for every SCC. Later, an off-the-shelf linear programming solver is used to find the solution for the collected constraints and obtain the resource bound for the whole program.
 
@@ -128,8 +128,184 @@ If I understand correctly, this approach chooses linear potential function. I ca
 
                       ===== Comments for author =====
 
-First, please address the questions above. 
+First, please address the questions above.
 
-Secondly,  it would be good to see some evaluation results for larger and more complex programs. This paper mainly presents results for programs with several hundreds of lines or less. How would the technique scale if the size of a program becomes larger?  
+Secondly,  it would be good to see some evaluation results for larger and more complex programs. This paper mainly presents results for programs with several hundreds of lines or less. How would the technique scale if the size of a program becomes larger?
 
 There is a minor issue in the organization of the paper. The authors should introduce the framework briefly at the beginning of the paper. For instance, in Fig. 1, the coefficient T/K of |[x,y]| was given without any explanation and the paper did not specify why there is a 0 for |[y,x]|. I did not find the answer until Section 3 and 5. For audience who are not familiar with this area, it will help if you explain the background a bit more at the beginning of the paper.
+
+===========================================================================
+                           PLDI '15 Review #41D
+                     Updated 14 Jan 2015 9:50:51pm EST
+---------------------------------------------------------------------------
+            Paper #41: Compositional Certified Resource Bounds
+---------------------------------------------------------------------------
+
+                      Overall merit: 2. Accept
+                         Conviction: 1. High
+
+                         ===== Paper summary =====
+
+This paper describes a program analysis that automatically derives linear resource bounds for C programs. The system produces resource summaries for functions and so it operates compositionally.  The key idea is to combine techniques from abstract interpretation with potential functions from the world of amortized analysis.  The authors evaluated their work by analyzing ~30 benchmark programs taken from the literature, whose combined size was roughly 2900 LoC.  In almost all cases, the system successfully derived tight resource bounds.  The authors show that the bounds they derive are better than the bounds derived by existing state of the art tools (although some of those tools are more general). The authors proved that their analysis is sound in Coq.
+
+                        ===== Points in favor =====
+
++ The problem is an important one, particularly for safety critical code that needs to be proven to run within fixed resource constraints.
+
++ It is really cool that the rule the authors derive for compositional resource bounds is of the same form as the composition rule for Hoare logic.
+
++ The tool infers tighter bounds on a wide range of problems than existing tools.  The challenge problems are ones initially identified by other researchers.
+
++ The analysis is compositional with associated advantages; the tool can analyze recursive functions.
+
++ The tool can handle dynamically varying resources.
+
++ The tool generates proof certificates that can be checked in linear time.
+
++ The tool can leverage program correctness results to enable the semi-automatic inference of non-linear bounds (polynomial, logarithmic, exponential).
+
++ The authors have used Coq to machine-check key parts of the soundness result.
+
++ The authors defined a cost-aware operational semantics for Clight, which is likely interesting in its own right.
+
++ The tool and the proofs are publicly available.
+
+                        ===== Points against =====
+
+- The presentation of the formal rules in Figure 4 doesn’t explain the M meta-variables (described briefly on pages 8-9 as resource metrics).
+
+- The fully automatic analysis can only infer linear bounds.
+
+                      ===== Comments for author =====
+
+p. 6  “Non-linear operations such as x <- z * y or x <- a[y] are handled by assigning 0 to coefficients like qxa and qax that contain x after the assignment.”  Can you give an explanation for why this treatment is sound?
+
+Figure 4.  What are the M meta-variables? For example, M_l in (Q:Loop).
+
+===========================================================================
+                           PLDI '15 Review #41E
+                     Updated 16 Jan 2015 9:09:55am EST
+---------------------------------------------------------------------------
+            Paper #41: Compositional Certified Resource Bounds
+---------------------------------------------------------------------------
+
+                      Overall merit: 2. Accept
+                         Conviction: 2. Low
+
+                         ===== Paper summary =====
+
+The paper presents an approach for deriving resource bounds (upper bounds on the complexity of programs). There is a significant body of work in this space as this is an important problem. The key contributions of this work are 1) the development of a Hoare-logic-based technique allowing for compositional analysis, where global bounds can result from local constraints, and 2) the use of linear programming in deriving precise bounds. The analysis is proven correct, implemented and publicly available.
+
+                        ===== Points in favor =====
+
++ Analysis framework and tool are publicly available.
+
++ There are some very nice contributions: elegant compositionality and linear programming, which enable tight bounds. Another contribution is the integration with manual assertions.
+
++ Tool computes tighter bounds for several examples compared with existing tools.
+
++ Very nicely written paper! Despite the enormous background material it needed to cover, it was accessible and conveyed the main points well.
+
+                        ===== Points against =====
+
+- It seems the tool can only derive linear bounds, while existing tools can derive polynomial bounds. I suppose this is not a huge issue as the tighter linear bounds can be integrated within these other tools to computer tighter polynomial bounds.
+
+- Although this is a step in the right direction, resource bound inference is still impractical. The benchmark examples and programs are < 100 lines of code, usually substantially less than 100 lines. I expected that “compositional” analysis will be able to handle larger, more complex programs.
+
+                      ===== Comments for author =====
+
+Minor comments:
+
+Page 4 examples. I am still puzzled as to how the bound invariants, with these non-trivial constant factors, are arrived at. You claim you don’t need tight loop invariants but can compute tight bound invariants and constant factors?
+
+Page 6. What is the interpretation of the handling of nonlinear operations?
+
+Page 6 bottom. Why there is no discussion of rule Q:Loop in the text? I think it will be really helpful.
+
+Why there is no comparison with other tools on cBench?
+
+===========================================================================
+                           PLDI '15 Review #41F
+                     Updated 16 Jan 2015 7:03:06pm EST
+---------------------------------------------------------------------------
+            Paper #41: Compositional Certified Resource Bounds
+---------------------------------------------------------------------------
+
+                      Overall merit: 2. Accept
+                         Conviction: 2. Low
+
+                         ===== Paper summary =====
+
+This paper presents a  method for deriving certified resource bounds
+(e.g. running time, number of memory cells consumed etc.) for C programs.
+The method has the following advantages over prior work in this space:
+
+* it is compositional in that one can derive different "relational summaries" from
+  different procedures which can be glued together to get the overall bound.
+  This is because the bounds (for each procedure, say) are essentially functions
+  from the procedures inputs to a "potential", which allows stitching the results
+  together in the way summaries are composed in a relational program analysis.
+
+* it (including the notion of cost semantics) has been formalized within
+  CompCert yielding an extremely high assurance certificates of correctness.
+
+* the analysis is really a program logic in disguise, which is nice because it
+  lets the user plug in invariants / bounds manually in the (inevitable)
+  cases where the inference can't cut it.
+
+* the paper presents a solid evaluation on a number of C programs including hairy
+  examples from the literature as well as real world C programs.
+
+                        ===== Points in favor =====
+
++ Important problem
+
++ The contributions are solid both in theory, implementation and evaluation
+
+                        ===== Points against =====
+
+- I believe the formalism with potentials and such can be simplified further
+  by more tightly connecting to program logics,
+
+- Once you view things in the above light, there is a stronger connection with
+  verification literature, including the papers on synthesizing invariants and ranking
+  functions via LP which the paper should include.
+
+                      ===== Comments for author =====
+
+This is a solid piece of work that I believe should be accepted.
+
+That said, I think the presentation can be simplified (and if not,
+a small paragraph explaining why the below is too simplistic would
+improve the paper by justifying the complexity.)
+
+Essentially, the "potential" is an extra "state" variable that:
+
+1. is decremented by some cost at various given operations,
+2. must be non-negative at all operations.
+
+So if one was interested in running time, and say each operation took
+1 unit of time, then implicitly there is a "global" that is
+decremented by one at each operation, and is required to be greater
+than 0 at all times. With this, the entire business of compositional
+analysis boils down to computing invariants that relate the program
+variables with this "global"; and compositional analysis boils down to
+computing how the value of this global "changes" across a procedure
+call (what is its value at the end -- in the postcondition vs. at the
+beginning -- in the precondition), and plain old program logics give
+you compositionality out of the box.
+
+Then the specific tehcniques here can be viewed as using LP to compute
+relational invariants (in the abstract interpretation sense of the word)
+between the usual program parameters and this global "ghost" variable.
+
+Viewed in this light the research on computing linear invariants and ranking
+functions (Colon, Sipma, Manna, Sankaranarayanan, Rybalchenko etc. etc.)
+are very closely related with the techniques here.
+
+Anyways, my point is not to detract from this substantial work;
+rather, I think the above connection should be made more explicit and
+discussed in the paper, and that it might greatly simplify, generalize
+and strengthen the paper. (And if the above doesn't apply then I'd be
+curious to know why and it would helps justify the need for
+specialized rules.)
