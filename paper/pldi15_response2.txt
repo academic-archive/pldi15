@@ -49,7 +49,7 @@ can readily be done by 'plain old' Hoare logics.  However, we
 believe that proofs of resource safety should be separated from
 proofs of correctness. Using a classic Hoare logic directly
 would lead to bulky proofs that are hard to automate because
-these program logics prove "too much": memory safety, termination,
+it would require to prove "too much": memory safety, termination,
 etc.
 
 Our custom built logic and its soundness theorem are specifically
