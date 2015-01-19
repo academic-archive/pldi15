@@ -1,0 +1,62 @@
+
+To address in this second response:
++ non-linear operations deserve better explanation (0 potential trick) (#41D #41E)
++ link with other tools? (#41E #41F)
+
+Already addressed but still mentioned:
++ linear bounds
++ short tests
+
+
++++ Handling of non-linear operations
+
+Non-linear operations (including heap reads) do not currently
+fit in our framework.  The solution we chose is to consider them
+as non-deterministic assignments.  They are a sound abstraction
+for the behavior of the program.  We give details on how this
+works in practice below.
+
+Assignments like x = a[y] or x = t*y are re-written by our
+pre-processor as x = * where '*' represents an expression
+returning an unknown integer.
+
+During the analysis, we use the following rule:
+
+   for all u != x, q'_{xu} = q'_{ux} = 0
+   -------------------------------------  .
+            Phi |- x = * -| Phi'
+
+Since the value of x is undetermined after the assignment, we
+do not know neither the size of intervals |[x, u]| and |[u, x]|
+for all u (!= x).  Because these intervals are of unknown size
+require that their potential is 0, this way, we know that for
+any heap H, Phi(H) >= Phi'(H[x <- *]), and the rule is sound.
+
+In short, since we do not know the value of intervals that
+contain x after a non-deterministic assignment to x, we require
+them to loose all their potential.
+
+
++++ Connection to program logics
+
+As noted by several reviewers, our concept of potential can
+be seen as an auxiliary state that respects some properties:
+non-negativitay throughout the program, and appropriate
+variations on resource affecting statements.
+
+Proving properties on such auxiliary state is nothing new and
+can readily be done by 'plain old' Hoare logics.  However, we
+believe that proofs of resource safety should be separated from
+proofs of correctness. Using a classic Hoare logic directly
+would lead to bulky proofs that are hard to automate because
+these program logics prove "too much": memory safety, termination,
+etc.
+
+Our custom built logic and its soundness theorem are specifically
+designed for resource safety and leave the burden of proving
+correctness to other tools.  We think that this is a strength
+of our work, and it is what motivated us to design this "domain
+specific" logic.  We definitely agree with the review #41F in
+that most resource-bounding tools use related techniques and we
+think that we made this greatest common divisor explicit as our
+quantitative Hoare logic.
