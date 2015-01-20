@@ -1,3 +1,5 @@
+#pragma tick
+
 int x, y;
 
 void produce() {

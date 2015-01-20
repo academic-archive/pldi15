@@ -1,0 +1,228 @@
+\documentclass[nocopyrightspace,preprint,pldi]{sigplanconf-pldi15}
+
+\usepackage[utf8]{inputenc} %for utf8 input
+\usepackage{amssymb} %for shift symbol
+\usepackage{amsmath}
+\usepackage{listings} %for code
+\usepackage{mathpartir} %for typing rules
+\usepackage{microtype} %better micro typing
+\usepackage{stmaryrd} %for llbracket
+\usepackage{mathabx} % for boxes
+\usepackage{graphicx} %to include png images
+\usepackage{xcolor} %for colors
+\usepackage{url}
+\usepackage{enumitem}
+\usepackage{array} %for stupid tables
+
+%----------------------------------------------------
+
+\usepackage{prettyref}
+\newcommand{\pref}[1]{\prettyref{#1}}
+\newcommand{\Pref}[1]{\prettyref{#1} \vpageref[]{#1}}
+\newcommand{\ppref}[1]{\vpageref[]{#1}}
+\newrefformat{fig}{Figure~\ref{#1}}
+\newrefformat{app}{Appendix~\ref{#1}}
+\newrefformat{tab}{Table~\ref{#1}}
+\newrefformat{cha}{Challenge~\ref{#1}}
+\newrefformat{compiler}{Point~\ref{#1} of \pref{thm:compiler}}
+
+%----------------------------------------------------
+
+\usepackage{amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+
+%----------------------------------------------------
+
+\input{definitions}
+\begin{document}
+
+\section{Polynomial Potential}
+
+\paragraph{Index Sets}
+
+Let $V$ be a set of variables.  An \emph{index} $I \in \ind(V)$ is a
+family that maps two-element sets of variables to natural numbers,
+that is,
+$$
+I = (i_{\{x,y\}})_{\{x,y\} \subseteq V} \; .
+$$
+%
+We identify a family $I$ with the set $\{ (\{x,y\},i_{\{x,y\}})
+\mid \{x,y\} \subseteq V\}$.
+
+Let $\ind(V)$ denote the set of all such indices.  We write $\ind$
+instead of $\ind(V)$ if the set of variables $V$ is fixed or obvious
+from the context.
+%
+We assume that allways $0 \in V$ and sometimes write $i_x$ instead of $i_{\{x,0\}}$.
+
+The \emph{degree} $\deg(I)$ of an index $I = (i_{\{x,y\}})_{\{x,y\}
+  \subseteq V}$ is defined as
+$$
+\deg(I) = \sum_{\{x,y\} \in V} i_{\{x,y\}} \;.
+$$
+We define $\ind_k(V) = \{ I \mid I \in \ind(V) \text{ and } \deg(i) \leq k
+\}$ to be the set of indices of degree at most $k$.
+
+\paragraph{Resource Polynomials}
+
+Let $V$ be a set of variables.  An index $I \in \ind(V)$ denotes a
+\emph{base polynomial} $P_I : \states \to \N$ for $V$ that maps a
+program state $H$ to product of binomial coefficients (a natural
+number).  We define
+$$
+P_I(H) = \prod_{{\{x,y\}} \subseteq V} \binom {|H(x){-}H(y)|} {i_{\{x,y\}}} \; .
+$$
+%
+A \emph{resource polynomial} $R$ for the variable set $V$ is a
+non-negative linear combination of the base polynomials for $V$.
+
+\paragraph{Potential Annotations}
+
+A \emph{potential annotation} for the variable set $V$ is a family
+$$Q = (q_I)_{I \in \ind(V)}$$
+of non-negative rational numbers.  Such an annotation denotes the
+resource polynomial $R_Q$ that is defined by
+$$
+R_Q(H) = \sum_{I \in \ind(V)} q_I \cdot P_I(H) \; .
+$$
+%
+We say that the potential annotation $Q$ is of degree $k$ if $q_I = 0$
+for $I \in \ind(V)$ with $\deg(I) > k$.
+
+\paragraph{Additive Shifts}
+
+Let $Q$ be a potential annotation for a variable set $V$ and let
+$\{x,y\} \subseteq V$ be a two-element variable set.  The
+\emph{additive shift} with respect to $\{x,y\}$ is a potential
+annotation $\shift_{\{x,y\}}(Q) = (q'_I)_{I \in \ind(V)} $ for $V$
+that is defined through
+$$
+q'_I = q_I + q_{I^{\{x,y\}{+}1}} \; .
+$$
+For an index $I = (i_{\{x,y\}})_{\{x,y\} \subseteq V}$ we use the
+notation $I^{\{x,y\}{+}k}$ to denote the index
+$(i'_{\{x,y\}})_{\{x,y\} \subseteq V}$ such that
+$$
+i'_{\{t,u\}} = \left\{
+  \begin{array}{ll}
+    i_{\{t,u\}} + k  & \text{if } \{t,u\} = \{x,y\} \\
+    i_{\{t,u\}} & \text{otherwise}
+  \end{array}
+\right.
+\;.
+$$
+%
+The additive shift for natural numbers reflects the identity
+\begin{equation}
+\label{eq:shift}
+\sum_{0 {\leq} i \leq {k}} q_i \binom{n+1}{i} = \sum_{0 {\leq} i \leq {k}} (q_i{+}q_{i+1}) \binom{n}{i}
+\end{equation}
+where $q_{k+1} = 0$.  It is used in the effect system if the
+difference $n+1$ between two variables $x,y$ decreases by one.
+
+\begin{lemma} Let $V$ be a set of variables with $x,y \in V$ and let
+  $H$ be a program state. Let $|H'(t) {-} H'(u)| = |H(t) {-} H(u)|$
+  for $\{t,u\} \neq \{x,y\}$ and let $|H'(x) {-} H'(y)| = |H(x) {-}
+  H(y)| - 1$.
+  %
+  If $Q' = \shift_{\{x,y\}}(Q)$ then $R_Q(H) = R_{Q'}(H')$.
+\end{lemma}
+
+We now study the effect of multiple simultaneous shifts.  Let $Q$ be a
+resource annotation for a variable set $V$ and let $U_1,\ldots,U_n
+\subseteq V$ with $|U_i| = 2$ for all $i$ and $U_i \neq U_j$ for $i
+\neq j$ be pairwise distinct two-element variable sets.  The
+simulations additive shift $\shift_{U_1,\ldots,U_n}(Q)$ of $Q$ with
+respect to $U_1,\ldots,U_n$ is defined by
+$$
+\shift_{U_1,\ldots,U_n}(Q) = \shift_{U_1}( \cdots \shift_{U_n}(Q) \cdots ) \; .
+$$
+%
+\begin{proposition}
+  Let $V$ be a set of variables and let $U_1,\ldots,U_n$ be pairwise
+  distinct two-element variable sets.  Let $|H'(x) {-} H'(y)| = |H(x)
+  {-} H(y)|$ for $\{x,y\} \not\in \{U_1,\ldots,U_n\}$ and let $|H'(x)
+  {-} H'(y)| = |H(x) {-} H(y)| - 1$ for $\{x,y\} \in
+  \{U_1,\ldots,U_n\}$.
+  %
+  If $Q' = \shift_{\{U_1,\ldots,U_n\}}(Q)$ then $R_Q(H) = R_{Q'}(H')$.
+\end{proposition}
+%
+As shown by the following lemma, the order in which the shifts for the
+individual $U_i$ are applied is insignificant.
+%
+\begin{lemma}
+  Let $\sigma : \{1,\ldots,n\} \to \{1,\ldots,n\}$ be a
+  permutation. Then $\shift_{U_1,\ldots,U_n}(Q) =
+  \shift_{U_{\sigma(1)},\ldots,U_{\sigma(n)}}(Q)$.
+\end{lemma}
+%
+For reasons of efficiency in the constraint generation, we give a more
+direct formula for the simultaneous shift.  Let $I \in \ind(V)$ and
+let $U_1,\ldots,U_n$ be pairwise distinct two-element variable sets.
+We define the index $I^{U_1,\ldots,U_n + k}$ as the family $(i'_{\{x,y\}})_{\{x,y\} \subseteq V}$ such that
+$$
+i'_{\{t,u\}} = \left\{
+  \begin{array}{ll}
+    i_{\{t,u\}} + k  & \text{if } \{t,u\} \in \{U_1,\ldots,U_n\} \\
+    i_{\{t,u\}} & \text{otherwise}
+  \end{array}
+\right.  \;.
+$$
+
+%
+\begin{lemma}
+  Let $V$ be a variable set and let $U_1,\ldots,U_n$ be pairwise
+  distinct two-element variable sets.
+  %
+  Let $Q = (q_I)_{I \in \ind(V)}$ be a resource annotation for
+  $V$ and let $ Q' = (q'_I)_{I \in \ind(V)}$ where
+  $$
+  q'_I = \sum_{\{j_1,\ldots,j_m\} \subseteq \{1,\ldots,n\} } q_{I^{U_{j_1},\ldots,U_{j_m}+1}} \; .
+  $$
+  Then $Q' = \shift_{U_1,\ldots,U_n}(Q)$.
+\end{lemma}
+
+\subsection{Binomial basis}
+
+\begin{lemma}
+  There exists a family $(c^{ij}_k)_k$, such that
+  $$
+  \sum_k c^{ij}_k \binom n k = \binom n i \binom n j,
+  $$
+  and $c^{ij}_k = \binom k j \binom j {i+j - k}$ satisfies
+  the previous equation.
+\end{lemma}
+\begin{proof}
+  \begin{align*}
+    \binom n i \binom n j
+      &= \sum_k \binom {n-j} k \binom j {i-k} \binom n j \\
+      &= \sum_k \binom {n-j} {k-j} \binom n j \binom j {i+j-k} \\
+      &= \sum_k \binom n k \binom k j \binom j {i+j-k}.
+  \end{align*}
+  In the first equality, we use Vandermonde's convolution
+  formula on $\binom n i$.  In the second equality we change
+  the summation variable to $k-j$.  And in the third equation
+  we use the identity proved below.
+  \begin{align*}
+    \binom {n-j} {k-j} \binom n j
+      &= \frac {(n-j)!} {(n-k)! (k-j)!} \; \frac {n!} {(n-j)! j!} \\
+      &= \frac {n!} {(n-k)! (k-j)! j!} \\
+      &= \frac {n!} {(n-k)! k!} \; \frac {k!} {(k-j)! j!} \\
+      &= \binom n k \binom k j.
+  \end{align*}
+\end{proof}
+
+
+
+%%
+% Note: Later we need to shift in many directions at once like
+%   Q' = shift_{x,y} (shift_{x,u} (Q))
+% To do: Give a combined formula for that (concise constraint system).
+%%
+
+\end{document}

@@ -2,6 +2,7 @@
  * semantics instrumented to keep track
  * of resource consumption.
  *)
+Require Import ZArith.
 Require Export Utf8_core.
 
 (* The Syntax. *)
@@ -10,6 +11,7 @@ Class BaseSyntax (fid var expr: Type) :=
 
 Inductive stmt `{Syn: BaseSyntax}: Type :=
   | SSkip
+  | STick (n: Z)
   | SGSet (x: expr) (y: expr)
   | SLSet (v: var) (x: expr)
   | SReturn (r: option expr)
@@ -19,19 +21,6 @@ Inductive stmt `{Syn: BaseSyntax}: Type :=
   | SIf (b: expr) (st sf: stmt)
   | SLoop (s: stmt).
 
-
-(* Resource Events in a Program. *)
-Inductive revent `{Syn: BaseSyntax} :=
-  | EEvall: expr → revent
-  | EEvalr: expr → revent
-  | EGSet: revent
-  | ELSet: revent
-  | ECall: fid → revent
-  | EReturn: fid → revent
-  | EBreak: revent
-  | ECond: bool → revent
-  | ESeq: revent
-  | ELoop: revent.
 
 
 (* The Small-Step Semantics of Programs. *)
@@ -99,27 +88,32 @@ Inductive ret_stack (f: fid): option var → option rval → stack → stack →
 (* The step relation for program configurations. *)
 Reserved Notation "T ▷ S1 ↦ S2" (at level  74).
 Inductive step_base:
-  list revent → (stmt * cont * mstate) → (stmt * cont * mstate) → Prop :=
+  list Z → (stmt * cont * mstate) → (stmt * cont * mstate) → Prop :=
+
+  | step_Tick n k m:
+      (n :: nil) ▷
+        (STick n, k, m) ↦
+        (SSkip, k, m)
 
   | step_GSet x lx y vy k σ θ θ':
     evall ge (σ, θ) x lx →
     evalr ge (σ, θ) y vy →
     heap_set ge lx vy θ θ' →
-    (EEvall x :: EEvalr y :: EGSet :: nil) ▷
+    nil ▷
       (SGSet x y, k, (σ, θ)) ↦
       (SSkip, k, (σ, θ'))
 
   | step_LSet v x vx k σ θ σ':
     evalr ge (σ, θ) x vx →
     stack_set ge v vx σ σ' →
-    (EEvalr x :: ELSet :: nil) ▷
+    nil ▷
       (SLSet v x, k, (σ, θ)) ↦
       (SSkip, k, (σ', θ))
 
   | step_Return_Call r vr f v σ' k σ θ σ'':
     evalo ge (σ, θ) r vr →
     ret_stack f v vr σ' σ'' →
-    (EReturn f :: nil) ▷
+    nil ▷
       (SReturn r, KCall f v σ' k, (σ, θ)) ↦
       (SSkip, k, (σ'', θ))
 
@@ -134,7 +128,7 @@ Inductive step_base:
       (SReturn r, k, m)
 
   | step_Break_Loop S k m:
-    (EBreak :: nil) ▷
+    nil ▷
       (SBreak, KLoop S k, m) ↦
       (SSkip, k, m)
 
@@ -147,12 +141,12 @@ Inductive step_base:
     find_func ge f = Some S →
     eval_list ge (σ, θ) l vl →
     fun_init ge f vl σ' →
-    (ECall f :: nil) ▷
+    nil ▷
       (SCall v f l, k, (σ, θ)) ↦
       (S, KCall f v σ k, (σ', θ))
 
   | step_Skip_Seq S k m:
-    (ESeq :: nil) ▷
+    nil ▷
       (SSkip, KSeq S k, m) ↦
       (S, k, m)
 
@@ -164,12 +158,12 @@ Inductive step_base:
   | step_If t vt b St Sf k m:
     evalr ge m t vt →
     val_bool vt b →
-    (EEvalr t :: ECond b :: nil) ▷
+    nil ▷
       (SIf t St Sf, k, m) ↦
       (if b then St else Sf, k, m)
 
   | step_Skip_Loop S k m:
-    (ELoop :: nil) ▷
+    nil ▷
       (SSkip, KLoop S k, m) ↦
       (SLoop S, k, m)
 

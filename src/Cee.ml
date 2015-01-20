@@ -1,6 +1,6 @@
 (* Slicing and normalizing CIL programs *)
 open Cil
-open Parse
+open Ast
 module E = Errormsg
 
 
@@ -56,26 +56,26 @@ let linearize =
   in f ([], 0) 1
 
 (* simplify assignments *)
-let transl_set gid v exp =
+let transl_set v exp =
   try
     let m,k = linearize (transl_sum exp) in
     let cv = if List.mem_assoc v m then List.assoc v m else 0 in
 
     let rec repeat x n k =
       if n = 0 then k else
-      PSeq (x (gid ()), repeat x (n-1) k, gid ()) in
+      PSeq (x, repeat x (n-1) k, ()) in
 
     let deltas = List.fold_left
       (fun ds (x,n) ->
         let n = if x = v && n > 0 then n-1 else n in
         let x = if x = v then "%tmp" else x in
         if n >= 0
-          then repeat (fun i -> PInc (v, OPlus, VId x, i)) n ds
-          else repeat (fun i -> PInc (v, OMinus, VId x, i)) (-n) ds
+          then repeat (PInc (v, OPlus, VId x, ())) n ds
+          else repeat (PInc (v, OMinus, VId x, ())) (-n) ds
       )
       (if k <> 0
-        then PInc (v, OPlus, VNum k, gid ())
-        else PTick (0, gid ())
+        then PInc (v, OPlus, VNum k, ())
+        else PTick (0, ())
       ) m
     in
     let p =
@@ -86,15 +86,15 @@ let transl_set gid v exp =
         | PInc (v, OPlus, VNum n, id) ->
           PSet (v, Some (VNum n), id)
         | _ ->
-          PSeq (PSet (v, Some (VNum 0), gid ()), deltas, gid ())
+          PSeq (PSet (v, Some (VNum 0), ()), deltas, ())
       else if cv < 0 then
-        PSeq (PSet (v, Some (VNum 0), gid ()), deltas, gid ())
+        PSeq (PSet (v, Some (VNum 0), ()), deltas, ())
       else
         deltas in
     if cv = 1 || cv = 0 then p else
-    PSeq (PSet ("%tmp", Some (VId v), gid ()), p, gid ())
+    PSeq (PSet ("%tmp", Some (VId v), ()), p, ())
 
-  with Unsupported -> PSet (v, None, gid ())
+  with Unsupported -> PSet (v, None, ())
 
 let transl_cond = function
   | BinOp ((Ge | Le | Gt | Lt) as bop, e1, e2, _) ->
@@ -124,10 +124,6 @@ type prog_op =
 (* compile a CIL program into a [Parse.prog] program *)
 let slice cost {fileName; globals; _} =
 
-  let gid =
-    let i = ref (-1) in
-    fun () -> incr i; !i in
-
   let check_lvalue loc = function
     | (Var v, NoOffset) when is_tracked v ->
       Some v.vname
@@ -148,25 +144,25 @@ let slice cost {fileName; globals; _} =
       | PTick (n2, id) -> PTick (n1 + n2, id)
       | PSeq (PTick (n2, id), b', id') ->
         PSeq (PTick (n1 + n2, id), b', id')
-      | _ -> if n1 = 0 then b else PSeq (a, b, gid ())
+      | _ -> if n1 = 0 then b else PSeq (a, b, ())
       end
     | _ ->
       begin match b with
       | PTick (0, _) -> a
-      | _ -> PSeq (a, b, gid ())
+      | _ -> PSeq (a, b, ())
       end
   in
 
   let rec slice_list
-  : 'a. ('a -> prog) -> 'a list -> prog = fun f l ->
+  : 'a. ('a -> unit prog) -> 'a list -> unit prog = fun f l ->
     List.fold_right
-      (fun a b -> seq (f a) b) l (PTick (0, gid ()))
+      (fun a b -> seq (f a) b) l (PTick (0, ()))
 
   and slice_block b = slice_list slice_stmt b.bstmts
 
   and slice_stmt s =
-    let pay_pre c p = if c = 0 then p else PSeq (PTick (c, gid ()), p, gid ()) in
-    let pay_post c p = if c = 0 then p else seq p (PTick (c, gid ())) in
+    let pay_pre c p = if c = 0 then p else PSeq (PTick (c, ()), p, ()) in
+    let pay_post c p = if c = 0 then p else seq p (PTick (c, ())) in
     match s.skind with
 
     | Instr il ->
@@ -175,18 +171,18 @@ let slice cost {fileName; globals; _} =
         | Set (lv, exp, loc) ->
           let pay = pay_pre (cost OpSet + cost (OpExp exp)) in
           (match check_lvalue loc lv with
-          | Some v -> pay (transl_set gid v exp)
-          | None -> pay (PTick (0, gid ()))
+          | Some v -> pay (transl_set v exp)
+          | None -> pay (PTick (0, ()))
           )
 
         | Call (None, Lval (Var fassert, NoOffset), [exp], _)
         when fassert.vname = "assert" ->
-          PAssert (transl_cond exp, gid ())
+          PAssert (transl_cond exp, ())
 
         | Call (Some lv, Lval (Var fnondet, NoOffset), [], loc)
         when fnondet.vname = "nondet" ->
           (match check_lvalue loc lv with
-          | Some v -> pay_pre (cost OpSet) (PSet (v, None, gid ()))
+          | Some v -> pay_pre (cost OpSet) (PSet (v, None, ()))
           | None -> E.s (
               E.error "%s:%d unsupported non-deterministic assignment"
                 loc.file loc.line
@@ -196,7 +192,7 @@ let slice cost {fileName; globals; _} =
         | Call (None, Lval (Var ftick, NoOffset), [Const c], loc)
         when ftick.vname = "tick" ->
           (match int_of_const c with
-          | Some n -> PTick (cost (OpTick n), gid ())
+          | Some n -> PTick (cost (OpTick n), ())
           | None -> E.s (
               E.error "%s:%d invalid tick call"
                 loc.file loc.line
@@ -227,9 +223,9 @@ let slice cost {fileName; globals; _} =
             | Some lv -> check_lvalue loc lv | None -> None
           with
           | Some v ->
-            pay_pre (cost OpCall) (PCall (Some v, fn.vname, args, gid ()))
+            pay_pre (cost OpCall) (PCall (Some v, fn.vname, args, ()))
           | None ->
-            pay_pre (cost OpCall) (PCall (None, fn.vname, args, gid ()))
+            pay_pre (cost OpCall) (PCall (None, fn.vname, args, ()))
           )
 
         | Call (_, _, _, loc)
@@ -250,7 +246,7 @@ let slice cost {fileName; globals; _} =
           (match int_of_const c with
           | Some i -> VNum i | _ -> VNum 0)
         | _ -> VNum 0 in
-      pay_pre (cost OpReturn) (PReturn (ret, gid ()))
+      pay_pre (cost OpReturn) (PReturn (ret, ()))
 
     | Goto (_, loc)
     | ComputedGoto (_, loc) -> E.s (
@@ -259,7 +255,7 @@ let slice cost {fileName; globals; _} =
       )
 
     | Break _ ->
-      pay_pre (cost OpBreak) (PBreak (gid ()))
+      pay_pre (cost OpBreak) (PBreak ())
 
     | Continue loc -> E.s (
         E.error "%s:%d unsupported continue"
@@ -271,28 +267,35 @@ let slice cost {fileName; globals; _} =
         ( transl_cond exp
         , slice_block b1
         , slice_block b2
-        , gid ()
+        , ()
         )
 
-    | Switch (_, _, _, loc) -> (* E.s *) ignore (
-        E.error "%s:%d unsupported switch"
-          loc.file loc.line
-      ); PTick(0, gid ())
+    | Switch (_, b, _, _) ->
+      let mkif p = PIf (CNonDet, p, PTick (0, ()), ()) in
+      let cases, _ =
+        List.fold_right (fun s (cases, p) ->
+          let s' = seq (slice_stmt s) p in
+          if List.exists
+               (function
+                 | Case _ | Default _ -> true
+                 | _ -> false)
+               s.labels
+          then (seq (mkif s') cases, PTick (0, ()))
+          else (cases, s')
+        ) b.bstmts (PBreak (), PTick (0, ())) in
+      PLoop (cases, ())
 
     | Loop (b, _, _, _) ->
-      let true_cond =
-        let z = LVar (VNum 0) in
-        CTest (z, CLe, z) in
       let freshen = function
-        | PTick (n, _) -> PTick (n, gid ())
-        | PInc (x, o, y, _) -> PInc (x, o, y, gid ())
-        | PSet (x, y, _) -> PSet (x, y, gid ())
-        | PCall (r, f, l, _) -> PCall (r, f, l, gid ())
+        | PTick (n, _) -> PTick (n, ())
+        | PInc (x, o, y, _) -> PInc (x, o, y, ())
+        | PSet (x, y, _) -> PSet (x, y, ())
+        | PCall (r, f, l, _) -> PCall (r, f, l, ())
         | _ -> assert false in
       let rec norm = function
         | PSeq ((PTick _ | PInc _ | PSet _ (* | PCall _ *)) as l, r, id) ->
           PSeq (freshen l, norm (seq r l), id)
-        | x -> PWhile (true_cond, x, gid ()) in
+        | x -> PLoop (x, ()) in
       norm (pay_post (cost OpLoop) (slice_block b))
 
     | Block b -> slice_block b
@@ -355,14 +358,14 @@ let _ =
     if otick
     then (function OpTick n -> n | _ -> 0)
     else (function OpLoop|OpCall -> 1 | _ -> 0) in
-  let file = (* Tools.clean_file *) (slice metric file) in
+  let file = (slice metric file) in
   (**)
   print_string "Sliced program:\n";
-  pp_file file;
+  Parse.pp_file file;
   print_newline ();
   (**)
   let file = Tools.clean_file file in
-  let l = Hood.create_logctx file in
+  let file = Hood.lannot file in
   Printf.printf "Analysis using the %s metric:\n"
     (if otick then "tick" else "back-edge");
-  Hood.analyze true l Eval.tick_metric file
+  Hood.analyze file

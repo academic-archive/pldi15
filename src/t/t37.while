@@ -2,18 +2,18 @@
 func count_down (x) local (a)
 ( a = x;
   if a > 0 (
-    a = a-1;
+    a -= 1;
     count_down(a) )
-)
+);
 
 func copy (x,y) local (t)
 ( if x > 0 (
-    x = x-1;
-    y = y+1;
+    x -= 1;
+    y += 1;
     y=copy (x,y)
   );
   return y
-)
+);
 
 
 y = copy (x,y);

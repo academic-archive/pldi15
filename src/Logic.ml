@@ -2,7 +2,7 @@
 
 let show_progress = false
 
-open Parse
+open Ast
 
 module Id = struct type t = id let compare = compare end
 module S = Set.Make(Id)
@@ -216,14 +216,14 @@ let merge ps1 ps2 =
 
 let rec fix ps f =
   let x, ps' = f ps in
-  let rec residue trimmed r = function
+  let rec residue trim r = function
     | assn :: assns ->
       if imp ps' assn
-        then residue trimmed (assn :: r) assns
-        else residue true r assns
-    | [] -> (trimmed, r) in
-  let trimmed, ps'' = residue false [] ps in
-  if trimmed then fix ps'' f else (x, ps)
+      then residue trim (assn :: r) assns
+      else residue true r assns
+    | [] -> (trim, r) in
+  let trim, ps'' = residue false [] ps in
+  if trim then fix ps'' f else (x, ps)
 
 let entails ps l1 c l2 =
   match of_cond (CTest (l1, c, l2)) with
@@ -236,16 +236,46 @@ let range ps = function
     let upd f a = function
       | Some x -> Some (f a x)
       | None -> Some a in
-    List.fold_left
-      begin fun (lb, ub) a ->
+    List.fold_left begin fun (lb, ub) a ->
         let c = L.coeff v a in
-        let pred v' n = v=v' || n=0 in
-        if c = 0 || not (L.for_all pred a.L.m)
-          then (lb, ub) else
-          if c < 0
-            then (upd max (a.L.k / -c) lb, ub)
-            else (lb, upd min (-a.L.k / c) ub)
+        let p v' n = v=v' || n=0 in
+        if c = 0 || not (L.for_all p a.L.m)
+        then (lb, ub) else
+        if c < 0
+        then (upd max (a.L.k / -c) lb, ub)
+        else (lb, upd min (-a.L.k / c) ub)
       end (None, None) ps
+
+let irange ps v1 v2 =
+  let rng =
+    let m0 f = function
+      | Some x -> Some (max 0 (f x))
+      | None -> None in
+    match v2 with
+    | VNum n2 ->
+      let n2d = m0 (fun x -> n2 - x) in
+      let lo1, hi1 = range ps v1 in
+      (n2d hi1, n2d lo1)
+    | VId id2 ->
+      let ps' = incr id2 OMinus v1 ps in
+      let mxz = m0 (fun x -> x) in
+      let lo, hi = range ps' v2 in
+      (mxz lo, mxz hi) in
+  if entails ps (LVar v2) CLe (LVar v1)
+  then (None, Some 0)
+  else if fst rng = Some 0
+  then (None, snd rng)
+  else rng
+
+(* (* nice to debug the range functions *)
+let irange ps v1 v2 =
+  let r = irange ps v1 v2 in
+  if v1 = VId "b" || v2 = VId "b" then
+  let s = function Some n -> string_of_int n | None -> "?" in
+  Printf.printf "%s <= [%a,%a] <= %s\n"
+    (s (fst r)) Parse.pp_var v1 Parse.pp_var v2 (s (snd r)); r
+  else r
+*)
 
 (* pretty printing *)
 let pp ps =

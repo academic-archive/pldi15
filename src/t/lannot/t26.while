@@ -1,14 +1,18 @@
-while i < n
+loop
   (
+{ T }
+    if i >= n
+{ -i + n ≤ 0 }
+      break;
 { i - n + 1 ≤ 0 }
     if c >= 0
       (
 { -c ≤ 0 /\ i - n + 1 ≤ 0 }
-        i = i - 1;
-        n = n - 1
+        i -= 1;
+        n -= 1
 { -c ≤ 0 /\ i - n + 1 ≤ 0 }
       );
-    i = i + 1
+    i += 1
 { i - n ≤ 0 }
   )
 { -i + n ≤ 0 }

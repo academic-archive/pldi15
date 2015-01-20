@@ -1,45 +1,63 @@
-func first(x, y, z)
+func first(x', y', z')
 { T }
-  return x
-func second(x, y, z) local (a)
+  return x';
+func second(x'', y'', z'') local (a')
   (
 { T }
-    a = 0;
-{ -a ≤ 0 /\ a ≤ 0 }
-    a = first(y, z, x);
-    return a
+    a' = 0;
+{ -a' ≤ 0 /\ a' ≤ 0 }
+    a' = first(y'', z'', x'');
+    return a'
 { 1 ≤ 0 }
-  )
-func third(x, y, z) local (a)
+  );
+func third(x''', y''', z''') local (a'')
   (
 { T }
-    a = 0;
-{ -a ≤ 0 /\ a ≤ 0 }
-    a = second(y, z, x);
-    return a
+    a'' = 0;
+{ -a'' ≤ 0 /\ a'' ≤ 0 }
+    a'' = second(y''', z''', x''');
+    return a''
 { 1 ≤ 0 }
-  )
-func iter(x, y, z) local (a, b, c)
+  );
+func iter(x'''', y'''', z'''') local (a''', b', c')
   (
 { T }
-    a = first(x, y, z);
+    a''' = first(x'''', y'''', z'''');
 { T }
-    b = second(x, y, z);
+    b' = second(x'''', y'''', z'''');
 { T }
-    c = third(x, y, z);
+    c' = third(x'''', y'''', z'''');
 { T }
-    while a > b
-{ -a + b + 1 ≤ 0 }
-      a = a - 1;
-{ a - b ≤ 0 }
-    while b > c
-{ -b + c + 1 ≤ 0 /\ a - b ≤ 0 }
-      c = c + 1;
-    while a < c
-{ a - c + 1 ≤ 0 /\ b - c ≤ 0 }
-      a = a + 1
-{ a - c ≤ 0 /\ -a + c ≤ 0 /\ b - c ≤ 0 }
-  )
+    loop
+      (
+{ T }
+        if a''' <= b'
+{ a''' - b' ≤ 0 }
+          break;
+        a''' -= 1
+{ -a''' + b' ≤ 0 }
+      );
+{ a''' - b' ≤ 0 }
+    loop
+      (
+{ a''' - b' ≤ 0 }
+        if b' <= c'
+{ b' - c' ≤ 0 /\ a''' - b' ≤ 0 }
+          break;
+        c' += 1
+{ a''' - b' ≤ 0 /\ -b' + c' ≤ 0 }
+      );
+    loop
+      (
+{ b' - c' ≤ 0 }
+        if a''' >= c'
+{ -a''' + c' ≤ 0 /\ b' - c' ≤ 0 }
+          break;
+        a''' += 1
+{ b' - c' ≤ 0 /\ a''' - c' ≤ 0 }
+      )
+{ b' - c' ≤ 0 /\ -a''' + c' ≤ 0 }
+  );
 
 { T }
 iter(x, y, z);

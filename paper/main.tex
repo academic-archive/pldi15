@@ -1,7 +1,7 @@
 % Comment for anonymization
 % Add preprint option for the extended version
 % Also look for "SHORT" comments
-% \def\fullversion{}
+ \def\fullversion{}
 
 \documentclass[nocopyrightspace,preprint,pldi]{sigplanconf-pldi15}
 
@@ -543,9 +543,9 @@ a certificate for the derived resource bound.
 
 
 The derivation of a resource bound using potential functions is best
-explained by example.  If we use the tick metric that assigns cost $n$
-to the function call \code{tick(n)} and cost $0$ to all other
-operations then the cost of the following example can be bounded by
+explained by example.  If we use a cost model that assigns cost $n$ to
+the function call \code{tick(n)} and cost $0$ to all other operations
+then the cost of the following example can be bounded by
 $|[x,y]| = \max(y{-}x,0)$.% \footnote{Note that there are no restrictions on
   % the signs of the input variables in the examples.}
 \begin{lstlisting}[basicstyle=\tt\small]
@@ -643,11 +643,11 @@ potential method makes automatic bound derivation straightforward.
 
 The concept of a potential function is a generalization of the
 concept of a ranking function.  A potential function can be used like
-a ranking function if we use the tick metric and add the statement
+a ranking function if we add the statement
 \code{tick(1)} to every back edge of the program (loops and function
 calls).  However, a potential function is more flexible.  For example,
 we can use a potential function to prove that Example~2 does not
-consume any resources in the tick metric.
+consume any resources.
 \begin{lstlisting}[basicstyle=\tt\small]
 #\!\!\!\!\!#while (x<y) {tick(-1); x=x+1; tick(1)} #\hfill \textnormal{(Example 2)}#
 
@@ -849,7 +849,7 @@ $$
 %
 Here $\state : (\text{Locals} \to \Z) \times (\text{Globals} \to \Z)$
 is a simplified program state that maps variable names to integers,
-$|\inter a b| = \max(0,b-a)$, and $q_i \in \Qplusz$.  To simplify the
+$|\inter a b| = \max(0,b-a)$, and $q_i \in \Q$.  To simplify the
 references to the linear coefficients $q_i$, we introduce an \emph{index
   set} $I$.  This set is defined to be $\{0\} \cup \{(x, y) \mid x, y
 \in \Var \land x \neq y \}$.  Each index $i$ corresponds to a \emph{base function}
@@ -864,11 +864,12 @@ index $(x,y)$.  \iffull{The family $(f_i)_{i\in I}$ is actually a basis (in
 the linear-algebra sense) for potential functions.}{}  This allows us to
 uniquely represent any linear potential function
 $\Phi$ as a \emph{quantitative annotation} $Q = (q_i)_{i \in I}$, that
-is, a family of \ifshort{non-negative}{} rational numbers where only
-a finite number of elements are not zero. \iffull{ For soundness, we
-  require that potential functions always give non-negative results.
-  This is achieved by restricting coefficients in a quantitative
-  annotation to be always non-negative.}{}
+is, a family of rational numbers where only
+a finite number of elements are not zero.  \iffull{As a notable difference from
+previous works based on amortized-analysis, we do not require all the coefficients
+of our potential function to be positive.  In practice, we will see using
+a semantic argument that despite this additional freedom, potential functions
+always remain positive.}{}
 
 In the potential functions, we treat constants as global variables
 that cannot be assigned to.  For example, if the program contains the
@@ -1095,17 +1096,17 @@ tools\iffull{ for automatic bound derivation.}{.}
 %
 \Rule[leftskip=.4cm,rightskip=.3cm]{Q:Skip}
 { }
-{ \!\! B; R; (\Gamma, Q) \vdash \code{skip} \dashv (\Gamma, Q) \!\!}
+{ B; R; (\Gamma, Q) \vdash \code{skip} \dashv (\Gamma, Q) }
 %
 \and
 \Rule{Q:Break}
 { }
-{\!\!  (\Gamma, Q_B); R; (\Gamma, Q_B {+} M_b) \vdash \code{break} \dashv (\Gamma', Q') \!\!}
+{ (\Gamma, Q_B); R; (\Gamma, Q_B) \vdash \code{break} \dashv (\Gamma', Q') }
 %
 \and
 \Rule[leftskip=.3cm,rightskip=.4cm]{Q:Tick}
-{ }
-{ \!\! B; R; (\Gamma, Q{+}M_t(n)) \vdash \code{tick}(n) \dashv (\Gamma, Q) \!\!}
+{ n < 0 \implies Q \ge 0 }
+{ B; R; (\Gamma, Q) \vdash \code{tick}(n) \dashv (\Gamma, Q{-}n) }
 %
 \and
 \Rule{Q:Return}
@@ -1116,55 +1117,41 @@ tools\iffull{ for automatic bound derivation.}{.}
 { B; (\Gamma_R,Q_R); (\Gamma, Q) \vdash \code{return}~x \dashv (\Gamma',Q') }
 %
 \and \Rule{Q:Update}
-{ q'_{xy}, q'_{yx} \in \Qplusz
-\\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
+{ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
 }
 { B; R; (\Gamma[x/y], Q {+} M_u {+} M_e(y)) \vdash x \gets y \dashv (\Gamma, Q') }
 %
-\\ \Rule[leftskip=.1cm,rightskip=.1cm]{Q:Loop}
-{ (\Gamma', Q'); R; (\Gamma,Q) \vdash S \dashv (\Gamma,  Q {+} M_l) }
+\and \Rule[leftskip=.1cm,rightskip=.1cm]{Q:Loop}
+{ Q \ge Q'
+\\ (\Gamma', Q'); R; (\Gamma,Q) \vdash S \dashv (\Gamma,  Q)
+}
 { B; R; (\Gamma, Q) \vdash \code{loop}~S \dashv (\Gamma', Q') }
 %
-\and \Rule[leftskip=.2cm,rightskip=.1cm]{Q:IncP}
-{ \Gamma \models y \ge 0 \!
-\\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\} \!
-\\ \textstyle q'_{0y} = q_{0y}
-      + \sum_{u \in \mathcal U} q_{xu}
-      - \sum_{v \not\in \mathcal U} q_{vx} \!
-}
-{ \textstyle
-  B; R; (\Gamma[x/x {+} y], Q {+} M_u {+} M_e(x {+} y)) \vdash x \gets x + y \dashv (\Gamma, Q')
-}
-%
-\and \Rule{Q:DecP}
-{ \Gamma \models y \ge 0
-\\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
-\\\\ \textstyle q'_{y0} = q_{y0}
-      + \sum_{u \in \mathcal U} q_{ux}
-      - \sum_{v \not\in \mathcal U} q_{xv}
-}
-{ \textstyle
-  B; R; (\Gamma[x/x {-} y],Q {+} M_u {+} M_e(x {-} y)) \vdash x \gets x - y \dashv (\Gamma, Q')
-}
-%
 \and \Rule{Q:Inc}
-{ M = M_u + M_e(x {\pm} y)
-\\\\ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
-\\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
+{  \textstyle q'_{0y} = q_{0y} - \sum_u \max(q_{ux}, -q_{xu})
+\\\\ \textstyle q'_{y0} = q_{y0} - \sum_u \max(q_{xu}, -q_{ux})
 }
 { \textstyle
-  B; R; (\Gamma[x/x {\pm} y], Q {+} M) \vdash x \gets x \pm y \dashv (\Gamma, Q')
+  B; R; (\Gamma[x/x {+} y], Q) \vdash x \gets x + y \dashv (\Gamma, Q')
+}
+%
+\and \Rule{Q:Dec}
+{  \textstyle q'_{0y} = q_{0y} - \sum_u \max(q_{xu}, -q_{ux})
+\\\\ \textstyle q'_{y0} = q_{y0} - \sum_u \max(q_{ux}, -q_{xu})
+}
+{ \textstyle
+  B; R; (\Gamma[x/x {-} y], Q) \vdash x \gets x - y \dashv (\Gamma, Q')
 }
 %
 \and \Rule{Q:If}
-{ B; R; (\Gamma \land e, Q {-} M_c^1) \vdash S_1 \dashv (\Gamma',Q')
-\\\\ B; R; (\Gamma \land \neg e, Q {-} M_c^2) \vdash S_2 \dashv (\Gamma',Q')
+{ B; R; (\Gamma \land e, Q) \vdash S_1 \dashv (\Gamma',Q')
+\\\\ B; R; (\Gamma \land \neg e, Q) \vdash S_2 \dashv (\Gamma',Q')
 }
-{ B; R; (\Gamma, Q{+}M_e(e)) \vdash \code{if}(e)~S_1~\code{else}~S_2 \dashv (\Gamma',Q') }
+{ B; R; (\Gamma, Q) \vdash \code{if}(e)~S_1~\code{else}~S_2 \dashv (\Gamma',Q') }
 %
 \and\Rule{Q:Seq}
-{  B; R; (\Gamma, Q) \vdash S_1 \dashv (\Gamma', Q' {+} M_s)
-\\ B; R; (\Gamma', Q') \vdash S_2 \dashv (\Gamma'',Q'')
+{  B; R; (\Gamma, Q) \vdash S_1 \dashv (\Gamma', Q')
+\\\\ B; R; (\Gamma', Q') \vdash S_2 \dashv (\Gamma'',Q'')
 }
 { B; R; (\Gamma, Q) \vdash S_1;S_2 \dashv (\Gamma'',Q'') }
 %
@@ -1183,27 +1170,27 @@ tools\iffull{ for automatic bound derivation.}{.}
 \\ \forall i \not\in \text{Loc}
   .\, s_i = 0
 }
-{ B; R; (\Gamma_f[\Vargs / \vec x] \land \Gamma_{\text{Loc}}, Q {+} c {+} M_f)
+{ B; R; (\Gamma_f[\Vargs / \vec x] \land \Gamma_{\text{Loc}}, Q {+} c)
   \vdash r \gets f(\vec x) \dashv
-  (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c {-} M_r)
+  (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c)
 }
 %
-\and
-\Rule[leftskip=.2cm,rightskip=.2cm]{Q:Assert}
+\and \Rule[leftskip=.2cm,rightskip=.2cm]{Q:Assert}
 { }
-{ B; R; (\Gamma, Q {+} M_a) \vdash \code{assert}~e \dashv (\Gamma \land e, Q) }
+{ B; R; (\Gamma, Q) \vdash \code{assert}~e \dashv (\Gamma \land e, Q) }
 %
-\and
-\Rule[leftskip=.2cm,rightskip=.2cm]{Q:Extend}
+\and \Rule[leftskip=.2cm,rightskip=.2cm]{Q:Extend}
 { \fenv f = (\vec y, S_f)
+\\ Q_f \ge 0
+\\ Q'_f \ge 0
 \\\\ B; (\Gamma_f', Q'_f); (\Gamma_f[\Vargs/\vec y], Q_f[\Vargs/ \vec y] ) \vdash S_f \dashv (\Gamma', Q')
 }
 { (\Gamma_f, Q_f, \Gamma_f', Q_f') \in \Delta(f) }
 %
 \and \Rule{Q:Weak}
-{ B; R; (\Gamma_2,Q_2) \vdash S \dashv (\Gamma'_2, Q'_2)
-\\ \!\! \Gamma_1 \models \Gamma_2
-\\\\ Q_1 \succeq_{\Gamma_1} Q_2
+{  \!\! \Gamma_1 \models \Gamma_2
+\\ Q_1 \succeq_{\Gamma_1} Q_2
+\\ B; R; (\Gamma_2,Q_2) \vdash S \dashv (\Gamma'_2, Q'_2)
 \\ \Gamma'_2 \models \Gamma'_1
 \\ Q'_2 \succeq_{\Gamma_2'} Q'_1
 }
@@ -1212,6 +1199,7 @@ tools\iffull{ for automatic bound derivation.}{.}
 \and \Rule{Relax}
 { \mathcal L = \{ xy \mid \exists l_{xy} {\in} \N \, . \, \Gamma \models l_{xy} \le |\inter x y| \}
 \\ \mathcal U = \{ xy \mid \exists u_{xy}{\in} \N \, . \, \Gamma \models |\inter x y| \le u_{xy} \}
+\\ \forall i.\, p_i, r_i \in \Qplusz
 \\\\ \forall i \in \mathcal U.\, q'_i \ge q_i - r_i
 \\ \forall i \in \mathcal L.\, q'_i \ge q_i + p_i
 \\ \forall i \not\in \mathcal U {\cup} \mathcal L {\cup} \{0\} .\, q'_i \ge q_i
@@ -1227,68 +1215,7 @@ tools\iffull{ for automatic bound derivation.}{.}
 
 
 \ifshort{
-\begin{figure*}
-\small
-\vspace{-.4cm}
-\def \MathparLineskip {\lineskip=0.35cm}
-\begin{mathpar}
-\Rule[leftskip=.4cm,rightskip=.3cm]{Q:Skip}
-{ }
-{ \!\! B; R; (\Gamma, Q) \vdash \code{skip} \dashv (\Gamma, Q) \!\!}
-%
-\and \Rule[leftskip=.1cm,rightskip=.1cm]{Q:Loop}
-{ (\Gamma', Q'); R; (\Gamma,Q) \vdash S \dashv (\Gamma,  Q {+} M_l) }
-{ B; R; (\Gamma, Q) \vdash \code{loop}~S \dashv (\Gamma', Q') }
-%
-\\ \Rule[leftskip=1cm,rightskip=.5cm]{Q:IncP}
-{ \Gamma \models y \ge 0 \!
-\\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\} \!
-\\\\ \textstyle q'_{0y} = q_{0y}
-      + \sum_{u \in \mathcal U} q_{xu}
-      - \sum_{v \not\in \mathcal U} q_{vx} \!
-}
-{ \textstyle
-  B; R; (\Gamma[x/x {+} y], Q {+} M_u {+} M_e(x {+} y)) \vdash x \gets x + y \dashv (\Gamma, Q')
-}
-%
-\and \Rule[leftskip=.5cm,rightskip=1cm]{Q:Inc}
-{ M = M_u + M_e(x {\pm} y)
-\\\\ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
-\\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
-}
-{ \textstyle
-  B; R; (\Gamma[x/x {\pm} y], Q {+} M) \vdash x \gets x \pm y \dashv (\Gamma, Q')
-}
-%
-\\ \Rule{Q:Seq}
-{  B; R; (\Gamma, Q) \vdash S_1 \dashv (\Gamma', Q' {+} M_s)
-\\\\ B; R; (\Gamma', Q') \vdash S_2 \dashv (\Gamma'',Q'')
-}
-{ B; R; (\Gamma, Q) \vdash S_1;S_2 \dashv (\Gamma'',Q'') }
-%
-\and \Rule{Q:Weak}
-{ B; R; (\Gamma_2,Q_2) \vdash S \dashv (\Gamma'_2, Q'_2)
-\\ \!\! \Gamma_1 \models \Gamma_2
-\\\\ Q_1 \succeq_{\Gamma_1} Q_2
-\\ \Gamma'_2 \models \Gamma'_1
-\\ Q'_2 \succeq_{\Gamma_2'} Q'_1
-}
-{ B; R; (\Gamma_1,Q_1) \vdash S \dashv (\Gamma'_1, Q'_1) }
-%
-\\ \Rule{Relax}
-{ \mathcal L = \{ xy \mid \exists l_{xy} {\in} \N \, . \, \Gamma \models l_{xy} \le |\inter x y| \}
-\\ \mathcal U = \{ xy \mid \exists u_{xy}{\in} \N \, . \, \Gamma \models |\inter x y| \le u_{xy} \}
-\\\\ \forall i \in \mathcal U.\, q'_i \ge q_i - r_i
-\\ \forall i \in \mathcal L.\, q'_i \ge q_i + p_i
-\\ \forall i \not\in \mathcal U {\cup} \mathcal L {\cup} \{0\} .\, q'_i \ge q_i
-\\ q'_0 \geq q_0 {\textstyle + \sum_{i \in \mathcal U} u_i r_i - \sum_{i \in \mathcal L} l_i p_i}
-}
-{ Q' \succeq_\Gamma Q }
-\vspace{-.3cm}
-\end{mathpar}
-\caption{Selected inference rules of the quantitative analysis.}
-\label{fig:auto}
-\end{figure*}
+                    \jan{XXX THIS FIGURE NEEDS TO BE UPDATED XXX}
 }{}
 
 \sectskip
@@ -1301,26 +1228,26 @@ rules of the automatic amortized analysis.
 \paragraph{Judgements.}
 
 The derivation system for the automatic amortized analysis is defined
-in~\pref{fig:auto}.  The derivation rules derive judgements of the form
+in~\pref{fig:auto}.  The derivation rules yield judgements of the form
 $$
   (\Gamma_B, Q_B); (\Gamma_R, Q_R);
     (\Gamma, Q) \vdash S \dashv (\Gamma', Q').
 $$
 %
-The part $(\Gamma, Q) \vdash \!\! S \!\! \dashv (\Gamma', Q')$ of the judgement
+The part $(\Gamma, Q) \! \vdash \! S \! \dashv \! (\Gamma', Q')$ of the judgement
 can be seen as a quantitative Hoare triple.  All assertions are split into
 two parts, the logical part and the quantitative part.  The
 quantitative part $Q$ represents a potential function as a collection
-of non-negative numbers $q_i$ indexed by the index set $I$.  The
+of rational numbers $q_i$ indexed by the index set $I$.  The
 logical part $\Gamma$ is left abstract but is enforced by our
 derivation system to respect classic Hoare logic constraints.
 %
 The meaning of this basic judgment is as follows: If $S$ is executed
 with starting state $\state$, the assertions in $\Gamma$
-hold, and at least $Q(\state)$ resources are available then the
+hold, $Q' {\ge} 0$, and at least $Q(\state)$ resources are available then the
 evaluation does not run out of resources and, if the execution
-terminates in state $\state'$, there are at least $Q(\state')$
-\mbox{resources left and $\Gamma'$ holds for $\state'$.}
+terminates in state $\state'$, there are at least $Q'(\state')$
+resources left and $\Gamma'$ holds for $\state'$.
 
 The judgement is a bit more involved since we have to take into
 account the early exit statements \code{break} and \code{return}.
@@ -1354,8 +1281,12 @@ As a convention, if $Q$ and $Q'$ are quantitative annotations
 we assume that $Q = (q_i)_{i\in I}$ and $Q' = (q'_i)_{i \in I}$.
 The notation $Q \pm n$ used in many rules defines a new context $Q'$
 such that $q'_0 = q_0 \pm n$ and $\forall i \neq 0 .\, q'_i = q_i$.
-In all the rules, we have the implicit side condition that all rational
-coefficients are non-negative.  Finally, if a rule mentions $Q$ and $Q'$
+%
+% THE FOLLOWING IS NO LONGER TRUE
+% In all the rules, we have the implicit side condition that all rational
+% coefficients are non-negative.
+%
+Finally, if a rule mentions $Q$ and $Q'$
 and leaves the latter undefined at some index $i$ we assume that $q'_i = q_i$.
 
 We describe the automatic amortized analysis for a subset of
@@ -1366,7 +1297,7 @@ the resource cost.  This is achieved by using a series of \emph{cost-free
   assignments} that do not result in additional cost in the
 semantics.  Non-linear operations such as $x \gets z*y$ or $x \gets
 a[y]$ are handled by assigning $0$ to coefficients
-like $q_{xa}$ and $q_{ax}$ that contain $x$ after the assignment.
+like $q_{xa}$ and $q_{ax}$ that depend on $x$ after the assignment.
 
 \paraskip
 \paragraph{Function Specifications.}
@@ -1382,8 +1313,8 @@ set can readily be reused for every call site and the function need
 not be analyzed multiple times.
 %
 Therefore, the derivation rules are parametric in a function context $\Delta$
-that we leave implicit in the rules presented here. More details
-can be found in the extended version.
+that we leave implicit in the rules presented here.
+% More details can be found in the extended version.
 
 \paraskip
 \paragraph{Derivation Rules.}
@@ -1393,7 +1324,7 @@ The rules of our derivation system must serve two purposes.  They must
 this potential, when it is allowed, to \emph{pay} for resource consuming
 operations.  These two purposes are illustrated on the {\sc Q:Skip}
 rule.  This rule reuses its precondition as postcondition, it is
-explained by two facts: first, no resource is consumed by the skip
+explained by two observations: first, no resource is consumed by the skip
 operation, thus no potential has to be used to pay for the evaluation;
 second, the program state is not changed by
 the execution of a skip statement, thus all the potential available
@@ -1435,40 +1366,25 @@ described later.}{}
 % $q'_{xy} = q_{\ret y}$ and $q'_{yx} = q_{y \ret}$ for all $y$ and
 % $q_i'=q_i$ otherwise.
 
-The rules {\sc Q:IncP}\iffull{, {\sc Q:DecP},}{} and {\sc Q:Inc}
-describe how the potential is distributed after a size change of
-a variable.
-\iffull{The rule {\sc Q:IncP} is for increments $x \gets x + y$
-and {\sc Q:DecP} is for decrements $x \gets x - y$, they both apply only
-when we can deduce from the logical context $\Gamma$ that $y \ge 0$.
-Of course, we have symmetrical rules {\sc Q:IncN} and {\sc Q:DecN}
-that can be applied if $y$ is not positive.}{The rule {\sc Q:IncP} is for increments
-$x \gets x+y$, it applies when we can deduce from the logical context
-$\Gamma$ that $y \ge 0$.  Of course, we have symmetrical rules that
-can be applied for decrements and when $y$ is not positive.}
-The rules are all equivalent in the case where $y=0$.
-The rule {\sc Q:Inc} can be applied
-if we cannot deduce any information about $y$.  In $\toolname$,
-the rules for increments and decrements are combined into one rule\iffull{ where the specialized rules take priority over {\sc Q:Inc}.}{.}
+The rules {\sc Q:Inc} and {\sc Q:Dec} describe how the potential is
+distributed after a size change of a variable.
+The rule {\sc Q:Inc} is for incements $x \gets x+y$ and the symmetric
+rule {\sc Q:Dec} is for decrements $x \gets x-y$.
+The two rules are equivalent in the case where $y=0$.
 
-\iffull{To explain how rules for increment and decrement work, it is
-sufficient to understand the rule {\sc Q:IncP}.  The others follow the
-same idea and are symmetrical.}{}  In {\sc Q:IncP}, the program updates a
-variable $x$ with $x+y$ where $y \ge 0$.  Since $x$ is changed, the
+The two previous rules are essentially the same, so we only focus on
+the explanation of {\sc Q:Inc}. In this rule, the program updates a
+variable $x$ with $x+y$.  Since $x$ is changed, the
 quantitative annotation must be updated to reflect the change of the
 program state.  We write $x'$ for the value of $x$ after the assignment.
 Since $x$ is the only variable changed, only intervals of the form
-$\inter u x$ and $\inter x u$ will be resized. Note that for any $u$,
-$\inter x u$ will get smaller with the update, and if $x' \in \inter x
-u$ we have $|\inter x u| = |\inter x {x'}| + |\inter {x'} u|$.  But
-$|\inter x {x'}| = |\inter 0 y|$ which means that the potential
-$q'_{0y}$ in the postcondition can be increased by $q_{xu}$ under the
-guard that $x' \in \inter x u$.  Dually, the interval $\inter v x$ can
-get bigger with the update.  We know that $|\inter v {x'}| \le y +
-|\inter v x|$.  So we decrease the potential of $\inter 0 y$ by
-$q_{vx}$ to pay for this change.  The rule ensures this
-only for $v \not\in \mathcal U$ because $x \le v$
-otherwise, and thus $|\inter v x| = 0$.
+$\inter u x$ and $\inter x u$ will be resized.  Consider $S(x) = q_{xu}
+|\inter x u| + q_{ux} |\inter u x|$, during the increment, $S$ will
+increase by at most $y \cdot \max(q_{ux}, -q_{xu})$.
+This means that we must decrease the potential $q_{0y}$ of $|\inter 0 y|$
+by $\max(q_{ux}, -q_{xu})$ to pay for the change on
+$|\inter x u|$ and $|\inter u x|$.  A symmetric argument explains the
+change on $q_{y0}$.
 
 \newcommand{\loopbody}[0]{\ensuremath{\code{if~(x - 10 \geq 0)~\{x=x{-}10; tick(5);\}~else~break;}}}
 \begin{figure*}[t]
@@ -1477,52 +1393,52 @@ otherwise, and thus $|\inter v x| = 0$.
 \footnotesize
 \begin{mathpar}
 \inferrule*[right={\scriptsize (Q:Loop)},leftskip=0cm,rightskip=0cm,width=20cm]
-{ \inferrule*[right={\scriptsize (Q:If)},leftskip=0cm,rightskip=0cm,width=20cm]
-  { \inferrule*[right={\scriptsize (Q:Weak)},leftskip=2cm,rightskip=4cm, vdots=1cm]
+{ \inferrule*[right={\scriptsize (Q:If)},leftskip=0cm,rightskip=1cm,width=20cm]
+  { \inferrule*[right={\scriptsize (Q:Weak)},leftskip=2.5cm,rightskip=2.5cm, vdots=1cm]
     { \inferrule*[right={\scriptsize (Q:Seq)},leftskip=0cm,rightskip=0cm]
       { \inferrule*[right={\scriptsize (Q:Weak)},leftskip=0cm,rightskip=0cm]
-        { \inferrule*[right={\scriptsize (Q:DecP)},leftskip=0cm,rightskip=0cm]
+        { \inferrule*[right={\scriptsize (Q:Dec)},leftskip=0cm,rightskip=0cm]
           {
           }
-          { (x {<} 10, B^\text{de}); ((x {\geq} 10,Q^\text{de})  \vdash \code{x = x - 10}
-            \dashv (\cdot, P^\text{de})
+          { (\cdot, B^\text{de}); ((x {\geq} 10,Q^\text{de})  \vdash \code{x = x - 10}
+            \dashv (x {\ge} 0, P^\text{de})
           }
         }
-        { (x {<} 10, B^\text{we}); ((x {\geq} 10,Q^\text{we})  \vdash \code{x = x - 10}
+        { (\cdot, B^\text{we}); ((x {\geq} 10,Q^\text{we})  \vdash \code{x = x - 10}
           \dashv (\cdot, P^\text{we})
         }
         \and
         \inferrule*[right={\scriptsize (Q:Tick)},leftskip=0cm,rightskip=0cm]
         {
         }
-        { (x {<} 10, B^\text{ti}); (\cdot,Q^\text{ti})  \vdash \code{tick(5)}
+        { (\cdot, B^\text{ti}); (\cdot,Q^\text{ti})  \vdash \code{tick(5)}
           \dashv (\cdot, P^\text{ti})
         }
       }
-      { (x {<} 10, B^\text{sq}); ((x {\geq} 10,Q^\text{sq}) \vdash
+      { (\cdot, B^\text{sq}); ((x {\geq} 10,Q^\text{sq}) \vdash
         \code{x=x{-}10; tick(5);} \dashv (\cdot,P^\text{sq})
       }
     }
-    { (x {<} 10, B^\text{if}); ((x {\geq} 10,Q^\text{if}) \vdash
+    { (\cdot, B^\text{if}); ((x {\geq} 10,Q^\text{if}) \vdash
       \code{x=x{-}10; tick(5);} \dashv (\cdot,P^\text{if})
     }
     \and
     \inferrule*[right={\scriptsize (Q:Weak)},leftskip=4.5cm,rightskip=4cm]
     { \inferrule*[right={\scriptsize (Q:Break)},leftskip=0cm,rightskip=0cm]
       { }
-      { (x {<} 10, B^\text{br}); (x {<} 10,Q^\text{br}) \vdash
+      { (\cdot, B^\text{br}); (\cdot,Q^\text{br}) \vdash
         \code{break} \dashv (\bot,P^\text{br})
       }
     }
-    { (x {<} 10, B^\text{el}); (x {<} 10,Q^\text{el}) \vdash
+    { (\cdot, B^\text{el}); (x {<} 10,Q^\text{el}) \vdash
       \code{break} \dashv (\cdot,P^\text{el})
     }
   }
-  { \hspace{3cm} (x {<} 10, B^\text{lo}); (\cdot,Q^\text{lo}) \vdash
+  { \hspace{3cm} (\cdot, B^\text{lo}); (\cdot,Q^\text{lo}) \vdash
     \loopbody \dashv (\cdot,P^\text{lo}) \hspace{3cm}
   }
 }
-{ (\cdot, B); (\cdot, Q) \vdash \code{loop}~{\loopbody} \dashv (x {<} 10, P)
+{ (\cdot, B); (\cdot, Q) \vdash \code{loop}~{\loopbody} \dashv (\cdot, P)
 }
 \vspace{-.3cm}
 \end{mathpar}
@@ -1546,7 +1462,7 @@ B^\text{br} {=} Q^\text{br}
 \\
 Q^\text{ti} {=} P^\text{ti} + 5
 & B^\text{we} {=} B^\text{de} \land Q^\text{we} \succeq_{(x{<}10)} Q^\text{de}
-    \land P^\text{de} \succeq_{(\cdot)} P^\text{we}
+    \land P^\text{de} \succeq_{(x{\ge}0)} P^\text{we}
 & p^\text{de}_{0,10} {=} q^\text{de}_{0,10} + q^\text{de}_{0,x}
     \land p^\text{de}_{0} {=} q^\text{de}_{0}
     \land \forall (\alpha, \beta) \neq (0,10)  . \,
@@ -1662,17 +1578,22 @@ In general, the weakening rule can be applied after every syntax directed
 rule.  However, it can be left out in practice at some places to
 increase the efficiency of the tool.
 The weakening operation $\succeq_{\Gamma}$ is defined by the rule
-\textsc{Relax}. It is parameterized by a logical context that is
-used to gather information on interval sizes.  For example, $P^\text{de} \succeq_{(\cdot)} P^\text{we} \equiv$
-\vspace{-.3cm}
+\textsc{Relax}. It is parameterized by a logical context
+used to gather information on interval sizes.  For example,
+$P^\text{de} \succeq_{(x{\ge}0)} P^\text{we} \equiv$
+% SSS SPACING
+%\vspace{-.3cm}
 {\small
-  \begin{align*}
- p^\text{we}_{0,10} \leq p^\text{de}_{0,10} + u_{0,10} - v_{0.10}
-\land  p^\text{we}_{0} \leq p^\text{de}_{0} - 10 {\cdot} u_{0,10} + 10 {\cdot} v_{0.10} \\
-\land  \forall (\alpha, \beta) \neq (0,10)  . \, p^\text{we}_{\alpha,\beta} \leq p^\text{de}_{\alpha,\beta} \;\;\; .
-  \end{align*}
+\begin{align*}
+  p^\text{we}_{0,10} \leq p^\text{de}_{0,10} + u_{0,10} - v_{0,10}
+  \land p^\text{we}_{x,0} \leq p^\text{de}_{x,0} + u_{x,0} - v_{0,x} \land \;\;
+  \\
+  p^\text{we}_{0} \leq p^\text{de}_{0} - 10 {\cdot} u_{0,10} + 10 {\cdot} v_{0.10}
+  \bigwedge_{(\alpha, \beta) \neq (0,10), (x,0)} p^\text{we}_{\alpha,\beta} \leq p^\text{de}_{\alpha,\beta} \;.
+\end{align*}
 }
-\vspace{-.8cm}
+% SSS SPACING
+%\vspace{-.8cm}
 
 \noindent
 The other rules are syntax directed and applied inductively.  For example,
@@ -1756,7 +1677,8 @@ A notable advantage of the LP-based approach compared to
 SMT-solver--based techniques is that a satisfying assignment is
 a proof certificate instead of a counter example.
 
-\vspace{-.24cm}
+% SSS SPACING
+%\vspace{-.24cm}
 
 \iffull{The constraints that we generate have
 a particularly simple form that is known as \emph{network problem}.
@@ -1786,8 +1708,8 @@ while (k > 0) {
 \vspace{-.2cm}
 \end{minipage}
 \caption{Assisted bound derivation using logical state.  We write
-  $\#_1(a)$ for $\# \{ i \mid 0 {\le} i {<} N {\land} a[i] {=} 1 \}$ and use the
-  tick metric.  The derived bound  is
+  $\#_1(a)$ for $\# \{ i \mid 0 {\le} i {<} N {\land} a[i] {=} 1 \}$.
+  The derived bound is
   $2|[0,k]| + |[0,na]|$.
   }
 \label{fig:xmplincaux}
@@ -1812,7 +1734,7 @@ bsearch(x,l,h@,lg@) {
 \end{lstlisting}
 \vspace{-.2cm}
 \caption{Assisted bound derivation using logical state.
-  % We use the tick metric to model the stack consumption of the program.
+  % We model the stack consumption of the program using tick statements.
   % Before a function call to \code{bsearch}, a tick statement pays for
   % the space used by stack frame of the function.  The space is recoverd
   % after the call.
@@ -1840,9 +1762,9 @@ while (i < N) {
 \caption{Example of assisted bound derivation using logical state.
   We write $A(i)$ for
   $\#\{ k \mid i \le k \le N \land \forall\, 0\le j<k.\, a[j] < a[k]\}$.
-  We use the tick metric.  The bound derived is $|[0,N]| + |[0,nm]|$.
+  The bound derived is $|[0,N]| + |[0,nm]|$.
   }
-\label{fig:xmplmax}
+% \label{fig:xmplmax2}
 \end{figure}
 \fi
 
@@ -1951,7 +1873,7 @@ and an extended quantitative logic.  Using these two tools, the soundness
 of the automatic analysis described in \pref{sec:AAA}
 is proved by a translation morphism to the logic.
 
-\iffull{}{ The main parts of the soundness proof are formalized with
+\iffull{}{The main parts of the soundness proof are formalized with
   Coq and available for download. The full definitions of the cost
   semantics and the quantitative Hoare logic, and more details on the
   soundness proof can be found in the extended version of this
@@ -1993,113 +1915,32 @@ where the value of $x$ is updated to $v$.
 The small-step semantics is standard, except that it tracks
 the resource consumption of a program.  The semantics is parametric in
 the resource of interest for the user of our system.  We achieve this
-independence by parameterizing evaluations with a resource \emph{metric}
-$M$; a tuple of rational numbers and two maps.  Each of these
-parameters indicates the amount of resource consumed by a corresponding
-step in the semantics.  Resources can be released by using a negative
-cost. %  The metric used in the implementation can also
-% depend on other information that is statically available such as the
-% name of the called function or the number of arguments.
-Two sample rules for update and tick follow.
+independence by using a tick instruction that allows the programmer
+to specify how much and when resource is consumed.  If the resource
+usage is bound to the programming language (e.g. stack usage, number
+loop iterations and function calls), the tick statements can
+be inserted automatically by a pre-processing phase.  Resources can be
+released by using a negative tick.
+Two sample rules of the semantics for update and tick follow.
+
 \begin{mathpar}
-\Rule[rightskip=0.3cm]{U}
+\Rule{U}
 { \state' = \state[x \mapsto \sem{e}_\state] }
 { (\state, x \gets e, \cont, \cost)
 \rightarrow\\\\
-(\state', \code{skip}, \cont, \cost {-} M_u {-} M_e(e))
+(\state', \code{skip}, \cont, \cost)
 }
 \and
 \Rule[leftskip=0.3cm,rightskip=0.2cm]{T}
 { }
 { (\state, \code{tick}(n), \cont, \cost)
 \rightarrow\\\\
-(\state, \code{skip}, \cont, \cost {-} M_t(n))
+(\state, \code{skip}, \cont, \cost {-} n)
 }
 \end{mathpar}
 The rules have as implicit side condition that $\cost$ is
 non-negative.  This makes it possible to detect a resource crash as a
 stuck configuration where $\cost<0$.
-
-% \pref{fig:opsem} contains \ifshort{selected}{the} reduction rules of the semantics.  The
-% rules define a rewrite system for program configurations of the form
-% $(\state, S, \cont, \cost)$, where $\state$ is the program state, $S$
-% is the statement being executed, $\cont$ is a continuation that
-% describes what remains to be done after the execution of $S$, and
-% $\cost \in \Q$ is the non-negative number of resources available for
-% further execution.  All rules that can decrease $\cost$ have the
-% implicit side condition that the resource quantity available
-% \emph{before} the step is non-negative.  This means that we allow
-% $(\state, S, \cont, \cost)$ with $c<0$ on the right-hand side
-% transition relation $\smallstep{M}^*$ to indicate that the execution
-% ran out of resources.  However, every execution that reaches such a
-% state is stuck.
-%
-% \iffull{
-% A continuation $\cont$ represents the context of the execution of a
-% given statement.  A continuation can be the empty continuation
-% $\Kstop$ (used to start a program), a sequenced computation $\Kseq S
-% \cont$, a loop continuation $\Kloop S \cont$, or the continuation
-% $\Kcall r \theta \cont$ of a function call.
-% $$
-% \cont := \Kstop
-% \mid \Kseq S \cont
-% \mid \Kloop S \cont
-% \mid \Kcall r \theta \cont
-% $$
-% %
-% During the execution we assume a fixed function context $\fenv$ that
-% maps function names to a list of variables and the statement that
-% defines the function body.  It is used in the rule \textsc{S:Call}.
-% }{}
-%
-% The intuitive meaning of an evaluation \iffull{judgement}{} $(\state,
-% S, \cont, \cost) \smallstep{M}^* (\state', S', \cont', \cost')$ is the
-% following.  If the statement $S$ is executed in program state
-% $\state$, with continuation $\cont$, and with $\cost$ resources
-% available then---after a finite number of steps---the evaluation will
-% reach the new machine state $(\state', S', \cont',\cost')$ and there
-% are $\cost'$ resources available.  If $\cost' \ge 0$ then the
-% execution did not run out of resources and the resource consumption up
-% to this point is $\cost - \cost'$.  If this difference is negative
-% then resource became available during the execution.  If however
-% $\cost' < 0$ then the execution ran out of resources and is stuck.
-% The cost of the execution is then $\cost \ge 0$.
-%
-% \iffull{
-% \pref{lem:sem1} summarizes the main properties of the resource
-% counter of the semantics.  It can be proved by induction on the number
-% of steps.
-% \begin{lemma}
-% \label{lem:sem1}
-% \itemskip
-%   \begin{enumerate}
-%   \item If $(\state, S, \cont, \cost) \smallstep{M}^k (\state', S',
-%     \cont', \cost')$ and $n\ge 0$ then $(\state, S, \cont, \cost {+} n)
-%     \smallstep{M}^k (\state', S', \cont', \cost' {+} n)$.
-% \itemskipIn
-%   \item If $(\state, S, \cont, \cost) \smallstep{M}^k (\state', S',
-%     \cont', \cost')$ and $(\state, S, \cont, d) \smallstep{M}^k (\state', S',
-%     \cont', d')$ then $\cost - \cost' = d - d'$.
-%   \end{enumerate}
-% \itemskip
-% \end{lemma}
-% %
-% If we assume that we have a \emph{positive resource metric}, that is,
-% a metric that assigns a positive cost to each evaluation step then we
-% can link bounds on the resource consumption under the metric to
-% termination.  This is formalized by \pref{lem:sem_term}.
-% %
-% \begin{lemma}
-%  \label{lem:sem_term}
-%  Let $M$ be a positive metric and assume that there exists $b \in
-%  \Qplusz$ such that $(\state, S, \cont, \cost) \smallstep{M}^*
-%  (\state', S', \cont', \cost') \implies \cost {-} \cost' {\leq} b$.
-%  Then there exists $B \in \N$ such that $(\state, S, \cont, d)
-%  \smallstep{M}^n (\state'', S', \cont', d')$ for some $n$, $d$, $d'$
-%  and $\state''$ implies $n \le B$.
-% \end{lemma}
-% }
-
 
 % \begin{figure*}
 % \small
@@ -2193,18 +2034,17 @@ resources, and simplify the handling of auxiliary state.
 
 We define quantitative Hoare triples
 as $B;R\vdash\htriple Q S {Q'}$ where $B$, $R$, $Q$, and $Q'$ are
-maps from program states to an element of $\Qplusz\cup\{\infty\}$ that represents
+maps from program states to an element of $\Q\cup\{\infty\}$ that represents
 an amount of resources available.  The assertions $B$ and $R$ are
 postconditions for the case in which the block $S$ exits by a \code{break}
 or \code{return} statement.  Additionally, $R$ depends on the return
 value of the current function.  The meaning of the triple $\htriple Q
 S {Q'}$ is as follows: If $S$ is executed with starting state $\state$,
-the empty continuation, and at least $Q(\state)$ resource units available
+the empty continuation, $Q'(\state) \ge 0$ for all state $\sigma$, and at least $Q(\state)$ resource units available
 then the evaluation does not run out of resources and there are at
-least $Q(\state')$ resources left if the evaluation terminates in
+least $Q'(\state')$ resources left if the evaluation terminates in state
 $\state'$.  The logic rules are similar to the ones in previous
-work and generalized to account for the cost introduced by  our
-cost-aware semantics.
+work.
 
 Finally, we define a strong compositional continuation based soundness for
 triples and prove the validity of all the rules in Coq.  \ifshort{The full
@@ -2238,15 +2078,15 @@ is implicitly lifted to a quantitative assertion by mapping a state
 $\state$ to 0 if $\Gamma(\state)$ holds and to $\infty$ otherwise.
 \iffull{We also need to
 translate the assumptions in function contexts of the automatic
-analysis.  We define $\tr(\Gamma_f, Q_f, \Gamma'_f, Q'_f) :=
-\forall z \, \vec v \, v . $
+analysis.  We define $\tr(\Gamma_f, Q_f, \Gamma'_f, Q'_f) :=$
 %
-$$
+\begin{multline*}
+\forall z \, \vec v \, v . \,
 (
-  \lambda \vec v \, \state .\, \tr(\Gamma_f, Q_f)(\state[\Vargs {\mapsto} \vec v]),
+  \lambda \vec v \, \state .\, \tr(\Gamma_f, Q_f)(\state[\Vargs {\mapsto} \vec v]), \\
   \lambda v \, \state .\, \tr(\Gamma'_f, Q'_f)(\state[\Vret {\mapsto} v])
   )
-$$}{}
+\end{multline*}}{}%
 %
 \iffull{These definitions let}{This lets} us translate the judgement
 $J := B; R; P \vdash S \dashv P'$\iffull{ in the context $\Delta$ by $\tr(J) :=$}{ by}
@@ -2257,7 +2097,7 @@ $$}{%
 $$
   \tr(J) := \tr(B); \tr(R) \vdash \htriple{\tr(P)} S {\tr(P')}.
 $$}%
-\noindent{}The soundness of the automatic analysis can now be stated
+The soundness of the automatic analysis can now be stated
 formally with the following theorem.
 %
 \begin{theorem}[Soundness of the automatic analysis]
@@ -2526,7 +2366,7 @@ search. $\toolname$ finds the tight linear bound $1+2|[0,n]|$.
 
 
 To compare our tool with existing work, we focused on loop bounds and
-use a simple metric that counts the number of back edges (i.e., number
+use tick statements to counts the number of back edges (i.e., number
 of loop iterations) that are followed in the execution of the program
 because most other tools only bound this specific cost. In
 \pref{fig:compar}, we show the bounds we derived ($\toolname$) together with
@@ -2615,7 +2455,7 @@ more than $\totalLoc$ lines of code.  In the LoC column
 we not only count the lines of the analyzed function but
 also the ones of all the function it calls. \iffull{The line count is
 computed on pre-processed C with all unnecessary declarations removed.}{}
-We analyzed the functions using a metric that assigns a cost 1 to all
+We analyzed the functions by giving a cost 1 to all
 the back-edges in the control flow (loops, and function calls).
 The bounds for the functions \code{ycc\_rgb\_conv} and \code{uv\_decode}
 have been inferred with user interaction as described in \pref{sec:anno}.
@@ -2804,7 +2644,7 @@ We have demonstrated that our approach improves the state-of-the-art
 in resource bound analysis for C programs in three ways. First, our
 technique is naturally compositional, tracks size changes of
 variables, and can abstractly specify the resource cost of functions
-(\pref{sec:AAA}). Second, it is easily combinable with established
+(\pref{sec:AAA}). Second, it is easily combined with established
 qualitative verification to guide semi-automatic bound derivation
 (\pref{sec:anno}). Third, we have shown that the local inference rules
 of the derivation system automatically produce easily checkable
@@ -2848,9 +2688,9 @@ expressions are free of side effects.
 
 \paragraph{Syntax.}
 
-In this article, we describe our system for a subset of Clight that is
-sufficient to discuss the general ideas.  This subset is given by the
-following grammar.
+We describe our system for a subset of Clight that is sufficient to
+discuss the general ideas.  This subset is given by the following
+grammar.
 %
 \begin{align*}
 S &:= \code{assert}~E
@@ -2871,21 +2711,23 @@ analysis framework, it is only important that they are side-effect
 free.
 %
 The most notable difference to full Clight is that we can only assign
-to variables and thus do not consider operations that update the heap.
+to variables and thus do not consider operations that update the heap
+or the stack through a pointer.
 Moreover, function arguments and return values are assumed to be
 variables.  This is only for simplifying the presentation; in the
 implementation we can deal with heap updates and general function
 calls and returns.  However, we have not implemented our framework for function
 pointers, \code{goto} statements, \code{continue} statements, and
-\code{switch} statements.
+stack variables that have their address taken.
 
 We include the built-in primitive $\code{assert}~e$ that terminates
 the program if the argument $e$ evaluates to false and has no effect
 otherwise.  This is useful to express assumptions on the inputs of a
 program for the automatic analysis.  We also add the built-in function
-\code{tick(n)} that can be called with a constant integer $n$ as a
-flexible way to model resource consumption or release (if $n$ is
+\code{tick(n)} that can be called with a constant rational number $n$
+as a flexible way to model resource consumption or release (if $n$ is
 negative).
+
 
 
 \begin{figure*}[t!]
@@ -2894,40 +2736,40 @@ negative).
 \Rule{S:Assert}
 { \code{istrue}~\sem{e}_\state }
 { (\state, \code{assert}~e, \cont, \cost)
-\smallstep{M}
-(\state, \code{skip}, \cont, \cost {-} M_a)
+\smallstep
+(\state, \code{skip}, \cont, \cost)
 }
 %
 \and
 \Rule{S:BrkSeq}
-{}
+{ }
 { (\state, \code{break}, \Kseq S \cont, \cost)
-\smallstep{M}
+\smallstep
 (\state, \code{break}, \cont, \cost)
 }
 %
 \and
 \Rule{S:BrkLoop}
-{}
+{ }
 { (\state, \code{break}, \Kloop S \cont, \cost)
-\smallstep{M}
-(\state, \code{skip}, \cont, \cost {-} M_b)
+\smallstep
+(\state, \code{skip}, \cont, \cost)
 }
 %
 \and
 \Rule{S:RetSeq}
-{}
+{ }
 { (\state, \code{return}~x, \Kseq S \cont, \cost)
-\smallstep{M}
+\smallstep
 (\state, \code{return}~x, \cont, \cost)
 }
 \and
 %
 \and
 \Rule{S:RetLoop}
-{}
+{ }
 { (\state, \code{return}~x, \Kloop S \cont, \cost)
-\smallstep{M}
+\smallstep
 (\state, \code{return}~x, \cont, \cost)
 }
 %
@@ -2937,16 +2779,16 @@ negative).
   \state' = (\theta, \gamma)[r \mapsto \state(x)]
 }
 { (\state, \code{return}~x, \Kcall r \theta \cont, \cost)
-\smallstep{M}
-(\state', \code{skip}, \cont, \cost {-} M_r)
+\smallstep
+(\state', \code{skip}, \cont, \cost)
 }
 %
 \and
 \Rule{S:Update}
 { \state' = \state[x \mapsto \sem{e}_\state] }
 { (\state, x \gets e, \cont, \cost)
-\smallstep{M}
-(\state', \code{skip}, \cont, \cost {-} M_u {-} M_e(e))
+\smallstep
+(\state', \code{skip}, \cont, \cost))
 }
 %
 \and
@@ -2956,74 +2798,153 @@ negative).
   \state' = (\vec x \mapsto \state(\vec y), \gamma) \\
 }
 { (\state, r \gets f(\vec y), \cont, \cost)
-\smallstep{M}
-(\state', S_f, \Kcall r \theta \cont, \cost {-} M_f)
+\smallstep
+(\state', S_f, \Kcall r \theta \cont, \cost)
 }
 %
 \and
 \Rule{S:Loop}
-{}
+{ }
 { (\state, \code{loop}~S, \cont, \cost)
-\smallstep{M}
+\smallstep
 (\state, S, \Kloop S \cont, \cost)
 }
 %
 \and
 \Rule{S:SkipLoop}
-{}
+{ }
 { (\state, \code{skip}, \Kloop S \cont, \cost)
-\smallstep{M}
-(\state, \code{loop}~S, \cont, \cost {-} M_l)
+\smallstep
+(\state, \code{loop}~S, \cont, \cost)
 }
 %
 \and
 \Rule{S:IfTrue}
 { \code{istrue}~\sem{e}_\sigma
-\\ \cost' = \cost {-} M_c^1 {-} M_e(e)
 }
 { (\state, \code{if}(e)~S_1~\code{else}~S_2, \cont, \cost)
-\smallstep{M}
-(\state, S_1, \cont, \cost')
+\smallstep
+(\state, S_1, \cont, \cost)
 }
 %
 \and
 \Rule{S:IfFalse}
 { \code{isfalse}~\sem{e}_\sigma
-\\ \cost' = \cost {-} M_c^2 {-} M_e(e)
 }
 { (\state, \code{if}(e)~S_1~\code{else}~S_2, \cont, \cost)
-\smallstep{M}
-(\state, S_2, \cont, \cost')
+\smallstep
+(\state, S_2, \cont, \cost)
 }
 %
 \and
 \Rule{S:Seq}
 { }
 { (\state, S_1; S_2, \cont, \cost)
-\smallstep{M}
+\smallstep
 (\state, S_1, \Kseq {S_2} \cont, \cost)
 }
 %
 \and
 \Rule{S:SkipSeq}
-{}
+{ }
 { (\state, \code{skip}, \Kseq S \cont, \cost)
-\smallstep{M}
-(\state, S, \cont, \cost {-} M_s)
+\smallstep
+(\state, S, \cont, \cost)
 }
 %
 \and
 \Rule{S:Tick}
 { }
 { (\state, \code{tick}(n), \cont, \cost)
-\smallstep{M}
-(\state, \code{skip}, \cont, \cost {-} M_t(n))
+\smallstep
+(\state, \code{skip}, \cont, \cost - n)
 }
 
 \end{mathpar}
 \caption{Rules of the operational semantics of statements.}
 \label{fig:opsem}
 \end{figure*}
+
+
+\paragraph{Semantics.}
+
+\pref{fig:opsem} contains the reduction rules of the semantics.  The rules
+define a rewrite system for program configurations of the form $(\state,
+S, \cont, \cost)$, where $\state$ is the program state, $S$ is the
+statement being executed, $\cont$ is a continuation that describes what
+remains to be done after the execution of $S$, and $\cost \in \Q$ is
+the amount of resources available for further execution.  All the rules
+have the implicit side condition that the resource quantity available
+\emph{before} the step is non-negative.  This means that we allow
+$(\state, S, \cont, \cost)$ with $c<0$ on the right-hand side transition
+relation $\smallstep^*$ to indicate that the execution ran out of
+resources.  However, every execution that reaches such a state is stuck.
+
+A continuation $\cont$ represents the context of the execution of a
+given statement.  A continuation can be the empty continuation
+$\Kstop$ (used to start a program), a sequenced computation $\Kseq S
+\cont$, a loop continuation $\Kloop S \cont$, or the continuation
+$\Kcall r \theta \cont$ of a function call.
+$$
+\cont := \Kstop
+\mid \Kseq S \cont
+\mid \Kloop S \cont
+\mid \Kcall r \theta \cont
+$$
+%
+During the execution we assume a fixed function context $\fenv$ that
+maps function names to a list of variables and the statement that
+defines the function body.  It is used in the rule \textsc{S:Call}.
+
+The intuitive meaning of an evaluation $(\state,
+S, \cont, \cost) \smallstep^* (\state', S', \cont', \cost')$ is the
+following.  If the statement $S$ is executed in program state
+$\state$, with continuation $\cont$, and with $\cost$ resources
+available then---after a finite number of steps---the evaluation will
+reach the new machine state $(\state', S', \cont',\cost')$ and there
+are $\cost'$ resources available.  If $\cost' \ge 0$ then the
+execution did not run out of resources and the resource consumption up
+to this point is $\cost - \cost'$.  If this difference is negative
+then resource became available during the execution.  If however
+$\cost' < 0$ then the execution ran out of resources and is stuck.
+The cost of the execution is then $\cost \ge 0$.
+
+\pref{lem:sem1} summarizes the main properties of the resource
+counter of the semantics.  It can be proved by induction on the number
+of steps.
+\begin{lemma}
+\label{lem:sem1}
+\itemskip
+  \begin{enumerate}
+  \item If $(\state, S, \cont, \cost) \smallstep^k (\state', S',
+    \cont', \cost')$ and $n\ge 0$ then $(\state, S, \cont, \cost {+} n)
+    \smallstep^k (\state', S', \cont', \cost' {+} n)$.
+\itemskipIn
+  \item If $(\state, S, \cont, \cost) \smallstep^k (\state', S',
+    \cont', \cost')$ and $(\state, S, \cont, d) \smallstep^k (\state', S',
+    \cont', d')$ then $\cost - \cost' = d - d'$.
+  \end{enumerate}
+\itemskip
+\end{lemma}
+
+
+% OOPS this is no longer true... This is an argument agains a presentation
+% with ticks only. XXX
+%
+% If we assume that we have a \emph{positive resource metric}, that is,
+% a metric that assigns a positive cost to each evaluation step then we
+% can link bounds on the resource consumption under the metric to
+% termination.  This is formalized by \pref{lem:sem_term}.
+%
+% \begin{lemma}
+%  \label{lem:sem_term}
+%  Let $M$ be a positive metric and assume that there exists $b \in
+%  \Qplusz$ such that $(\state, S, \cont, \cost) \smallstep^*
+%  (\state', S', \cont', \cost') \implies \cost {-} \cost' {\leq} b$.
+%  Then there exists $B \in \N$ such that $(\state, S, \cont, d)
+%  \smallstep^n (\state'', S', \cont', d')$ for some $n$, $d$, $d'$
+%  and $\state''$ implies $n \le B$.
+% \end{lemma}
 
 
 
@@ -3036,7 +2957,7 @@ negative).
 %
 \Rule{L:Skip}
 { }
-{ \Delta; B; R \vdash
+{ \Delta; B; R \ldash
 \htriple
   { Q }{ \code{skip} }{ Q }
 }
@@ -3044,143 +2965,145 @@ negative).
 \and
 \Rule{L:Break}
 { }
-{ \Delta; B; R \vdash
+{ \Delta; B; R \ldash
 \htriple
-  { M_b + B }{ \code{break} }{ Q }
+  { B }{ \code{break} }{ Q }
 }
+\and
+\Rule{L:Tick}
+{ n < 0 \implies Q \ge 0}
+{ \Delta; B; R \ldash
+\htriple
+  { Q }
+  { \code{tick}(n) }
+  { Q - n }
+}
+%
 %
 \and
 \Rule{L:Return}
 { }
-{ \Delta; B; R \vdash
+{ \Delta; B; R \ldash
 \htriple
   { R\,(\state(x)) }{ \code{return}~x }{ Q }
 }
 %
 \and
-\Rule[leftskip=.0cm,rightskip=.0cm]{L:Update}
+\Rule{L:Assert}
 { }
-{ \Delta; B; R \vdash
+{ \Delta; B; R \ldash
 \htriple
-  { \lambda \state.\,M_u + M_e(e) + Q\,\state[x \mapsto \sem{e}_\state] }{ x \gets e }{ Q }
+  { \code{istrue}~\sem{e}_\state \implies Q }
+  { \code{assert}~e }
+  { Q }
 }
 %
 \and
-\Rule[leftskip=.0cm,rightskip=.0cm]{L:Seq}
-{ \Delta; B; R \vdash
-\htriple{ P }{ S_1 }{ Q' + M_s }
-\\
-\!\!  \Delta; B; R \vdash
+\Rule{L:Update}
+{ }
+{ \Delta; B; R \ldash
+\htriple
+  { \lambda \state.\, Q\,\state[x \mapsto \sem{e}_\state] }{ x \gets e }{ Q }
+}
+%
+\and
+\Rule{L:Loop}
+{ I \ge Q
+\\ \Delta; Q; R \ldash
+   \htriple { I }{ S }{ I }
+}
+{ \Delta; B; R \ldash
+\htriple
+  { I }{ \code{loop}~S }{ Q }
+}
+%
+\and
+\Rule{L:Seq}
+{ \Delta; B; R \ldash
+\htriple{ P }{ S_1 }{ Q' }
+\\\\
+  \Delta; B; R \ldash
 \htriple{ Q' }{ S_2 }{ Q }
 }
-{ \Delta; B; R \vdash
+{ \Delta; B; R \ldash
 \htriple{ P }{ S_1;S_2 }{ Q }
+}
+%
+\and
+\Rule{L:If}
+{% P \ge 0
+%\\
+  \Delta; B; R \ldash
+  \htriple
+  { \code{istrue}~\sem{e}_\state + P }
+  { S_1 }{ Q }
+\\
+  \Delta; B; R \ldash
+\htriple
+  { \code{isfalse}~\sem{e}_\state + P }
+  { S_2 }{ Q }
+}
+{ \Delta; B; R \ldash
+\htriple
+  { P }{ \code{if}(e)~S_1~\code{else}~S_2 }{ Q }
 }
 %
 \and
 \Rule{L:Call}
 {
   \Delta(f) = \forall z\,\vec v\,v.(P_f\,z\,\vec v, Q_f\,z\,v) \\
-  P \models P_f \, y \, (\state(\vec x)) \land A \\
-  \forall v.\, (Q_f \, y \, v \land A \models \lambda \state.\, Q \, \state[r \mapsto v])
+  P \ge P_f \, y \, (\state(\vec x)) + A \\
+  \forall v.\, (Q_f \, y \, v + A \ge \lambda \state.\, Q \, \state[r \mapsto v])
 }
-{ \Delta; B; R \vdash
+{ \Delta; B; R \ldash
 \htriple
-  { M_f + P }
+  { P }
   { r \gets f(\vec x) }
-  { Q - M_r }
-}
-%
-\and
-\Rule{L:Assert}
-{ }
-{ \Delta; B; R \vdash
-\htriple
-  { \code{istrue}~\sem{e}_\state \implies Q + M_a }
-  { \code{assert}~e }
   { Q }
 }
 %
 \and
-\Rule{L:Tick}
-{ }
-{ \Delta; B; R \vdash
-\htriple
-  { Q + M_t(n) }
-  { \code{tick}(n) }
-  { Q }
-}
-%
-\and
-\Rule{L:Loop}
-{ \Delta; Q; R \vdash
-\htriple
-  { I }{ S }{ I + M_l }
-}
-{ \Delta; B; R \vdash
-\htriple
-  { I }{ \code{loop}~S }{ Q }
-}
-%
-\and
-\Rule{L:If}
-{ \Delta; B; R \vdash
-\htriple
-  { \code{istrue}~\sem{e}_\state + P - M_c^1}
-  { S_1 }{ Q }
+\Rule{L:Extend}
+{  \Delta \cup \Delta'; B; R \ldash
+  \htriple{ P }{ S }{ Q }
 \\
-  \Delta; B; R \vdash
-\htriple
-  { \code{isfalse}~\sem{e}_\state + P - M_c^2 }
-  { S_2 }{ Q }
+  P_f \ge 0
+\\\\
+  \forall f\,P_f\,Q_f.\,
+  \Delta'(f) = \forall z\,\vec v\,v.(P_f\,z\,\vec v, Q_f\,z\,v)
+  \rightarrow
+  \forall y\,\vec v.\,
+  (\Delta \cup \Delta'; \bot; Q_f\,y \ldash
+    \htriple{ P_f\,y\,\vec v }{ S_f }{ \bot })
 }
-{ \Delta; B; R \vdash
-\htriple
-  { P + M_e(e) }{ \code{if}(e)~S_1~\code{else}~S_2 }{ Q }
+{ \Delta; B; R \ldash
+\htriple{ P }{ S }{ Q }
 }
 %
 \and
 \Rule{L:Weaken}
 {
-  \!\! P \models P' \!\! \\
-  \!\! \Delta; B'; R' \vdash
-  \htriple{ P' }{ S }{ Q' } \!\! \\
-  \!\! Q' \models Q \!\! \\
-  \!\! B' \models B \!\! \\
-  \!\! \forall v.\, (R'\,v \models R\,v) \!\!
+  \Delta; B'; R' \ldash \htriple{ P' }{ S }{ Q' } \\\\
+  P \ge P' \!\! \\
+  \!\! Q' \ge Q \!\! \\
+  \!\! B' \ge B \!\! \\
+  \!\! \forall v.\, (R'\,v \ge R\,v)
 }
-{ \Delta; B; R \vdash
+{ \Delta; B; R \ldash
 \htriple{ P }{ S }{ Q }
 }
 %
 \and
 \Rule{L:Frame}
-{ \Delta; B; R \vdash
+{ \Delta; B; R \ldash
 \htriple{ P }{ S }{ Q } \\
   x \in \Qplusz
 }
-{ \!\! \Delta; B + x; R + x \vdash
+{ \!\! \Delta; B + x; R + x \ldash
 \htriple{ P + x }{ S }{ Q + x } \!\!
 }
 %
-\and
-\Rule{L:Extend}
-{ \Delta \cup \Delta'; B; R \vdash
-  \htriple{ P }{ S }{ Q }
-\\
-  \forall f\,P_f\,Q_f.\,
-  \Delta'(f) = \forall z\,\vec v\,v.(P_f\,z\,\vec v, Q_f\,z\,v)
-  \rightarrow
-  \forall y\,\vec v.\,
-  (\Delta \cup \Delta'; \bot; Q_f\,y \vdash
-    \htriple{ P_f\,y\,\vec v }{ S_f }{ \bot })
-}
-{ \Delta; B; R \vdash
-\htriple{ P }{ S }{ Q }
-}
-%
 \end{mathpar}
-
 \caption{Rules of the Quantitative Hoare Logic}
 \label{fig:logicapp}
 \end{figure*}
@@ -3193,24 +3116,24 @@ boolean-valued assertions but also assertions that talk about the
 future resource usage.  Instead of the usual assertions $P : \State
 \to \mathit{bool}$ of Hoare logic we use assertions
 $$
-P : \State \to \Qplusz \cup \{ \infty \} \; .
+P : \State \to \Q \cup \{ \infty \} \; .
 $$
 This can be understood as a refinement of boolean assertions where
 $\mathit{false}$ is $\infty$ and $\mathit{true}$ is refined by $\Qplusz$.
-We write $\Assn$ for $\State \to \Qplusz \cup \{ \infty \}$ and $\bot$ for
+We write $\Assn$ for $\State \to \Q \cup \{ \infty \}$ and $\bot$ for
 $\lambda \state . \, \infty$.  We sometimes call assertions
 \emph{potential functions}.  To use Coq's support for propositional
-reasoning, assertions have the type $\State \to \Qplusz \to \mathrm{Prop}$
+reasoning, assertions have the type $\State \to \Q \to \mathrm{Prop}$
 in the implementation.  For a given $\state \in \State$, such an
-assertion can be seen as a set $B \subseteq \Qplusz$ of valid bounds.
-However, we find the presentation in this article easier to read.
+assertion can be seen as a set $B \subseteq \Q$.  However, we find
+the presentation in this article easier to read.
 
 Due to \code{break} and \code{return} statements of Clight, there are
 different possible ways to exit a block of code.  We also have to keep
 track of the resource specifications of functions.  To account for
 this in the logic, our quantitative Hoare triples have the form
 $$
-\Delta; B; R \vdash
+\Delta; B; R \ldash
 \htriple
   { Q }
   { S }
@@ -3219,10 +3142,10 @@ $$
 The triple $\htriple{ Q }{ S }{ Q' }$ consists of a statement $S$ and
 two assertions $Q,Q' : \Assn$.  It corresponds to triples in classic
 Hoare logic and the intuitive meaning is as follows.  If $S$ is
-executed with starting state $\state$, the empty continuation
-$\Kstop$, and at least $P(\state)$ resources available then the
+executed with starting state $\state$, with the empty continuation
+$\Kstop$, $Q' \ge 0$, and at least $Q(\state)$ resources available then the
 evaluation does not run out of resources and there are at least
-$Q(\state')$ resources left if the evaluation terminates in state
+$Q'(\state')$ resources left if the evaluation terminates in state
 $\state'$.  The assertion $B : \Assn$ provides the
 postcondition for the case in which the code block $S$ is exited by a
 \code{break} statement.  So if the execution is terminated in state
@@ -3250,8 +3173,8 @@ the local variables on the stack, that is, $\forall z \, \vec v
 \, \theta \, \theta' \, \gamma . \, P_f \, z \, \vec v \,
 (\theta,\gamma) = P_f \, z \, \vec v \, (\theta',\gamma)$.
 
-For two assertions $P,Q : \Assn$, we write $P \models Q$ to if for all
-program state $\state$ $P(\state) \ge Q(\state)$.
+For two assertions $P,Q : \Assn$, we write $P \ge Q$ to if for all
+program state $\state$, $P(\state) \ge Q(\state)$.
 
 \paragraph{Rules of the Quantitative Logic.}
 
@@ -3269,31 +3192,34 @@ The potential functions $B$ for the \code{break} and $R$ for the
 \code{return} part of the postcondition are not reachable and can
 therefore be arbitrary.
 
+The {\sc L:Tick} rule accounts for the cost $n$ of the tick statement.
+This rule is the only one to account directly for a cost on in the
+assertions because calling the \code{tick} function is the only way to
+change the amount of resource available.
+The rule also has a side condition that ensures that the potential
+remains positive during all the program execution.  It is an
+essential semantic property of this system.
+
 In the rule {\sc L:Assert}, we use the notation
-$\code{istrue}~\sem{e}_\state \implies Q + M_a$ to express that we
-require potential $Q + M_a$ in the precondition if $e$ evaluates to
+$\code{istrue}~\sem{e}_\state \implies Q$ to express that we
+require potential $Q$ in the precondition if $e$ evaluates to
 $\mathit{true}$ in the current program state.  If $e$ evaluates to
-$\mathit{false}$ then the potential in the precondition can be
-arbitrary since the program will be terminated.
+$\mathit{false}$ then the potential in the precondition can be any
+non-negative number since the program will be terminated.
 
 In the rules {\sc L:Break} and {\sc L:Return}, the postcondition can
 be arbitrary since it is unreachable.  Instead, we have to justify the
 potential functions $B$ and $R$ that hold after a \code{return} and a
 \code{break}, respectively.  In {\sc L:Break}, we require to have
-potential $M_b+B$ in the precondition: $M_b$ to pay for the execution
-cost of \code{break} and $B$ to pay for the potential after the
+potential $B$ in the precondition to pay for the potential after the
 \code{break}.  In {\sc L:Return} we only require to have potential
 $R$ in the precondition to pay for the potential after the
-\code{return}.  The reason is that we found it to be more convenient
-to account for the execution cost $M_r$ of the return in rule {\sc
-  L:Call} for function calls.
+\code{return}.
 
 The rule {\sc L:Update} is the standard assignment rule of Hoare
 logic.  With the substitution $\state[x \mapsto \sem{e}_\state]$ in
 the precondition we ensure that $Q$ evaluates to the same number as in
-the postcondition.  We also require that have we the constant
-potential $M_u + M_e(e)$ available in the precondition to pay for the
-cost of the evaluation of $e$ and the update.
+the postcondition.
 
 The rule {\sc L:Seq} rule is crucial to understand how the
 quantitative Hoare logic works.  To account for early exits of
@@ -3301,8 +3227,7 @@ statements, we must ensure in the \code{break} part $B$ of $S_1$'s
 judgement that the \code{break} part $B$ of of $S_1;S_2$ holds. The
 same is true for the return part $R$ of the judgements for $S_1$ and
 $S_2$.  The interaction between the actual pre- and postconditions is
-analogous to standard Hoare logic.  In the postcondition of $S_1$ we
-account for the cost $M_s$ of the execution of the sequence.
+analogous to standard Hoare logic.
 
 In the rule {\sc L:Loop}, the \code{break} part of the
 loop body $S$ becomes the postcondition of the loop statement. We use
@@ -3311,23 +3236,16 @@ $\code{loop}\, S$ since its operational semantics ensures that it can
 only terminate with a \code{skip} or a \code{return}.  The
 precondition $I$ of the loop is the loop invariant.  That is why we
 require to have potential $I$ available in the precondition of the
-loop body $S$.  In the postcondition of $S$, the potential must be
-sufficient to pay for the invariant $I$ and the cost $M_l$ of the loop
-iteration.
+loop body $S$.
 
 The {\sc L:If} is similar to the rule for the conditional in classic
 Hoare logic.  In the preconditions of the judgments for the two
 branches $S_1$ and $S_2$ we lift the boolean assertions
 $\code{isfalse}~\sem{e}_\state$ and $\code{isfalse}~\sem{e}_\state$ to
-quantitative assertions.  In the precondition of the rule {\sc L:Tick}
-we account for the execution cost $M_t(n)$ of the \code{tick}
-statement that depends on the integer $n$.
+quantitative assertions.
 
-The rule {\sc L:Call} accounts for the execution cost of both $M_f$
-for function calls and $M_r$ for \code{return} statements.
-This justifies that the {\sc L:Return} rule does not account
-  for resource consumption. The pre- and postcondition $P_f$ and
-$Q_f$ are taken from the function context $\Delta$.  The assertions in
+The pre- and postcondition $P_f$ and $Q_f$ used in the {\sc L:Call} rule
+are taken from the function context $\Delta$.  The assertions in
 the context are parametric with respect to both the values of the
 function arguments and the return value. This allows us to specify a
 bound for a function whose resource consumption depends on its
@@ -3353,10 +3271,9 @@ resources available after its execution, then it can very well run
 with $P + c$ resources and return $Q + c$ resources.  The consequence
 {\sc L:Conseq} rule is directly imported from classical Hoare logic
 except that instead of using the logical implication $\Rightarrow$ we
-use the quantitative $\models$ that point-wise applies $\ge$.  This
-rule indeed weakens the statement since it requires more resource to
-run the statement and yields less than what has been proved to be
-available after its termination.
+use the quantitative $\ge$.  This rule indeed weakens the statement
+since it requires more resource to run the statement and yields less
+than what has been proved to be available after its termination.
 
 \paragraph{Logical Variables and Shallow Embedding.}
 
@@ -3377,14 +3294,14 @@ deep embedding, or use the assertions of the host theory to get a
 shallow embedding.  Because of its flexibility, we used the latter
 approach in our development.  This choice makes it possible to have
 logical variables almost for free: we can simply use the variable and
-binding mechanisms of Coq, our host theory.  When an logical variable
+binding mechanisms of Coq, our host theory.  When a logical variable
 is needed we introduce it using a universal quantifier of Coq before
 using the logic to derive triples.  For example, the Coq theorem for
 the above example would look as follows.
 %
 \begin{lstlisting}
 Theorem dbl_triple: forall Z,
-  qtriple ($\lambda\sigma$.$\sigma$(x) = Z) ($\code{double}()$) ($\lambda\sigma$.$\sigma$(x) = 2*Z).
+  qtriple ($\lambda\sigma$.$\sigma$(x)=Z) ($\code{double}()$) ($\lambda\sigma$.$\sigma$(x)=2*Z).
 \end{lstlisting}
 %
 However, this trick alone is often not sufficient when working with a
@@ -3407,11 +3324,10 @@ In the following we demonstrate the use of the logic with two example
 derivations.
 
 In the example in~\pref{fig:xmplmax} we derive a precise runtime
-bound on a program that searches a maximal element in an array.  The
-cost metric that we use simply counts the assignments performed by the
-program.  Hence, the resource cost is closely related to the
-number of times the test \code{a[i] > m} is true during the
-execution.
+bound on a program that searches a maximal element in an array.
+Because of the location of the tick statements, the resource cost
+is closely related to the number of times the test \code{a[i] > m}
+is true during the execution.
 %
 If we define
 $$
@@ -3430,20 +3346,20 @@ $(m = \max_{k \in [0, i-1]} a[k]) + A(i) + (N-i)$ for the while loop.
 When the condition \code{a[i] > m} is true, we know that we
 encountered a ``maximum so far'' because $m$ is a maximal element of
 \code{a[0 \dots i]}, thus $A(i) = 1 + A(i+1)$ and we get one
-potential unit to pay for the assignment.  In the other case, no
+potential unit to pay for the tick in the conditional.  In the other case, no
 maximum so far is encountered so $A(i) = A(i+1)$.
-% As a side remark, if $K \ge 0$, it is possible to
-% have $\{ A(0) + N + K \}$ and $\{ K \}$ as pre- and postcondition
-% of the same program.  It can be done either by adapting the proof or by
-% applying the {\sc L:Frame} rule one top of the triple already derived.
-% More generally, without function calls, the {\sc L:Frame}
-% rule is admissible in our system.
+As a side remark, if $K \ge 0$, it is possible to
+have $\{ A(0) + N + K \}$ and $\{ K \}$ as pre- and postcondition
+of the same program.  It can be done either by adapting the proof or by
+applying the {\sc L:Frame} rule one top of the triple already derived.
+More generally, without function calls, the {\sc L:Frame}
+rule is admissible in our system.
 
 The example in~\pref{fig:xmplbs} shows a use case for logical
-variables as well as a metric for stack consumption. In a stack
-metric, we account a constant cost for a function call ($M_f>0$) that
-is returned after the call ($M_r = -M_f <0$).  All other resource cost
-are $0$.  We are interested in showing that a binary search function
+variables. On this example, we model the stack consumption:
+we account a constant cost for a function call ($M_f>0$) that
+is returned after the call ($M_r = -M_f <0$).
+We are interested in showing that a binary search function
 $\code{bsearch}$ has logarithmic stack consumption.  We use a logical
 variable $Z$ in the function specification $\htriple{(Z = \log_2(h-l))
   + Z \cdot M_\code{bsearch}}{}{Z \cdot M_\code{bsearch}}$ to express that the stack required by the
@@ -3460,35 +3376,34 @@ $
 $.
 %
 Using the rule {\sc L:Call} it is possible to instantiate $y$ with $Z
-- 1$, and because $M_f = M_\code{bsearch}$ and $M_r =
--M_\code{bsearch}$ in the stack metric.  The rest of the proof does
-not involve any resource manipulation and is just bookkeeping of
-logical assertions.
+- 1$.  The rest of the proof is here to make sure that the first tick
+can be paid for using regular algebra on the $\log_2$ function.
 
 
 
 \begin{figure}
 \begin{lstlisting}
 ${\color{blue} \{ A(0) + N \} }$
-i=1; m=a[0];
-${\color{blue}%
-  \{ (i {=} 1 \land m=a[0]) + A(1) + (N-1) \} }$
+i=1; tick(1); m=a[0]; tick(1);
 while (i < N) {
   ${\color{blue}%
     \{ (m = \max_{k \in [0, i-1]} a[k]) + A(i) + (N-i) \} }$
   if (a[i] > m)
-    m=a[i];
+    m=a[i], tick(1);
   ${\color{blue}%
     \{ (m = \max_{k \in [0, i]} a[k]) + A(i+1) + (N-i) \} }$
   i=i+1;
+  ${\color{blue}%
+    \{ (m = \max_{k \in [0, i-1]} a[k]) + A(i) + (N-i) + 1 \} }$
+  tick(1);
   ${\color{blue}%
     \{ (m = \max_{k \in [0, i-1]} a[k]) + A(i) + (N-i) \} }$
 } ${\color{blue} \{ 0 \} }$
 \end{lstlisting}
 \caption{Example derivation where we wrote $A(i)$
   for $\#\{ k \mid i \le k \le N \land \forall\, 0\le j<k.\, a[j] < a[k]\}$,
-  the metric used here assigns a cost of 1 to every assignment
-  and 0 to all other operations.
+  we use ticks in this example to count the number of assignments performed
+  by the program.
   }
 \label{fig:xmplmax}
 \end{figure}
@@ -3496,7 +3411,7 @@ while (i < N) {
 \begin{figure}
 \begin{lstlisting}
 ${\color{blue}%
-  \{ (Z = \log_2(h-l)) + Z \cdot M_\code{bsearch} \} }$
+  P(Z) := \{ (Z = \log_2(h-l)) + Z \cdot M_\code{bsearch} \} }$
 bsearch(x,l,h) {
   if (h-l > 1) {
     ${\color{blue}%
@@ -3507,17 +3422,18 @@ bsearch(x,l,h) {
     if (a[m]>x) h=m; else l=m;
     ${\color{blue}%
       \{ (Z - 1 = \log_2(h-l)) + (Z-1) \cdot M_\code{bsearch} + M_\code{bsearch} \} }$
-    l = bsearch(x,l,h); }
-  ${\color{blue}%
+    tick($M_\code{bsearch}$);
+    ${\color{blue}\{ P(Z-1) \}}$ l = bsearch(x,l,h); ${\color{blue}\{ Q(Z-1) \}}$
+    tick($-M_\code{bsearch}$);
+  } ${\color{blue}%
     \{ (Z-1) \cdot M_\code{bsearch} - (-M_\code{bsearch}) \} }$
   return l;
-} ${\color{blue} \{ Z \cdot M_\code{bsearch} \} }$
+} ${\color{blue} Q(Z) := \{ Z \cdot M_\code{bsearch} \} }$
 \end{lstlisting}
 \caption{Example derivation of a stack usage bound for a binary
-  search program.  The used resource metric defines the cost $M_\code{bsearch}$ before
+  search program.  The stack usage is modeled by adding a cost $M_\code{bsearch}$ before
   the function call and $-M_\code{bsearch}$ after the call.  $M_\code{bsearch}$ is the stack
-  frame size of the function $\code{bsearch}$.  $Z$ is a
-  logical variable.
+  frame size of the function $\code{bsearch}$.  $Z$ is a logical variable.
   }
 \label{fig:xmplbs}
 \end{figure}
@@ -3526,44 +3442,54 @@ bsearch(x,l,h) {
 \paragraph{Soundness of Quantitative Hoare Triples.}
 
 We already gave an intuition of the meaning of judgements
-derived in the logic.  To make it formal, we define the
-\emph{resource safety} $\safe n P S \cont$ of an assertion
-and a program configuration as $\forall \state \, \cost \, m \, \cost' .$
-\begin{align*}
-  (m {\le} n \land P(\state) {\le} \cost \land
-    (\state, S, \cont, \cost) \smallstep{M}^m (\_, \_, \_, \cost'))
-  \implies \cost' {\ge} 0.
-\end{align*}
-This predicate is step indexed by an integer $n$ that is used for
-induction in the soundness proof for the function-call and loop cases.
-The constraint $\cost' \geq 0$ imposed by the definition ensures that
-the program does not stop because of a resource error (recall that a
-negative resource counter on the right-hand side is a resource
-failure).  However, it does not rule out memory safety errors or
-assertion failures. This is because our logic does not prove any
-safety or correctness theorems but only focuses on resource usage.
+derived in the logic.  We start by defining an indexed
+predicate $\cdot \downarrow_n$ that defines a \emph{resource-safe}
+program configuration:
+\begin{multline*}
+  (\state, S, K, c) \downarrow_n \, := \\
+  \forall m \le n.\, \forall c'.\,
+    (\state, S, K, c) \smallstep^m
+    (\_, \_, \_, c') \implies 0 \le c'.
+\end{multline*}
+This predicate means that a program configuration can execute
+for a certain number of steps without running out of resources.
+Note that nothing is said about the program safety, i.e. a stuck
+configuration $C$ will satisfy $\forall n.\, C\downarrow_n$. This
+is because our logic does not prove any safety or correctness
+theorems but only focuses on resource usage.
+We can now be used to define the resource safety
+of a configuration with respect to a quantitative assertion.
+\begin{multline*}
+  \safe n P S \cont \, := \\
+  \forall \state\, c.\, P(\state) \le c \implies
+    0 \le c \wedge (\state, S, K, c) \downarrow_n.
+\end{multline*}
+Once again, we use an index in the definition of the predicate, it
+is used to perform proofs by induction for the function-call and
+loop rules of the logic.
 %
-An interesting detail in the definition is the natural number $m$.  We
-simply use it to ensure that $\safe {n+1} P S \cont \implies \safe n P S
-\cont $.  This would not be the case if we replaced all occurrences of
-$m$ by $n$ in the definition of validity.
+An interesting and essential property of the previous predicate is
+that $\safe {n+1} P S \cont \implies \safe n P S \cont$.  To prove
+this weakening property, we use the quantification over all numbers
+smaller than $n$ in the definition of $\cdot \downarrow_n$.
 
 The resource safety of a continuation $\cont$ is defined using three
 assertions, one for each of the possible outcomes of a program
 statement.  We define it as follows.
 \begin{align*}
 \safeK n B R Q \cont & :=  \safe n B {\code{break}} \cont \\
- \land& \safe n {\lambda \state.\,R\,(\state(x))} {\code{return}~x} \cont \\
+ \land& \forall x. \safe n {\lambda \state.R\,(\state(x))} {\code{return}~x} \cont \\
  \land& \safe n Q {\code{skip}} \cont
 \end{align*}
 %
 We can now define the \emph{semantic validity} of a judgement $B; R
-\vdash \htriple P S Q$ of the quantitative logic without function
+\ldash \htriple P S Q$ of the quantitative logic without function
 context as $\valid n B R P S Q :=$
-\begin{align*}
-& \forall m \, \cont \, x \geq 0 .\, (m \le n \land \safeK m {B{+}M_b{+}x} {R{+}x} {Q{+}x} \cont) \\
-& \implies \safe m {P+x} S \cont \; .
-\end{align*}
+\begin{multline*}
+\forall m \le n.\, \forall x \geq 0 .\, \forall \cont . \\
+  \safeK m {B{+}x} {R{+}x} {Q{+}x} \cont \\
+  \implies \safe m {P+x} S \cont .
+\end{multline*}
 Note how the validity of a triple embeds the frame rule of
 our logic. This refinement is necessary to have a stronger
 induction hypothesis available during the proof.
@@ -3575,7 +3501,7 @@ Using the semantic validity of triples we define the validity
 of a function context $\Delta$, written $\validC n \Delta$, as
 \begin{align*}
   &\forall f .\, \Delta(f) =
-    \forall z \, \vec v \, v .(P_f \, z \, \vec v, Q_f \, z \, v)
+    \forall z \, \vec v \, v .\, (P_f \, z \, \vec v, Q_f \, z \, v)
     \implies \\
   &\qquad \forall z \, \vec v .\,
   \valid n \bot {Q_f \, z} {P_f \, z \, \vec v} {S_f} \bot ,
@@ -3591,10 +3517,11 @@ soundness of the {\sc L:Extend} rule by induction.
 We are now able to state the soundness of the quantitative logic.
 %
 \begin{theorem}[Soundness]
-  If $\Delta; B; R \vdash \htriple P S Q$ is derivable then
+  \label{thm:sound}
+  If $\Delta; B; R \ldash \htriple P S Q$ is derivable then
   $
     \forall n .\, \validC n \Delta
-      \implies \valid {n {+} 1} B R P S Q.
+      {\implies} \valid {n {+} 1} B R P S Q.
   $
 \end{theorem}
 %
@@ -3615,10 +3542,11 @@ $\delta$ to be exactly one in the theorem statement.
 
 Assume that $S$ is a complete program and $\Delta$ is empty.  By
 expanding the definitions we see that $\Delta$ is valid
-for every $n$ and that $\Kstop$ is safe for every $n$. So
-we derive
+for every $n$ and that $\Kstop$ is safe for every $n$ if both
+$Q$, $R$, and $B$ are non-negative on all possible program
+states. So the \pref{thm:sound} becomes
 $$
-\Delta; B; R \vdash \htriple P S Q \implies   \forall n .\, \safe n P S \Kstop.
+\Delta; B; R \ldash \htriple P S Q \implies   \forall n .\, \safe n P S \Kstop.
 $$
 This means that from any starting state $\state$, $P(\state)$
 provides enough resources for any run of the program $S$.  This
@@ -3634,15 +3562,13 @@ induction.
 
 In this appendix we provide a non-exhaustive catalog of classes of
 programs that can be automatically analyzed by our system.  For
-simplicity, and to compare our analysis with existing tools, we use a
-cost metric that counts the number of loop iterations and function
-calls.  This is the only cost metric supported by tools like
+simplicity, and to compare our analysis with existing tools,
+the examples are automatically instrumented with tick statements
+to count the number of loop iterations and function calls.
+This is the only resource that can be measured by tools like
 KoAT~\cite{BrockschmidtEFFG14} and LOOPUS~\cite{SinnZV14}.  Sometimes
-we also use the \emph{tick metric} if we want to discuss features such as
-resource restitution.  The tick metric assigns cost $n$ to the
-statement \code{tick(n)} and cost $0$ to all other statements. Of
-course, the examples can also be analyzed with any other cost metric
-in our system.
+we use tick statements explicitely to discuss features such as
+resource restitution.
 
 We assume that free variables in the code snippets are the inputs of
 the program. Some of the examples contain constants on which the
@@ -4480,7 +4406,7 @@ the loop (this would be also done by an optimizing compiler).  The
 resulting program can then be analyzed by our tool.
 
 Example \emph{ex1} from~\cite{GulwaniZ10} specifically focuses on the
-code in the \emph{if} statement.  So we use the \emph{tick metric} and
+code in the \emph{if} statement.  So we
 insert \code{tick(1)} inside the if statement to derive a bound on
 the number of times the code in the if statement is executed.  Note
 that we cannot derive a bound for the whole program since the outer
@@ -4521,7 +4447,7 @@ int copy (int x, int y) {
   };
   return y;
 }
-void main (int x,int y) {
+void start (int x,int y) {
   y = copy (x,y);
   count_down(y);
 }
@@ -4553,7 +4479,7 @@ void count_up (int x, int y)
   }
 }
 
-void main (int y, int z) {
+void start (int y, int z) {
   count_down(y,z);
 }
    \end{lstlisting}
@@ -4578,7 +4504,7 @@ void consume () {
     y=y-1; x=x+1; tick(1);
   }
 }
-void main (int y, int z) {
+void start (int y, int z) {
   consume(); produce(); consume();
 }
    \end{lstlisting}
@@ -4609,7 +4535,8 @@ int srch(
   int i=0, j=0, k=-1;
 
   while (i < n) {
-    while (j >= 0 && t[i]!=p[j]) {
+    while (j >= 0
+        && t[i]!=p[j]) {
       k = b[j];
       assert(k > 0);
       assert(k <= j + 1);
@@ -4634,11 +4561,13 @@ $1 + 2|\inter 0 n|$
     \begin{center}
    \begin{lstlisting}
 int gcd(int x, int y) {
-  if (x <= 0) return y;
-  if (y <= 0) return x;
+  if (x <= 0)
+    return y;
+  if (y <= 0)
+    return x;
 
   for (;;) {
-    if (x>y) x -= y;
+    if (x>y)      x -= y;
     else if (y>x) y -= x;
     else return x;
   }
@@ -4655,12 +4584,14 @@ $|\inter 0 x| + |\inter 0 y|$
   \begin{minipage}[b]{\progwidth}
     \begin{center}
    \begin{lstlisting}
-void qsort(int a[], int lo, int hi) {
+void qsort(
+  int a[], int lo, int hi
+) {
   int m1, m2, n;
 
   if (hi - lo < 1) return;
 
-  n = nondet(); /* partition the array */
+  n = nondet(); /* partition */
   assert( n > 0 );
   assert( lo + n <= hi );
 
@@ -4671,7 +4602,7 @@ void qsort(int a[], int lo, int hi) {
   qsort(a, lo, m2);
 }
 
-void main(int a[], int len) {
+void start(int a[], int len) {
   qsort(a, 0, len);
 }
    \end{lstlisting}
@@ -4683,7 +4614,7 @@ $1 + 2 |\inter 0 {\code{len}}|$
   \end{minipage}
 
    \caption{Well-Known Algorithms}
-  \label{fig:cat3}
+  \label{fig:wknown}
 \end{figure*}
 
 
@@ -4718,7 +4649,7 @@ variable $y$ that is passed as an argument and we call the function
 0.67 |[z,y]|$.
 
 Example \emph{t46} shows a program that uses and returns resources.
-Again, we use the \emph{tick metric} and the function \code{tick} to
+Again, we use the function \code{tick} to
 describe the resource usage.  The function \code{produce} produces
 $|[0,x]|$ resources, that is, in each of the $|[0,x]|$ iterations, it
 receives one resource unit.  Similarly, the function \code{consume}
@@ -5377,7 +5308,7 @@ $1 {+} |\inter 0 n|$
 
 \paragraph{Well-Known Algorithms}
 
-\pref{fig:cat3} shows well-known algorithms that can be automatically
+\pref{fig:wknown} shows well-known algorithms that can be automatically
 analyzed in our framework.  Example \emph{Knuth-Morris-Pratt} shows
 the search function of the Knuth-Morris-Pratt algorithm for string
 search.  To derive a bound for this algorithm we have add an assertion

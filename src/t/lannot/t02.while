@@ -1,6 +1,18 @@
-while x > 0
-{ -x + 1 ≤ 0 }
-  while x - y > 10
-{ -x + y + 11 ≤ 0 }
-    x = x + y
+loop
+  (
+{ T }
+    if x <= 0
+{ x ≤ 0 }
+      break;
+    loop
+      (
+{ T }
+        if x - y <= 10
+{ x - y - 10 ≤ 0 }
+          break;
+        x += y
+{ -x + 2 y + 11 ≤ 0 }
+      )
+{ x - y - 10 ≤ 0 }
+  )
 { x ≤ 0 }

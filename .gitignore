@@ -13,3 +13,7 @@ src/._ncdi
 src/._d
 src/app
 src/config.mk
+src/Grammar.mli
+src/Grammar.ml
+src/Grammar.output
+src/Parse.ml

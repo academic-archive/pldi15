@@ -1,29 +1,14 @@
-func produce()
+func f(x, y)
 { T }
-  while x > 0
+  if x < y
     (
-{ -x + 1 ≤ 0 }
-      (-1);
-{ -x + 1 ≤ 0 }
-      x = x - 1;
-      y = y + 1
-{ -x ≤ 0 }
-    )
-func consume()
-{ T }
-  while y > 0
-    (
-{ -y + 1 ≤ 0 }
-      y = y - 1;
-{ -y ≤ 0 }
-      x = x + 1;
-      (1)
-{ -y ≤ 0 }
-    )
+{ x - y + 1 ≤ 0 }
+      x += 1;
+{ x - y ≤ 0 }
+      f(x, y);
+      f(x, y)
+{ x - y ≤ 0 }
+    );
 
-{ T }
-consume();
-{ T }
-produce();
-consume()
+f(a, b)
 { T }

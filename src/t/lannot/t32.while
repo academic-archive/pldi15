@@ -6,15 +6,27 @@ func swap() local (t)
     x = y;
     y = t
 { t - y ≤ 0 /\ -t + y ≤ 0 /\ ?3 - x ≤ 0 /\ -?3 + x ≤ 0 /\ ?2 - t ≤ 0 /\ -?2 + t ≤ 0 }
-  )
+  );
 
 { T }
-while x < 0
-{ x + 1 ≤ 0 }
-  x = x + 1;
+loop
+  (
+{ T }
+    if x >= 0
+{ -x ≤ 0 }
+      break;
+    x += 1
+{ x ≤ 0 }
+  );
 { -x ≤ 0 }
 swap();
-while x > 0
-{ -x + 1 ≤ 0 }
-  x = x - 1
+loop
+  (
+{ T }
+    if x <= 0
+{ x ≤ 0 }
+      break;
+    x -= 1
+{ -x ≤ 0 }
+  )
 { x ≤ 0 }

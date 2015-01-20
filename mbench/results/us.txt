@@ -1,16 +1,3 @@
-Command:
-  time  for f in *.c; do
-    echo "** File $f **";
-    ../Cee~ $f 2>&1 | sed -e '1,/Analysis/d';
-    echo;
-  done > results.txt
-
-Time to complete:
-real    0m0.912s
-user    0m0.793s
-sys     0m0.063s
-
-
 ** File gcd.c **
 1.00 |[0, x]|
 1.00 |[0, y]|
@@ -19,16 +6,17 @@ sys     0m0.063s
 1.00
 2.00 |[0, n]|
 
+** File md5.c **
+157.00
+
 ** File qsort.c **
 1.00
 2.00 |[0, len]|
 
 ** File speed_pldi09_fig1.c **
-1.00
 2.00 |[0, n]|
 
 ** File speed_pldi09_fig4_2.c **
-1.00
 2.00 |[0, n]|
 
 ** File speed_pldi09_fig4_4.c **
@@ -38,6 +26,7 @@ sys     0m0.063s
 Sorry, I could not find a bound.
 
 ** File speed_pldi10_ex1.c **
+1.00 |[0, n]|
 
 ** File speed_pldi10_ex3.c **
 1.00 |[0, n]|
@@ -111,8 +100,8 @@ Sorry, I could not find a bound.
 1.00 |[y, x]|
 
 ** File t27.c **
-0.01 |[n, y]|
 11.00 |[n, 0]|
+0.01 |[0, y]|
 
 ** File t28.c **
 1.00 |[x, 0]|
@@ -127,13 +116,13 @@ Sorry, I could not find a bound.
 2.00
 2.00 |[0, x]|
 1.00 |[0, y]|
-1.00 |[0, 1]|
 
 ** File t39.c **
 1.33
 0.67 |[z, y]|
 
 ** File t46.c **
+1.00 |[0, y]|
 
 ** File t47.c **
 1.00
