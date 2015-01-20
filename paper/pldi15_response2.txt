@@ -60,3 +60,159 @@ specific" logic.  We definitely agree with the review #41F in
 that most resource-bounding tools use related techniques and we
 think that we made this greatest common divisor explicit as our
 quantitative Hoare logic.
+
++++ Pont-By-Point Response
+
+Review #41D:
+
+> The fully automatic analysis can only infer linear bounds.
+
+We addressed this comment in our first response in the point
+'Non-linear bounds'.
+
+> p. 6  “Non-linear operations such as x <- z * y or x <- a[y] are
+> handled by assigning 0 to coefficients like qxa and qax that contain
+> x after the assignment.”  Can you give an explanation for why this
+> treatment is sound?
+
+This is addressed in the point 'Handling of non-linear operations'
+above.
+
+> Figure 4.  What are the M meta-variables? For example, M_l in (Q:Loop).
+
+The M variables are parameters of the cost-semantics that we
+call "resource metric".  They allow the semantics to work for
+different resources.  It is defined at the end of page 8,  we
+will move it earlier in the final version.
+
+
+Review #41E:
+
+> It seems the tool can only derive linear bounds, while existing tools
+> can derive polynomial bounds. I suppose this is not a huge issue as
+> the tighter linear bounds can be integrated within these other tools to
+> computer tighter polynomial bounds.
+
+We addressed this comment in our first response in the point
+'Non-linear bounds'.
+
+> Although this is a step in the right direction, resource bound inference
+> is still impractical. The benchmark examples and programs are < 100
+> lines of code, usually substantially less than 100 lines. I expected
+> that “compositional” analysis will be able to handle larger, more
+> complex programs.
+
+We addressed this comment in our first response in the point
+'Analysis for large programs'.
+
+In short, we think that our analysis scales well to large programs, but
+in practice it is hard to find C programs with loops whose termination
+only relies on integer operations.  While most loops that do are in
+practice linear, one often finds loops on strings, which require a heap
+invariant to prove termination, or loops on data streams (files,
+sockets, ...) which also require complex invariants.  This kind of loops
+can of course be handled using heuristics or program transformations
+making explicit the size of the data iterated over by the loop.
+
+> Page 4 examples. I am still puzzled as to how the bound invariants,
+> with these non-trivial constant factors, are arrived at. You claim you
+> don’t need tight loop invariants but can compute tight bound invariants
+> and constant factors?
+
+The strength of encoding our problem into LP solving is that only minimal
+local knowledge on the value of variables is required to get good bounds.
+The tight constant factors are computed by the LP solver, not by our
+abstract interpretation pass, those are two very distinct passes.
+
+On the simple example:
+
+    while (x>2) x -= 3;
+
+Our abstract interpretation pass only needs to infer that 'x >= 3' inside
+the loop.  Then, the constraints generated allow the LP solver to take 3
+potential units from |[0,x]| inside the loop.  Because the LP solver
+minimizes the linear coefficients, it assigns the potential 1/3 to the
+above interval.  And 1/3 * |[0,x]| is a tight bound.
+
+From a bird's eye, our abstract-interpretation-based invariant generator
+finds local knowledge that is encoded in a global constraint set, which
+is in turn optimized by the LP solver.  We believe that this interaction
+of local and global information is a strength of our analysis.
+
+> Page 6. What is the interpretation of the handling of nonlinear
+> operations?
+
+We addressed this in the point 'Handling of non-linear operations'
+above.
+
+> Page 6 bottom. Why there is no discussion of rule Q:Loop in the text? I
+> think it will be really helpful.
+
+We would integrate a description in the final version.  Meanwhile, a
+description of the equivalent rule L:Loop can be found in our extended
+version.
+
+> Why there is no comparison with other tools on cBench?
+
+We thought of cBench as a way to show the scalability of our analysis
+and did judge it worthwhile to do a comparison.
+
+Meanwhile, the only tool that would readily work on the cBench code
+is Loopus.  By design, Loopus is not as compositional as C4B and this
+makes the comparison unintersting.  Below, we describe this lack of
+compositionality and its consequences on two practical examples.
+
+The mad_bit_crc function is bounded as follows:
+    C4B:    61.19 + 0.19 |[-1, len]|
+    Loopus: max(0, len - 31) + max(len, 0, len % 8)
+While the asymptotic bound is the same, the constant factors are a
+lot looser in the bound given by Loopus (which also happens to be less
+readable).
+
+Similarly, compositionality lacks with respect to functions, for example
+the sha_update example gets the bounds:
+    C4B:    2 + 3.55 |[0, count]|
+    Loopus: max(0, count - 63)
+But the bound of Loopus is not accounting for the cost of function calls
+in sha_update, thus it does not reflect the actual cost of a call to
+sha_update.  (In this particular example, if count <= 63, a memcpy of
+count bytes is run by sha_update and this does not appear in Loopus'
+bound.)
+
+               XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+               XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+               XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                       Include that?
+               XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+               XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+               XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+However, because it focuses on smaller pieces of code, Loopus appears to
+be faster than C4B on many examples.
+
+
+Review #41F:
+
+> - I believe the formalism with potentials and such can be simplified
+> further by more tightly connecting to program logics,
+>
+> - Once you view things in the above light, there is a stronger connection
+> with verification literature, including the papers on synthesizing
+> invariants and ranking functions via LP which the paper should include.
+
+It is true that our quantitative logic could be rephrased in terms of classic
+program logics.  But we do not believe it would simplify the presentation.
+Our logic and its soundness theorem are readily instantiated to hide the
+extra "state" variable that is the potential and make the reasoning on it
+easy.
+
+The "potential" that we use has its roots in amortized computational
+complexity analysis, as is made explicit by examples in the extended
+version of our submission.  Presenting it as an auxiliary state is
+possible, but it would obfuscate its semantics.
+
+It true that our technique and the computation of linear invariants and
+ranking functions are connected.  We would discuss it in the final version
+of our paper.  We already mention this relation on page 3 where we state
+that "the concept of potential function is a generalization of the concept
+of ranking function" and proceed to explain it.
