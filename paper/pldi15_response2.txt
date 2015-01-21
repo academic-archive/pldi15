@@ -32,14 +32,13 @@ We currently don't track size changes in some operations. Yet, we
 handle them in the analysis and ensure soundness by assigning zero
 potential to the result.
 
-For example, assignments such as x = a[y] or x = t*y are re-written by
-our pre-processor as x = * where '*' represents an expression
-returning an unknown integer.  Since the value of x is unknown after
-the assignment, we do not know neither the size of intervals |[x, u]|
-and |[u, x]| for all u (!= x).  Because these intervals are of unknown
-size require that their potential is 0, this way, we know that for any
-heap H, Phi(H) >= Phi'(H[x <- *]), and therefore assignment of
-potential 0 is sound.
+For example, assignments such as x = a[y] or x = t*y are re-written by our
+pre-processor as x = * where '*' represents an expression returning an
+unknown integer.  Since the value of x is unknown after the assignment,
+we do not know the size of intervals |[x, u]| and |[u, x]| for all u
+(!= x).  Because these intervals are of unknown size we require that
+their potential is 0, this way, we know that for any heap H, Phi(H) >=
+Phi'(H[x <- *]), and therefore assignment of potential 0 is sound.
 
 > Figure 4.  What are the M meta-variables? For example, M_l in (Q:Loop).
 
@@ -119,7 +118,7 @@ The only tool that would readily work on the cBench code is Loopus.
 By design, Loopus is not as compositional as C4B and this makes a
 meaningful comparison difficult.
 
-For example, for the sha_update function the tool compute the
+For example, for the sha_update function the tools compute the
 following bounds:
 
     C4B:    2 + 3.55 |[0, count]|
