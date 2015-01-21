@@ -8,58 +8,11 @@ Already addressed but still mentioned:
 + short tests
 
 
-+++ Handling of non-linear operations
-
-Non-linear operations (including heap reads) do not currently
-fit in our framework.  The solution we chose is to consider them
-as non-deterministic assignments.  They are a sound abstraction
-for the behavior of the program.  We give details on how this
-works in practice below.
-
-Assignments like x = a[y] or x = t*y are re-written by our
-pre-processor as x = * where '*' represents an expression
-returning an unknown integer.
-
-During the analysis, we use the following rule:
-
-   for all u != x, q'_{xu} = q'_{ux} = 0
-   -------------------------------------  .
-            Phi |- x = * -| Phi'
-
-Since the value of x is undetermined after the assignment, we
-do not know neither the size of intervals |[x, u]| and |[u, x]|
-for all u (!= x).  Because these intervals are of unknown size
-require that their potential is 0, this way, we know that for
-any heap H, Phi(H) >= Phi'(H[x <- *]), and the rule is sound.
-
-In short, since we do not know the value of intervals that
-contain x after a non-deterministic assignment to x, we require
-them to loose all their potential.
++++++++++++++++++
 
 
-+++ Connection to program logics
-
-As noted by several reviewers, our concept of potential can
-be seen as an auxiliary state that respects some properties:
-non-negativitay throughout the program, and appropriate
-variations on resource affecting statements.
-
-Proving properties on such auxiliary state is nothing new and
-can readily be done by 'plain old' Hoare logics.  However, we
-believe that proofs of resource safety should be separated from
-proofs of correctness. Using a classic Hoare logic directly
-would lead to bulky proofs that are hard to automate because
-it would require to prove "too much": memory safety, termination,
-etc.
-
-Our custom built logic and its soundness theorem are specifically
-designed for resource safety and leave the burden of proving
-correctness to other tools.  We think that this is a strength
-of our work, and it is what motivated us to design this "domain
-specific" logic.  We definitely agree with the review #41F in
-that most resource-bounding tools use related techniques and we
-think that we made this greatest common divisor explicit as our
-quantitative Hoare logic.
+We thank the reviewers for their positive and constructive feedback.
+We respond to the new reviews point by point.
 
 +++ Pont-By-Point Response
 
@@ -75,16 +28,25 @@ We addressed this comment in our first response in the point
 > x after the assignment.”  Can you give an explanation for why this
 > treatment is sound?
 
-This is addressed in the point 'Handling of non-linear operations'
-above.
+We currently don't track size changes in some operations. Yet, we
+handle them in the analysis and ensure soundness by assigning zero
+potential to the result.
+
+For example, assignments such as x = a[y] or x = t*y are re-written by
+our pre-processor as x = * where '*' represents an expression
+returning an unknown integer.  Since the value of x is unknown after
+the assignment, we do not know neither the size of intervals |[x, u]|
+and |[u, x]| for all u (!= x).  Because these intervals are of unknown
+size require that their potential is 0, this way, we know that for any
+heap H, Phi(H) >= Phi'(H[x <- *]), and therefore assignment of
+potential 0 is sound.
 
 > Figure 4.  What are the M meta-variables? For example, M_l in (Q:Loop).
 
-The M variables are parameters of the cost-semantics that we
-call "resource metric".  They allow the semantics to work for
-different resources.  It is defined at the end of page 8,  we
-will move it earlier in the final version.
-
+The M variables are parameters of the cost-semantics that we call
+"resource metric".  They allow the semantics to work for different
+resources.  It is defined at the end of page 8. We will move it
+further to the front.
 
 Review #41E:
 
@@ -105,14 +67,14 @@ We addressed this comment in our first response in the point
 We addressed this comment in our first response in the point
 'Analysis for large programs'.
 
-In short, we think that our analysis scales well to large programs, but
-in practice it is hard to find C programs with loops whose termination
-only relies on integer operations.  While most loops that do are in
-practice linear, one often finds loops on strings, which require a heap
+In short, our analysis scales well to large programs, but in practice
+it is hard to find C programs with loops whose termination only relies
+on integer operations.  While most loops fall in this category in our
+benchmarks, one often finds loops on strings, which require a heap
 invariant to prove termination, or loops on data streams (files,
-sockets, ...) which also require complex invariants.  This kind of loops
-can of course be handled using heuristics or program transformations
-making explicit the size of the data iterated over by the loop.
+sockets, ...) which also require complex invariants.  Such loops could
+be handled using heuristics or program transformations that make
+explicit the size of the data iterated over by the loop.
 
 > Page 4 examples. I am still puzzled as to how the bound invariants,
 > with these non-trivial constant factors, are arrived at. You claim you
@@ -136,14 +98,13 @@ above interval.  And 1/3 * |[0,x]| is a tight bound.
 
 From a bird's eye, our abstract-interpretation-based invariant generator
 finds local knowledge that is encoded in a global constraint set, which
-is in turn optimized by the LP solver.  We believe that this interaction
-of local and global information is a strength of our analysis.
+is in turn optimized by the LP solver.  This interaction of local and global
+information is a strength of our analysis.
 
 > Page 6. What is the interpretation of the handling of nonlinear
 > operations?
 
-We addressed this in the point 'Handling of non-linear operations'
-above.
+We answered this in the second point of the response to Review #41D.
 
 > Page 6 bottom. Why there is no discussion of rule Q:Loop in the text? I
 > think it will be really helpful.
@@ -154,65 +115,79 @@ version.
 
 > Why there is no comparison with other tools on cBench?
 
-We thought of cBench as a way to show the scalability of our analysis
-and did judge it worthwhile to do a comparison.
+The only tool that would readily work on the cBench code is Loopus.
+By design, Loopus is not as compositional as C4B and this makes a
+meaningful comparison difficult.
 
-Meanwhile, the only tool that would readily work on the cBench code
-is Loopus.  By design, Loopus is not as compositional as C4B and this
-makes the comparison unintersting.  Below, we describe this lack of
-compositionality and its consequences on two practical examples.
+For example, for the sha_update function the tool compute the
+following bounds:
 
-The mad_bit_crc function is bounded as follows:
-    C4B:    61.19 + 0.19 |[-1, len]|
-    Loopus: max(0, len - 31) + max(len, 0, len % 8)
-While the asymptotic bound is the same, the constant factors are a
-lot looser in the bound given by Loopus (which also happens to be less
-readable).
-
-Similarly, compositionality lacks with respect to functions, for example
-the sha_update example gets the bounds:
     C4B:    2 + 3.55 |[0, count]|
     Loopus: max(0, count - 63)
-But the bound of Loopus is not accounting for the cost of function calls
-in sha_update, thus it does not reflect the actual cost of a call to
-sha_update.  (In this particular example, if count <= 63, a memcpy of
-count bytes is run by sha_update and this does not appear in Loopus'
-bound.)
 
-               XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-               XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-               XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-                       Include that?
-               XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-               XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-               XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-However, because it focuses on smaller pieces of code, Loopus appears to
-be faster than C4B on many examples.
-
+The bound of Loopus is not accounting for the cost of function calls
+in sha_update. Thus it does not reflect the actual cost of a call to
+sha_update but rather computes a local bound.  (In this particular
+example, if count <= 63, a memcpy of count bytes is run by sha_update
+and this does not appear in Loopus' bound.)
 
 Review #41F:
 
-> - I believe the formalism with potentials and such can be simplified
-> further by more tightly connecting to program logics,
+> That said, I think the presentation can be simplified (and if not,
+> a small paragraph explaining why the below is too simplistic would
+> improve the paper by justifying the complexity.)
 >
-> - Once you view things in the above light, there is a stronger connection
-> with verification literature, including the papers on synthesizing
-> invariants and ranking functions via LP which the paper should include.
+> Essentially, the "potential" is an extra "state" variable that:
+>
+> 1. is decremented by some cost at various given operations,
+> 2. must be non-negative at all operations.
+>
+> So if one was interested in running time, and say each operation took
+> 1 unit of time, then implicitly there is a "global" that is
+> decremented by one at each operation, and is required to be greater
+> than 0 at all times. With this, the entire business of compositional
+> analysis boils down to computing invariants that relate the program
+> variables with this "global"; and compositional analysis boils down to
+> computing how the value of this global "changes" across a procedure
+> call (what is its value at the end -- in the postcondition vs. at the
+> beginning -- in the precondition), and plain old program logics give
+> you compositionality out of the box.
 
-It is true that our quantitative logic could be rephrased in terms of classic
-program logics.  But we do not believe it would simplify the presentation.
-Our logic and its soundness theorem are readily instantiated to hide the
-extra "state" variable that is the potential and make the reasoning on it
-easy.
+One has to distinguish between two different concepts of ghost state:
+(1) a global ghost variable that tracks that amount of consumed
+resources and (2) a global variable that corresponds to the potential
+that is used as a mechanism to derive a bound on the cost.
 
-The "potential" that we use has its roots in amortized computational
-complexity analysis, as is made explicit by examples in the extended
-version of our submission.  Presenting it as an auxiliary state is
-possible, but it would obfuscate its semantics.
+We might well use plain old program logics to reason about the
+potential using a global potential variable Phi and replace all our
+Hoare triples {P} S {Q} with {Phi = P} S {Phi = Q}. But this would
+only be a change in notation that would not effect the presentation.
 
-It true that our technique and the computation of linear invariants and
-ranking functions are connected.  We would discuss it in the final version
-of our paper.  We already mention this relation on page 3 where we state
-that "the concept of potential function is a generalization of the concept
-of ranking function" and proceed to explain it.
+While we understand the relation of a resource counter (1) to
+invariant generation, the connection of the potential Phi (2) with
+invariant generation seems much less clear.
+
+> Then the specific tehcniques here can be viewed as using LP to compute
+> relational invariants (in the abstract interpretation sense of the word)
+> between the usual program parameters and this global "ghost" variable.
+
+Such relational invariants are certainly present in the two symbolic
+values for the pre- and post-potential for a program that we compute
+with linear programming. However, the potential expresses not only
+this invariant but also the size-changes of program variables. If one
+would also express these size changes with relational invariants, one
+could probably arrive at a mathematically equivalent notion. However,
+it would be less intuitive to combine such relational invariants
+during program composition.
+
+> Viewed in this light the research on computing linear invariants and ranking
+> functions (Colon, Sipma, Manna, Sankaranarayanan, Rybalchenko etc. etc.)
+> are very closely related with the techniques here.
+
+It true that our technique is related to the computation of linear
+invariants and ranking functions. We would discuss the connection with
+the mentioned works in greater detail in the final version of our
+paper.  We have already mentioned relation to ranking functions on
+page 3 where we state that "the concept of potential function is a
+generalization of the concept of ranking function" and proceed to
+explain it.
