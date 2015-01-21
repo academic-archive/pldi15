@@ -28,20 +28,14 @@ We addressed this comment in our first response in the point
 > x after the assignment.”  Can you give an explanation for why this
 > treatment is sound?
 
-We currently don't track size changes in some operations. Yet, we
-handle them in the analysis and ensure soundness by assigning zero
-potential to the result.
-
-Note that an operation with non-linear cost is different from an
-operation that encodes a non-linear size change (i.e. matrix
-multiplication v.s. read from a heap cell).
-
-The remark on page 6 applies to the second kind.  Our system will
-always account for the cost of _all_ operations.  However, when the
-size of a variable becomes "unknown," we "zero" its associated
-potential to prevent further loops to use it as a bound.  This _does
-not_ amount to ignore the cost of the operation, it just loses track
-of the size of the result.
+Note that an operation with non-linear cost (e.g., matrix
+multiplication) is different from an operation that encodes a
+non-linear size change (e.g., read from a heap cell).  The remark on
+page 6 applies to the latter kind.  Our system will always account for
+the cost of _all_ operations.  However, when the size of a variable
+becomes "unknown," we "zero" its associated potential to prevent it
+from being used as a bound of further loops.  This does not ignore the
+cost of the operation; it just loses track of the size of the result.
 
 For example, assignments such as x = a[y] or x = t*y are re-written by our
 pre-processor as x = * where '*' represents an expression returning an
