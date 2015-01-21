@@ -37,7 +37,7 @@ pre-processor as x = * where '*' represents an expression returning an
 unknown integer.  Since the value of x is unknown after the assignment,
 we do not know the size of intervals |[x, u]| and |[u, x]| for all u
 (!= x).  Because these intervals are of unknown size we require that
-their potential is 0, this way, we know that for any heap H, Phi(H) >=
+their potential be 0, this way, we know that for any heap H, Phi(H) >=
 Phi'(H[x <- *]), and therefore assignment of potential 0 is sound.
 
 > Figure 4.  What are the M meta-variables? For example, M_l in (Q:Loop).
@@ -141,6 +141,14 @@ Review #41F:
 > 1. is decremented by some cost at various given operations,
 > 2. must be non-negative at all operations.
 >
+
+This is indeed a bit simplistic since "potential" is inherently a
+compositional notion: it can be associated with different parts of a
+global state. The "potential" of a global state talks about the number
+of tokens associated with each data structure in the state, where the
+corresponding global counter would only record the sum of all of these
+tokens.  The former clearly contains more information than the latter.
+
 > So if one was interested in running time, and say each operation took
 > 1 unit of time, then implicitly there is a "global" that is
 > decremented by one at each operation, and is required to be greater
@@ -161,7 +169,7 @@ We might well use plain old program logics to reason about the
 potential using a global potential variable Phi and replace all our
 quantitative Hoare triples {P} S {Q} with traditional Hoare triples
 {Phi = P} S {Phi = Q}. But this would only be a change in notation
-that would not effect the presentation.
+that would not affect the presentation.
 
 While we understand the relation of a resource counter (1) to
 invariant generation, the connection of the potential Phi (2) with
@@ -184,7 +192,7 @@ during program composition.
 > functions (Colon, Sipma, Manna, Sankaranarayanan, Rybalchenko etc. etc.)
 > are very closely related with the techniques here.
 
-It true that our technique is related to the computation of linear
+It is true that our technique is related to the computation of linear
 invariants and ranking functions. We would discuss the connection with
 the mentioned works in greater detail in the final version of our
 paper.  We have already mentioned relation to ranking functions on
