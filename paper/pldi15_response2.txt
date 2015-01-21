@@ -159,8 +159,9 @@ that is used as a mechanism to derive a bound on the cost.
 
 We might well use plain old program logics to reason about the
 potential using a global potential variable Phi and replace all our
-Hoare triples {P} S {Q} with {Phi = P} S {Phi = Q}. But this would
-only be a change in notation that would not effect the presentation.
+quantitative Hoare triples {P} S {Q} with traditional Hoare triples
+{Phi = P} S {Phi = Q}. But this would only be a change in notation
+that would not effect the presentation.
 
 While we understand the relation of a resource counter (1) to
 invariant generation, the connection of the potential Phi (2) with
@@ -173,7 +174,7 @@ invariant generation seems much less clear.
 Such relational invariants are certainly present in the two symbolic
 values for the pre- and post-potential for a program that we compute
 with linear programming. However, the potential expresses not only
-this invariant but also the size-changes of program variables. If one
+these invariants but also the size-changes of program variables. If one
 would also express these size changes with relational invariants, one
 could probably arrive at a mathematically equivalent notion. However,
 it would be less intuitive to combine such relational invariants
