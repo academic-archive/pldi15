@@ -1,7 +1,6 @@
 (* under the hood *)
 
 open Ast
-open Logic
 open Tools
 
 (*
@@ -13,10 +12,11 @@ open Tools
 let debug = 0
 
 (* compute the logical states *)
-type pstate = ineq list
+type pstate = Logic.ineq list
 type lannot = { lpre: pstate; lpost: pstate }
 
 let lannot =
+  let open Logic in
   let rec f' locs brk lpre prog =
     let f = f' locs in
     let post lpost = {lpre; lpost} in
@@ -60,7 +60,7 @@ module Idx : sig
   type t
   val compare: t -> t -> int
   val eq: t -> t -> bool
-  val const: t
+  val one: t
   val dst: var * var -> t
   val map: (var -> var) -> t -> t option
   val local: VSet.t -> t -> bool
@@ -92,10 +92,10 @@ end = struct
   type t = I.indice
   let compare = I.compare compare
   let eq i j = compare i j = 0
-  let const = I.empty
+  let one = I.empty
   let dst (u, v) =
     assert (u <> v);
-    I.add (Dst (u, v)) 1 const
+    I.add (Dst (u, v)) 1 one
   let map f i =
     let g = function
       | Dst (a, b) ->
@@ -106,7 +106,7 @@ end = struct
       match (g b, i') with
       | (Some b', Some i') -> Some (I.add b' k i')
       | _ -> None
-    ) i (Some const)
+    ) i (Some one)
   let local vs i =
     let f = function
       | Dst (VNum _, a) | Dst (a, VNum _) -> VSet.mem a vs
@@ -128,7 +128,7 @@ end = struct
         let g a v' = if v = v' then a else f a (dst (v, v')) in
         pairs (List.fold_left g a vl) tl
       | [] -> a
-    in pairs (f a const) vl
+    in pairs (f a one) vl
   let range l i =
     let f b k (rl, ru) =
       let (l, u) = match b with
@@ -146,9 +146,45 @@ end = struct
           Parse.pp_var v1 Parse.pp_var v2;
         if k <> 1 then Printf.printf "^%d" k in
     Printf.printf "%.2f" k; I.iter f i; print_newline ()
-end
 
-(* let ( = ): int -> int -> bool = ( = ) *)
+  (* Expanded indices. *)
+  type tx = {tx_deltas: (int * int) array; tx_base: t}
+  module X = Map.Make(struct
+    type t = tx
+    let compare ix1 ix2 =
+      let c = Pervasives.compare ix1.tx_deltas ix2.tx_deltas in
+      if c = 0 then compare ix1.tx_base ix2.tx_base else c
+  end)
+
+  let deltax (d,c) nvs =
+    let maxdeg = 5 in
+    let fill i =
+      let rec f vs k m =
+        if k = 0 then
+          let a = Array.make nvs (0, 0) in
+          let b = ref 0 in
+          List.iter (fun (n, x) ->
+            if n = nvs then incr b else
+            let (d1,d2) = a.(n) in
+            a.(n) <- if x then (d1+1,d2) else (d1,d2+1)
+          ) vs;
+          let ix =
+            { tx_deltas = a
+            ; tx_base = I.add (Dst (d,c)) !b one
+            } in
+          X.add ix (1 + try X.find ix m with Not_found -> 0) m
+        else
+          let rec loop i m =
+            if i = nvs then f ((nvs,true) :: vs) (k-1) m else
+            let m = f ((i,true) :: vs) (k-1) m in
+            let m = f ((i,false) :: vs) (k-1) m in
+            loop (i+1) m in
+          loop 0 m
+      in X.bindings (f [] i X.empty)
+    in
+    let memo = Array.init maxdeg fill in
+    ()
+end
 
 (* quantitative contexts and their operations *)
 module Q: sig
@@ -279,7 +315,7 @@ end = struct
         row v' [(M.find i c.cmap, 1); (ip, -1)] 0;
         { c with cmap = M.add i v' c.cmap }
       end c l in
-    let v' = newv () and ic = Idx.const in
+    let v' = newv () and ic = Idx.one in
     row v' ((M.find ic c.cmap, 1) :: List.map snd l) 0;
     { c with cmap = M.add ic v' c.cmap }
 
@@ -338,10 +374,10 @@ end = struct
 
   let frame c1 c2 =
     let vx = newv ~sign:(+1) () and v1 = newv () and v2 = newv () in
-    row v1 [(M.find Idx.const c1.cmap, 1); (vx, 1)] 0;
-    row v2 [(M.find Idx.const c2.cmap, 1); (vx, 1)] 0;
-    ( {c1 with cmap = M.add Idx.const v1 c1.cmap}
-    , {c2 with cmap = M.add Idx.const v2 c2.cmap }
+    row v1 [(M.find Idx.one c1.cmap, 1); (vx, 1)] 0;
+    row v2 [(M.find Idx.one c2.cmap, 1); (vx, 1)] 0;
+    ( {c1 with cmap = M.add Idx.one v1 c1.cmap}
+    , {c2 with cmap = M.add Idx.one v2 c2.cmap }
     )
 
   let restore c c' locals =
@@ -396,7 +432,7 @@ let analyze (fdefs, p) =
 
     | PTick (n, _) ->
       if n = 0 then qseq else
-      let q = Q.inc qseq [const, [], n] in
+      let q = Q.inc qseq [one, [], n] in
       if n < 0 then Q.merge ~sign:(+1) [q] else q
     | PAssert _ -> qseq
     | PBreak {lpre; _} -> Q.relax lpre qbrk
