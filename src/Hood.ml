@@ -58,6 +58,7 @@ let lannot =
 (* indices we use to name lp variables *)
 module Idx : sig
   type t
+  type delta
   val compare: t -> t -> int
   val eq: t -> t -> bool
   val one: t
@@ -68,6 +69,8 @@ module Idx : sig
   val fold: ('a -> t -> 'a) -> 'a -> VSet.t -> 'a
   val range: pstate -> t -> (int option * int option)
   val printk: float -> t -> unit
+  module DMap: Map.S with type key = delta
+  val expand: var * var -> int -> t -> int DMap.t list
 end = struct
   type base = Dst of var * var
   module I = struct
@@ -76,8 +79,9 @@ end = struct
       let compare = compare
     end)
     type indice = int t
-    let add k v m =                                                                   (* XXX check if really needed. *)
-      if v <> 0 then add k v m else m
+    let add k v m =
+      if v <> 0 then add k v m else
+      if mem k m then remove k m else m
     let k b i =
       try find b i with Not_found -> 0
     let deg i =
@@ -90,6 +94,7 @@ end = struct
       merge a
   end
   type t = I.indice
+  let polycmp = compare (* Save Pervasives' compare. *)
   let compare = I.compare compare
   let eq i j = compare i j = 0
   let one = I.empty
@@ -147,43 +152,86 @@ end = struct
         if k <> 1 then Printf.printf "^%d" k in
     Printf.printf "%.2f" k; I.iter f i; print_newline ()
 
-  (* Expanded indices. *)
-  type tx = {tx_deltas: (int * int) array; tx_base: t}
-  module X = Map.Make(struct
-    type t = tx
-    let compare ix1 ix2 =
-      let c = Pervasives.compare ix1.tx_deltas ix2.tx_deltas in
-      if c = 0 then compare ix1.tx_base ix2.tx_base else c
+  (* Extended indices (with products of deltas). *)
+  type delta = {deltas: (int * int) array; base: t}
+  let dcmp ix1 ix2 =
+    let c = Pervasives.compare ix1.deltas ix2.deltas in
+    if c = 0 then compare ix1.base ix2.base else c
+  module DMap = Map.Make(struct
+    type t = delta let compare = dcmp
   end)
 
-  let deltax (d,c) nvs =
+  let expand (d,c) nvs =
     let maxdeg = 5 in
-    let fill i =
-      let rec f vs k m =
-        if k = 0 then
-          let a = Array.make nvs (0, 0) in
-          let b = ref 0 in
-          List.iter (fun (n, x) ->
-            if n = nvs then incr b else
-            let (d1,d2) = a.(n) in
-            a.(n) <- if x then (d1+1,d2) else (d1,d2+1)
-          ) vs;
-          let ix =
-            { tx_deltas = a
-            ; tx_base = I.add (Dst (d,c)) !b one
-            } in
-          X.add ix (1 + try X.find ix m with Not_found -> 0) m
+    let bi = Dst (d, c) in
+    let memo = Array.make maxdeg [] in
+    let ki i m = try DMap.find i m with Not_found -> 0 in
+    let fill deg =
+      let mult v {deltas; base} n m =
+        if v = nvs then
+          let i = {deltas; base = I.add bi (1 + I.k bi base) base} in
+          DMap.add i (n + ki i m) m
         else
-          let rec loop i m =
-            if i = nvs then f ((nvs,true) :: vs) (k-1) m else
-            let m = f ((i,true) :: vs) (k-1) m in
-            let m = f ((i,false) :: vs) (k-1) m in
-            loop (i+1) m in
-          loop 0 m
-      in X.bindings (f [] i X.empty)
+          let (a, b) = deltas.(v) in
+          let d = Array.copy deltas in
+          let i = d.(v) <- (a+1, b); {deltas=d; base} in
+          let m = DMap.add i (n + ki i m) m in
+          let d = Array.copy deltas in
+          let i = d.(v) <- (a, b+1); {deltas=d; base} in
+          DMap.add i (n + ki i m) m in
+      if deg = 0 then
+        let i = {deltas=Array.make nvs (0,0); base=one} in
+        [ DMap.singleton i 1 ]
+      else begin
+        memo.(deg-1) |>
+        List.fold_left (fun l m ->
+          let rec loop v =
+            if v > nvs then l else
+            DMap.fold (mult v) m DMap.empty :: loop (v+1) in
+          loop 0
+        ) [] |>
+        List.sort_uniq (DMap.compare polycmp)
+      end in
+    for deg = 0 to maxdeg - 1 do memo.(deg) <- fill deg done;
+    (* DEBUG *)
+    let p m =
+      let pdi {deltas; base} =
+        Array.iteri (fun i (dl, dr) ->
+          let f s n =
+            if n <> 0 then
+            Printf.printf "%s%d^%d " s i n in
+          f "l" dl; f "r" dr
+        ) deltas;
+        let c = I.k bi base in
+        if c <> 0 then
+        Printf.printf "X^%d " c in
+      Printf.printf "0 ";
+      DMap.iter (fun i n ->
+        if n <> 0 then
+        Printf.printf "+ %d " n; pdi i;
+      ) m;
+      Printf.printf "\n"
     in
-    let memo = Array.init maxdeg fill in
-    ()
+    if true then
+    for i = 0 to maxdeg - 1 do
+      Printf.printf "\nDegree %d:\n" i;
+      List.iteri (fun i m ->
+        Printf.printf "%04d    " i;
+        p m
+      ) memo.(i);
+    done;
+    (* END DEBUG *)
+    fun i ->
+      let k = I.k bi i in
+      assert (k <= maxdeg);
+      let i' = I.add bi 0 i in
+      List.map (fun l ->
+        DMap.fold (fun {deltas; base} n m ->
+          DMap.add {deltas; base = I.mult base i'} n m
+        ) l DMap.empty
+      ) memo.(k)
+
+    let _ = expand (VNum 0, VNum 0) 2
 end
 
 (* quantitative contexts and their operations *)
