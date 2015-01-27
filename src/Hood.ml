@@ -70,7 +70,7 @@ module Idx : sig
   val range: pstate -> t -> (int option * int option)
   val printk: float -> t -> unit
   module DMap: Map.S with type key = delta
-  val expand: var * var -> int -> t -> int DMap.t list
+  val expand: int -> var * var -> t -> int DMap.t list
 end = struct
   type base = Dst of var * var
   module I = struct
@@ -143,14 +143,16 @@ end = struct
         | _ -> None in
       (f (l, rl), f (u, ru)) in
     I.fold f i (Some 1, Some 1)
-  let printk k i =
-    if abs_float k < 1e-6 then () else
+  let print =
     let f b k = match b with
       | Dst (v1, v2) ->
         Printf.printf " |[%a, %a]|"
           Parse.pp_var v1 Parse.pp_var v2;
         if k <> 1 then Printf.printf "^%d" k in
-    Printf.printf "%.2f" k; I.iter f i; print_newline ()
+    I.iter f
+  let printk k i =
+    if abs_float k < 1e-6 then () else
+    Printf.printf "%.2f" k; print i; print_newline ()
 
   (* Extended indices (with products of deltas). *)
   type delta = {deltas: (int * int) array; base: t}
@@ -160,25 +162,41 @@ end = struct
   module DMap = Map.Make(struct
     type t = delta let compare = dcmp
   end)
+  let print_delta {deltas; base} =
+    for i = 0 to Array.length deltas - 1 do
+      let p s n k =
+        if k = 0 then () else begin
+          Printf.printf " %s%d" s n;
+          if k <> 1 then
+          Printf.printf "^%d" k;
+        end in
+      let (l,r) = deltas.(i) in
+      p "l" i l;
+      p "r" i r;
+    done;
+    print base
 
-  let expand (d,c) nvs =
+  let expand nvs =
     let maxdeg = 5 in
-    let bi = Dst (d, c) in
+    let dummy = Dst (VNum 0, VId "X") in
     let memo = Array.make maxdeg [] in
-    let ki i m = try DMap.find i m with Not_found -> 0 in
     let fill deg =
       let mult v {deltas; base} n m =
+        let k i m = try DMap.find i m with Not_found -> 0 in
         if v = nvs then
-          let i = {deltas; base = I.add bi (1 + I.k bi base) base} in
-          DMap.add i (n + ki i m) m
+          let i =
+            { deltas
+            ; base = I.add dummy (1 + I.k dummy base) base
+            } in
+          DMap.add i (n + k i m) m
         else
           let (a, b) = deltas.(v) in
           let d = Array.copy deltas in
           let i = d.(v) <- (a+1, b); {deltas=d; base} in
-          let m = DMap.add i (n + ki i m) m in
+          let m = DMap.add i (n + k i m) m in
           let d = Array.copy deltas in
           let i = d.(v) <- (a, b+1); {deltas=d; base} in
-          DMap.add i (n + ki i m) m in
+          DMap.add i (n + k i m) m in
       if deg = 0 then
         let i = {deltas=Array.make nvs (0,0); base=one} in
         [ DMap.singleton i 1 ]
@@ -195,24 +213,14 @@ end = struct
     for deg = 0 to maxdeg - 1 do memo.(deg) <- fill deg done;
     (* DEBUG *)
     let p m =
-      let pdi {deltas; base} =
-        Array.iteri (fun i (dl, dr) ->
-          let f s n =
-            if n <> 0 then
-            Printf.printf "%s%d^%d " s i n in
-          f "l" dl; f "r" dr
-        ) deltas;
-        let c = I.k bi base in
-        if c <> 0 then
-        Printf.printf "X^%d " c in
-      Printf.printf "0 ";
+      Printf.printf "0";
       DMap.iter (fun i n ->
         if n <> 0 then
-        Printf.printf "+ %d " n; pdi i;
+        Printf.printf " + %d" n; print_delta i;
       ) m;
       Printf.printf "\n"
     in
-    if true then
+    if false then
     for i = 0 to maxdeg - 1 do
       Printf.printf "\nDegree %d:\n" i;
       List.iteri (fun i m ->
@@ -221,17 +229,97 @@ end = struct
       ) memo.(i);
     done;
     (* END DEBUG *)
-    fun i ->
+    fun (d,c) i ->
+      let bi = Dst (d,c) in
       let k = I.k bi i in
       assert (k <= maxdeg);
-      let i' = I.add bi 0 i in
       List.map (fun l ->
-        DMap.fold (fun {deltas; base} n m ->
-          DMap.add {deltas; base = I.mult base i'} n m
+        DMap.fold (fun {deltas; base} ->
+          let n = I.k dummy base in
+          DMap.add {deltas; base = I.add bi n i}
         ) l DMap.empty
       ) memo.(k)
 
-    let _ = expand (VNum 0, VNum 0) 2
+    (* DEBUG *) let _ = expand 2
+
+  let rec binom k n =
+    if k = 0 then 1 else
+    n * binom (k-1) (n-1) / k
+
+  let shift vars x =
+    assert (not (VSet.mem x vars));
+    let (vnum, nvars) =
+      let h = Hashtbl.create 101 in
+      let n = ref 0 in
+      VSet.iter
+        (fun v -> Hashtbl.add h v !n; incr n) vars;
+      (Hashtbl.find h, !n) in
+
+    fun op idx ->
+
+    let elim d op delta {deltas; base} factor dm =
+      let p = I.k d base in
+      let rec f i dm =
+        if i = p+1 then dm else
+        let d' = Array.copy deltas in
+        let (a,b) = d'.(delta) in
+        d'.(delta) <- if op<0 then (a+i,b) else (a,b+i);
+        let idx = {deltas = d'; base = I.add d (p-i) base} in
+        let b = factor * pow op i * binom i p in
+        f (i+1) (DMap.add idx b dm) in
+      f 0 dm in
+
+    DMap.singleton
+      { deltas = Array.make nvars (0,0)
+      ; base = idx
+      } 1 |>
+    I.fold (fun (Dst (a, b) as d) _ dm ->
+      let op, c =
+        if a = x then (+ op, b) else
+        if b = x then (- op, a) else
+        (0, a) in
+      if op = 0 then dm else
+      DMap.fold (fun di k dm ->
+        elim d op (vnum c) di k dm
+      ) dm dm
+    ) idx
+
+  (* DEBUG *)
+  let _ =
+    let p m =
+      Printf.printf "0";
+      DMap.iter (fun i n ->
+        if n <> 0 then
+        Printf.printf " + %d" n; print_delta i;
+      ) m;
+      Printf.printf "\n"
+    in
+    let vars = VSet.of_list
+      [ VId "c"; VId "b"; VNum 0 ] in
+    let idx =
+      one
+      |> I.add (Dst (VNum 0, VId "a")) 2
+      |> I.add (Dst (VId "a", VId "c")) 2
+    in
+    shift vars (VId "a") (+1) idx |> p
+  (* END DEBUG *)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 end
 
 (* quantitative contexts and their operations *)
