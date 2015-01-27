@@ -71,6 +71,7 @@ module Idx : sig
   val printk: float -> t -> unit
   module DMap: Map.S with type key = delta
   val expand: int -> var * var -> t -> int DMap.t list
+  val shift: VSet.t -> var -> int -> t -> int DMap.t
 end = struct
   type base = Dst of var * var
   module I = struct
@@ -156,11 +157,11 @@ end = struct
 
   (* Extended indices (with products of deltas). *)
   type delta = {deltas: (int * int) array; base: t}
-  let dcmp ix1 ix2 =
-    let c = Pervasives.compare ix1.deltas ix2.deltas in
-    if c = 0 then compare ix1.base ix2.base else c
   module DMap = Map.Make(struct
-    type t = delta let compare = dcmp
+    type t = delta
+    let compare di1 di2 =
+      let c = Pervasives.compare di1.deltas di2.deltas in
+      if c = 0 then compare di1.base di2.base else c
   end)
   let print_delta {deltas; base} =
     for i = 0 to Array.length deltas - 1 do
@@ -173,8 +174,7 @@ end = struct
       let (l,r) = deltas.(i) in
       p "l" i l;
       p "r" i r;
-    done;
-    print base
+    done; print base
 
   let expand nvs =
     let maxdeg = 5 in
