@@ -100,7 +100,7 @@ end = struct
   let eq i j = compare i j = 0
   let one = I.empty
   let dst (u, v) =
-    assert (u <> v);
+    (* assert (u <> v); *)
     I.add (Dst (u, v)) 1 one
   let map f i =
     let g = function
@@ -127,14 +127,6 @@ end = struct
       | Dst (_, VNum n) -> 100 + abs n
       | Dst _ -> 100 in
     I.fold (fun b k o -> o + pow (f b) k) i 1
-  let fold f a vs =
-    let vl = VSet.elements vs in
-    let rec pairs a = function
-      | v :: tl ->
-        let g a v' = if v = v' then a else f a (dst (v, v')) in
-        pairs (List.fold_left g a vl) tl
-      | [] -> a
-    in pairs (f a one) vl
   let range l i =
     let f b k (rl, ru) =
       let (l, u) = match b with
@@ -152,8 +144,48 @@ end = struct
         if k <> 1 then Printf.printf "^%d" k in
     I.iter f
   let printk k i =
-    if abs_float k < 1e-6 then () else
-    Printf.printf "%.2f" k; print i; print_newline ()
+    if abs_float k < 1e-6 then () else begin
+      Printf.printf "%.2f" k; print i; print_newline ()
+    end
+
+  let fold deg f a vars =
+    let vl = VSet.elements vars in
+    let inval i =
+      if I.is_empty i then false else
+      let num = function VNum _ -> true | _ -> false in
+      let f (Dst (a,b)) _ x =
+        x || a=b || I.k (Dst (b,a)) i <> 0
+          (* || (num a && num b) *) in
+      I.fold f i false
+    in
+    let rec pairs a h = function
+      | v :: tl ->
+        let g a v' = h a (dst (v,v')) in
+        pairs (List.fold_left g a vl) h tl
+      | [] -> a in
+    let rec iota b a d =
+      if inval b then a else
+      let a = f a b in
+      if d = deg then a else
+      pairs a (fun a i ->
+        iota (I.mult i b) a (d+1)
+      ) vl in
+    iota one a 0
+
+  (* DEBUG *)
+  let _ =
+    let deg = 2 in
+    let vars = VSet.of_list
+      [ VId "a"; VId "b"; VNum 2; VNum 0 ] in
+    if false then
+    fold deg (fun () i ->
+      print_string "1";
+      print i;
+      print_newline ()
+    ) () vars
+  (* END DEBUG *)
+
+  let fold f a vars = fold 1 f a vars
 
   (* Extended indices (with products of deltas). *)
   type delta = {deltas: (int * int) array; base: t}
@@ -240,7 +272,7 @@ end = struct
         ) l DMap.empty
       ) memo.(k)
 
-    (* DEBUG *) let _ = expand 2
+  (* DEBUG *) let _ = expand 2
 
   let rec binom k n =
     if k = 0 then 1 else
@@ -254,9 +286,7 @@ end = struct
       VSet.iter
         (fun v -> Hashtbl.add h v !n; incr n) vars;
       (Hashtbl.find h, !n) in
-
     fun op idx ->
-
     let elim d op delta {deltas; base} factor dm =
       let p = I.k d base in
       let rec f i dm =
@@ -268,7 +298,6 @@ end = struct
         let b = factor * pow op i * binom i p in
         f (i+1) (DMap.add idx b dm) in
       f 0 dm in
-
     DMap.singleton
       { deltas = Array.make nvars (0,0)
       ; base = idx
@@ -301,6 +330,7 @@ end = struct
       |> I.add (Dst (VNum 0, VId "a")) 2
       |> I.add (Dst (VId "a", VId "c")) 2
     in
+    if false then
     shift vars (VId "a") (+1) idx |> p
   (* END DEBUG *)
 
