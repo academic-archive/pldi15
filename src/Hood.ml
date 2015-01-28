@@ -99,9 +99,7 @@ end = struct
   let compare = I.compare compare
   let eq i j = compare i j = 0
   let one = I.empty
-  let dst (u, v) =
-    (* assert (u <> v); *)
-    I.add (Dst (u, v)) 1 one
+  let dst (u, v) = I.add (Dst (u, v)) 1 one
   let map f i =
     let g = function
       | Dst (a, b) ->
@@ -151,13 +149,11 @@ end = struct
   let fold deg f a vars =
     let vl = VSet.elements vars in
     let inval i =
-      if I.is_empty i then false else
       let num = function VNum _ -> true | _ -> false in
       let f (Dst (a,b)) _ x =
         x || a=b || I.k (Dst (b,a)) i <> 0
           (* || (num a && num b) *) in
-      I.fold f i false
-    in
+      I.fold f i false in
     let rec pairs a h = function
       | v :: tl ->
         let g a v' = h a (dst (v,v')) in
