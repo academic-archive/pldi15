@@ -282,16 +282,16 @@ end = struct
       VSet.iter
         (fun v -> Hashtbl.add h v !n; incr n) vars;
       (Hashtbl.find h, !n) in
-    fun op idx ->
-    let elim d op delta {deltas; base} factor dm =
+    fun szch idx ->
+    let elim d szch delta {deltas; base} factor dm =
       let p = I.k d base in
       let rec f i dm =
         if i = p+1 then dm else
         let d' = Array.copy deltas in
         let (a,b) = d'.(delta) in
-        d'.(delta) <- if op<0 then (a+i,b) else (a,b+i);
+        d'.(delta) <- if szch<0 then (a+i,b) else (a,b+i);
         let idx = {deltas = d'; base = I.add d (p-i) base} in
-        let b = factor * pow op i * binom i p in
+        let b = factor * pow szch i * binom i p in
         f (i+1) (DMap.add idx b dm) in
       f 0 dm in
     DMap.singleton
@@ -299,26 +299,29 @@ end = struct
       ; base = idx
       } 1 |>
     I.fold (fun (Dst (a, b) as d) _ dm ->
-      let op, c =
-        if a = x then (+ op, b) else
-        if b = x then (- op, a) else
+      let szch, c =
+        if a = x then (- szch, b) else
+        if b = x then (+ szch, a) else
         (0, a) in
-      if op = 0 then dm else
+      if szch = 0 then dm else
       DMap.fold (fun di k dm ->
-        elim d op (vnum c) di k dm
+        elim d szch (vnum c) di k dm
       ) dm dm
     ) idx
+    (* DEBUG *)
+    |> (fun di ->
+      let p m =
+        Printf.printf "0";
+        DMap.iter (fun i n ->
+          if n <> 0 then
+          Printf.printf " + %d" n; print_delta i;
+        ) m;
+        Printf.printf "\n" in
+      if false then p di;
+      di
+    )
 
-  (* DEBUG *)
   let _ =
-    let p m =
-      Printf.printf "0";
-      DMap.iter (fun i n ->
-        if n <> 0 then
-        Printf.printf " + %d" n; print_delta i;
-      ) m;
-      Printf.printf "\n"
-    in
     let vars = VSet.of_list
       [ VId "c"; VId "b"; VNum 0 ] in
     let idx =
@@ -326,25 +329,8 @@ end = struct
       |> I.add (Dst (VNum 0, VId "a")) 2
       |> I.add (Dst (VId "a", VId "c")) 2
     in
-    if false then
-    shift vars (VId "a") (+1) idx |> p
+    shift vars (VId "a") (+1) idx
   (* END DEBUG *)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 end
 
@@ -355,6 +341,7 @@ module Q: sig
   val empty: ctx
   val addv: ?sign: int -> ctx -> VSet.t -> ctx
   val delv: ?zero: bool -> ctx -> VSet.t -> ctx
+  val incr: ctx -> var -> int -> (var * var) -> ctx
   val inc: ctx -> (Idx.t * (Idx.t * Idx.t) list * int) list -> ctx
   val eqc: ctx -> ctx -> unit
   val relax: pstate -> ctx -> ctx
@@ -390,7 +377,6 @@ end = struct
       }
 
   let row ?(lo=0.) ?(up=0.) v' l k =
-    let l = List.map (fun (v, k) -> (v, -k)) l in
     if debug > 1 then begin
       if lo <> 0. || up <> 0. then () else
       let open Printf in
@@ -401,6 +387,7 @@ end = struct
       List.iter (fun x -> printf " + %s" (c x)) l;
       print_newline ()
     end;
+    let l = List.map (fun (v, k) -> (v, -k)) l in
     row_ ~lo ~up ((v', 1) :: l) k
 
   let gerow v1 v2 c =
@@ -426,7 +413,7 @@ end = struct
   val expand: int -> var * var -> t -> int DMap.t list
   val shift: VSet.t -> var -> int -> t -> int DMap.t
 *)
-  let incr {cmap=m;cvars=v} a schg (cl,cu) =
+  let incr {cmap=m;cvars=v} a szch (cl,cu) =
     let module DM = Idx.DMap in
     let vma = VSet.remove a v in
     let shift = Idx.shift vma a in
@@ -439,7 +426,7 @@ end = struct
           (fun di -> (newv (), di))
           (expand i) in
         row ~lo:0. ~up:max_float v'
-          (List.map (fun (v,_) -> (v, -1)) l) 0;
+          (List.map (fun (v,_) -> (v,1)) l) 0;
         let cm =
           List.fold_left (fun cm (v', dev) ->
             DM.fold (fun di k cm ->
@@ -457,7 +444,7 @@ end = struct
               try DM.find di cm
               with Not_found -> [] in
             DM.add di ro cm
-          ) (shift schg i) cm in
+          ) (shift szch i) cm in
         (m', cm)
       ) m (M.empty, DM.empty) in
     DM.fold (fun _ ro () ->
@@ -694,33 +681,21 @@ let analyze (fdefs, p) =
       end
 
     | PInc (x, op, y, {lpre; lpost}) ->
-      let vars = VSet.remove (VId x) (Q.vars qseq) in
-      let eqs =
-        let opy, iopyz, izopy =
-          let iyz = dst (y, VNum 0) and izy = dst (VNum 0, y) in
-          match op with
-          | OPlus -> LVar y, iyz, izy
-          | OMinus -> LMult (-1, LVar y), izy, iyz in
-        let sum opy = VSet.fold
-          begin fun v sum ->
-            if opy > 0
-            then (dst (v, VId x), dst (VId x, v)) :: sum
-            else (dst (VId x, v), dst (v, VId x)) :: sum
-          end vars [] in
-        match
-          Logic.entails lpre opy CLe (LVar (VNum 0)),
-          Logic.entails lpre opy CGe (LVar (VNum 0))
-        with
-        | true, true -> []
-        | false, false ->
-          [iopyz, sum (-1), 0; izopy, sum (+1), 0]
-        | true, false -> (* op y < 0 *)
-          [iopyz, sum (-1), 0]
-        | false, true -> (* op y > 0 *)
-          [izopy, sum (+1), 0]
-      in
+      let opy, iopyz, izopy =
+        let iyz = (y, VNum 0) and izy = (VNum 0, y) in
+        match op with
+        | OPlus -> LVar y, iyz, izy
+        | OMinus -> LMult (-1, LVar y), izy, iyz in
       let q = Q.relax lpost qseq in
-      Q.inc q eqs (* transfer potential to +y or -y *)
+      begin match
+        Logic.entails lpre opy CLe (LVar (VNum 0)),
+        Logic.entails lpre opy CGe (LVar (VNum 0))
+      with
+      | true, true -> q
+      | false, false -> assert false
+      | true, false -> (* op y < 0 *) Q.incr q (VId x) (-1) iopyz
+      | false, true -> (* op y > 0 *) Q.incr q (VId x) (+1) izopy
+      end
 
     | PSet (x, Some v, {lpre; _}) ->
       let q = Q.subst qseq [x] [v] in
