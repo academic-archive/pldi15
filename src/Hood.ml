@@ -380,11 +380,17 @@ end = struct
       Printf.printf "sign of %d is %d\n" (Clp.number_columns () - 1) sign;
     Clp.number_columns () - 1
 
+  let row_ ?(lo=0.) ?(up=0.) l k =
+    let row_elements = Array.of_list
+      (List.map (fun (i, w) -> (i, float_of_int w)) l) in
+    Clp.add_row
+      { Clp.row_lower = float_of_int k +. lo
+      ; Clp.row_upper = float_of_int k +. up
+      ; row_elements
+      }
+
   let row ?(lo=0.) ?(up=0.) v' l k =
-    let row_elements = Array.of_list begin
-      (v', 1.) :: List.map
-        (fun (i, w) -> (i, float_of_int (-w))) l
-    end in
+    let l = List.map (fun (v, k) -> (v, -k)) l in
     if debug > 1 then begin
       if lo <> 0. || up <> 0. then () else
       let open Printf in
@@ -395,11 +401,7 @@ end = struct
       List.iter (fun x -> printf " + %s" (c x)) l;
       print_newline ()
     end;
-    Clp.add_row
-      { Clp.row_lower = float_of_int k +. lo
-      ; Clp.row_upper = float_of_int k +. up
-      ; row_elements
-      }
+    row_ ~lo ~up ((v', 1) :: l) k
 
   let gerow v1 v2 c =
     row ~lo:0. ~up:max_float v1 [(v2, c)] 0
@@ -419,6 +421,49 @@ end = struct
         M.add i v m)
       M.empty cvars in
     {cvars; cmap}
+
+(*
+  val expand: int -> var * var -> t -> int DMap.t list
+  val shift: VSet.t -> var -> int -> t -> int DMap.t
+*)
+  let incr {cmap=m;cvars=v} a schg (cl,cu) =
+    let module DM = Idx.DMap in
+    let vma = VSet.remove a v in
+    let shift = Idx.shift vma a in
+    let expand = Idx.expand (VSet.cardinal vma) (cl,cu) in
+    let m', cm =
+      M.fold (fun i v (m', cm) ->
+        let v' = newv () in
+        let m' = M.add i v' m' in
+        let l = List.map
+          (fun di -> (newv (), di))
+          (expand i) in
+        row ~lo:0. ~up:max_float v'
+          (List.map (fun (v,_) -> (v, -1)) l) 0;
+        let cm =
+          List.fold_left (fun cm (v', dev) ->
+            DM.fold (fun di k cm ->
+              let ro =
+                (v', k) ::
+                try DM.find di cm
+                with Not_found -> [] in
+              DM.add di ro cm
+            ) dev cm
+          ) cm l in
+        let cm =
+          DM.fold (fun di k cm ->
+            let ro =
+              (v, -k) ::
+              try DM.find di cm
+              with Not_found -> [] in
+            DM.add di ro cm
+          ) (shift schg i) cm in
+        (m', cm)
+      ) m (M.empty, DM.empty) in
+    DM.fold (fun _ ro () ->
+      row_ ~lo:0. ~up:max_float ro 0
+    ) cm ();
+    {cmap = m'; cvars = v}
 
   let inc ({cmap=m;_} as c) eqs =
     let bdgs = List.map
