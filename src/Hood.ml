@@ -70,6 +70,7 @@ module Idx : sig
   val range: pstate -> t -> ((int * t) * (int * t))
   val print: t -> unit
   val printk: float -> t -> unit
+  val print_delta: delta -> unit
   module DMap: Map.S with type key = delta
   val expand: int -> var * var -> t -> int DMap.t list
   val shift: VSet.t -> var -> int -> t -> int DMap.t
@@ -101,18 +102,35 @@ end = struct
 
   let one = I.empty
   let dst (u, v) = I.add (Dst (u, v)) 1 one
+  let invalid i =
+    (* let num = function VNum _ -> true | _ -> false in *)
+    let f (Dst (a,b)) _ =
+      a=b || I.k (Dst (b,a)) i <> 0
+       (* || (num a && num b) *) in
+    I.exists f i
+
+  let invalid i =
+    [ one
+    ; one |> I.add (Dst (VNum 0, VId "y")) 1
+    ; one |> I.add (Dst (VId "y", VNum 0)) 1
+    ; one |> I.add (Dst (VNum 0, VId "x")) 1
+    ; one |> I.add (Dst (VId "x", VNum 0)) 1
+    ; one |> I.add (Dst (VNum 0, VNum 1)) 1
+    ; one |> I.add (Dst (VNum 0, VId "x")) 2
+    ; one |> I.add (Dst (VId "x", VNum 0)) 2
+    ; one |> I.add (Dst (VNum 0, VNum 1)) 2
+    ; one |> I.add (Dst (VId "x", VNum 0)) 1 |> I.add (Dst (VNum 0, VId "x")) 1
+    ; one |> I.add (Dst (VId "x", VNum 0)) 1 |> I.add (Dst (VNum 0, VNum 1)) 1
+    ; one |> I.add (Dst (VNum 0, VId "x")) 1 |> I.add (Dst (VNum 0, VNum 1)) 1
+    ] |> List.for_all (fun i' -> not (eq i i'))
 
   let map f i =
-    let g = function
-      | Dst (a, b) ->
-        let a' = f a and b' = f b in
-        if a' = b' then None else
-        Some (Dst (a', b')) in
-    I.fold (fun b k i' ->
-      match (g b, i') with
-      | (Some b', Some i') -> Some (I.mult i' (I.add b' k one))
-      | _ -> None
-    ) i (Some one)
+    let g (Dst (a, b)) = Dst (f a, f b) in
+    let i' =
+      I.fold (fun b k i' ->
+        I.mult i' (I.add (g b) k one)
+      ) i one in
+    if invalid i' then None else Some i'
 
   let local vs i =
     let f = function
@@ -157,12 +175,6 @@ end = struct
 
   let fold deg f a vars =
     let vl = VSet.elements vars in
-    let inval i =
-      (* let num = function VNum _ -> true | _ -> false in *)
-      let f (Dst (a,b)) _ =
-        a=b || I.k (Dst (b,a)) i <> 0
-         (* || (num a && num b) *) in
-      I.exists f i in
     let rec pairs a h = function
       | v :: tl ->
         let g a v' = h a (dst (v,v')) in
@@ -170,7 +182,7 @@ end = struct
       | [] -> a in
     let plist = pairs [] (fun l a -> a::l) vl in
     let rec iota b a d l =
-      if inval b then a else
+      if invalid b then a else
       let a = f a b in
       if d = deg || l = [] then a else
       let rec f a = function
@@ -280,7 +292,7 @@ end = struct
         ) l DMap.empty
       ) memo.(k)
 
-  (* DEBUG expand *) let _ = expand 2
+  (* DEBUG expand *) (* let _ = expand 2 *)
 
   let rec binom k n =
     if k = 0 then 1 else
@@ -329,7 +341,7 @@ end = struct
           Printf.printf " + %d" n; print_delta i;
         ) m;
         Printf.printf "\n" in
-      if false then p di;
+      if true then p di;
       di
     )
 
@@ -341,7 +353,7 @@ end = struct
       |> I.add (Dst (VNum 0, VId "a")) 2
       |> I.add (Dst (VId "a", VId "c")) 2
     in
-    shift vars (VId "a") (+1) idx
+    (* shift vars (VId "a") (+1) idx *) ()
   (* END DEBUG *)
 
 end
@@ -443,7 +455,7 @@ end = struct
           List.fold_left (fun cm (v', dev) ->
             DM.fold (fun di k cm ->
               let ro =
-                (v', k) ::
+                ((v', k), `D (dev, i)) ::
                 try DM.find di cm
                 with Not_found -> [] in
               DM.add di ro cm
@@ -452,15 +464,32 @@ end = struct
         let cm =
           DM.fold (fun di k cm ->
             let ro =
-              (v, -k) ::
+              ((v, -k), `I (i)) ::
               try DM.find di cm
               with Not_found -> [] in
             DM.add di ro cm
           ) (shift szch i) cm in
         (m', cm)
       ) m (M.empty, DM.empty) in
+    print_newline();
     DM.fold (fun _ ro () ->
-      row_ ~lo:0. ~up:max_float ro 0
+      let p m =
+        Printf.printf "0";
+        Idx.DMap.iter (fun i n ->
+          if n <> 0 then
+          Printf.printf " + %d" n; Idx.print_delta i;
+        ) m
+      in
+      let f1 = function
+        | ((_,k), `D (dev,_)) ->
+          Printf.printf " %d {{" k; p dev; print_string "}}"
+        | _ -> () in
+      let f2 = function
+        | ((_,k), `I (i)) ->
+          Printf.printf " %d {{" (-k); Idx.print i; print_string "}}"
+        | _ -> () in
+      List.iter f1 ro; print_string " >= "; List.iter f2 ro; print_newline ();
+      row_ ~lo:0. ~up:max_float (List.map fst ro) 0
     ) cm ();
     {cmap = m'; cvars = v}
 
@@ -502,6 +531,16 @@ end = struct
     let cm =
       Idx.fold (fun cm i ->
         let f sign (k, i') cm =
+          (*
+          if sign > 0 then
+            print_string "relaxu"
+          else if sign < 0 then
+            print_string "relaxl"
+          else
+            print_string "relaxq";
+          Idx.print i; print_newline ();
+          print_string "  with"; Idx.print i'; print_newline ();
+          *)
           let add i p cm =
             let l = try M.find i cm with Not_found -> [] in
             M.add i (p::l) cm in
@@ -654,7 +693,7 @@ let analyze (fdefs, p) =
       let q = Q.inc qseq [one, [], n] in
       if n < 0 then Q.merge ~sign:(+1) [q] else q
     | PAssert _ -> qseq
-    | PBreak {lpre; _} -> Q.relax lpre qbrk
+    | PBreak {lpre; _} -> (* Q.relax lpre qbrk *) qbrk
     | PReturn (v, _) ->
       let q = Q.lift qret qseq in
       Q.delv (Q.subst q [tmpret] [v]) ~zero:false (VSet.of_list [vret])
@@ -725,7 +764,7 @@ let analyze (fdefs, p) =
     | PSet (x, Some v, {lpre; _}) ->
       let q = Q.subst qseq [x] [v] in
       (* relax constant differences *)
-      Q.relax lpre q
+      (* Q.relax lpre q *) q
 
     | PSet (x, None, _) ->
       let vars = VSet.remove (VId x) (Q.vars qseq) in
