@@ -67,7 +67,8 @@ module Idx : sig
   val local: VSet.t -> t -> bool
   val obj: t -> int
   val fold: ('a -> t -> 'a) -> 'a -> VSet.t -> 'a
-  val range: pstate -> t -> (int option * int option)
+  val range: pstate -> t -> ((int * t) * (int * t))
+  val print: t -> unit
   val printk: float -> t -> unit
   module DMap: Map.S with type key = delta
   val expand: int -> var * var -> t -> int DMap.t list
@@ -80,13 +81,11 @@ end = struct
       let compare = compare
     end)
     type indice = int t
+    let k b i = try find b i with Not_found -> 0
+    let deg i = fold (fun _ -> (+)) i 0
     let add k v m =
       if v <> 0 then add k v m else
       if mem k m then remove k m else m
-    let k b i =
-      try find b i with Not_found -> 0
-    let deg i =
-      fold (fun _ -> (+)) i 0
     let mult =
       let a _ x y =
         let f = function Some n -> n | None -> 0 in
@@ -95,11 +94,14 @@ end = struct
       merge a
   end
   type t = I.indice
+
   let polycmp = compare (* Save Pervasives' compare. *)
   let compare = I.compare compare
   let eq i j = compare i j = 0
+
   let one = I.empty
   let dst (u, v) = I.add (Dst (u, v)) 1 one
+
   let map f i =
     let g = function
       | Dst (a, b) ->
@@ -108,32 +110,25 @@ end = struct
         Some (Dst (a', b')) in
     I.fold (fun b k i' ->
       match (g b, i') with
-      | (Some b', Some i') -> Some (I.add b' k i')
+      | (Some b', Some i') -> Some (I.mult i' (I.add b' k one))
       | _ -> None
     ) i (Some one)
+
   let local vs i =
     let f = function
       | Dst (VNum _, a) | Dst (a, VNum _) -> VSet.mem a vs
       | Dst (a, b) -> VSet.mem a vs && VSet.mem b vs in
     if I.deg i = 0 then false else
     I.for_all (fun b _ -> f b) i
+
   let rec pow a b = if b = 0 then 1 else a * pow a (b-1)
   let obj i =
     let f = function
-      | Dst (VNum a, VNum b) -> max (b-a) 0 + 10
+      | Dst (VNum a, VNum b) -> max (b-a) 0 + 100
       | Dst (VNum n, _)
-      | Dst (_, VNum n) -> 100 + abs n
-      | Dst _ -> 100 in
-    I.fold (fun b k o -> o + pow (f b) k) i 1
-  let range l i =
-    let f b k (rl, ru) =
-      let (l, u) = match b with
-        | Dst (x1, x2) -> Logic.irange l x1 x2 in
-      let f = function
-        | (Some a, Some b) -> Some (pow a k * b)
-        | _ -> None in
-      (f (l, rl), f (u, ru)) in
-    I.fold f i (Some 1, Some 1)
+      | Dst (_, VNum n) -> 10000 + abs n
+      | Dst _ -> 10000 in
+    I.fold (fun b k o -> o * pow (f b) k) i 1
   let print =
     let f b k = match b with
       | Dst (v1, v2) ->
@@ -146,29 +141,46 @@ end = struct
       Printf.printf "%.2f" k; print i; print_newline ()
     end
 
+  let range l i =
+    let irng = let memo = Hashtbl.create 101 in
+      fun x1 x2 ->
+        try Hashtbl.find memo (x1,x2) with Not_found ->
+        let r = Logic.irange l x1 x2 in
+        Hashtbl.add memo (x1,x2) r; r in
+    let f (Dst (x1, x2) as d) k (rl, ru) =
+      let (l, u) = irng x1 x2 in
+      let f = function
+        | (None, (b, i)) -> (b, I.add d k i)
+        | (Some a, (b, i)) -> (pow a k * b, i) in
+      (f (l, rl), f (u, ru)) in
+    I.fold f i ((1, one), (1, one))
+
   let fold deg f a vars =
     let vl = VSet.elements vars in
     let inval i =
-      let num = function VNum _ -> true | _ -> false in
-      let f (Dst (a,b)) _ x =
-        x || a=b || I.k (Dst (b,a)) i <> 0
-          (* || (num a && num b) *) in
-      I.fold f i false in
+      (* let num = function VNum _ -> true | _ -> false in *)
+      let f (Dst (a,b)) _ =
+        a=b || I.k (Dst (b,a)) i <> 0
+         (* || (num a && num b) *) in
+      I.exists f i in
     let rec pairs a h = function
       | v :: tl ->
         let g a v' = h a (dst (v,v')) in
         pairs (List.fold_left g a vl) h tl
       | [] -> a in
-    let rec iota b a d =
+    let plist = pairs [] (fun l a -> a::l) vl in
+    let rec iota b a d l =
       if inval b then a else
       let a = f a b in
-      if d = deg then a else
-      pairs a (fun a i ->
-        iota (I.mult i b) a (d+1)
-      ) vl in
-    iota one a 0
+      if d = deg || l = [] then a else
+      let rec f a = function
+        | p :: l ->
+          f (iota (I.mult b p) a (d+1) (p::l)) l
+        | [] -> a in
+      f a l in
+    iota one a 0 plist
 
-  (* DEBUG *)
+  (* DEBUG fold *)
   let _ =
     let deg = 2 in
     let vars = VSet.of_list
@@ -181,7 +193,7 @@ end = struct
     ) () vars
   (* END DEBUG *)
 
-  let fold f a vars = fold 1 f a vars
+  let fold f a vars = fold 2 f a vars
 
   (* Extended indices (with products of deltas). *)
   type delta = {deltas: (int * int) array; base: t}
@@ -239,7 +251,7 @@ end = struct
         List.sort_uniq (DMap.compare polycmp)
       end in
     for deg = 0 to maxdeg - 1 do memo.(deg) <- fill deg done;
-    (* DEBUG *)
+    (* DEBUG expand *)
     let p m =
       Printf.printf "0";
       DMap.iter (fun i n ->
@@ -268,7 +280,7 @@ end = struct
         ) l DMap.empty
       ) memo.(k)
 
-  (* DEBUG *) let _ = expand 2
+  (* DEBUG expand *) let _ = expand 2
 
   let rec binom k n =
     if k = 0 then 1 else
@@ -308,7 +320,7 @@ end = struct
         elim d szch (vnum c) di k dm
       ) dm dm
     ) idx
-    (* DEBUG *)
+    (* DEBUG shift *)
     |> (fun di ->
       let p m =
         Printf.printf "0";
@@ -487,31 +499,31 @@ end = struct
     Idx.fold (fun () -> eqv) () c1.cvars
 
   let relax ps c =
-    let lo, eq, up =
-      Idx.fold begin fun (lo, eq, up) i ->
-        match Idx.range ps i with
-        | Some k1, Some k2 ->
-          if k1 >= k2
-          then (lo, (i, k1) :: eq, up)
-          else ((i, k1) :: lo, eq, (i, k2) :: up)
-        | Some k, _ -> ((i, k) :: lo, eq, up)
-        | _, Some k -> (lo, eq, (i, k) :: up)
-        | _ -> (lo, eq, up)
-      end ([], [], []) c.cvars in
-    let l =
-      List.map (fun (i, k) -> (i, (newv ~sign:(-1) (), k))) lo @
-      List.map (fun (i, k) -> (i, (newv ~sign:0 (), k))) eq @
-      List.map (fun (i, k) -> (i, (newv ~sign:(+1) (), k))) up in
-    if l = [] then c else
-    let c = List.fold_left
-      begin fun c (i, (ip, _)) ->
-        let v' = newv () in
-        row v' [(M.find i c.cmap, 1); (ip, -1)] 0;
-        { c with cmap = M.add i v' c.cmap }
-      end c l in
-    let v' = newv () and ic = Idx.one in
-    row v' ((M.find ic c.cmap, 1) :: List.map snd l) 0;
-    { c with cmap = M.add ic v' c.cmap }
+    let cm =
+      Idx.fold (fun cm i ->
+        let f sign (k, i') cm =
+          let add i p cm =
+            let l = try M.find i cm with Not_found -> [] in
+            M.add i (p::l) cm in
+          let xfer = newv ~sign () in
+          cm |> add i (xfer, -1) |> add i' (xfer, k) in
+        let blo, bup = Idx.range ps i in
+        match Idx.eq (snd blo) i, Idx.eq (snd bup) i with
+        | true, true -> cm
+        | false, true -> f (-1) blo cm
+        | true, false -> f (+1) bup cm
+        | false, false ->
+          if fst blo >= fst bup && Idx.eq (snd blo) (snd bup)
+          then f 0 blo cm
+          else (cm |> f (+1) bup |> f (-1) blo)
+      ) M.empty c.cvars in
+    let cmap =
+      M.fold (fun i cl cmap ->
+        let v = newv () in
+        row v ((M.find i c.cmap, 1) :: cl) 0;
+        M.add i v cmap
+      ) cm c.cmap in
+    {c with cmap }
 
   let merge ?(sign=0) cl =
     assert (List.for_all
@@ -549,14 +561,27 @@ end = struct
       | VId id as v ->
         (try Hashtbl.find h id with Not_found -> v)
       | VNum _ as v -> v in
-    let h = Hashtbl.create 257 in
+    let module H = Hashtbl.Make(
+        struct
+          type t = Idx.t
+          let equal = Idx.eq
+          let hash _ = 42                                 (* OMG, fix me *)
+        end
+      ) in
+    let h = H.create 257 in
     Idx.fold (fun () i ->
       match Idx.map rename i with
-      | Some i' -> Hashtbl.add h i' i
+      | Some i' -> H.add h i' i
       | None -> ()
     ) () cvars;
     let cmap = Idx.fold (fun m i ->
-        match Hashtbl.find_all h i with
+        (*
+        print_string "Index"; Idx.print i; print_newline ();
+        List.iter (fun i' ->
+          print_string "     "; Idx.print i'; print_newline ();
+        ) (H.find_all h i);
+        *)
+        match H.find_all h i with
         | [] -> M.add i (newv ~sign:(+1) ()) m
         | [i'] -> M.add i (M.find i' cmap) m
         | payfor ->
