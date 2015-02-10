@@ -105,24 +105,8 @@ end = struct
   let invalid i =
     (* let num = function VNum _ -> true | _ -> false in *)
     let f (Dst (a,b)) _ =
-      a=b || I.k (Dst (b,a)) i <> 0
-       (* || (num a && num b) *) in
+      a=b (* || (num a && num b) *) in
     I.exists f i
-
-  let invalid i =
-    [ one
-    ; one |> I.add (Dst (VNum 0, VId "y")) 1
-    ; one |> I.add (Dst (VId "y", VNum 0)) 1
-    ; one |> I.add (Dst (VNum 0, VId "x")) 1
-    ; one |> I.add (Dst (VId "x", VNum 0)) 1
-    ; one |> I.add (Dst (VNum 0, VNum 1)) 1
-    ; one |> I.add (Dst (VNum 0, VId "x")) 2
-    ; one |> I.add (Dst (VId "x", VNum 0)) 2
-    ; one |> I.add (Dst (VNum 0, VNum 1)) 2
-    ; one |> I.add (Dst (VId "x", VNum 0)) 1 |> I.add (Dst (VNum 0, VId "x")) 1
-    ; one |> I.add (Dst (VId "x", VNum 0)) 1 |> I.add (Dst (VNum 0, VNum 1)) 1
-    ; one |> I.add (Dst (VNum 0, VId "x")) 1 |> I.add (Dst (VNum 0, VNum 1)) 1
-    ] |> List.for_all (fun i' -> not (eq i i'))
 
   let map f i =
     let g (Dst (a, b)) = Dst (f a, f b) in
@@ -341,7 +325,7 @@ end = struct
           Printf.printf " + %d" n; print_delta i;
         ) m;
         Printf.printf "\n" in
-      if true then p di;
+      if false then p di;
       di
     )
 
@@ -471,7 +455,9 @@ end = struct
           ) (shift szch i) cm in
         (m', cm)
       ) m (M.empty, DM.empty) in
+    (*
     print_newline();
+    *)
     DM.fold (fun _ ro () ->
       let p m =
         Printf.printf "0";
@@ -488,7 +474,9 @@ end = struct
         | ((_,k), `I (i)) ->
           Printf.printf " %d {{" (-k); Idx.print i; print_string "}}"
         | _ -> () in
+      (*
       List.iter f1 ro; print_string " >= "; List.iter f2 ro; print_newline ();
+      *)
       row_ ~lo:0. ~up:max_float (List.map fst ro) 0
     ) cm ();
     {cmap = m'; cvars = v}
