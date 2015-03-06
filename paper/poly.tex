@@ -1,4 +1,4 @@
-\documentclass[nocopyrightspace,preprint,pldi]{sigplanconf-pldi15}
+\documentclass[nocopyrightspace,preprint]{sigplanconf-pldi15}
 
 \usepackage[utf8]{inputenc} %for utf8 input
 \usepackage{amssymb} %for shift symbol
@@ -39,7 +39,156 @@
 \input{definitions}
 \begin{document}
 
-\section{Polynomial Potential}
+\section{Canonical Polynomial Potential}
+
+The following presentation of amortized analysis for resource
+inference on integer programs permits to obtain precise polynomial
+bounds by naturally extending the previous linear work. Innovations
+of this presentation include
+\begin{enumerate}
+\item the use of canonical polynoms $X^i$ at no cost on precision,
+ \\ (I wish)
+\item the use of negative coefficients in potential annotations,
+\item the support for operations with mixed effects on multivariate potential.
+\end{enumerate}
+
+\paragraph{Index Sets}
+
+Let $V$ be a set of variables.  An \emph{index} $I \in \ind(V)$ is a
+family that maps pairs of variables to non-zero natural numbers,
+$$
+I = (i_{(x,y)})_{(x,y) \in V^2} .
+$$
+%
+We identify a family $I$ with the set of pairs $\{ ((x,y),i_{(x,y)})
+\mid (x,y) \in V^2\}$.
+Let $\ind(V)$ denote the set of all such indices.  We write $\ind$
+instead of $\ind(V)$ if the set of variables $V$ is fixed or obvious
+from the context.
+%
+
+The \emph{degree} of an index $I = (i_{(x,y)})$
+is defined by
+$
+\deg(I) = \sum_{(x,y)} i_{(x,y)}.
+$
+We define $\ind_k(V) = \{ I \in \ind(V) \mid \deg(I) \leq k
+\}$ to be the set of indices of degree at most $k$.  Remark
+that with these notations, $\ind_0(V)$ for any $V$ is a
+singleton---it contains only the empty index.
+
+\paragraph{Resource Polynomials}
+
+Let $V$ be a set of variabls.  An index $I \in \ind(V)$ denotes a
+\emph{base polynomial} $P_I : \State \to \Q$ that maps a program
+state $\state$ to a rational number.  The definition of $P_I$ is
+$
+P_I(\state) = \prod_{(x,y)} |[\state(x),\state(y)]|^{i_{(x,y)}}.
+$
+Remark that following the standard convention for $\prod$, the
+empty index represents the constant base polynomial 1.
+
+A \emph{resource polynomial} is a linear combination of
+base polynomials with rational coefficients.  Resource polynomials
+form a vector space over $\Q$.
+
+\paragraph{Potential Annotations}
+
+We call \emph{potential annotations}
+the coordinates of a resource polynomial in the basis of
+all base polynomials.  An annotation $Q$ is readily represented
+by a collection $(q_I)_I$ binding rational numbers to indices.
+For example, the potential annotation $\{\{((x,y),2)\} \mapsto 0.5,
+\emptyset \mapsto 3\}$ specifies the resource polynomial
+$
+  P_Q(\state) = 0.5\cdot|[\state(x),\state(y)]|^2 + 3.
+$
+
+The notion of degree can be generalized to potential annotations:
+the annotation $Q = (q_I)_I$ has degree $\max_{q_I} \deg(I)$.
+Remark that the degree of an annotation is exactly the degree of
+the polynomial it represents.
+
+\paragraph{Potential Method for Resource Analysis}
+
+The previous potential annotations will be used to decorate
+programs and bound their resource consumption.  A program
+$P$ consumes $n$ resource units turning a state $\state$ into $\state'$,
+we note this $\state \rightarrow^n_P \state'$.  The \emph{potential
+method} make us look for two annotations $Q$ and $Q'$ such
+that
+$$
+  \forall n\, \state\, \state'.\, \state \rightarrow^n_P \state'
+    \implies P_Q(\state) \ge n + P_{Q'}(\state').
+$$
+The composition of these annotations through the whole program
+using a quantitative logic permits to derive a resource bound.
+In the sequel we explicit a relation that is sufficient to
+satisfy the previous condition when the program $P$ is an
+increment operation $x \gets x+y$.
+
+\paragraph{Shifts of Resource Polynomials}
+
+By symmetry we can consider the case where $P=x \gets x+y$ with
+$y>0$, the case where $y \le 0$ is only a few signs away.  Let
+$Q$ be a potential annotation, we will describe a $Q'$ and a
+$P^y_.$ map such that if $\state \rightarrow_P \state'$ (with no resource cost),
+$P_Q(\state) = P^y_{Q'}(\state')$.  We call $Q'$ a shift of $Q$ and
+write $Q' = \qsh_x^+ Q$.  (When $y\le0$ we get $\qsh_x^-Q$.)
+
+The shift of $Q$ is defined on an extended set of indices, namely
+$\ind^\square = \ind(V \cup \{\square\})$.  This square is not a real
+variable, but a helper with special semantics.
+We can now pose $\qsh_x^+ Q = (q'_I)_{I\in\ind^\square}$ where,
+
+\begin{align*}
+q'_I =
+q_{I[\square \gets x]}
+\prod_z
+   \binom{i_{(\square,z)} {+} i_{(x,z)}}{i_{(\square,z)}}
+   \binom{i_{(z,\square)} {+} i_{(z,x)}}{i_{(z,\square)}}
+   (-1)^{i_{(z,\square)}}
+   .
+\end{align*}
+
+The substitution operation $I[\square \gets x]$ defines an index $I'$
+in $\ind(V)$ with the same degree as $I$.  This index satisfies
+$$
+i'_{(x,z)} {=} i_{(x,z)} {+} i_{(\square,z)}, \;
+i'_{(z,x)} {=} i_{(z,x)} {+} i_{(z,\square)}, \;
+i'_{(u,v)} {=} i_{(u,v)} \mbox{ o.w.}
+$$
+Notations may seem heavy, but what they really express is that
+replacing $\square$ by $x$ in $x^2\square^3z^2$ yields $x^5z^2$.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\clearpage
+\section{Binomial Polynomial Potential}
+
+This section presents the binomial version of the previous system.
+In practice, negative coefficients could be enough to avoid having to use
+this basis.  I also suspect that there is no significant simplifications
+in the presentation using the binomial basis.
 
 \paragraph{Index Sets}
 
