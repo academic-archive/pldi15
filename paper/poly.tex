@@ -189,6 +189,27 @@ With these definitions, we have the following lemma.
 If $\state \rightarrow_C \state'$ and $\state(y)>0$ then
 $P_Q(\state) = P^y_{\qsh^+_x Q}(\state')$.
 \end{lemma}
+\begin{proof}
+\small
+\begin{align*}
+&P^y_{\qsh_x^+ Q}(\state')
+= \sum_I q'_I \prod_{(u,v)} P_{uv}^{uv} \\
+&= \sum_I q_{I[\square\gets x]} P_I \prod_z
+  \binom{\square z {+} xz}{\square z}P_{\square z}^{\square z} P_{xz}^{xz}
+  \binom{z\! \square {+} zx}{z \square}(-P_{z \square})^{z \square} P_{zx}^{zx} \\
+&= \sum_J q_J P_J \sum_{I[\square\gets x] = J} \prod_z
+  \binom{\square z {+} xz}{\square z}P_{\square z}^{\square z} P_{xz}^{xz}
+  \binom{z\! \square {+} zx}{z \square}(-P_{z \square})^{z \square} P_{zx}^{zx} \\
+&= \sum_J q_J P_J \prod_z
+  \left( \sum_{\square z + xz = j_{xz}}
+    \binom{\square z {+} xz}{\square z}P_{\square z}^{\square z} P_{xz}^{xz} \right)
+  \left( \sum_{z\square + zx = j_{zx}} \dots \right) \\
+&= \sum_J q_J P_J \prod_z
+  (P_{xz} + P_{\square z})^{j_{xz}}
+  (P_{zx} - P_{z \square})^{j_{zx}} \\
+&= \sum_J q_J P_J(\state) = P_Q(\state)
+\end{align*}
+\end{proof}
 
 
 
