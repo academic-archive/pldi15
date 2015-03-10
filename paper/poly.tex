@@ -86,7 +86,9 @@ $
 P_I(\state) = \prod_{(x,y)} |[\state(x),\state(y)]|^{i_{(x,y)}}.
 $
 Remark that following the standard convention for $\prod$, the
-empty index represents the constant base polynomial 1.
+empty index represents the constant base polynomial 1.  We will
+later use the notation $P_{(x,y)}(\state) = |[\state(x),\state(y)]|$
+to define $P_I$ as $P_I = \prod_{(x,y)} P_{(x,y)}$.
 
 A \emph{resource polynomial} is a linear combination of
 base polynomials with rational coefficients.  Resource polynomials
@@ -113,26 +115,26 @@ the polynomial it represents.
 
 The previous potential annotations will be used to decorate
 programs and bound their resource consumption.  A program
-$P$ consumes $n$ resource units turning a state $\state$ into $\state'$,
-we note this $\state \rightarrow^n_P \state'$.  The \emph{potential
+$C$ consumes $n$ resource units turning a state $\state$ into $\state'$,
+we note this $\state \rightarrow^n_C \state'$.  The \emph{potential
 method} make us look for two annotations $Q$ and $Q'$ such
 that
 $$
-  \forall n\, \state\, \state'.\, \state \rightarrow^n_P \state'
+  \forall n\, \state\, \state'.\, \state \rightarrow^n_C \state'
     \implies P_Q(\state) \ge n + P_{Q'}(\state').
 $$
 The composition of these annotations through the whole program
 using a quantitative logic permits to derive a resource bound.
 In the sequel we explicit a relation that is sufficient to
-satisfy the previous condition when the program $P$ is an
+satisfy the previous condition when the program $C$ is an
 increment operation $x \gets x+y$.
 
 \paragraph{Shifts of Resource Polynomials}
 
-By symmetry we can consider the case where $P=x \gets x+y$ with
+By symmetry we can consider the case where $C=x \gets x+y$ with
 $y>0$, the case where $y \le 0$ is only a few signs away.  Let
 $Q$ be a potential annotation, we will describe a $Q'$ and a
-$P^y_.$ map such that if $\state \rightarrow_P \state'$ (with no resource cost),
+$P^y_.$ map such that if $\state \rightarrow_C \state'$ (with no resource cost),
 $P_Q(\state) = P^y_{Q'}(\state')$.  We call $Q'$ a shift of $Q$ and
 write $Q' = \qsh_x^+ Q$.  (When $y\le0$ we get $\qsh_x^-Q$.)
 
@@ -161,6 +163,32 @@ $$
 Notations may seem heavy, but what they really express is that
 replacing $\square$ by $x$ in $x^2\square^3z^2$ yields $x^5z^2$.
 
+We now define an interpretation $P_.^y$ of indices containing
+$\square$:
+\begin{align*}
+P^y_{(\square,z)}(\state) &=
+  \left| [\sigma(x){+}\sigma(y), \sigma(z)] \,\triangle\,
+         [\sigma(x), \sigma(z)] \right| \\
+P^y_{(z,\square)}(\state) &=
+  \left| [\sigma(z), \sigma(x){+}\sigma(y)] \,\triangle\,
+         [\sigma(z), \sigma(x)] \right| \\
+P^y_{(\square, \square)}(\state) &= 0 \\
+P^y_{(u,v)}(\state) &= |[\sigma(u), \sigma(v)]|,
+\end{align*}
+we use $A \,\triangle\, B$ to denote the symmetric difference
+of $A$ and $B$.
+The quantity $P^y_{(\square,z)}(\state)$ is the size change of
+the interval $[x, z]$.  If $\state$ is the state before the
+assignment and $\state'$ is the state after the assignment, we
+have
+$P_{(x,z)}(\state) = P^y_{(x,z)}(\state') + P^y_{(\square,z)}(\state')$
+and
+$P_{(z,x)}(\state) = P^y_{(z,x)}(\state') - P^y_{(z,\square)}(\state')$.
+With these definitions, we have the following lemma.
+\begin{lemma}
+If $\state \rightarrow_C \state'$ and $\state(y)>0$ then
+$P_Q(\state) = P^y_{\qsh^+_x Q}(\state')$.
+\end{lemma}
 
 
 
