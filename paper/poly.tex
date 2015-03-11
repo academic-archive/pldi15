@@ -172,7 +172,8 @@ P^y_{(\square,z)}(\state) &=
 P^y_{(z,\square)}(\state) &=
   \left| [\sigma(z), \sigma(x){+}\sigma(y)] \,\triangle\,
          [\sigma(z), \sigma(x)] \right| \\
-P^y_{(\square, \square)}(\state) &= 0 \\
+P^y_{(\square, \square)}(\state) &= P_{(x,\square)}(\state)
+  = P_{(\square,x)}(\state) = 0 \\
 P^y_{(u,v)}(\state) &= |[\sigma(u), \sigma(v)]|,
 \end{align*}
 we use $A \,\triangle\, B$ to denote the symmetric difference
@@ -211,7 +212,23 @@ $P_Q(\state) = P^y_{\qsh^+_x Q}(\state')$.
 \end{align*}
 \end{proof}
 
+\paragraph{Projection of Resource Polynomials}
 
+\DeclareGraphicsRule{*}{mps}{*}{}
+
+The shift operation perserves all the potential after an increment
+but it introduces a new dummy variable $\square$.  Because annotations
+need to be uniform for compositionality, we present in this paragraph
+a projection that eliminates this extra variable.  The main identity that
+we use is $P_{\square z}(\state) + P_{z \square}(\state) =
+P_{0y}(\state)$.  It can be checked on all the three cases illustrated
+below.
+$$
+\includegraphics{fig/ivals.1}
+$$
+In the first case, $P_{\square z}$ will be 0 and $P_{z \square}$ will
+be non zero; the third case witnesses the opposite situation; and in
+the second case, both are non-zero.
 
 
 
