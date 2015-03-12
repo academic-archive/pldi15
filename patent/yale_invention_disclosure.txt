@@ -7,6 +7,20 @@ Yale Invention Disclosure
 1) ESSENCE OF THE INVENTION [Please describe what you consider to be
    the essence or heart of the invention in one short paragraph]
 
+   Execution of software in a computer consumes resources such as
+   memory (space), clock-cycles (time), and energy. The amount of
+   consumed resource usually depends on the inputs to the software and
+   to accurately and reliably predict the resource usage is a
+   difficult problem.
+   
+   We have developed a new technique, implemented in the tool C4B,
+   that enables us to efficiently, automatically, and precisely
+   compute the resource usage of software as a function of the
+   inputs. The technique is parametric in the resource of interest and
+   works for every quantity that is of interest to the user; for
+   example memory usage, clock-cycles usage, network traffic, number
+   of specific function calls, etc.
+
 
 
 2) DESCRIPTION [Describe the new process, method, or composition with
@@ -15,26 +29,120 @@ Yale Invention Disclosure
    explanation of how they relate to one another and their mode of
    operation.]
 
+   Our technology is a new approach for automatically deriving
+   worst-case resource bounds for C programs.  The technique combines
+   ideas from amortized analysis and abstract interpretation in a
+   unified framework to address four challenges for state-of-the-art
+   techniques: compositionality, user interaction, generation of proof
+   certificates, and scalability.  
+
+   - Compositionality is achieved by incorporating the potential
+     method of amortized analysis.  It enables the derivation of
+     global whole-program bounds with local derivation rules by
+     naturally tracking size changes of variables in sequenced loops
+     and function calls.  The resource consumption of functions is
+     described abstractly and a function call can be analyzed without
+     access to the function body.
+
+  - User interaction is supported with a new mechanism that clearly
+    separates qualitative and quantitative verification. A user can
+    guide the analysis to derive complex non-linear bounds by using
+    auxiliary variables and assertions.  The assertions are separately
+    proved using established qualitative techniques such as abstract
+    interpretation or Hoare logic.
+
+  - Proof certificates are automatically generated from the local
+    derivation rules. A soundness proof of the derivation system with
+    respect to a formal cost semantics guarantees the validity of the
+    certificates.
+
+  - Scalability is attained by an efficient reduction of bound
+    inference to a linear optimization problem that can be solved by
+    off-the-shelf LP solvers. 
+
+  The analysis framework is implemented in the tool C4B. An
+  experimental evaluation demonstrates the advantages of the new
+  technique with a comparison of C4B with existing tools on
+  challenging micro benchmarks and the analysis of more than 3000
+  lines of C code from the cBench benchmark suite.
+
 
 
 3) DESCRIPTION [What was the problem(s) that you set out to solve and
    why did you decide to solve it?]
 
+   As part of the DARPA-funded HACMS and CRASH projects Zhong Shao's
+   group at the Yale CS Department is developing CertiKOS; a certified
+   operating system (OS) for use in safety- and mission-critical
+   systems. CertiKOS comes with a machine-checked proof that shows
+   (among other things) that it never crashes.
 
+   In the development of CertiKOS we faced the problems of providing
+   provable guaranties for memory and time usage: What if the OS runs
+   out of memory? What if the execution of the OS is not fast enough
+   to execute mission critical software at the required performance?
+   Such resource failures might have consequences that are as severe
+   as a crash of the whole OS. Since there is comparatively little
+   successful research on providing such resource guaranties we
+   developed new technologies that would help us to establish time and
+   memory bounds automatically.
+
+   The funding for the development of C4B has been provided by NSF
+   grant 1319671 (VeriQ), DARPA CRASH grant FA8750-10-2-0254, and
+   DARPA HACMS grant FA8750-12-2-0293.
+
+   
 
 4) USES [Describe as many applications and/or uses of the invention as
    you can envision.]
 
+   Potential applications include all situations in which developers
+   would like to get a bound on the number of a quantity that is
+   consumed by a program; for example
 
+     - heap and stack memory bounds in embedded systems
+     - time bounds for hard real-time systems
+     - bounds on energy (battery) usage
+     - bounds on network traffic
+     - bounding cost (i.e. money) when using cloud services
+     - bounding the amount of stocks traded or money spent by
+       an automated trading system
+    
 
 5) NOVELTY & ADVANTAGES [Discuss the novel or unusual features of the
    invention and explain how it differs from or improves upon existing
    technologies. Be sure to include all specific features that you
    believe to be novel.]
 
+   The related technologies that are currently in use in industry are
+   not as advanced as the technology we invented or the technology
+   in the aforementioned patent. Current tools are mainly used in the
+   context of real-time systems (for instance in avionics) and are not that
+   useful because they can only derive a single number. For instance,
+   they can derive: if you start this program it will not spend more than
+   $200 at the stock market. The new technologies are parametric and
+   can derive: if you start this program with input n than it will not
+   spend more than $2n at the stock market. So you can use one program
+   in different contexts and always have a guarantee.
 
+   There is a Microsoft patent that has the same goal as our work. It
+   can be found at:
 
+     http://www.google.com/patents/US20110078665
+
+   Our static bound analysis is quite different and has two main advantages:
+
+     a) compositionality (works for larger programs)
+     b) uses off-the-shelf LP solvers (faster computation)
+
+   
 6) RESEARCH [Discuss your plans for additional research in the area of
    the invention.]
 
-
+   There are theoretical limitations that make automatic
+   resource-usage analysis unfeasible for all possible programs. A
+   main theme in our current research is to extend C4B to work on more
+   and more programs that appear in practice. One way is to introduce
+   new mechanism that allows the user to guide the automatic analysis
+   with program annotations. Another way is to extend the space of
+   possible bounds that the tool can derive.
