@@ -61,6 +61,7 @@ module Idx : sig
   type delta
   val compare: t -> t -> int
   val eq: t -> t -> bool
+  val deg: t -> int
   val one: t
   val dst: var * var -> t
   val map: (var -> var) -> t -> t option
@@ -99,6 +100,7 @@ end = struct
   let polycmp = compare (* Save Pervasives' compare. *)
   let compare = I.compare compare
   let eq i j = compare i j = 0
+  let deg i = I.deg i
 
   let one = I.empty
   let dst (u, v) = I.add (Dst (u, v)) 1 one
@@ -127,7 +129,7 @@ end = struct
   let obj i =
     let f = function
       | Dst (VNum a, VNum b) -> max (b-a) 0 + 100
-      | Dst (VNum n, _)
+      | Dst (VNum n, _) -> 10000 - abs n
       | Dst (_, VNum n) -> 10000 + abs n
       | Dst _ -> 10000 in
     I.fold (fun b k o -> o * pow (f b) k) i 1
@@ -144,12 +146,26 @@ end = struct
     end
 
   let range l i =
+    let loh = Hashtbl.create 101 in
+    let hih = Hashtbl.create 101 in
     let irng = let memo = Hashtbl.create 101 in
       fun x1 x2 ->
         try Hashtbl.find memo (x1,x2) with Not_found ->
         let r = Logic.irange l x1 x2 in
         Hashtbl.add memo (x1,x2) r; r in
     let f (Dst (x1, x2) as d) k (rl, ru) =
+      let z =
+        match x1, x2 with
+        | VId v, VNum n ->
+          Hashtbl.add hih v n;
+          (try Hashtbl.find loh v >= n - 1
+           with Not_found -> false)
+        | VNum n, VId v ->
+          Hashtbl.add loh v n;
+          (try n >= Hashtbl.find hih v - 1
+           with Not_found -> false)
+        | _ -> false in
+      if z then ((0, one), (0, one)) else
       let (l, u) = irng x1 x2 in
       let f = function
         | (None, (b, i)) -> (b, I.add d k i)
@@ -359,7 +375,7 @@ module Q: sig
   val subst: ctx -> id list -> var list -> ctx
   val frame: ctx -> ctx -> ctx * ctx
   val restore: ctx -> ctx -> VSet.t -> ctx
-  val solve: ctx * ctx -> unit
+  val solve: ?dumps:(string * ctx) list -> pstate -> ctx * ctx -> unit
 end = struct
   module M = Map.Make(Idx)
   type ctx = { cvars: VSet.t; cmap: int M.t }
@@ -477,7 +493,7 @@ end = struct
       (*
       List.iter f1 ro; print_string " >= "; List.iter f2 ro; print_newline ();
       *)
-      row_ ~lo:0. ~up:max_float (List.map fst ro) 0
+      row_ ~lo:0. ~up:0. (List.map fst ro) 0
     ) cm ();
     {cmap = m'; cvars = v}
 
@@ -634,18 +650,33 @@ end = struct
         {c with cmap = M.add i (M.find i c'.cmap) c.cmap}
       ) c (vars c)
 
-  let solve (cini, cfin) =
+  let solve ?(dumps=[]) l (cini, cfin) =
     let obj = Clp.objective_coefficients () in
+    let large = -200. in
     Idx.fold begin fun () i ->
       let o = float_of_int (Idx.obj i) in
       let v = M.find i cini.cmap in
-      row ~lo:0. ~up:max_float v [] 0;
+      row ~lo:large ~up:max_float v [] 0;
       obj.(v) <- o
     end () cini.cvars;
-    Clp.change_objective_coefficients obj;
     flush stdout;
     Clp.set_log_level (if debug > 1 then 2 else 0);
+    Clp.change_objective_coefficients obj;
     Clp.initial_solve ();
+    while
+      Clp.status () = 0 &&
+      let sol = Clp.primal_column_solution () in
+      Idx.fold begin fun again i ->
+        if sol.(M.find i cini.cmap) <= large +. 1. then
+          let v = M.find i cini.cmap in
+          (* Idx.print i; print_newline(); *)
+          row ~lo:0. ~up:max_float v [] 0;
+          true
+        else again
+      end false cini.cvars
+    do
+      Clp.primal ()
+    done;
     match Clp.status () with
     | 0 ->
       let sol = Clp.primal_column_solution () in
@@ -660,12 +691,18 @@ end = struct
       let p c = Idx.fold
         (fun () i -> Idx.printk sol.(M.find i c.cmap) i)
         () (vars c) in
+      List.iteri (fun n (info, c) ->
+        Printf.printf "-- Dumpling %d: %s\n" n info;
+        p c;
+        print_newline ()
+      ) dumps;
       p cini;
       if debug > 0 then (print_string "Final annotation:\n"; p cfin)
     | _ -> print_string "Sorry, I could not find a bound.\n"
 
 end
 
+let dumplings = ref []
 
 let analyze (fdefs, p) =
   (* generate and resolve constraints *)
@@ -739,6 +776,10 @@ let analyze (fdefs, p) =
         | OPlus -> LVar y, iyz, izy
         | OMinus -> LMult (-1, LVar y), izy, iyz in
       let q = Q.relax lpost qseq in
+
+      if x = "x" then dumplings := ("after x+=N", q) :: !dumplings;
+
+      let q' =
       begin match
         Logic.entails lpre opy CLe (LVar (VNum 0)),
         Logic.entails lpre opy CGe (LVar (VNum 0))
@@ -747,7 +788,11 @@ let analyze (fdefs, p) =
       | false, false -> assert false
       | true, false -> (* op y < 0 *) Q.incr q (VId x) (-1) iopyz
       | false, true -> (* op y > 0 *) Q.incr q (VId x) (+1) izopy
-      end
+      end in
+
+      if x = "x" then dumplings := ("before x+=N", q') :: !dumplings;
+      Q.relax lpre q'
+
 
     | PSet (x, Some v, {lpre; _}) ->
       let q = Q.subst qseq [x] [v] in
@@ -762,6 +807,11 @@ let analyze (fdefs, p) =
 
     | PSeq (p1, p2, _) ->
       let qpre2 = gen qseq p2 in
+      begin match p1 with
+      | PLoop _ -> dumplings := ("after a loop", qpre2) :: !dumplings
+      | PAssert _ -> dumplings := ("after an assert", qpre2) :: !dumplings
+      | _ -> ()
+      end;
       let qpre1 = gen (Q.merge [qpre2]) p1 in
       qpre1
 
@@ -781,7 +831,7 @@ let analyze (fdefs, p) =
   let q = Q.addv ~sign:(+1) Q.empty glos in
   let qret = Q.addv ~sign:(+1) q (VSet.singleton (VId "%ret")) in
   let qpre = gen_ [] qret Q.empty q p in
-  Q.solve (qpre, q)
+  Q.solve ~dumps:(!dumplings) (prog_data p).lpre (qpre, q)
 
 
 let _ =
@@ -789,6 +839,9 @@ let _ =
   if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tq" then
     let f = Tools.auto_tick (f ()) in
     let f = lannot f in
+    analyze f
+  else if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tqtick" then
+    let f = lannot (f ()) in
     analyze f
   else if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tlannot" then
     let f = lannot (f ()) in

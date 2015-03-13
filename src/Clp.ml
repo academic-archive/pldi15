@@ -130,6 +130,10 @@ let initial_solve () =
   flush_rows ();
   initial_solve st
 
+let primal () =
+  flush_rows ();
+  primal st
+
 let status () =
   status st
 

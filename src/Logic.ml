@@ -247,7 +247,6 @@ let range ps = function
       end (None, None) ps
 
 let irange ps v1 v2 =
-  if v1 = VNum 0 && v2 = VId "x" then (None, None) else
   let rng =
     let m0 f = function
       | Some x -> Some (max 0 (f x))
