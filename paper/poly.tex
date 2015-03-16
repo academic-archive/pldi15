@@ -87,8 +87,8 @@ P_I(\state) = \prod_{(x,y)} |[\state(x),\state(y)]|^{i_{(x,y)}}.
 $
 Remark that following the standard convention for $\prod$, the
 empty index represents the constant base polynomial 1.  We will
-later use the notation $P_{(x,y)}(\state) = |[\state(x),\state(y)]|$
-to define $P_I$ as $P_I = \prod_{(x,y)} P_{(x,y)}$.
+later use the notation $P_{xy}(\state) = |[\state(x),\state(y)]|$
+to define $P_I$ as $P_I = \prod_{(x,y)} P_{xy}$.
 
 A \emph{resource polynomial} is a linear combination of
 base polynomials with rational coefficients.  Resource polynomials
@@ -153,12 +153,12 @@ q_{I[\square \gets x]}
    .
 \end{align*}
 
-The substitution operation $I[\square \gets x]$ defines an index $I'$
+The substitution operation $I[\square \gets x]$ defines an index $J$
 in $\ind(V)$ with the same degree as $I$.  This index satisfies
 $$
-i'_{(x,z)} {=} i_{(x,z)} {+} i_{(\square,z)}, \;
-i'_{(z,x)} {=} i_{(z,x)} {+} i_{(z,\square)}, \;
-i'_{(u,v)} {=} i_{(u,v)} \mbox{ o.w.}
+j_{(x,z)} {=} i_{(x,z)} {+} i_{(\square,z)}, \;
+j_{(z,x)} {=} i_{(z,x)} {+} i_{(z,\square)}, \;
+j_{(u,v)} {=} i_{(u,v)} \mbox{ o.w.}
 $$
 Notations may seem heavy, but what they really express is that
 replacing $\square$ by $x$ in $x^2\square^3z^2$ yields $x^5z^2$.
@@ -166,25 +166,25 @@ replacing $\square$ by $x$ in $x^2\square^3z^2$ yields $x^5z^2$.
 We now define an interpretation $P_.^y$ of indices containing
 $\square$:
 \begin{align*}
-P^y_{(\square,z)}(\state) &=
+P^y_{\square z}(\state) &=
   \left| [\sigma(x){+}\sigma(y), \sigma(z)] \,\triangle\,
          [\sigma(x), \sigma(z)] \right| \\
-P^y_{(z,\square)}(\state) &=
+P^y_{z \square}(\state) &=
   \left| [\sigma(z), \sigma(x){+}\sigma(y)] \,\triangle\,
          [\sigma(z), \sigma(x)] \right| \\
-P^y_{(\square, \square)}(\state) &= P_{(x,\square)}(\state)
-  = P_{(\square,x)}(\state) = 0 \\
-P^y_{(u,v)}(\state) &= |[\sigma(u), \sigma(v)]|,
+P^y_{\square \square}(\state) &= P_{x \square}(\state)
+  = P_{\square x}(\state) = 0 \\
+P^y_{uv}(\state) &= |[\sigma(u), \sigma(v)]| \mbox{ otherwise},
 \end{align*}
 we use $A \,\triangle\, B$ to denote the symmetric difference
 of $A$ and $B$.
-The quantity $P^y_{(\square,z)}(\state)$ is the size change of
+The quantity $P^y_{\square z}(\state)$ is the size change of
 the interval $[x, z]$.  If $\state$ is the state before the
 assignment and $\state'$ is the state after the assignment, we
 have
-$P_{(x,z)}(\state) = P^y_{(x,z)}(\state') + P^y_{(\square,z)}(\state')$
+$P_{xz}(\state) = P^y_{xz}(\state') + P^y_{\square z}(\state')$
 and
-$P_{(z,x)}(\state) = P^y_{(z,x)}(\state') - P^y_{(z,\square)}(\state')$.
+$P_{zx}(\state) = P^y_{zx}(\state') - P^y_{z \square}(\state')$.
 With these definitions, we have the following lemma.
 \begin{lemma}
 If $\state \rightarrow_C \state'$ and $\state(y)>0$ then
@@ -195,17 +195,17 @@ $P_Q(\state) = P^y_{\qsh^+_x Q}(\state')$.
 \begin{align*}
 &P^y_{\qsh_x^+ Q}(\state')
 = \sum_I q'_I \prod_{(u,v)} P_{uv}^{uv} \\
-&= \sum_I q_{I[\square\gets x]} P_I \prod_z
+&= \sum_I q_{I[\square\gets x]} X_I \prod_z
   \binom{\square z {+} xz}{\square z}P_{\square z}^{\square z} P_{xz}^{xz}
   \binom{z\! \square\! {+} zx}{z \square}(-P_{z \square})^{z \square} P_{zx}^{zx} \\
-&= \sum_J q_J P_J \sum_{I[\square\gets x] = J} \prod_z
+&= \sum_J q_J X_J \sum_{I[\square\gets x] = J} \prod_z
   \binom{\square z {+} xz}{\square z}P_{\square z}^{\square z} P_{xz}^{xz}
   \binom{z\! \square\! {+} zx}{z \square}(-P_{z \square})^{z \square} P_{zx}^{zx} \\
-&= \sum_J q_J P_J \prod_z
+&= \sum_J q_J X_J \prod_z
   \left( \sum_{\square z + xz = j_{xz}}
     \binom{\square z {+} xz}{\square z}P_{\square z}^{\square z} P_{xz}^{xz} \right)
   \left( \sum_{z\square {+} zx = j_{zx}} \dots \right) \\
-&= \sum_J q_J P_J \prod_z
+&= \sum_J q_J X_J \prod_z
   (P_{xz} + P_{\square z})^{j_{xz}}
   (P_{zx} - P_{z \square})^{j_{zx}} \\
 &= \sum_J q_J P_J(\state) = P_Q(\state)
@@ -230,10 +230,69 @@ In the first case, $P_{\square z}$ will be 0 and $P_{z \square}$ will
 be non zero; the third case witnesses the opposite situation; and in
 the second case, both are non-zero.
 
+Given an index I from $\ind(V\cup \{ \square \})$, we define its projection
+$J = I|_{0y} \in \ind(V)$ over the interval $[0,y]$ as
+$$
+j_{0y} = i_{0y} + \sum_{z \in V} i_{\square z} + i_{z \square}, \quad
+j_{uv} = i_{uv} \mbox{ o.w.}
+$$
+Once again this is a degree preserving transformation.  We use it to
+relate indices containing $P_{0y}^k$ and its possible \emph{developments}
+in terms of $P_{\square z}$ and $P_{z \square}$.  A development gives a
+possible rewrite of indices that contain the base polynomial $
+|[0,y]|^k$ where k is non-zero.  Formally, it is a pair $\delta =
+(\delta_0, \delta_m)$ of a natural number $\delta_0$ and a map $\delta_m$
+from program variables to natural numbers such that $\delta_m(x) = 0$.
+A development $\delta$ has degree $\delta_0 + \sum_z \delta_m(z)$.  We
+will write $\Delta(J)$ for the set of all developments that have degree
+$j_{0y}$.  We will also use the shorter functional notation $\delta(z)$
+to denote $\delta_m(z)$.
 
+To see the action of a development on an index, consider the
+index $J = |[0,y]|^2$, the development $\delta = (2, \_ \mapsto 0)$
+is in $\Delta(J)$ and transforms $J$ into itself.  The development
+$\delta' = (1, \{ z \mapsto 1, \_ \mapsto 0\})$ is also into $\Delta(J)$ and
+transforms $J$ into the resource polynomial
+$|[0,y]|P_{\square z} + |[0,y]|P_{z \square}$.
 
+If $Q$ is a resource polynomial on the index set $\ind(V\cup \{\square\})$ we
+can now define the projection $Q' = Q|_{0y} \in \ind(V)$ as
+$$
+q'_J = \sum_{\delta \in \Delta(J)} q^\delta_J,
+$$
+where the numbers $q^\delta_J$ are constrained to satisfy the following
+family of equations
+$$
+q_I = q^\delta_{I|_{0y}} \prod_z \binom{i_{\square z} + i_{z \square}}{i_{\square z}}.
+$$
 
-
+\begin{lemma}
+If $Q \in \ind(V \cup \{\square\})$, then for all $\state$,
+$P^y_Q(\state) = P_{Q|_{0y}}(\state)$.
+\end{lemma}
+\begin{proof}
+\begin{align*}
+&P_{Q|_{0y}}(\state)
+  = \sum_J q_J P_J(\state)
+  = \sum_J X_J \sum_{\delta \in \Delta(J)} q_J^\delta P_{0y}^{0y} \\
+&= \sum_J X_J \sum_{\delta \in \Delta(J)}
+    q_J^\delta P_{0y}^{\delta_0}
+    \prod_z (P_{\square z} + P_{z \square})^{\delta(z)} \\
+&= \sum_J X_J \sum_{\delta \in \Delta(J)}
+    q_J^\delta P_{0y}^{\delta_0}
+    \prod_z \sum_{i+j=\delta(z)} \binom{\delta(z)}{i}
+      P_{\square z}^i P_{z \square}^j \\
+&= \sum_J \sum_{I|_{0y} = J}
+    q_J^{\delta_I} X_J P_{0y}^{i_{0y}}
+    \prod_z \binom{i_{\square z} + i_{z \square}}{i_{\square z}}
+      P_{\square z}^{i_{\square z}} P_{z \square}^{i_{z \square}} \\
+&= \sum_I
+    \left( q_{I|_{0y}}^{\delta_I}
+    \prod_z \binom{i_{\square z} + i_{z \square}}{i_{\square z}}
+    \right) P_I^y
+  = \sum_I q_I P_I^y = P^y_Q(\state).
+\end{align*}
+\end{proof}
 
 
 
