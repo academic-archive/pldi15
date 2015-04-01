@@ -88,3 +88,10 @@ it was already reported by a paper reviewer.
 numbers because, for simplicity, the cost of the initial
 function call is not accounted for in the paper. We only
 bound the function body.
+
+Finally we would like to point out that, even if the new
+sha_update bound is 65 resource units looser with the new
+version, C4B is the only tool available that can give *any*
+bound for it.  No other resource analysis tool is able to
+properly deal with simple function calls in C (even less
+recursive functions).
