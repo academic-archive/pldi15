@@ -7,19 +7,19 @@ Yale Invention Disclosure
 1) ESSENCE OF THE INVENTION [Please describe what you consider to be
    the essence or heart of the invention in one short paragraph]
 
-   Execution of software in a computer consumes resources such as
-   memory (space), clock-cycles (time), and energy. The amount of
-   consumed resource usually depends on the inputs to the software and
-   to accurately and reliably predict the resource usage is a
-   difficult problem.
+Execution of software in a computer consumes resources such as memory
+(space), clock-cycles (time), and energy. The amount of consumed
+resource usually depends on the inputs to the software and to
+accurately and reliably predict the resource usage is a difficult
+problem.
    
-   We have developed a new technique, implemented in the tool C4B,
-   that enables us to efficiently, automatically, and precisely
-   compute the resource usage of software as a function of the
-   inputs. The technique is parametric in the resource of interest and
-   works for every quantity that is of interest to the user; for
-   example memory usage, clock-cycles usage, network traffic, number
-   of specific function calls, etc.
+We have developed a new technique, implemented in the tool C4B, that
+enables us to efficiently, automatically, and precisely compute the
+resource usage of software as a function of the inputs. The technique
+is parametric in the resource of interest and works for every quantity
+that is of interest to the user; for example memory usage,
+clock-cycles usage, network traffic, number of specific function
+calls, etc.
 
 
 
