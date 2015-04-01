@@ -375,7 +375,7 @@ module Q: sig
   val subst: ctx -> id list -> var list -> ctx
   val frame: ctx -> ctx -> ctx * ctx
   val restore: ctx -> ctx -> VSet.t -> ctx
-  val solve: ?dumps:(string * ctx) list -> pstate -> ctx * ctx -> unit
+  val solve: ?dumps:(string * ctx) list -> ctx * ctx -> unit
 end = struct
   module M = Map.Make(Idx)
   type ctx = { cvars: VSet.t; cmap: int M.t }
@@ -650,14 +650,22 @@ end = struct
         {c with cmap = M.add i (M.find i c'.cmap) c.cmap}
       ) c (vars c)
 
-  let solve ?(dumps=[]) l (cini, cfin) =
+  let solve ?(dumps=[]) (cini, cfin) =
+    let absl =
+      Idx.fold begin fun l i ->
+        let v = M.find i cini.cmap in
+        let v' = newv () in
+        gerow v' v 1; gerow v' v (-1);
+        v' :: l
+      end [] cini.cvars in
     let obj = Clp.objective_coefficients () in
+    List.iter (fun v -> obj.(v) <- 1.) absl;
     let large = -200. in
     Idx.fold begin fun () i ->
       let o = float_of_int (Idx.obj i) in
       let v = M.find i cini.cmap in
       row ~lo:large ~up:max_float v [] 0;
-      obj.(v) <- o
+      obj.(v) <- o;
     end () cini.cvars;
     flush stdout;
     Clp.set_log_level (if debug > 1 then 2 else 0);
@@ -669,7 +677,6 @@ end = struct
       Idx.fold begin fun again i ->
         if sol.(M.find i cini.cmap) <= large +. 1. then
           let v = M.find i cini.cmap in
-          (* Idx.print i; print_newline(); *)
           row ~lo:0. ~up:max_float v [] 0;
           true
         else again
@@ -831,7 +838,7 @@ let analyze (fdefs, p) =
   let q = Q.addv ~sign:(+1) Q.empty glos in
   let qret = Q.addv ~sign:(+1) q (VSet.singleton (VId "%ret")) in
   let qpre = gen_ [] qret Q.empty q p in
-  Q.solve ~dumps:(!dumplings) (prog_data p).lpre (qpre, q)
+  Q.solve ~dumps:(!dumplings) (qpre, q)
 
 
 let _ =
