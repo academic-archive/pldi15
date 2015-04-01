@@ -61,40 +61,37 @@
 ------------------------------------------------------
 RESPONSE:
 
-Reviewers 1 & 3 did not see the artifact page as it was
-originally submitted:  Indeed, we removed an AEC specific
-box on the website a few weeks ago thinking the reviews
-were done.  This box contained a link to the artifact VM
-with all the examples and source code.  It is up again at
-the same URL.  Reviewer 2 appears to have seen it.
+Reviewers 1 & 3 did not see the artifact page as it was originally
+submitted: Indeed, we removed an AEC specific box on the website a few
+weeks ago thinking the reviewers have downloaded our artifact already.
+This box contained a link to the artifact VM with all the examples and
+source code.  It is up again at the same URL.  Reviewer 2 appears to
+have seen it.
 
-Some examples tested by reviewers are not handled by our
-analysis by design (and documented as such).  For example,
-the paper states that non-linear arithmetic is not supported
-(x % 2), and non-linear programs cannot be bounded by the
-current C4B (bubblesort has quadratic complexity, and the
-recursive Fibonacci function has exponential complexity).
+Some examples tested by reviewers are not handled by our analysis by
+design (and documented as such).  For example, the paper states that
+non-linear arithmetic is not supported (x % 2), and non-linear
+programs cannot be bounded by the current C4B (bubblesort has
+quadratic complexity, and the recursive Fibonacci function has
+exponential complexity).
 
-We want to emphasizes that all bounds generated with C4B
-by the reviewers and in the paper are sound.  We can
-explain the differences (which are mainly in the constant
-factors) between our artifact's output and the paper bounds
-by several points:
+We want to emphasizes that all bounds generated with C4B by the
+reviewers and in the paper are sound.  We can explain the differences
+(which are mainly in the constant factors) between our artifact's
+output and the paper bounds by several points:
 
 1. The version used for writing the paper predates the one
 submitted as artifact (and is less robust).
 
-2. The bound for the example t62 is not tight in the paper,
-it was already reported by a paper reviewer.
+2. The bound for the example t62 is not tight in the paper, it was
+already reported by a paper reviewer.
 
-3. Some examples have bounds that differ by 1 with the paper
-numbers because, for simplicity, the cost of the initial
-function call is not accounted for in the paper. We only
-bound the function body.
+3. Some examples have bounds that differ by 1 with the paper numbers
+because, for simplicity, the cost of the initial function call is not
+accounted for in the paper. We only bound the function body.
 
-Finally we would like to point out that, even if the new
-sha_update bound is 65 resource units looser with the new
-version, C4B is the only tool available that can give *any*
-bound for it.  No other resource analysis tool is able to
-properly deal with simple function calls in C (let alone
-recursive functions).
+Finally we would like to point out that, even if the new sha_update
+bound is 65 resource units looser with the new version, C4B is the
+only tool available that can give *any* bound for it.  No other
+resource analysis tool is able to properly deal with simple function
+calls in C (let alone recursive functions).
