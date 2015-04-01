@@ -75,7 +75,7 @@ programs cannot be bounded by the current C4B (bubblesort has
 quadratic complexity, and the recursive Fibonacci function has
 exponential complexity).
 
-We want to emphasizes that all bounds generated with C4B by the
+We want to emphasize that all bounds generated with C4B by the
 reviewers and in the paper are sound.  We can explain the differences
 (which are mainly in the constant factors) between our artifact's
 output and the paper bounds by several points:
