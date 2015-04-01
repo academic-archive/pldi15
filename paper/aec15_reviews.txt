@@ -1,0 +1,414 @@
+-------------------------------------------------------------------------------
+REVIEW #1
+
+Overall score: -1: (fell below expectations)
+
+Evaluator's confidence: 3: (medium)
+
+Brief paper summary and contributions: This paper proposes a new method for
+calculating "resource bounds" (usually compute time bounds) of programs written
+in a subset of the C language. The new method is based on potential functions
+which are combined in a system of compositional inference rules. Unlike
+existing tools for the same purpose, the authors' approach can often find
+*tight* bounds and covers a larger set of programs than existing work. The
+authors show that their inference approach can be mapped to efficient LP
+solvers, and that existing techniques can be used to guide the analysis towards
+non-linear solutions while still using standard LP solvers.
+
+Artifact summary: The authors provide a web-based tool that allows users to
+test their approach (as implemented in C^4B) directly in their browser. The
+user gets to submit a C-style program, on which one of two resource bound
+detection algorithms is executed (the back-edge algorithm or a tick-based
+algorithm). If a bound can be found, it is displayed.
+
+Moreover, the authors also provide Coq definitions of their inference rule
+system and proofs to download and check.
+
+Artifact packaging and reproducibility:
+
+Artifact implementation and usability: Implemented as an interactive web
+application, with a CLP solver as the server-side back-end (subject to a
+time-out).
+
+Very approachable, no setup required -- great work! I immediately started
+typing in programs, editing the examples and playing with the system, without
+worrying about how to get things up and running.
+
+Detailed evaluation and score justification: Note: only the extended TR version
+of the paper is available on the artifact site, not the accepted version of the
+paper (as required by the rules). I assume that the TR subsumes the accepted
+paper, but differences are not clearly highlighted, complicating the
+verification of what is claimed in the accepted paper.
+
+----
+
+Using the authors tool and the examples provided, I was able to reproduce some
+of the resource bounds shown in the paper. I modified them slightly to make
+sure that the results aren't pre-defined "canned demo" results, and the changes
+worked and affected the bounds in the way I expected. However, there are some
+examples in which the tool *does NOT* produce the same results as quoted in the
+paper:
+
+* Example t62 gives me "0.50 + 1.50 |[l, h]|", when the TR says it should be "2
+  + 3|[l, h]|" (Figure 3, t62) and claims that this is a tight bound.
+
+* Example t39 gives me "1.33 + 0.67 |[z, y]|", when the TR says it should be
+  "0.33 + 0.67|[y, x]|" or "0.67|[y, x]|" (Figure 3, t39), although this
+  disagrees with Figure 23, where it is "1.33 + 0.67 |[z, y]|". If I add the
+  tick() invocations present in Figure 3, the results match, although I have to
+  express the arguments "x - 1" (to count_down) and "y + 2" (to count_up) as
+  increments/decrements on a separate line: the version shown in Figure 3 makes
+  the tool fail with "exception Tools.InvalidProgram("function count_up is
+  called with wrong arity")".
+
+* Example t61 seems to be missing from the online version (also in Figure 3 in
+  the TR).
+
+* Example t27 in the online version is different to example t27 in Figure 2 in
+  the TR, and even if I make the changes to make them match (add "&& nondet()",
+  add "tick(5)" and "tick(9) and "#pragma tick"), I get "9.00 + 5.00 |[n, 0]|",
+  rather than "59|[n, 0]| + 0.05|[0, y]|" as quoted in the TR. (The online
+  version does match the one shown in Figure 16 in the TR -- but is that one in
+  the paper? I don't know.)
+
+* Example t08a as quoted in Figure 2 does not exist in the online tool; only
+  t08 exists and is significantly different.
+
+* Example t09 from Figure 9 (and Figure 17) in the TR is missing from the
+  online tool.
+
+* The md5 example gives me "210.00 + 1.00 |[0, 11]|", although it is unclear to
+  me if the entry in Table 2 ("133.95 + 1.05|[0, N]|") was measuring just part
+  of the example (MD5Update).
+
+* Many of the other examples in Table 2 are not included in the list of tests
+  available in the online tool.
+
+* Example fig4_2 in Figure 21 gives me "2.00 |[0, n]|", when the TR claims
+  "1.00 + 2.00 |[0, n]|". (Same disagreement in Table 3.)
+
+* Example ex2 in Figure 22 appears to be missing from the online tool. When I
+  type it in, the tool fails to find a bound unless I set m to a fixed value
+  (in which case the bound matches the one quoted in the TR).
+
+* Example t37 in Figure 23 gives me "2.00 + 2.00 |[0, x]| + 1.00 |[0, y]|",
+  while the TR claims "3.00 + 2.00 |[0, x]| + 1.00 |[0, y]|". (Same
+  disagreement in Table 3.)
+
+However, I came across some cases in which I expected the tool to work and it
+did not: I implemented a quick bubblesort in the web UI, and even after
+simplifying it down to basically just iterating in nested loops (i.e. removing
+the actual swaps), the analysis still fails to find a result:
+
+------------------->8---------------------------
+void start(int *a, int len) {
+int n, m, tmp;
+int len_sub_1 = len - 1;
+
+assert(len > 0);
+assert(len_sub_1 >= 0);
+n = 1;
+while (n < len) {
+m = 0;
+while (m < len_sub_1) {
+m = m + 1;
+}
+n = n + 1;
+}
+}
+------------------->8---------------------------
+
+When I run this, the result I receive is:
+
+"Analysis using the back-edge metric:
+Sorry, I could not find a bound."
+
+(and likewise for the tick metric).
+
+When I set len_sub_1 to a fixed value, the analysis works (and is correct),
+although if I use start() as a wrapper and pass in a concrete value for len, it
+does not work (despite only simple arithmetic being required to find the value
+for len_sub_1). I was a little surprised by this outcome, since the authors
+evidently are able to deal with much more complicated programs (e.g. the MD5
+implementation).
+
+Hence, I'm a little worried that the end of Section 2 in the paper implies a
+generality that does not exist. Moreover, since there is no "Limitations"
+section in the paper, I could not check if the authors are aware of these
+limitations (I assume they are), or whether I inadvertently triggered one of
+them.
+
+Finally, while the web UI is nice, the original code for C^4B was not provided,
+so the interested reviewer could not look into the problem further.
+
+I also downloaded and compiled the Coq definitions and proofs provided by the
+authors; they compiled fine, but I was unable to do anything with them, since
+no instructions were provided. I expected some kind of "do the verification
+now" target (I should note that I am not familiar with Coq at all -- but it
+doesn't hurt to make this kind of stuff accessible to interested outsiders!).
+
+Comments for improving the artifact: Extend the list of limitations to cover
+others that exist (e.g. the nested loop issue).
+
+Additional comments to the authors: Having a "Limitations" section in the paper
+would be useful to assess the practical utility of the tool. (I don't know if
+it is common to enumerate limitations in a PL venue -- I come from a systems
+background where it is.)
+
+-------------------------------------------------------------------------------
+REVIEW #2
+
+Overall score: -1: (fell below expectations)
+
+Evaluator's confidence: 4: (high)
+
+Brief paper summary and contributions: This paper presents an automatic
+technique for statically computing resource bounds for C programs implemented
+in C4B. These bounds may include variable names or the difference between
+variables as sub-expressions. The authors' technique uses amortized analysis to
+compute tight bounds for loopy programs where different iterations may have
+different costs. This analysis relies on an off-the-shelf LP solver to compute
+bounds, even for programs with non-linear resource bounds.
+
+Artifact summary: The artifact includes an implementation of the analysis
+described in the paper, a collection of programs that can be used to test
+resource bound computations, and a Coq proof of the analysis' soundness. To
+evaluate this artifact, I ran the c4b tool on the programs in figure 8, as well
+as the test programs referenced in table 2. I compared the output to the bounds
+reported in the paper. I also ran the test programs under c4b/t to verify that
+tests pass, and used coq to check the proof included in the artifact. Finally,
+I ran c4b on some of my own test programs to see how general the tool is.
+
+Artifact packaging and reproducibility: No issues here.
+
+Artifact implementation and usability: Directions were clear, and easy to find.
+
+Detailed evaluation and score justification: The provided tests all pass, and
+the coq proof checks out just fine. Bounds for the five programs in figure 8
+all match the paper results (after testing with several different branching
+conditions in t13). When I ran the analysis on the cbench programs, I did get
+some different results:
+
+BF_cfb64_enc:
+paper: 1 + 2 |[-1, N]|
+my result: 2 + 2 |[-1, N]|
+
+mad_bit_crc:
+paper: 61.19 + 0.19 |[-1, N]|
+my result: 22 + 0.19 |[-1, N]|
+
+md5Update:
+paper: 133.95 + 1.05 |[0, N]|
+my result: 68 + 1.05 |[0, N]|
+
+sha_update:
+paper: 2 + 3.55 |[0, N]|
+my result: 67 + 3.55 |[0, N]|
+
+PackBitsDecode:
+paper: 1 + 65 |[-129, cc]|
+my result: 65 + 65 |[-129, cc]|
+
+Results for ycc_rgb_conv and uv_decode do not match the paper, but the text
+says that user interaction was used to achieve the reported bounds. The
+artifact does not appear to contain the annotated versions of these source
+files. The first three bounds are tighter than what is reported in the paper,
+but sha_update and PackBitsDecode have higher bounds. I was unable to find any
+explanation of these differences in the artifact, although the README does
+report the numbers I observed when I ran c4b, not the numbers from the paper.
+
+Bounds in figure 3 also do not match the paper.
+
+t39:
+c_down:
+paper: 0.33 + 0.67 |[y, x]|
+my result: 1.33 + 0.67 |[y, x]|
+c_up:
+paper: 0.67 |[y, x]|
+my result: 1 + 0.67 |[y, x]|
+
+The paper explicitly claims this is a tight bound, so the fact that the tool
+reports a different bound is surprising. Either the tool no longer produces
+tight bounds, or the bounds in the paper were incorrect. I did not find
+evidence for either case.
+
+t61:
+paper:
+if N >= 8: N/8 |[0, l]|
+if N < 8: 7 (8-N)/8 + N/8 |[0, l]|
+my result:
+if N >= 8: 2 |[0, l]|
+if N < 8: unable to compute a bound
+
+t62:
+paper: 2 + 3 |[l, h]|
+my result: 0.5 + 1.5 |[l, h]|
+
+This difference seems more innocuous, since the tool finds a tighter
+bound. Except, the caption for figure 3 claims the derived constant factors are
+tight. So, either the claim in the paper was false, or the delivered version of
+the tool is deriving bounds that are below the actual worst case.
+
+There appear to be several cases the analysis fails to catch. Here are a few
+examples that surprised me (all run with `#pragma tick` on the first line):
+
+void simple1() {
+for(int i=0; i<100; i++) {
+if(i < 10) tick(2);
+}
+}
+
+The bound here is obviously 20, but c4b reports 200.
+
+void simple2(int x) {
+for(int i=0; i<x; i++) {
+if(x % 2 == 0) tick(2);
+}
+}
+
+The bound should be |[0, x]|, but c4b reports 2 |[0, x]|. An alternate version
+of this program that does not use modulus produces the same bound:
+
+void simple2_alternate(int x) {
+int m=2;
+for(int i=0; i<x; i++) {
+if(m == 2) {
+tick(2);
+m = 0;
+}
+m++;
+}
+}
+
+Maybe equality is also not supported? Converting the check from `m == 2` to `m
+>= 2` produces a more reasonable bound of 2 + |[0, x]|.
+
+Another surprising limitation is in the analysis' ability to handle increments
+larger than 1. This program illustrates the issue:
+
+void simple3(int x) {
+for(int i=0; i<x; i+=2) {
+tick(2);
+}
+}
+
+The bound should be |[0, x]|, but c4b reports 2 |[0, x]|.
+
+Another illustrative example is the following:
+
+void simple4(int x, int y) {
+while(x < y) {
+tick(1);
+x++;
+y--;
+}
+}
+
+The bound should be 0.5 |[x, y]|, but c4b instead reports 1.0 |[x, y]|.
+
+Finally, the tool also fails to find bounds for infinite loops with a static
+break condition:
+
+void simple5(int x) {
+while(x > 0) {
+tick(1);
+x++;
+if(x >= 100) return;
+}
+}
+
+The analysis fails to find a bound for this program.
+
+And one final example:
+
+int fib(int n) {
+tick(1);
+if(n == 0) return 0;
+if(n == 1) return 1;
+int a = n-1;
+int b = fib(a);
+int c = n-2;
+int d = fib(c);
+int e = b+d;
+return e;
+}
+
+void start(int n) {
+fib(n);
+}
+
+The analysis fails to find bounds for this simple function, which is surprising
+given that the paper implies a very general analysis.
+
+The analysis does not appear to be robust to even minor complications in the
+program, and the computed bounds do not match the bounds from the version of
+the tool provided with the artifact. The limitations of the tool are
+surprising, considering there is no discussion of the generality of the
+approach in the paper (only its soundness). Even without these examples where
+the analysis fails, there are far too many inconsistencies with the results in
+the paper.
+
+Comments for improving the artifact:
+
+Additional comments to the authors: When so many of the results differ from the
+paper, you should include an explanation of what may have changed since the
+submission. The paper claims that some of the bounds are tight, so when the
+tool produces lower bounds this is especially concerning.
+
+The artifact contained no evidence of the proof certificates described in the
+paper. This did not factor into my overall rating because it was not described
+in the artifact outline, but I was surprised by the omission.
+
+-------------------------------------------------------------------------------
+REVIEW #3
+
+Overall score: 0: (met expectations)
+
+Evaluator's confidence: 3: (medium)
+
+Brief paper summary and contributions: The report presents a technique to
+semi-automatically derive resource bounds for C programs in a compositional
+manner. The accompanying tool implements this approach for a subset of C's
+feature set. The tool can handle non-regular iteration patterns, mutation,
+non-linear control flow like break and continue, bounds that depend on negative
+numbers, etc. Linear bounds can be derived automatically, more complex bounds
+requires user interaction.
+
+Artifact summary: I was evaluating the accompanied tool that calculated
+resource bounds on a given C program.
+
+Artifact packaging and reproducibility: Web-based interface (implementation
+unavailable), therefore no hassles of installation. For the same reason, cannot
+evaluate time taken by the tool. Was able to reproduce the bounds for programs
+in the paper.
+
+Artifact implementation and usability: Implementation is not available. The
+tool itself was easy to use due to the web interface.
+
+Detailed evaluation and score justification: I ran the tool against multiple
+programs that were packaged along, as well as simple examples of my own, and
+verified the result. I modified the packaged programs to make sure the changes
+were accounted for in the result.
+
+All the packaged programs had results that were consistent with the paper,
+meeting the expectation set by the paper.
+
+In making changes to those programs, and while constructing my own examples, it
+was easy to come up with programs that the tool could not calculate resource
+bounds on: mostly because of either using a non-linear operation, or
+path-sensitive non-local control flow. The tool also had stack overflow
+exception for some simple non-terminating programs. It would be really useful
+to be more descriptive about why the tool failed calculating a resource bound.
+
+The attached paper is the extended version, and quite long. I could not
+evaluate against the submitted version of the paper, it was based on the
+extended report attached.
+
+Comments for improving the artifact: 1. Explain the output explicitly in the
+tool (that multiple lines mean sum of those).
+2. Give more information and guidance as to why the tool failed bounds
+calculation on a program.
+
+Additional comments to the authors:
+
+-------------------------------------------------------------------------------
