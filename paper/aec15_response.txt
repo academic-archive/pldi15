@@ -80,8 +80,8 @@ reviewers and in the paper are sound.  We can explain the differences
 (which are mainly in the constant factors) between our artifact's
 output and the paper bounds by several points:
 
-1. The version used for writing the paper predates the one
-submitted as artifact (and is less robust).
+1. The version we submitted in the artifact improves upon the one
+we used for writing the submission, it supports more examples.
 
 2. The bound for the example t62 is not tight in the paper, it was
 already reported by a paper reviewer.
