@@ -1,0 +1,57 @@
+1. Clarify why sources are not available.
+
+   I screwed up, and removed the AEC specific links and
+   comments from the website too early.  My bad.
+       Quentin
+
+2. Explain the problems with robustness.  The main
+   problem is that intervals need to be formed from
+   two program variables.
+
+        void simple3(int x) {
+        for(int i=0; i<x; i+=2) {
+        tick(2);
+        }
+        }
+   The interval here is [0, x+1], which cannot be
+   tracked by our tool, on needs to change 'i<x' to
+   'i<x-1'.  By the way, the suggested bound [0, x]
+   is *unsound* for if x==1.
+
+   Similar remarks apply (even the unsoundness) to
+   the simple4 example.
+
+   We also do not support equality tests and non-linear
+   operations, this would complexify the logic a great
+   deal.  So no hope for the following.
+        void simple2(int x) {
+        for(int i=0; i<x; i++) {
+        if(x % 2 == 0) tick(2);
+        }
+        }
+
+3. Some examples tested by the reviewers have non-linear
+   resource cost.  For example the Fibonacci example
+   has exponential resource consumption. The following
+   example from review 1 is quadratic unless the inner
+   loop is executed a constant number of times (as
+   observed by the reviewer).
+        void start(int *a, int len) {
+        int n, m, tmp;
+        int len_sub_1 = len - 1;
+
+        assert(len > 0);
+        assert(len_sub_1 >= 0);
+        n = 1;
+        while (n < len) {
+        m = 0;
+        while (m < len_sub_1) {
+        m = m + 1;
+        }
+        n = n + 1;
+        }
+        }
+
+------------------------------------------------------
+|sed -e 's/^/        /'
+>xclip -i
