@@ -81,14 +81,15 @@ not on the job market.
 
 -- 5 Demo --
 
+#pragma tick
 void f(int x)
 {
 	int y;
 
-	for (y=0; x>0; x--) {
+	for (y = 1; x > 0; x--) {
 		if (y >= 5) {
 			tick(5);
-			y = 0;
+			y = 1;
 		} else
 			y++;
 	}
