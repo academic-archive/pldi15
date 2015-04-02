@@ -1,0 +1,30 @@
+Alice - the manager
+Bob - the programmer
+
+
+-- 1 at ACME Software Inc. --
+
+==== Bubbles
+Alice:  Bob! I just got a bill from Google, it looks like
+we exceeded the free qota for API calls!
+
+Bob:  Oh!  But I tested last month, and studied the code
+personally!
+====
+
+Many cloud services start charging after a given number
+of API calls per day.
+
+It seems that Bob messed up his estimation of calls to
+the Google Maps API and this upsets his manager.
+
+A precise estimation of the API calls would have been
+helpful here.
+
+
+-- 2 in Open Skies --
+
+Resource analysis of software is also useful in many other
+settings.
+
+For example, embedded systems are often very time sensitive.
