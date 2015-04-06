@@ -3,7 +3,7 @@
 % Also look for "SHORT" comments
 % \def\fullversion{}
 
-\documentclass[nocopyrightspace,preprint,pldi]{sigplanconf-pldi15}
+\documentclass{sigplanconf}
 
 % Structure:
 %
@@ -36,7 +36,7 @@
 \newcommand{\subsectskip}[0]{\ifshort{\vspace{-1pt}}{}}
 
 %SHORT
-\usepackage[normal,belowskip=-11pt,aboveskip=1pt]{caption} %Remove extra space around captiosn
+\usepackage[normal,belowskip=-11pt,aboveskip=1pt]{caption} %Remove extra space around captions
 \DeclareCaptionFormat{myformat}{#1#2#3\vspace{-4pt}\hrulefill}
 \captionsetup[figure]{format=myformat}
 \captionsetup[table]{format=myformat}
@@ -47,6 +47,7 @@
 \usepackage{amssymb} %for shift symbol
 \usepackage{amsmath}
 \usepackage{listings} %for code
+\lstset{moredelim=[is][\color{blue}]{@}{@},keepspaces=true}
 \usepackage{mathpartir} %for typing rules
 \usepackage{microtype} %better micro typing
 \usepackage{stmaryrd} %for llbracket
@@ -80,9 +81,34 @@
 %----------------------------------------------------
 
 \input{definitions}
+\newcommand{\jan}[1]{{\color{orange}[[{#1}]]}}
+
 \begin{document}
 
-\lstset{moredelim=[is][\color{blue}]{@}{@},keepspaces=true}
+\special{papersize=8.5in,11in}
+\setlength{\pdfpageheight}{\paperheight}
+\setlength{\pdfpagewidth}{\paperwidth}
+
+\conferenceinfo{PLDI'15}{, June 13--17, 2015, Portland, OR, USA}
+\copyrightyear{2015}
+\copyrightdata{978-1-4503-3468-6/15/06}
+\doi{nnnnnnn.nnnnnnn}
+
+\titlebanner{\iffull{Extended Version}{}}%{Draft -- Do not distribute}        % These are ignored unless
+\preprintfooter{\iffull{Extended Version\hspace{-.8cm}}{Draft\hspace{.5cm}}}%{Draft}   % 'preprint' option specified.
+
+\title{Compositional Certified Resource Bounds}
+% Certified Resource Bounds for C
+% Compositional Certified Resource Bounds for C
+% Compositional Quantitative Resource Analysis of C Programs
+% Compositional Resource-Bound Certification for C Programs
+
+\authorinfo
+{Quentin Carbonneaux \and Jan Hoffmann \and Zhong Shao}
+{Yale University \vspace{-1cm}}
+
+\maketitle
+
 
 %SHORT
 \ifx\fullversion\undefined
@@ -94,30 +120,8 @@
 \fi
 %SHORT
 
-\conferenceinfo{POPL} {January XX-XX, 2014, CITY, STATE, India.}
-\copyrightyear{2014}
-\copyrightdata{XXX-X-XXXX-XXXX-X/XX/XX}
-
 %----------------------------------------------------
 
-\newcommand{\jan}[1]{{\color{orange}[[{#1}]]}}
-
-
-\titlebanner{\iffull{Extended Version}{}}%{Draft -- Do not distribute}        % These are ignored unless
-\preprintfooter{\iffull{Extended Version\hspace{-.8cm}}{Draft\hspace{.5cm}}}%{Draft}   % 'preprint' option specified.
-
-\title{Compositional Certified Resource Bounds\ifshort{\vspace{-1.15cm}}{}}
-% Certified Resource Bounds for C
-% Compositional Certified Resource Bounds for C
-% Compositional Quantitative Resource Analysis of C Programs
-% Compositional Resource-Bound Certification for C Programs
-
-\authorinfo
-{Quentin Carbonneaux \and Jan Hoffmann \and Zhong Shao}
-{Yale University \vspace{-1cm}}
-
-
-\maketitle
 
 
 \begin{abstract}
