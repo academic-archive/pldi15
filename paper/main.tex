@@ -36,11 +36,11 @@
 \newcommand{\subsectskip}[0]{\ifshort{\vspace{-1pt}}{}}
 
 %SHORT
-\usepackage[normal,belowskip=-11pt,aboveskip=1pt]{caption} %Remove extra space around captions
-\DeclareCaptionFormat{myformat}{#1#2#3\vspace{-4pt}\hrulefill}
-\captionsetup[figure]{format=myformat}
-\captionsetup[table]{format=myformat}
-\renewcommand{\captionlabelfont}{\bf}
+%\usepackage[normal,belowskip=-11pt,aboveskip=1pt]{caption} %Remove extra space around captions
+%\DeclareCaptionFormat{myformat}{#1#2#3\vspace{-4pt}\hrulefill}
+%\captionsetup[figure]{format=myformat}
+%\captionsetup[table]{format=myformat}
+%\renewcommand{\captionlabelfont}{\bf}
 %SHORT
 
 \usepackage[utf8]{inputenc} %for utf8 input
@@ -1284,7 +1284,7 @@ tools\iffull{ for automatic bound derivation.}{.}
 \\ q'_0 \geq q_0 {\textstyle + \sum_{i \in \mathcal U} u_i r_i - \sum_{i \in \mathcal L} l_i p_i}
 }
 { Q' \succeq_\Gamma Q }
-\vspace{-.3cm}
+%\vspace{-.3cm}
 \end{mathpar}
 \caption{Selected inference rules of the quantitative analysis.}
 \label{fig:auto}
