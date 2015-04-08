@@ -961,8 +961,9 @@ $2+3|[l,h]|$
 \caption{Example \emph{t39} shows two mutually-recursive functions
   with the computed tick bounds.  Example \emph{t61} and \emph{t62}
   demonstrate the unique compositionality of our system. In \emph{t61},
-  $N\geq 0$ is a fixed but arbitrary constant.  The derived constant factors
-  are tight.}
+  $N\geq 0$ is a fixed but arbitrary constant. % The derived constant factors
+  %are tight.
+  }
   \label{fig:ex_list_2}
 \end{figure*}
 
@@ -1070,13 +1071,25 @@ our novel analysis, no other available tool derives the aforementioned
 Example \emph{t62} (\pref{fig:ex_list_2})
 is the inner loop of a quick sort implementation in cBench.  More
 precisely, it is the partitioning part of the algorithm.  This partition
-loop has linear complexity, and feeding into our analysis gives the
-correct and tight worst-case bound $2+3|[l,h]|.$  With the potential
-method in mind, it is clear that the three loops get their
-potential from the same interval $[l,h]$.  However, KoAT fails to
+loop has linear complexity, and feeding it to our analysis gives a
+worst-case bound $2+3|[l,h]|$.  The bound is not optimal but it can be
+refined by rewriting the program. % to let our logical inference
+%discover more invariants.
+%With the potential
+%method in mind, it is clear that the three loops get their
+%potential from the same interval $[l,h]$ regardless of their nesting.
+With the potential method in mind, we can reason as follows.
+%
+If $h \geq l$ initially, the cost of the loop is 2.
+Otherwise, the cost of each round (at
+most 3) is payed using the potential of $[l,h]$ by the first
+increment to $l$ because we know that $l<h$.  The two inner loops
+can also use $[l,h]$ to pay for their inner costs.
+%
+KoAT fails to
 find a bound and LOOPUS derives the quadratic bound
 $(h-l-1)^2$.  Following the classical technique, these tools try to find one
-linear ranking-function for each loop and combine them multiplicatively
+ranking function for each loop and combine them multiplicatively
 or additively.
 
 
