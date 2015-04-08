@@ -1372,7 +1372,11 @@ coefficients are non-negative.  Finally, if a rule mentions $Q$ and $Q'$
 and leaves the latter undefined at some index $i$ we assume that $q'_i = q_i$.
 
 We describe the automatic amortized analysis for a subset of
-expressions of Clight.  Assignments are restricted to the form $x \gets
+expressions of Clight.  Clight is the first intermediate
+language of the CompCert compiler~\cite{CompcertCACM}, it
+is a cleaner C with a unified looping construct and
+side-effect free expressions.
+Assignments are restricted to the form $x \gets
 y$ or $x \gets x \pm y$.  In the implementation, a Clight
 program is converted into this form prior to analysis without changing
 the resource cost.  This is achieved by using a series of \emph{cost-free
@@ -1971,7 +1975,7 @@ is proved by a translation morphism to the logic.
 \paraskip
 \paragraph{Cost Semantics for Clight.}
 To base the soundness proof on a formal ground, we start by defining a
-new cost-aware operational semantics for CompCert Clight.  Clight's
+new cost-aware operational semantics for Clight.  Clight's
 operational semantics is based on small-step transitions and
 continuations.  Expressions---which do not have side effects---are
 evaluated in a big-step fashion.
