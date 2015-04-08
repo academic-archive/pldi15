@@ -1576,22 +1576,16 @@ In general, the weakening rule can be applied after every syntax directed
 rule.  However, it can be left out in practice at some places to
 increase the efficiency of the tool.
 The weakening operation $\succeq_{\Gamma}$ is defined by the rule
-\textsc{Relax}. It is parameterized by a logical context
+\textsc{Relax}. It is parameterized by a logical context that is
 used to gather information on interval sizes.  For example,
-$P^\text{de} \succeq_{(x{\ge}0)} P^\text{we} \equiv$
-% SSS SPACING
-%\vspace{-.3cm}
-{\small
-\begin{align*}
-  p^\text{we}_{0,10} \leq p^\text{de}_{0,10} + u_{0,10} - v_{0,10}
-  \land p^\text{we}_{x,0} \leq p^\text{de}_{x,0} + u_{x,0} - v_{0,x} \land \;\;
-  \\
-  p^\text{we}_{0} \leq p^\text{de}_{0} - 10 {\cdot} u_{0,10} + 10 {\cdot} v_{0.10}
-  \bigwedge_{(\alpha, \beta) \neq (0,10), (x,0)} p^\text{we}_{\alpha,\beta} \leq p^\text{de}_{\alpha,\beta} \;.
-\end{align*}
+{%\small
+  \begin{align*}
+  P^\text{de} \succeq_{(\cdot)} P^\text{we} &\equiv
+ p^\text{we}_{0,10} \leq p^\text{de}_{0,10} + u_{0,10} - v_{0.10} \\
+&\land  p^\text{we}_{0} \leq p^\text{de}_{0} - 10 {\cdot} u_{0,10} + 10 {\cdot} v_{0.10} \\
+&\land  \forall (\alpha, \beta) \neq (0,10)  . \, p^\text{we}_{\alpha,\beta} \leq p^\text{de}_{\alpha,\beta} \;.
+  \end{align*}
 }
-% SSS SPACING
-%\vspace{-.8cm}
 
 \noindent
 The other rules are syntax directed and applied inductively.  For example,
