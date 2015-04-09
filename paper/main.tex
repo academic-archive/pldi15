@@ -1958,10 +1958,10 @@ proof because, when working with integer arithmetic, it is not always
 the case that $\log_2(x-x/2) = \log_2(x)-1$.
 
 Generally, we observed that because the instrumented program
-is structurally same as the original one, it is sufficient to prove
-that the added assertions never fail to show that they have identical
-resource consumption.  This can be piggybacked on standard
-static-analysis tools.
+is structurally same as the original one, it is enough to prove
+that the added assertions never fail in order to show the two programs
+have identical resource consumption.  This can usually be piggybacked
+on standard static-analysis tools.
 
 % On the other hand, it might be the case that even with annotations, a
 % resource bound cannot be found automatically.  With existing tools, this
