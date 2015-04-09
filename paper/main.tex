@@ -57,9 +57,9 @@
 \usepackage{url}
 \usepackage{enumitem}
 \usepackage{array} %for stupid tables
-\usepackage[firstpage]{draftwatermark}
-\SetWatermarkText{\hspace*{8in}\raisebox{5.5in}{\includegraphics[scale=0.1]{fig/aec-badge-pldi.pdf}}}
-\SetWatermarkAngle{0}
+%\usepackage[firstpage]{draftwatermark}
+%\SetWatermarkText{\hspace*{8in}\raisebox{5.5in}{\includegraphics[scale=0.1]{fig/aec-badge-pldi.pdf}}}
+%\SetWatermarkAngle{0}
 
 %----------------------------------------------------
 
@@ -108,7 +108,8 @@
 
 \authorinfo
 {Quentin Carbonneaux \and Jan Hoffmann \and Zhong Shao}
-{Yale University \vspace{-1cm}}
+{Yale University}
+{\{first.last\}@yale.edu}
 
 \maketitle
 
@@ -1800,6 +1801,85 @@ Such problems can be solved in linear time in practice.}{}
 \label{sec:anno}
 \aftersectskip
 
+\begin{figure}[t]
+\begin{minipage}[b]{0.8\linewidth}
+\begin{lstlisting}[numbers=left]
+${\color{blue}%
+  \mbox{logical state invariant } \{ na = \#_1(a)} \}$
+while (k > 0) {
+  x=0;
+  while (x < N && a[x] == 1) {
+    @assert(na > 0);@
+    a[x]=0; @na--;@
+    tick(1); x++; }
+  if (x < N) { a[x]=1; @na++;@ tick(1); }
+  k--;
+}
+\end{lstlisting}
+\vspace{-.2cm}
+\end{minipage}
+\caption{Assisted bound derivation using logical state.  We write
+  $\#_1(a)$ for $\# \{ i \mid 0 {\le} i {<} N {\land} a[i] {=} 1 \}$ and use the
+  tick metric.  The derived bound  is
+  $2|[0,k]| + |[0,na]|$.
+  }
+\label{fig:xmplincaux}
+\end{figure}
+
+\begin{figure}
+\vspace{-.3cm}
+\begin{lstlisting}[numbers=left]
+${\color{blue}%
+  \mbox{logical state invariant }
+  \{ lg > \log_2(h - l) \} }$
+bsearch(x,l,h@,lg@) {
+  if (h-l > 1) {
+    @assert(lg > 0);@
+    m = l + (h-l)/2;
+    @lg--;@ if (a[m]>x) h=m; else l=m;
+    tick($M_\code{bsearch}$);
+    l = bsearch(x,l,h@,lg@);
+    tick($-M_\code{bsearch}$);
+  } else return l;
+}
+\end{lstlisting}
+\vspace{-.2cm}
+\caption{Assisted bound derivation using logical state.
+  % We use the tick metric to model the stack consumption of the program.
+  % Before a function call to \code{bsearch}, a tick statement pays for
+  % the space used by stack frame of the function.  The space is recoverd
+  % after the call.
+  We write $\log_2(x)$ for the integer part of
+  logarithm of $x$ in base 2.
+  The semi-automatically derived bound is $|[0,lg]|$.
+  }
+\label{fig:xmplbsaux}
+\end{figure}
+
+\ifdefined\fullversion
+\begin{figure}
+\begin{lstlisting}
+${\color{blue}
+  \mbox{logical state invariant }
+  \{ nm = A(0) \} }$
+i=1; m=a[0];
+while (i < N) {
+  if (a[i] > m) {
+    @assert(nm > 0); nm--;@
+    m = a[i], tick(1);
+  } i++, tick(1);
+}
+\end{lstlisting}
+\caption{Example of assisted bound derivation using logical state.
+  We write $A(i)$ for
+  $\#\{ k \mid i \le k \le N \land \forall\, 0\le j<k.\, a[j] < a[k]\}$.
+  We use the tick metric.  The bound derived is $|[0,N]| + |[0,nm]|$.
+  }
+\label{fig:xmplmax}
+\end{figure}
+\fi
+
+
 While complete automation is desirable, it is not always possible
 since the problem of bound derivation is undecidable.  In this section
 we present a new technique to derive complex resource bounds
@@ -1898,85 +1978,6 @@ static-analysis tools.
 % be used as an assistant when deriving a complex bound by hand in the
 % logic.  The interaction is guaranteed to be sound by the soundness
 % theorem of our Quantitative Hoare Logic.
-
-
-\begin{figure}[t]
-\begin{minipage}[b]{0.8\linewidth}
-\begin{lstlisting}[numbers=left]
-${\color{blue}%
-  \mbox{logical state invariant } \{ na = \#_1(a)} \}$
-while (k > 0) {
-  x=0;
-  while (x < N && a[x] == 1) {
-    @assert(na > 0);@
-    a[x]=0; @na--;@
-    tick(1); x++; }
-  if (x < N) { a[x]=1; @na++;@ tick(1); }
-  k--;
-}
-\end{lstlisting}
-\vspace{-.2cm}
-\end{minipage}
-\caption{Assisted bound derivation using logical state.  We write
-  $\#_1(a)$ for $\# \{ i \mid 0 {\le} i {<} N {\land} a[i] {=} 1 \}$ and use the
-  tick metric.  The derived bound  is
-  $2|[0,k]| + |[0,na]|$.
-  }
-\label{fig:xmplincaux}
-\end{figure}
-
-\begin{figure}
-\vspace{-.3cm}
-\begin{lstlisting}[numbers=left]
-${\color{blue}%
-  \mbox{logical state invariant }
-  \{ lg > \log_2(h - l) \} }$
-bsearch(x,l,h@,lg@) {
-  if (h-l > 1) {
-    @assert(lg > 0);@
-    m = l + (h-l)/2;
-    @lg--;@ if (a[m]>x) h=m; else l=m;
-    tick($M_\code{bsearch}$);
-    l = bsearch(x,l,h@,lg@);
-    tick($-M_\code{bsearch}$);
-  } else return l;
-}
-\end{lstlisting}
-\vspace{-.2cm}
-\caption{Assisted bound derivation using logical state.
-  % We use the tick metric to model the stack consumption of the program.
-  % Before a function call to \code{bsearch}, a tick statement pays for
-  % the space used by stack frame of the function.  The space is recoverd
-  % after the call.
-  We write $\log_2(x)$ for the integer part of
-  logarithm of $x$ in base 2.
-  The semi-automatically derived bound is $|[0,lg]|$.
-  }
-\label{fig:xmplbsaux}
-\end{figure}
-
-\ifdefined\fullversion
-\begin{figure}
-\begin{lstlisting}
-${\color{blue}
-  \mbox{logical state invariant }
-  \{ nm = A(0) \} }$
-i=1; m=a[0];
-while (i < N) {
-  if (a[i] > m) {
-    @assert(nm > 0); nm--;@
-    m = a[i], tick(1);
-  } i++, tick(1);
-}
-\end{lstlisting}
-\caption{Example of assisted bound derivation using logical state.
-  We write $A(i)$ for
-  $\#\{ k \mid i \le k \le N \land \forall\, 0\le j<k.\, a[j] < a[k]\}$.
-  We use the tick metric.  The bound derived is $|[0,N]| + |[0,nm]|$.
-  }
-\label{fig:xmplmax}
-\end{figure}
-\fi
 
 
 \sectskip
