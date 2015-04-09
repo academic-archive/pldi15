@@ -1040,6 +1040,72 @@ point of two trains that approach each other with different speeds.}{}
 % determination of the point at which to trains meet if they approach
 % each other with different speeds.
 
+\ifshort{
+\begin{figure*}
+\small
+\vspace{-.4cm}
+\def \MathparLineskip {\lineskip=0.35cm}
+\begin{mathpar}
+\Rule[leftskip=.4cm,rightskip=.3cm]{Q:Skip}
+{ }
+{ \!\! B, R \vdash \htriple{ \Gamma; Q }{ \code{skip} }{ \Gamma; Q } \!\!}
+%
+\and \Rule[leftskip=.1cm,rightskip=.1cm]{Q:Loop}
+{ (\Gamma'; Q'), R \vdash \htriple{ \Gamma; Q }{ S }{ \Gamma;  Q {+} M_l } }
+{ B, R \vdash \htriple{ \Gamma; Q }{ \code{loop}~S }{ \Gamma'; Q' } }
+%
+\\ \Rule[leftskip=1cm,rightskip=.5cm]{Q:IncP}
+{ \Gamma \models y \ge 0 \!
+\\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\} \!
+\\\\ \textstyle q'_{0y} = q_{0y}
+      + \sum_{u \in \mathcal U} q_{xu}
+      - \sum_{v \not\in \mathcal U} q_{vx} \!
+}
+{ \textstyle
+  B, R \vdash \htriple{ \Gamma[x/x {+} y]; Q {+} M_u {+} M_e(x {+} y) }{ x \gets x + y }{ \Gamma; Q' }
+}
+%
+\and \Rule[leftskip=.5cm,rightskip=1cm]{Q:Inc}
+{ M = M_u + M_e(x {\pm} y)
+\\\\ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
+\\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
+}
+{ \textstyle
+  B, R \vdash \htriple{ \Gamma[x/x {\pm} y]; Q {+} M }{ x \gets x \pm y }{ \Gamma; Q' }
+}
+%
+\\ \Rule{Q:Seq}
+{  B, R \vdash \htriple{ \Gamma; Q }{ S_1 }{ \Gamma'; Q' {+} M_s }
+\\\\ B, R \vdash \htriple{ \Gamma'; Q' }{ S_2 }{ \Gamma''; Q'' }
+}
+{ B, R \vdash \htriple{ \Gamma; Q }{ S_1;S_2 }{ \Gamma''; Q'' } }
+%
+\and \Rule{Q:Weak}
+{ B, R \vdash \htriple{ \Gamma_2; Q_2 }{ S }{ \Gamma'_2; Q'_2 }
+\\ \!\! \Gamma_1 \models \Gamma_2
+\\\\ Q_1 \succeq_{\Gamma_1} Q_2
+\\ \Gamma'_2 \models \Gamma'_1
+\\ Q'_2 \succeq_{\Gamma_2'} Q'_1
+}
+{ B, R \vdash \htriple{ \Gamma_1; Q_1 }{ S }{ \Gamma'_1; Q'_1 } }
+%
+\\ \Rule{Relax}
+{ \mathcal L = \{ xy \mid \exists l_{xy} {\in} \N \, . \, \Gamma \models l_{xy} \le |\inter x y| \}
+\\ \mathcal U = \{ xy \mid \exists u_{xy}{\in} \N \, . \, \Gamma \models |\inter x y| \le u_{xy} \}
+\\\\ \forall i \in \mathcal U.\, q'_i \ge q_i - r_i
+\\ \forall i \in \mathcal L.\, q'_i \ge q_i + p_i
+\\ \forall i \not\in \mathcal U {\cup} \mathcal L {\cup} \{0\} .\, q'_i \ge q_i
+\\ q'_0 \geq q_0 {\textstyle + \sum_{i \in \mathcal U} u_i r_i - \sum_{i \in \mathcal L} l_i p_i}
+}
+{ Q' \succeq_\Gamma Q }
+%\vspace{-.3cm}
+\end{mathpar}
+\caption{Selected inference rules of the quantitative analysis.}
+\label{fig:auto}
+\end{figure*}
+}{}
+
+
 \paraskip
 \paragraph{Compositionality.}
 
@@ -1258,72 +1324,103 @@ termination can only be proved by complex path-sensitive reasoning.
 \end{figure*}
 }{}
 
-
-
-\ifshort{
-\begin{figure*}
-\small
-\vspace{-.4cm}
-\def \MathparLineskip {\lineskip=0.35cm}
+\newcommand{\loopbody}[0]{\ensuremath{\code{if~(x \geq 10)~(x=x - 10; tick(5))~else~break}}}
+\begin{figure*}[t]
+\vspace{-.5cm}
+\centering
+\footnotesize
 \begin{mathpar}
-\Rule[leftskip=.4cm,rightskip=.3cm]{Q:Skip}
-{ }
-{ \!\! B, R \vdash \htriple{ \Gamma; Q }{ \code{skip} }{ \Gamma; Q } \!\!}
-%
-\and \Rule[leftskip=.1cm,rightskip=.1cm]{Q:Loop}
-{ (\Gamma'; Q'), R \vdash \htriple{ \Gamma; Q }{ S }{ \Gamma;  Q {+} M_l } }
-{ B, R \vdash \htriple{ \Gamma; Q }{ \code{loop}~S }{ \Gamma'; Q' } }
-%
-\\ \Rule[leftskip=1cm,rightskip=.5cm]{Q:IncP}
-{ \Gamma \models y \ge 0 \!
-\\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\} \!
-\\\\ \textstyle q'_{0y} = q_{0y}
-      + \sum_{u \in \mathcal U} q_{xu}
-      - \sum_{v \not\in \mathcal U} q_{vx} \!
+\inferrule*[right={\scriptsize (Q:Loop)},leftskip=0cm,rightskip=0cm,width=20cm]
+{ \inferrule*[right={\scriptsize (Q:If)},leftskip=0cm,rightskip=0cm,width=20cm]
+  { \inferrule*[right={\scriptsize (Q:Weak)},leftskip=2cm,rightskip=4cm, vdots=1cm]
+    { \inferrule*[right={\scriptsize (Q:Seq)},leftskip=0cm,rightskip=0cm]
+      { \inferrule*[right={\scriptsize (Q:Weak)},leftskip=0cm,rightskip=0cm]
+        { \inferrule*[right={\scriptsize (Q:DecP)},leftskip=0cm,rightskip=0cm]
+          {
+          }
+          { (x {<} 10; B^\text{de}) \vdash
+	    \htriple{ x {\geq} 10; Q^\text{de} }{ \code{x = x - 10} }{ \cdot; P^\text{de} }
+          }
+        }
+        { (x {<} 10; B^\text{we}) \vdash
+	  \htriple{ x {\geq} 10; Q^\text{we} }{ \code{x = x - 10} }{ \cdot; P^\text{we} }
+        }
+        \and
+        \inferrule*[right={\scriptsize (Q:Tick)},leftskip=0cm,rightskip=0cm]
+        {
+        }
+        { (x {<} 10; B^\text{ti}) \vdash
+	  \htriple{ \cdot; Q^\text{ti} }{ \code{tick(5)} }{ \cdot; P^\text{ti} }
+        }
+      }
+      { (x {<} 10; B^\text{sq}) \vdash
+	\htriple{ x {\geq} 10; Q^\text{sq} }{ \code{x=x - 10; tick(5)} }{ \cdot; P^\text{sq} }
+      }
+    }
+    { (x {<} 10; B^\text{if}) \vdash
+      \htriple{ x {\geq} 10; Q^\text{if} }{ \code{x=x - 10; tick(5)} }{ \cdot; P^\text{if} }
+    }
+    \and
+    \inferrule*[right={\scriptsize (Q:Weak)},leftskip=4.5cm,rightskip=4cm]
+    { \inferrule*[right={\scriptsize (Q:Break)},leftskip=0cm,rightskip=0cm]
+      { }
+      { (x {<} 10; B^\text{br}) \vdash
+	\htriple{ x {<} 10; Q^\text{br} }{ \code{break} }{ \bot; P^\text{br} }
+      }
+    }
+    { (x {<} 10; B^\text{el}) \vdash
+      \htriple{ x {<} 10; Q^\text{el} }{ \code{break} }{ \cdot; P^\text{el} }
+    }
+  }
+  { \hspace{3cm} (x {<} 10; B^\text{lo}) \vdash
+    \htriple{ \cdot; Q^\text{lo} }{ \loopbody }{ \cdot; P^\text{lo} } \hspace{3cm}
+  }
 }
-{ \textstyle
-  B, R \vdash \htriple{ \Gamma[x/x {+} y]; Q {+} M_u {+} M_e(x {+} y) }{ x \gets x + y }{ \Gamma; Q' }
+{ (\cdot; B) \vdash
+  \htriple{ \cdot; Q) }{ \code{loop}~{\loopbody} }{ x {<} 10; P }
 }
-%
-\and \Rule[leftskip=.5cm,rightskip=1cm]{Q:Inc}
-{ M = M_u + M_e(x {\pm} y)
-\\\\ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
-\\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
-}
-{ \textstyle
-  B, R \vdash \htriple{ \Gamma[x/x {\pm} y]; Q {+} M }{ x \gets x \pm y }{ \Gamma; Q' }
-}
-%
-\\ \Rule{Q:Seq}
-{  B, R \vdash \htriple{ \Gamma; Q }{ S_1 }{ \Gamma'; Q' {+} M_s }
-\\\\ B, R \vdash \htriple{ \Gamma'; Q' }{ S_2 }{ \Gamma''; Q'' }
-}
-{ B, R \vdash \htriple{ \Gamma; Q }{ S_1;S_2 }{ \Gamma''; Q'' } }
-%
-\and \Rule{Q:Weak}
-{ B, R \vdash \htriple{ \Gamma_2; Q_2 }{ S }{ \Gamma'_2; Q'_2 }
-\\ \!\! \Gamma_1 \models \Gamma_2
-\\\\ Q_1 \succeq_{\Gamma_1} Q_2
-\\ \Gamma'_2 \models \Gamma'_1
-\\ Q'_2 \succeq_{\Gamma_2'} Q'_1
-}
-{ B, R \vdash \htriple{ \Gamma_1; Q_1 }{ S }{ \Gamma'_1; Q'_1 } }
-%
-\\ \Rule{Relax}
-{ \mathcal L = \{ xy \mid \exists l_{xy} {\in} \N \, . \, \Gamma \models l_{xy} \le |\inter x y| \}
-\\ \mathcal U = \{ xy \mid \exists u_{xy}{\in} \N \, . \, \Gamma \models |\inter x y| \le u_{xy} \}
-\\\\ \forall i \in \mathcal U.\, q'_i \ge q_i - r_i
-\\ \forall i \in \mathcal L.\, q'_i \ge q_i + p_i
-\\ \forall i \not\in \mathcal U {\cup} \mathcal L {\cup} \{0\} .\, q'_i \ge q_i
-\\ q'_0 \geq q_0 {\textstyle + \sum_{i \in \mathcal U} u_i r_i - \sum_{i \in \mathcal L} l_i p_i}
-}
-{ Q' \succeq_\Gamma Q }
-%\vspace{-.3cm}
+\vspace{-.3cm}
 \end{mathpar}
-\caption{Selected inference rules of the quantitative analysis.}
-\label{fig:auto}
+\flushleft
+\begin{tabular}{l}Constraints:\end{tabular}
+\vspace{-.2cm}
+$$
+\begin{array}{lll}
+P {=} B^\text{lo} \land Q {=} Q^\text{lo} {=} P^\text{lo}
+& B^\text{el} {=} B^\text{if} {=} B^\text{lo}
+    \land Q^\text{el} {=} Q^\text{if} {=} Q^\text{lo}
+    \land P^\text{el} {=} P^\text{if} {=} P^\text{lo}
+& B^\text{el} {=} B^\text{br} \land Q^\text{el} \succeq_{(x{<}10)} Q^\text{br}
+    \land P^\text{br} \succeq_{(\cdot)} P^\text{el}
+\\
+B^\text{br} {=} Q^\text{br}
+& B^\text{if} {=} B^\text{sq} \land Q^\text{if} \succeq_{(x{<}10)} Q^\text{sq}
+    \land P^\text{sq} \succeq_{(\cdot)} P^\text{if}
+& B^\text{sq} {=} B^\text{we} {=} B^\text{ti} \land Q^\text{sq} {=} Q^\text{we}
+    \land P^\text{we} {=} Q^\text{ti} \land P^\text{ti} {=} P^\text{sq}
+\\
+Q^\text{ti} {=} P^\text{ti} + 5
+& B^\text{we} {=} B^\text{de} \land Q^\text{we} \succeq_{(x{<}10)} Q^\text{de}
+    \land P^\text{de} \succeq_{(\cdot)} P^\text{we}
+& p^\text{de}_{0,10} {=} q^\text{de}_{0,10} + q^\text{de}_{0,x}
+    \land p^\text{de}_{0} {=} q^\text{de}_{0}
+    \land \forall (\alpha, \beta) \neq (0,10)  . \,
+              p^\text{de}_{\alpha,\beta} {=} q^\text{de}_{\alpha,\beta}
+\end{array}
+$$
+\begin{tabular}{l@{\hspace{5em}}l}
+  Linear Objective Function: $
+    1{\cdot}q_{x,0} + 10000{\cdot}q_{0,x} + 11{\cdot}q_{x,10} + 9990{\cdot}q_{10,x}
+  $
+& Constant Objective Function: $
+    1{\cdot}q_0 + 11{\cdot}q_{0,10}
+  $
+\end{tabular}
+\vspace{.1cm}
+\caption{An example derivation as produced $\toolname$. The constraints are resolved by an off-the-shelf LP solver.}
+\label{fig:derivation}
 \end{figure*}
-}{}
+
 
 \sectskip
 \section{Derivation System}
@@ -1508,103 +1605,6 @@ $q_{vx}$ to pay for this change.  The rule ensures this
 only for $v \not\in \mathcal U$ because $x \le v$
 otherwise, and thus $|\inter v x| = 0$.
 
-\newcommand{\loopbody}[0]{\ensuremath{\code{if~(x \geq 10)~(x=x - 10; tick(5))~else~break}}}
-\begin{figure*}[t]
-\vspace{-.5cm}
-\centering
-\footnotesize
-\begin{mathpar}
-\inferrule*[right={\scriptsize (Q:Loop)},leftskip=0cm,rightskip=0cm,width=20cm]
-{ \inferrule*[right={\scriptsize (Q:If)},leftskip=0cm,rightskip=0cm,width=20cm]
-  { \inferrule*[right={\scriptsize (Q:Weak)},leftskip=2cm,rightskip=4cm, vdots=1cm]
-    { \inferrule*[right={\scriptsize (Q:Seq)},leftskip=0cm,rightskip=0cm]
-      { \inferrule*[right={\scriptsize (Q:Weak)},leftskip=0cm,rightskip=0cm]
-        { \inferrule*[right={\scriptsize (Q:DecP)},leftskip=0cm,rightskip=0cm]
-          {
-          }
-          { (x {<} 10; B^\text{de}) \vdash
-	    \htriple{ x {\geq} 10; Q^\text{de} }{ \code{x = x - 10} }{ \cdot; P^\text{de} }
-          }
-        }
-        { (x {<} 10; B^\text{we}) \vdash
-	  \htriple{ x {\geq} 10; Q^\text{we} }{ \code{x = x - 10} }{ \cdot; P^\text{we} }
-        }
-        \and
-        \inferrule*[right={\scriptsize (Q:Tick)},leftskip=0cm,rightskip=0cm]
-        {
-        }
-        { (x {<} 10; B^\text{ti}) \vdash
-	  \htriple{ \cdot; Q^\text{ti} }{ \code{tick(5)} }{ \cdot; P^\text{ti} }
-        }
-      }
-      { (x {<} 10; B^\text{sq}) \vdash
-	\htriple{ x {\geq} 10; Q^\text{sq} }{ \code{x=x - 10; tick(5)} }{ \cdot; P^\text{sq} }
-      }
-    }
-    { (x {<} 10; B^\text{if}) \vdash
-      \htriple{ x {\geq} 10; Q^\text{if} }{ \code{x=x - 10; tick(5)} }{ \cdot; P^\text{if} }
-    }
-    \and
-    \inferrule*[right={\scriptsize (Q:Weak)},leftskip=4.5cm,rightskip=4cm]
-    { \inferrule*[right={\scriptsize (Q:Break)},leftskip=0cm,rightskip=0cm]
-      { }
-      { (x {<} 10; B^\text{br}) \vdash
-	\htriple{ x {<} 10; Q^\text{br} }{ \code{break} }{ \bot; P^\text{br} }
-      }
-    }
-    { (x {<} 10; B^\text{el}) \vdash
-      \htriple{ x {<} 10; Q^\text{el} }{ \code{break} }{ \cdot; P^\text{el} }
-    }
-  }
-  { \hspace{3cm} (x {<} 10; B^\text{lo}) \vdash
-    \htriple{ \cdot; Q^\text{lo} }{ \loopbody }{ \cdot; P^\text{lo} } \hspace{3cm}
-  }
-}
-{ (\cdot; B) \vdash
-  \htriple{ \cdot; Q) }{ \code{loop}~{\loopbody} }{ x {<} 10; P }
-}
-\vspace{-.3cm}
-\end{mathpar}
-\flushleft
-\begin{tabular}{l}Constraints:\end{tabular}
-\vspace{-.2cm}
-$$
-\begin{array}{lll}
-P {=} B^\text{lo} \land Q {=} Q^\text{lo} {=} P^\text{lo}
-& B^\text{el} {=} B^\text{if} {=} B^\text{lo}
-    \land Q^\text{el} {=} Q^\text{if} {=} Q^\text{lo}
-    \land P^\text{el} {=} P^\text{if} {=} P^\text{lo}
-& B^\text{el} {=} B^\text{br} \land Q^\text{el} \succeq_{(x{<}10)} Q^\text{br}
-    \land P^\text{br} \succeq_{(\cdot)} P^\text{el}
-\\
-B^\text{br} {=} Q^\text{br}
-& B^\text{if} {=} B^\text{sq} \land Q^\text{if} \succeq_{(x{<}10)} Q^\text{sq}
-    \land P^\text{sq} \succeq_{(\cdot)} P^\text{if}
-& B^\text{sq} {=} B^\text{we} {=} B^\text{ti} \land Q^\text{sq} {=} Q^\text{we}
-    \land P^\text{we} {=} Q^\text{ti} \land P^\text{ti} {=} P^\text{sq}
-\\
-Q^\text{ti} {=} P^\text{ti} + 5
-& B^\text{we} {=} B^\text{de} \land Q^\text{we} \succeq_{(x{<}10)} Q^\text{de}
-    \land P^\text{de} \succeq_{(\cdot)} P^\text{we}
-& p^\text{de}_{0,10} {=} q^\text{de}_{0,10} + q^\text{de}_{0,x}
-    \land p^\text{de}_{0} {=} q^\text{de}_{0}
-    \land \forall (\alpha, \beta) \neq (0,10)  . \,
-              p^\text{de}_{\alpha,\beta} {=} q^\text{de}_{\alpha,\beta}
-\end{array}
-$$
-\begin{tabular}{l@{\hspace{5em}}l}
-  Linear Objective Function: $
-    1{\cdot}q_{x,0} + 10000{\cdot}q_{0,x} + 11{\cdot}q_{x,10} + 9990{\cdot}q_{10,x}
-  $
-& Constant Objective Function: $
-    1{\cdot}q_0 + 11{\cdot}q_{0,10}
-  $
-\end{tabular}
-\vspace{.1cm}
-\caption{An example derivation as produced $\toolname$. The constraints are resolved by an off-the-shelf LP solver.}
-\label{fig:derivation}
-\end{figure*}
-
 \iffull{
 Another interesting rule is {\sc Q:Call}.  It needs to account for the
 changes to the stack caused by the function call, the arguments/return
@@ -1640,6 +1640,17 @@ Symmetrically, we use the unique name $\Vret$ to represent
 the return value in the function's postcondition
 $(\Gamma'_f, Q'_f)$.
 }{}
+
+The rule {\sc Q:Loop} is a cornerstone of our analysis.  To apply it on a
+loop body one needs to find an invariant potential $Q$ that will pay for
+the iterations.  At each iteration, $M_l$ resources are spent to jump back,
+this explains the postcondition $Q{+}M_l$. %  Assuming $M_l>0$, and if $Q$
+%is finite on the initial heap (i.e. the precondition is not $\bot$), the
+%loop can only run for a finite number of iterations.
+To exit the loop,
+the programmer uses the \code{break} statement, this explains why the postcondition
+for the full $\code{loop}~S$ statement $\{ \Gamma'; Q' \}$ is used as break
+postcondition in the derivation for $S$.
 
 \iffull{The rule {\sc Q:Weak} is not syntax directed. In the implementation
 we apply {\sc Q:Weak} before loops and between the two statements of a
@@ -1996,6 +2007,114 @@ is proved by a translation morphism to the logic.
   soundness proof can be found in the extended version of this
   article.}
 
+
+
+\begin{figure*}
+\centering
+\vspace{-.5cm}
+\begin{tabular}{r|c|c|c|c|c}
+%
+& t09 & t19 & t30 & t15 & t13\\
+%
+\hline
+&
+\begin{lstlisting}[basicstyle=\tt\footnotesize]
+i=1; j=0;
+while (j<x) {
+  j++;
+  if (i>=4)
+    i=1, tick(40);
+  else i++;
+  tick(1); }
+\end{lstlisting}
+&
+\hspace{-.5cm}\begin{lstlisting}[basicstyle=\tt\footnotesize]
+while (i>100) {
+  i--; tick(1);
+} i += k+50;
+while (i>=0) {
+  i--; tick(1);
+}\end{lstlisting}\hspace{-.5cm}
+&
+\begin{lstlisting}[basicstyle=\tt\footnotesize]
+while (x>0) {
+  x--;
+  t=x, x=y, y=t;
+  tick(1);
+}
+\end{lstlisting}
+&
+\begin{lstlisting}[basicstyle=\tt\footnotesize]
+assert(y>=0);
+while (x > y) {
+  x -= y+1;
+  for (z=y; z>0; z--)
+    tick(1);
+  tick(1);
+}
+\end{lstlisting}
+&
+\begin{lstlisting}[basicstyle=\tt\footnotesize]
+while (x>0) {
+  x--;
+  if (*) y++;
+  else
+    while (y>0)
+      y--, tick(1);
+  tick(1); }
+\end{lstlisting}
+%
+\\
+\hline
+%
+%
+%
+\toolname
+  & {\small $11|[0,x]|$ }
+  & {\small $\!\!\!\!\!50 {+} |\inter {-1} i| {+} |\inter 0 k|\!\!\!\!\!\!$ }
+  & {\small $|\inter 0 x| {+} |\inter 0 y|$}
+  & {\small $|\inter 0 x|$}
+  & {\small $2 |\inter 0 x| {+} |\inter 0 y|$}
+\\
+%
+Rank
+  & {\small $23{\cdot}x - 14$ }
+  & {\small $54+k+i$ }
+  & {\small ---}
+  & {\small $2+2x-y$ }
+  & {\small $0.5{\cdot}y^2 {+} yx \ldots$}
+           % +0.5{\cdot}x^2\ldots$} % + 1{-}0.5{\cdot}y){-}0.5{\cdot}x $}
+\\
+%
+{\hspace{-.2cm}LOOPUS}
+&
+{\small
+  $41\max(x,0)$
+}
+&
+{\small
+  $\!\!\!\!$\begin{tabular}{c}
+    $\max(i{-}100, 0)$ \\
+    $+ \max(k {+} i {+} 51, 0)$
+  \end{tabular}$\!\!\!\!$
+}
+&
+{\small ---}% $1 + \max(x, y)$ (???)
+&
+{\small ---}
+&
+{\small \begin{tabular}{c}
+           $2\max(x, 0)$ \\
+           $+ \max(y, 0)$
+        \end{tabular}}
+\end{tabular}
+\vspace{.01cm}
+\caption{ Comparison of resource bounds derived by different tools on
+  several examples with linear bounds.  \iffull{The output of Rank has been manually
+  simplified to fit the table.}{}  }
+\label{fig:compar}
+\end{figure*}
+
 \paraskip
 \paragraph{Cost Semantics for Clight.}
 To base the soundness proof on a formal ground, we start by defining a
@@ -2347,114 +2466,6 @@ to construct certificates for upper bounds derived automatically.
 
 
 
-
-
-
-\begin{figure*}
-\centering
-\vspace{-.5cm}
-\begin{tabular}{r|c|c|c|c|c}
-%
-& t09 & t19 & t30 & t15 & t13\\
-%
-\hline
-&
-\begin{lstlisting}[basicstyle=\tt\footnotesize]
-i=1; j=0;
-while (j<x) {
-  j++;
-  if (i>=4)
-    i=1, tick(40);
-  else i++;
-  tick(1); }
-\end{lstlisting}
-&
-\hspace{-.5cm}\begin{lstlisting}[basicstyle=\tt\footnotesize]
-while (i>100) {
-  i--; tick(1);
-} i += k+50;
-while (i>=0) {
-  i--; tick(1);
-}\end{lstlisting}\hspace{-.5cm}
-&
-\begin{lstlisting}[basicstyle=\tt\footnotesize]
-while (x>0) {
-  x--;
-  t=x, x=y, y=t;
-  tick(1);
-}
-\end{lstlisting}
-&
-\begin{lstlisting}[basicstyle=\tt\footnotesize]
-assert(y>=0);
-while (x > y) {
-  x -= y+1;
-  for (z=y; z>0; z--)
-    tick(1);
-  tick(1);
-}
-\end{lstlisting}
-&
-\begin{lstlisting}[basicstyle=\tt\footnotesize]
-while (x>0) {
-  x--;
-  if (*) y++;
-  else
-    while (y>0)
-      y--, tick(1);
-  tick(1); }
-\end{lstlisting}
-%
-\\
-\hline
-%
-%
-%
-\toolname
-  & {\small $11|[0,x]|$ }
-  & {\small $\!\!\!\!\!50 {+} |\inter {-1} i| {+} |\inter 0 k|\!\!\!\!\!\!$ }
-  & {\small $|\inter 0 x| {+} |\inter 0 y|$}
-  & {\small $|\inter 0 x|$}
-  & {\small $2 |\inter 0 x| {+} |\inter 0 y|$}
-\\
-%
-Rank
-  & {\small $23{\cdot}x - 14$ }
-  & {\small $54+k+i$ }
-  & {\small ---}
-  & {\small $2+2x-y$ }
-  & {\small $0.5{\cdot}y^2 {+} yx \ldots$}
-           % +0.5{\cdot}x^2\ldots$} % + 1{-}0.5{\cdot}y){-}0.5{\cdot}x $}
-\\
-%
-{\hspace{-.2cm}LOOPUS}
-&
-{\small
-  $41\max(x,0)$
-}
-&
-{\small
-  $\!\!\!\!$\begin{tabular}{c}
-    $\max(i{-}100, 0)$ \\
-    $+ \max(k {+} i {+} 51, 0)$
-  \end{tabular}$\!\!\!\!$
-}
-&
-{\small ---}% $1 + \max(x, y)$ (???)
-&
-{\small ---}
-&
-{\small \begin{tabular}{c}
-           $2\max(x, 0)$ \\
-           $+ \max(y, 0)$
-        \end{tabular}}
-\end{tabular}
-\vspace{.01cm}
-\caption{ Comparison of resource bounds derived by different tools on
-  several examples with linear bounds.  \iffull{The output of Rank has been manually
-  simplified to fit the table.}{}  }
-\label{fig:compar}
-\end{figure*}
 
 \sectskip
 \section{Experimental Evaluation}
