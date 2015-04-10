@@ -1046,15 +1046,42 @@ point of two trains that approach each other with different speeds.}{}
 \vspace{-.4cm}
 \def \MathparLineskip {\lineskip=0.35cm}
 \begin{mathpar}
-\Rule[leftskip=.4cm,rightskip=.3cm]{Q:Skip}
+\Rule{Q:Skip}
 { }
 { \!\! B, R \vdash \htriple{ \Gamma; Q }{ \code{skip} }{ \Gamma; Q } \!\!}
 %
-\and \Rule[leftskip=.1cm,rightskip=.1cm]{Q:Loop}
+\and \Rule[leftskip=.5cm, rightskip=.5cm]{Q:Assert}
+{ }
+{ B, R \vdash \htriple{ \Gamma; Q {+} M_a }{ \code{assert}~e }{ \Gamma {\land} e; Q } }
+%
+\and \Rule{Q:Break}
+{ }
+{(\Gamma; Q_B), R \vdash \htriple{ \Gamma; Q_B {+} M_b }{ \code{break} }{ \Gamma'; Q' } }
+%
+\and \Rule{Q:Return}
+{ P = Q_R[\Vret/x]
+\\ \Gamma = \Gamma_R[\Vret/x]
+\\ \forall i \in \dom{P} . \, p_i = q_i
+}
+{ B, (\Gamma_R; Q_R) \vdash \htriple{ \Gamma; Q }{ \code{return}~x }{ \Gamma'; Q' } }
+%
+\and \Rule{Q:Loop}
 { (\Gamma'; Q'), R \vdash \htriple{ \Gamma; Q }{ S }{ \Gamma;  Q {+} M_l } }
 { B, R \vdash \htriple{ \Gamma; Q }{ \code{loop}~S }{ \Gamma'; Q' } }
 %
-\\ \Rule[leftskip=1cm,rightskip=.5cm]{Q:IncP}
+\and \Rule{Q:Seq}
+{  B, R \vdash \htriple{ \Gamma; Q }{ S_1 }{ \Gamma'; Q' {+} M_s }
+\\ B, R \vdash \htriple{ \Gamma'; Q' }{ S_2 }{ \Gamma''; Q'' }
+}
+{ B, R \vdash \htriple{ \Gamma; Q }{ S_1;S_2 }{ \Gamma''; Q'' } }
+%
+\and \Rule{Q:If}
+{ B, R \vdash \htriple{ \Gamma {\land} e; Q {-} M_c^1) }{ S_1 }{ \Gamma'; Q' }
+\\\\ B, R \vdash \htriple{ \Gamma {\land} \neg e; Q {-} M_c^2 }{ S_2 }{ \Gamma'; Q' }
+}
+{ B, R \vdash \htriple{ \Gamma; Q{+}M_e(e) }{ \code{if}(e)~S_1~\code{else}~S_2 }{ \Gamma'; Q' } }
+%
+\\ \Rule{Q:IncP}
 { \Gamma \models y \ge 0 \!
 \\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\} \!
 \\\\ \textstyle q'_{0y} = q_{0y}
@@ -1065,7 +1092,7 @@ point of two trains that approach each other with different speeds.}{}
   B, R \vdash \htriple{ \Gamma[x/x {+} y]; Q {+} M_u {+} M_e(x {+} y) }{ x \gets x + y }{ \Gamma; Q' }
 }
 %
-\and \Rule[leftskip=.5cm,rightskip=1cm]{Q:Inc}
+\and \Rule{Q:Inc}
 { M = M_u + M_e(x {\pm} y)
 \\\\ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
 \\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
@@ -1074,11 +1101,49 @@ point of two trains that approach each other with different speeds.}{}
   B, R \vdash \htriple{ \Gamma[x/x {\pm} y]; Q {+} M }{ x \gets x \pm y }{ \Gamma; Q' }
 }
 %
-\\ \Rule{Q:Seq}
-{  B, R \vdash \htriple{ \Gamma; Q }{ S_1 }{ \Gamma'; Q' {+} M_s }
-\\\\ B, R \vdash \htriple{ \Gamma'; Q' }{ S_2 }{ \Gamma''; Q'' }
+\and \Rule{Q:Set}
+{ q'_{xy}, q'_{yx} \in \Qplusz
+\\\\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
 }
-{ B, R \vdash \htriple{ \Gamma; Q }{ S_1;S_2 }{ \Gamma''; Q'' } }
+{ B, R \vdash \htriple{ \Gamma[x/y]; Q {+} M_u {+} M_e(y) }{ x \gets y }{ \Gamma; Q' } }
+%
+\and \Rule{Q:DecP}
+{ \Gamma \models y \ge 0
+\\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
+\\\\ \textstyle q'_{y0} = q_{y0}
+      + \sum_{u \in \mathcal U} q_{ux}
+      - \sum_{v \not\in \mathcal U} q_{xv}
+}
+{ \textstyle
+  B, R \vdash \htriple{ \Gamma[x/x {-} y]; Q {+} M_u {+} M_e(x {-} y) }{ x \gets x - y }{ \Gamma; Q' }
+}
+%
+\and\Rule{Q:Call}
+{ (\Gamma_f, Q_f,  \Gamma_f', Q_f') \in \Delta(f) \!
+\\ \text{Loc} = \text{Locals}(Q) \!
+\\ \forall i \neq j . \, x_i \neq x_j \!
+\\ c \in \Qplusz \!
+\\ Q = P + S \!
+\\ Q' = P' + S
+\\ U = Q_f[\Vargs / \vec x]
+\\ U' = Q'_f[\Vret/r]
+\\ \forall i \in \dom{U} . \, p_i = u_i
+\\ \forall i \in \dom{U'} .\, p'_i = u'_i
+\\ \forall i \not\in \dom{U'} .\, p'_i = 0
+\\ \forall i \not\in \text{Loc}
+  .\, s_i = 0
+}
+{ B, R \vdash \htriple
+  { \Gamma_f[\Vargs / \vec x] \land \Gamma_{\text{Loc}}; Q {+} c {+} M_f }
+  { r \gets f(\vec x) }
+  { \Gamma_f'[\Vret/r] {\land} \Gamma_{\text{Loc}}; Q' {+} c {-} M_r }
+}
+%
+\and \Rule[leftskip=.2cm,rightskip=.2cm]{Q:Extend}
+{ \fenv f = (\vec y, S_f)
+\\\\ B, (\Gamma_f'; Q'_f) \vdash \htriple{ \Gamma_f[\Vargs/\vec y]; Q_f[\Vargs/ \vec y] }{ S_f }{ \Gamma'; Q' }
+}
+{ (\Gamma_f, Q_f, \Gamma_f', Q_f') \in \Delta(f) }
 %
 \and \Rule{Q:Weak}
 { B, R \vdash \htriple{ \Gamma_2; Q_2 }{ S }{ \Gamma'_2; Q'_2 }
