@@ -2813,9 +2813,9 @@ we leave this extension of our system as future work.
 
 Even certain linear programs cannot be analyzed automatically by
 $\toolname$, it is usually the case for programs that rely on heap
-invariants (like nul-terminated C strings), for programs making
-use of non-linear operations (like \code{\%} or \code{*}), or for
-programs whose
+invariants (like nul-terminated C strings), for programs in which
+resource usage depends on the result of non-linear operations (like
+\code{\%} or \code{*}) in a non-trivial way, or for programs whose
 termination can only be proved by complex path-sensitive reasoning.
 
 
