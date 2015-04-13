@@ -1372,104 +1372,6 @@ tools\iffull{ for automatic bound derivation.}{.}
 \end{figure*}
 }{}
 
-\newcommand{\loopbody}[0]{\ensuremath{\code{if~(x \geq 10)~(x=x - 10; tick(5))~else~break}}}
-\begin{figure*}[t]
-\vspace{-.5cm}
-\centering
-\footnotesize
-\begin{mathpar}
-\inferrule*[right={\scriptsize (Q:Loop)},leftskip=0cm,rightskip=0cm,width=20cm]
-{ \inferrule*[right={\scriptsize (Q:If)},leftskip=0cm,rightskip=0cm,width=20cm]
-  { \inferrule*[right={\scriptsize (Q:Weak)},leftskip=2cm,rightskip=4cm, vdots=1cm]
-    { \inferrule*[right={\scriptsize (Q:Seq)},leftskip=0cm,rightskip=0cm]
-      { \inferrule*[right={\scriptsize (Q:Weak)},leftskip=0cm,rightskip=0cm]
-        { \inferrule*[right={\scriptsize (Q:DecP)},leftskip=0cm,rightskip=0cm]
-          {
-          }
-          { (x {<} 10; B^\text{de}) \vdash
-	    \htriple{ x {\geq} 10; Q^\text{de} }{ \code{x = x - 10} }{ \cdot; P^\text{de} }
-          }
-        }
-        { (x {<} 10; B^\text{we}) \vdash
-	  \htriple{ x {\geq} 10; Q^\text{we} }{ \code{x = x - 10} }{ \cdot; P^\text{we} }
-        }
-        \and
-        \inferrule*[right={\scriptsize (Q:Tick)},leftskip=0cm,rightskip=0cm]
-        {
-        }
-        { (x {<} 10; B^\text{ti}) \vdash
-	  \htriple{ \cdot; Q^\text{ti} }{ \code{tick(5)} }{ \cdot; P^\text{ti} }
-        }
-      }
-      { (x {<} 10; B^\text{sq}) \vdash
-	\htriple{ x {\geq} 10; Q^\text{sq} }{ \code{x=x - 10; tick(5)} }{ \cdot; P^\text{sq} }
-      }
-    }
-    { (x {<} 10; B^\text{if}) \vdash
-      \htriple{ x {\geq} 10; Q^\text{if} }{ \code{x=x - 10; tick(5)} }{ \cdot; P^\text{if} }
-    }
-    \and
-    \inferrule*[right={\scriptsize (Q:Weak)},leftskip=4.5cm,rightskip=4cm]
-    { \inferrule*[right={\scriptsize (Q:Break)},leftskip=0cm,rightskip=0cm]
-      { }
-      { (x {<} 10; B^\text{br}) \vdash
-	\htriple{ x {<} 10; Q^\text{br} }{ \code{break} }{ \bot; P^\text{br} }
-      }
-    }
-    { (x {<} 10; B^\text{el}) \vdash
-      \htriple{ x {<} 10; Q^\text{el} }{ \code{break} }{ \cdot; P^\text{el} }
-    }
-  }
-  { \hspace{3cm} (x {<} 10; B^\text{lo}) \vdash
-    \htriple{ \cdot; Q^\text{lo} }{ \loopbody }{ \cdot; P^\text{lo} } \hspace{3cm}
-  }
-}
-{ (\cdot; B) \vdash
-  \htriple{ \cdot; Q) }{ \code{loop}~{\loopbody} }{ x {<} 10; P }
-}
-\vspace{-.3cm}
-\end{mathpar}
-\flushleft
-\begin{tabular}{l}Constraints:\end{tabular}
-\vspace{-.2cm}
-$$
-\begin{array}{lll}
-P {=} B^\text{lo} \land Q {=} Q^\text{lo} {=} P^\text{lo}
-& B^\text{el} {=} B^\text{if} {=} B^\text{lo}
-    \land Q^\text{el} {=} Q^\text{if} {=} Q^\text{lo}
-    \land P^\text{el} {=} P^\text{if} {=} P^\text{lo}
-& B^\text{el} {=} B^\text{br} \land Q^\text{el} \succeq_{(x{<}10)} Q^\text{br}
-    \land P^\text{br} \succeq_{(\cdot)} P^\text{el}
-\\
-B^\text{br} {=} Q^\text{br}
-& B^\text{if} {=} B^\text{sq} \land Q^\text{if} \succeq_{(x{<}10)} Q^\text{sq}
-    \land P^\text{sq} \succeq_{(\cdot)} P^\text{if}
-& B^\text{sq} {=} B^\text{we} {=} B^\text{ti} \land Q^\text{sq} {=} Q^\text{we}
-    \land P^\text{we} {=} Q^\text{ti} \land P^\text{ti} {=} P^\text{sq}
-\\
-Q^\text{ti} {=} P^\text{ti} + 5
-& B^\text{we} {=} B^\text{de} \land Q^\text{we} \succeq_{(x{<}10)} Q^\text{de}
-    \land P^\text{de} \succeq_{(\cdot)} P^\text{we}
-& p^\text{de}_{0,10} {=} q^\text{de}_{0,10} + q^\text{de}_{0,x}
-    \land p^\text{de}_{0} {=} q^\text{de}_{0}
-    \land \forall (\alpha, \beta) \neq (0,10)  . \,
-              p^\text{de}_{\alpha,\beta} {=} q^\text{de}_{\alpha,\beta}
-\end{array}
-$$
-\begin{tabular}{l@{\hspace{5em}}l}
-  Linear Objective Function: $
-    1{\cdot}q_{x,0} + 10000{\cdot}q_{0,x} + 11{\cdot}q_{x,10} + 9990{\cdot}q_{10,x}
-  $
-& Constant Objective Function: $
-    1{\cdot}q_0 + 11{\cdot}q_{0,10}
-  $
-\end{tabular}
-\vspace{.1cm}
-\caption{An example derivation as produced $\toolname$. The constraints are resolved by an off-the-shelf LP solver.}
-\label{fig:derivation}
-\end{figure*}
-
-
 \sectskip
 \section{Derivation System}
 
@@ -1490,7 +1392,7 @@ of each step in the operational semantics.  For example, $M_e(\code{exp})$ is th
 evaluating the expression \code{exp}; the rationals $M_f$
 and $M_r$ account respectively for the cost of a call to the
 function $f$ and the cost of returning from it.
-More details on this cost-aware semantics are provided in \pref{sec:soundness}.
+More details are provided in \pref{sec:soundness}.
 
 In the rules, assignments are restricted to the form $x \gets
 y$ or $x \gets x \pm y$.  In the implementation, a Clight
@@ -1729,6 +1631,104 @@ x y| \leq u$ for a constant $u$ then we can transfer constant potential
 $u{\cdot}q_{xy}$ to the interval potential $q_{xy} {\cdot} |\inter x y|$
 without gaining potential.
 
+\newcommand{\loopbody}[0]{\ensuremath{\code{if~(x \geq 10)~(x=x - 10; tick(5))~else~break}}}
+\begin{figure*}[t]
+\vspace{-.5cm}
+\centering
+\footnotesize
+\begin{mathpar}
+\inferrule*[right={\scriptsize (Q:Loop)},leftskip=0cm,rightskip=0cm,width=20cm]
+{ \inferrule*[right={\scriptsize (Q:If)},leftskip=0cm,rightskip=0cm,width=20cm]
+  { \inferrule*[right={\scriptsize (Q:Weak)},leftskip=2cm,rightskip=4cm, vdots=1cm]
+    { \inferrule*[right={\scriptsize (Q:Seq)},leftskip=0cm,rightskip=0cm]
+      { \inferrule*[right={\scriptsize (Q:Weak)},leftskip=0cm,rightskip=0cm]
+        { \inferrule*[right={\scriptsize (Q:DecP)},leftskip=0cm,rightskip=0cm]
+          {
+          }
+          { (x {<} 10; B^\text{de}) \vdash
+	    \htriple{ x {\geq} 10; Q^\text{de} }{ \code{x = x - 10} }{ \cdot; P^\text{de} }
+          }
+        }
+        { (x {<} 10; B^\text{we}) \vdash
+	  \htriple{ x {\geq} 10; Q^\text{we} }{ \code{x = x - 10} }{ \cdot; P^\text{we} }
+        }
+        \and
+        \inferrule*[right={\scriptsize (Q:Tick)},leftskip=0cm,rightskip=0cm]
+        {
+        }
+        { (x {<} 10; B^\text{ti}) \vdash
+	  \htriple{ \cdot; Q^\text{ti} }{ \code{tick(5)} }{ \cdot; P^\text{ti} }
+        }
+      }
+      { (x {<} 10; B^\text{sq}) \vdash
+	\htriple{ x {\geq} 10; Q^\text{sq} }{ \code{x=x - 10; tick(5)} }{ \cdot; P^\text{sq} }
+      }
+    }
+    { (x {<} 10; B^\text{if}) \vdash
+      \htriple{ x {\geq} 10; Q^\text{if} }{ \code{x=x - 10; tick(5)} }{ \cdot; P^\text{if} }
+    }
+    \and
+    \inferrule*[right={\scriptsize (Q:Weak)},leftskip=4.5cm,rightskip=4cm]
+    { \inferrule*[right={\scriptsize (Q:Break)},leftskip=0cm,rightskip=0cm]
+      { }
+      { (x {<} 10; B^\text{br}) \vdash
+	\htriple{ x {<} 10; Q^\text{br} }{ \code{break} }{ \bot; P^\text{br} }
+      }
+    }
+    { (x {<} 10; B^\text{el}) \vdash
+      \htriple{ x {<} 10; Q^\text{el} }{ \code{break} }{ \cdot; P^\text{el} }
+    }
+  }
+  { \hspace{3cm} (x {<} 10; B^\text{lo}) \vdash
+    \htriple{ \cdot; Q^\text{lo} }{ \loopbody }{ \cdot; P^\text{lo} } \hspace{3cm}
+  }
+}
+{ (\cdot; B) \vdash
+  \htriple{ \cdot; Q) }{ \code{loop}~{\loopbody} }{ x {<} 10; P }
+}
+\vspace{-.3cm}
+\end{mathpar}
+\flushleft
+\begin{tabular}{l}Constraints:\end{tabular}
+\vspace{-.2cm}
+$$
+\begin{array}{lll}
+P {=} B^\text{lo} \land Q {=} Q^\text{lo} {=} P^\text{lo}
+& B^\text{el} {=} B^\text{if} {=} B^\text{lo}
+    \land Q^\text{el} {=} Q^\text{if} {=} Q^\text{lo}
+    \land P^\text{el} {=} P^\text{if} {=} P^\text{lo}
+& B^\text{el} {=} B^\text{br} \land Q^\text{el} \succeq_{(x{<}10)} Q^\text{br}
+    \land P^\text{br} \succeq_{(\cdot)} P^\text{el}
+\\
+B^\text{br} {=} Q^\text{br}
+& B^\text{if} {=} B^\text{sq} \land Q^\text{if} \succeq_{(x{<}10)} Q^\text{sq}
+    \land P^\text{sq} \succeq_{(\cdot)} P^\text{if}
+& B^\text{sq} {=} B^\text{we} {=} B^\text{ti} \land Q^\text{sq} {=} Q^\text{we}
+    \land P^\text{we} {=} Q^\text{ti} \land P^\text{ti} {=} P^\text{sq}
+\\
+Q^\text{ti} {=} P^\text{ti} + 5
+& B^\text{we} {=} B^\text{de} \land Q^\text{we} \succeq_{(x{<}10)} Q^\text{de}
+    \land P^\text{de} \succeq_{(\cdot)} P^\text{we}
+& p^\text{de}_{0,10} {=} q^\text{de}_{0,10} + q^\text{de}_{0,x}
+    \land p^\text{de}_{0} {=} q^\text{de}_{0}
+    \land \forall (\alpha, \beta) \neq (0,10)  . \,
+              p^\text{de}_{\alpha,\beta} {=} q^\text{de}_{\alpha,\beta}
+\end{array}
+$$
+\begin{tabular}{l@{\hspace{5em}}l}
+  Linear Objective Function: $
+    1{\cdot}q_{x,0} + 10000{\cdot}q_{0,x} + 11{\cdot}q_{x,10} + 9990{\cdot}q_{10,x}
+  $
+& Constant Objective Function: $
+    1{\cdot}q_0 + 11{\cdot}q_{0,10}
+  $
+\end{tabular}
+\vspace{.1cm}
+\caption{An example derivation as produced $\toolname$. The constraints are resolved by an off-the-shelf LP solver.}
+\label{fig:derivation}
+\end{figure*}
+
+
 \sectskip
 \section{Automatic Inference via LP Solving}
 \label{sec:lp}
@@ -1860,7 +1860,9 @@ the derived bound is $0.5 |[0,x]|$.
 
 A notable advantage of the LP-based approach compared to
 SMT-solver--based techniques is that a satisfying assignment is
-a proof certificate instead of a counter example.
+a proof certificate instead of a counter example.  To provide
+high-assurance bounds, this certificate can be checked
+in linear time by a simple validator.
 
 \iffull{The constraints that we generate have
 a particularly simple form that is known as \emph{network problem}.
@@ -1870,61 +1872,6 @@ Such problems can be solved in linear time in practice.}{}
 \section{Logical State and User Interaction}
 \label{sec:anno}
 \aftersectskip
-
-\begin{figure}[t]
-\begin{minipage}[b]{0.8\linewidth}
-\begin{lstlisting}[numbers=left]
-${\color{blue}%
-  \mbox{logical state invariant } \{ na = \#_1(a)} \}$
-while (k > 0) {
-  x=0;
-  while (x < N && a[x] == 1) {
-    @assert(na > 0);@
-    a[x]=0; @na--;@
-    tick(1); x++; }
-  if (x < N) { a[x]=1; @na++;@ tick(1); }
-  k--;
-}
-\end{lstlisting}
-\vspace{-.2cm}
-\end{minipage}
-\caption{Assisted bound derivation using logical state.  We write
-  $\#_1(a)$ for $\# \{ i \mid 0 {\le} i {<} N {\land} a[i] {=} 1 \}$ and use the
-  tick metric.  The derived bound  is
-  $2|[0,k]| + |[0,na]|$.
-  }
-\label{fig:xmplincaux}
-\end{figure}
-
-\begin{figure}
-\vspace{-.3cm}
-\begin{lstlisting}[numbers=left]
-${\color{blue}%
-  \mbox{logical state invariant }
-  \{ lg > \log_2(h - l) \} }$
-bsearch(x,l,h@,lg@) {
-  if (h-l > 1) {
-    @assert(lg > 0);@
-    m = l + (h-l)/2;
-    @lg--;@ if (a[m]>x) h=m; else l=m;
-    tick($M_\code{bsearch}$);
-    l = bsearch(x,l,h@,lg@);
-    tick($-M_\code{bsearch}$);
-  } else return l;
-}
-\end{lstlisting}
-\vspace{-.2cm}
-\caption{Assisted bound derivation using logical state.
-  % We use the tick metric to model the stack consumption of the program.
-  % Before a function call to \code{bsearch}, a tick statement pays for
-  % the space used by stack frame of the function.  The space is recoverd
-  % after the call.
-  We write $\log_2(x)$ for the integer part of
-  logarithm of $x$ in base 2.
-  The semi-automatically derived bound is $|[0,lg]|$.
-  }
-\label{fig:xmplbsaux}
-\end{figure}
 
 \ifdefined\fullversion
 \begin{figure}
@@ -1967,7 +1914,7 @@ More precisely, the technique consists of the following steps. First,
 a program $P$ that fails to be analyzed automatically is enriched by
 auxiliary variables $\vec x$ and assertions to form a program
 $P_l(\vec x)$.  Second, an initial value $\vec X(\sigma)$ for the
-logical variables is selected so that:
+logical variables is selected to satisfy the proposition:
 $$
 \forall n\, \sigma\, \sigma'.\,
   (\sigma, P_l(\vec X(\sigma))) \Downarrow_n \sigma'
@@ -1981,6 +1928,8 @@ by simple induction on the resource-aware evaluation judgement.
 Third, using existing automation tools, a bound $B(\vec x)$ for
 $P_l(\vec x)$ is derived.  Finally this bound, instantiated with
 $\vec X$, gives the final resource bound for the program $P$.
+
+
 
 This idea is illustrated by the program in \pref{fig:xmplincaux}.
 The parts of the code in blue are annotations that were added
@@ -2006,6 +1955,33 @@ is done by proving inductively that $na = \#_1(a)$
 and remarking that since \lstinline{a[x] == 1} is true, we must have
 $\#_1(a) > 0$, thus the assertion \lstinline{na > 0} never fails.
 
+\begin{figure}[t]
+\begin{minipage}[b]{0.8\linewidth}
+\begin{lstlisting}[numbers=left]
+${\color{blue}%
+  \mbox{logical state invariant } \{ na = \#_1(a)} \}$
+while (k > 0) {
+  x=0;
+  while (x < N && a[x] == 1) {
+    @assert(na > 0);@
+    a[x]=0; @na--;@
+    tick(1); x++; }
+  if (x < N) { a[x]=1; @na++;@ tick(1); }
+  k--;
+}
+\end{lstlisting}
+\vspace{-.2cm}
+\end{minipage}
+\caption{Assisted bound derivation using logical state.  We write
+  $\#_1(a)$ for $\# \{ i \mid 0 {\le} i {<} N {\land} a[i] {=} 1 \}$ and use the
+  tick metric.  The derived bound  is
+  $2|[0,k]| + |[0,na]|$.
+  }
+\label{fig:xmplincaux}
+\end{figure}
+
+
+
 Another simple example is given in \pref{fig:xmplbsaux} where
 a logarithmic bound on the stack consumption of a binary search
 program is proved using logical variable annotations.  Once again,
@@ -2021,6 +1997,36 @@ is structurally same as the original one, it is enough to prove
 that the added assertions never fail in order to show the two programs
 have identical resource consumption.  This can usually be piggybacked
 on standard static-analysis tools.
+
+\begin{figure}
+\vspace{-.3cm}
+\begin{lstlisting}[numbers=left]
+${\color{blue}%
+  \mbox{logical state invariant }
+  \{ lg > \log_2(h - l) \} }$
+bsearch(x,l,h@,lg@) {
+  if (h-l > 1) {
+    @assert(lg > 0);@
+    m = l + (h-l)/2;
+    @lg--;@ if (a[m]>x) h=m; else l=m;
+    tick($M_\code{bsearch}$);
+    l = bsearch(x,l,h@,lg@);
+    tick($-M_\code{bsearch}$);
+  } else return l;
+}
+\end{lstlisting}
+\vspace{-.2cm}
+\caption{Assisted bound derivation using logical state.
+  % We use the tick metric to model the stack consumption of the program.
+  % Before a function call to \code{bsearch}, a tick statement pays for
+  % the space used by stack frame of the function.  The space is recoverd
+  % after the call.
+  We write $\log_2(x)$ for the integer part of
+  logarithm of $x$ in base 2.
+  The semi-automatically derived bound is $|[0,lg]|$.
+  }
+\label{fig:xmplbsaux}
+\end{figure}
 
 % On the other hand, it might be the case that even with annotations, a
 % resource bound cannot be found automatically.  With existing tools, this
