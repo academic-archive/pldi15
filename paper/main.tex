@@ -1049,9 +1049,13 @@ point of two trains that approach each other with different speeds.}{}
 { }
 { \!\! B, R \vdash \htriple{ \Gamma; Q }{ \code{skip} }{ \Gamma; Q } \!\!}
 %
-\and \Rule[leftskip=.5cm, rightskip=.5cm]{Q:Assert}
+\and \Rule{Q:Assert}
 { }
 { B, R \vdash \htriple{ \Gamma; Q {+} M_a }{ \code{assert}~e }{ \Gamma {\land} e; Q } }
+%
+\and \Rule{Q:Tick}
+{ }
+{ B, R \vdash \htriple{ \Gamma; Q {+} M_t(n) }{ \code{tick}(n) }{ \Gamma; Q } }
 %
 \and \Rule{Q:Break}
 { }
@@ -1142,7 +1146,7 @@ point of two trains that approach each other with different speeds.}{}
 { \fenv f = (\vec y, S_f)
 \\\\ B, (\Gamma_f'; Q'_f) \vdash \htriple{ \Gamma_f[\Vargs/\vec y]; Q_f[\Vargs/ \vec y] }{ S_f }{ \Gamma'; Q' }
 }
-{ (\Gamma_f, Q_f, \Gamma_f', Q_f') \in \Delta(f) }
+{ (\Gamma_f; Q_f, \Gamma_f'; Q_f') \in \Delta(f) }
 %
 \and \Rule{Q:Weak}
 { B, R \vdash \htriple{ \Gamma_2; Q_2 }{ S }{ \Gamma'_2; Q'_2 }
@@ -1164,7 +1168,7 @@ point of two trains that approach each other with different speeds.}{}
 { Q' \succeq_\Gamma Q }
 %\vspace{-.3cm}
 \end{mathpar}
-\caption{Selected inference rules of the quantitative analysis.}
+\caption{Inference rules of the quantitative analysis.}
 \label{fig:auto}
 \end{figure*}
 }{}
@@ -1473,6 +1477,33 @@ In the following we describe the local and compositional derivation
 rules of the automatic amortized analysis.
 
 \paraskip
+\paragraph{Cost Aware Clight.}
+
+We present the rules for a subset of the
+expressions of Clight.  Clight is the first intermediate
+language of the CompCert compiler~\cite{CompcertCACM}, it
+is a cleaner C with a unified looping construct and
+side-effect free expressions.  We reuse most of CompCert's
+syntax but instrument the semantics with a resource metric
+$M$ that accounts for the cost (an arbitrary rational number)
+of each step in the operational semantics.  For example, $M_e(\code{exp})$ is the cost of
+evaluating the expression \code{exp}; the rationals $M_f$
+and $M_r$ account respectively for the cost of a call to the
+function $f$ and the cost of returning from it.
+More details on this cost-aware semantics are provided in \pref{sec:soundness}.
+
+In the rules, assignments are restricted to the form $x \gets
+y$ or $x \gets x \pm y$.  In the implementation, a Clight
+program is converted into this form prior to analysis without changing
+the resource cost.  This is achieved by using a series of \emph{cost-free
+  assignments} that do not result in additional cost in the
+semantics.  Non-linear operations such as $x \gets z*y$ or $x \gets
+a[y]$ are handled by assigning $0$ to coefficients
+like $q_{xa}$ and $q_{ax}$ that contain $x$ after the assignment.
+This sound treatment ensures that no further loop bounds
+depend on the result of the non-linear operation.
+
+\paraskip
 \paragraph{Judgements.}
 
 The derivation system for the automatic amortized analysis is defined
@@ -1495,7 +1526,7 @@ with starting state $\state$, the assertions in $\Gamma$
 hold, and at least $Q(\state)$ resources are available then the
 evaluation does not run out of resources and, if the execution
 terminates in state $\state'$, there are at least $Q(\state')$
-\mbox{resources left and $\Gamma'$ holds for $\state'$.}
+resources left and $\Gamma'$ holds for $\state'$.
 
 The judgement is a bit more involved since we have to take into
 account the early exit statements \code{break} and \code{return}.
@@ -1505,7 +1536,7 @@ that holds when breaking out of a loop using \code{break}.  % For example, it is
 % of looping statements by the rule {\sc Q:Loop} and used before
 % \code{break} statements by the rule {\sc Q:Break}.
 Similarly, $(\Gamma_R; Q_R)$ is the postcondition that holds when
-returning from a function call with \code{return}. \iffull{(This becomes clear
+returning from a function call. \iffull{(This becomes clear
 in the rules.)}{}
 
 % These judgements correspond to the logic judgements $\Delta; B; R
@@ -1532,22 +1563,6 @@ such that $q'_0 = q_0 \pm n$ and $\forall i \neq 0 .\, q'_i = q_i$.
 In all the rules, we have the implicit side condition that all rational
 coefficients are non-negative.  Finally, if a rule mentions $Q$ and $Q'$
 and leaves the latter undefined at some index $i$ we assume that $q'_i = q_i$.
-
-We describe the automatic amortized analysis for a subset of
-expressions of Clight.  Clight is the first intermediate
-language of the CompCert compiler~\cite{CompcertCACM}, it
-is a cleaner C with a unified looping construct and
-side-effect free expressions.
-Assignments are restricted to the form $x \gets
-y$ or $x \gets x \pm y$.  In the implementation, a Clight
-program is converted into this form prior to analysis without changing
-the resource cost.  This is achieved by using a series of \emph{cost-free
-  assignments} that do not result in additional cost in the
-semantics.  Non-linear operations such as $x \gets z*y$ or $x \gets
-a[y]$ are handled by assigning $0$ to coefficients
-like $q_{xa}$ and $q_{ax}$ that contain $x$ after the assignment.
-This sound treatment ensures that no further loop bounds
-depend on the result of the non-linear operation.
 
 \paraskip
 \paragraph{Function Specifications.}
@@ -2781,9 +2796,10 @@ input variable $x$ is non-negative.  \iffull{If $x$ is negative then
 
 Our current implementation of $\toolname$ does not currently support
 all of Clight.  Programs with function pointers, goto statements,
-and dereferences of stack-allocated variables cannot be analyzed
-automatically.  While these limitations concern the current
-implementation, our technique is in principle capable to handle them.
+continue statements, and dereferences of stack-allocated variables
+cannot be analyzed automatically.  While these limitations concern the
+current implementation, our technique is in principle capable to handle
+them.
 
 For the sake of simplicity, the automated system described here is
 restricted to finding only linear bounds.  However, the amortized analysis
