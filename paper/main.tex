@@ -1546,6 +1546,8 @@ the resource cost.  This is achieved by using a series of \emph{cost-free
 semantics.  Non-linear operations such as $x \gets z*y$ or $x \gets
 a[y]$ are handled by assigning $0$ to coefficients
 like $q_{xa}$ and $q_{ax}$ that contain $x$ after the assignment.
+This sound treatment ensures that no further loop bounds
+depend on the result of the non-linear operation.
 
 \paraskip
 \paragraph{Function Specifications.}
