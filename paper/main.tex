@@ -1384,13 +1384,13 @@ rules of the automatic amortized analysis.
 
 We present the rules for a subset of Clight.
 Clight is the first intermediate
-language of the CompCert compiler~\cite{CompcertCACM}, it
-is a cleaner C with a unified looping construct and
+language of the CompCert compiler~\cite{CompcertCACM}. It
+is a subset of C with a unified looping construct and
 side-effect free expressions.  We reuse most of CompCert's
 syntax but instrument the semantics with a resource metric
 $M$ that accounts for the cost (an arbitrary rational number)
 of each step in the operational semantics.  For example, $M_e(\code{exp})$ is the cost of
-evaluating the expression \code{exp}; the rationals $M_f$
+evaluating the expression \code{exp}. The rationals $M_f$
 and $M_r$ account respectively for the cost of a call to the
 function $f$ and the cost of returning from it.
 More details are provided in \pref{sec:soundness}.
