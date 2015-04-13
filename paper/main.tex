@@ -309,7 +309,7 @@ data-structure predicates of separation logic~\cite{Atkey10} can play
 the role of the type system in imperative programs.
 However, a major weakness of existing potential-based techniques
 is that they can only associate \emph{potential}
-with individual program variable or data structure.
+with individual program variables or data structures.
 For C programs, this
 fails for loops as simple as \lstinline{for(i=x;i<y;i++)} where
 $y-i$ decreases, but not $|i|$. %  Mutation is yet another problem.
@@ -604,7 +604,7 @@ version of Example~1 in which we increment $x$ by a constant $K>0$ and
 consume $T>0$ resources in each iteration.  The reasoning is similar
 to the one of Example~1 except that we obtain the potential
 $K{\cdot}\frac{T}{K}$ after the assignment.  In the figure, we separate
-logical assertions from potential functions by semicolons. Note that the
+logical assertions from potential functions with semicolons. Note that the
 logical assertions are only used in the rule for the assignment
 \code{x=x+K}.
 
@@ -841,7 +841,7 @@ and motivate our design decisions.
 \paragraph{Linear Potential Functions.}
 
 To find resource bounds automatically, we first need to restrict our
-search space.  In this work, we focus on a the following form of
+search space.  In this work, we focus on the following form of
 potential functions, which can express tight bounds for many typical
 programs and allows for inference with \emph{linear programming}.
 $$
@@ -881,7 +881,7 @@ includes the constant $c_0$.
 \paraskip
 \paragraph{Abstract Program State.}
 
-In addition to the quantitative annotations our automatic amortized
+In addition to the quantitative annotations, our automatic amortized
 analysis needs to maintain a minimal abstract state to justify certain
 operations on quantitative annotations.  For example when analyzing
 the code $x \gets x + y$, it is helpful to know the sign of $y$ to
@@ -894,7 +894,7 @@ The abstract program state is represented as \emph{logical contexts} in the
 derivation system used by our automated tool.
 Our implementation finds these logical contexts using abstract
 interpretation with the domain of linear inequalities.  We observed that
-the rules of the analysis often requires only minimal local knowledge.
+the rules of the analysis often require only minimal local knowledge.
 This means that it is not necessary for us to compute precise loop
 invariants and only a rough fixpoint (e.g. keeping only inequalities on
 variables unchanged by the loop) is sufficient to obtain good bounds.
@@ -1210,18 +1210,18 @@ our novel analysis, no other available tool derives the aforementioned
 Example \emph{t62} (\pref{fig:ex_list_2})
 is the inner loop of a quick sort implementation in cBench.  More
 precisely, it is the partitioning part of the algorithm.  This partition
-loop has linear complexity, and feeding it to our analysis gives a
-worst-case bound $2+3|[l,h]|$.  The bound is not optimal but it can be
+loop has linear complexity, and feeding it to our analysis gives the
+worst-case bound $2+3|[l,h]|$.  This bound is not optimal but it can be
 refined by rewriting the program. % to let our logical inference
 %discover more invariants.
 %With the potential
 %method in mind, it is clear that the three loops get their
 %potential from the same interval $[l,h]$ regardless of their nesting.
-With the potential method in mind, we can reason as follows.
+To understand the bound, we can reason as follows.
 %
 If $h \geq l$ initially, the cost of the loop is 2.
 Otherwise, the cost of each round (at
-most 3) is payed using the potential of $[l,h]$ by the first
+most 3) can be payed using the potential of $[l,h]$ by the first
 increment to $l$ because we know that $l<h$.  The two inner loops
 can also use $[l,h]$ to pay for their inner costs.
 %
@@ -1382,8 +1382,8 @@ rules of the automatic amortized analysis.
 \paraskip
 \paragraph{Cost Aware Clight.}
 
-We present the rules for a subset of the
-expressions of Clight.  Clight is the first intermediate
+We present the rules for a subset of Clight.
+Clight is the first intermediate
 language of the CompCert compiler~\cite{CompcertCACM}, it
 is a cleaner C with a unified looping construct and
 side-effect free expressions.  We reuse most of CompCert's
@@ -1428,7 +1428,7 @@ The meaning of this basic judgment is as follows: If $S$ is executed
 with starting state $\state$, the assertions in $\Gamma$
 hold, and at least $Q(\state)$ resources are available then the
 evaluation does not run out of resources and, if the execution
-terminates in state $\state'$, there are at least $Q(\state')$
+terminates in state $\state'$, there are at least $Q'(\state')$
 resources left and $\Gamma'$ holds for $\state'$.
 
 The judgement is a bit more involved since we have to take into
@@ -1537,14 +1537,11 @@ described later.}{}
 The rules {\sc Q:IncP}, {\sc Q:DecP}, and {\sc Q:Inc}
 describe how the potential is distributed after a size change of
 a variable.
-\iffull{The rule {\sc Q:IncP} is for increments $x \gets x + y$
+The rule {\sc Q:IncP} is for increments $x \gets x + y$
 and {\sc Q:DecP} is for decrements $x \gets x - y$, they both apply only
 when we can deduce from the logical context $\Gamma$ that $y \ge 0$.
 Of course, we have symmetrical rules {\sc Q:IncN} and {\sc Q:DecN}
-that can be applied if $y$ is not positive.}{The rule {\sc Q:IncP} is for increments
-$x \gets x+y$, it applies when we can deduce from the logical context
-$\Gamma$ that $y \ge 0$.  Of course, we have symmetrical rules that
-can be applied for decrements and when $y$ is not positive.}
+that can be applied if $y$ is not positive.
 The rules are all equivalent in the case where $y=0$.
 The rule {\sc Q:Inc} can be applied
 if we cannot find the sign of $y$.  % In $\toolname$,
@@ -1613,15 +1610,16 @@ Symmetrically, we use the unique name $\Vret$ to represent
 the return value in the function's postcondition
 $(\Gamma'_f; Q'_f)$.
 
-The rule {\sc Q:Weak} is not syntax directed. In the implementation
-we apply {\sc Q:Weak} before loops and between the two statements of a
-sequential composition. We could integrate weakening into every
-syntax directed rule but this simple heuristic helps to make the analysis
-efficient.  The high-level idea of {\sc Q:Weak} is the following: If
+The rule {\sc Q:Weak} is the only rule not syntax directed. %In the implementation
+%we apply {\sc Q:Weak} before loops and between the two statements of a
+%sequential composition.
+We could integrate weakenings into every syntax directed rule but, for
+the sake of efficiency, the implementation uses a simple heuristic instead.
+The high-level idea of {\sc Q:Weak} is the following: If
 we have a sound judgement, then it is sound to add more potential to the
 precondition and remove potential from the postcondition.  The concept of
 \emph{more potential} is formalized by the relation $Q' \succeq_\Gamma Q$
-that is defined in the rule {\sc Relax} that
+that is defined in the rule {\sc Relax}. This rule
 also deals with the important task of transferring constant potential
 (represented by $q_0$) to interval sizes and vice versa.  If we can deduce
 from the logical context that the interval size $|\inter x y| \geq l$ is
@@ -1735,7 +1733,7 @@ $$
 \label{sec:lp}
 \aftersectskip
 
-We separate the search of a derivation into two steps.  As a first
+We separate the search of a derivation in two steps.  As a first
 step we go through the functions of the program and apply inductively
 the derivation rules of the automatic amortized analysis.  This is
 done in a bottom-up way for each strongly connected component (SCC) of the
@@ -1752,8 +1750,8 @@ off-the-shelf LP solver (currently CLP~\cite{clp}).
 If the solver successfully finds a solution, we know that a derivation
 exists and extract the values for the initial
 $Q$ from the solver to get a resource bound for the program.  To get
-a full derivation we extract the complete solution from the
-solver, and apply it to the symbolic names $q_i$ of the coefficients
+a full derivation, we extract the complete solution from the
+solver and apply it to the symbolic names $q_i$ of the coefficients
 in the derivation.  If the LP solver fails to find a solution, an
 error is reported.
 
@@ -1916,13 +1914,13 @@ a program $P$ that fails to be analyzed automatically is enriched by
 auxiliary variables $\vec x$ and assertions to form a program
 $P_l(\vec x)$.  Second, an initial value $\vec X(\sigma)$ for the
 logical variables is selected to satisfy the proposition:
-$$
+\begin{equation} \tag{*}
 \forall n\, \sigma\, \sigma'.\,
   (\sigma, P_l(\vec X(\sigma))) \Downarrow_n \sigma'
     {\implies}
   \exists n' {\le} n.\,
     (\sigma, P) \Downarrow_{n'} \sigma'.
-$$
+\end{equation}
 Since the annotated program and the original one are usually
 syntactically close, the proof of this result goes
 by simple induction on the resource-aware evaluation judgement.
@@ -1996,7 +1994,7 @@ the case that $\log_2(x-x/2) = \log_2(x)-1$.
 Generally, we observed that because the instrumented program
 is structurally same as the original one, it is enough to prove
 that the added assertions never fail in order to show the two programs
-have identical resource consumption.  This can usually be piggybacked
+satisfy the proposition (*).  This can usually be piggybacked
 on standard static-analysis tools.
 
 \begin{figure}
@@ -2425,12 +2423,12 @@ value of the current function.  The meaning of the triple $\htriple Q
 S {Q'}$ is as follows: If $S$ is executed with starting state $\state$,
 the empty continuation, and at least $Q(\state)$ resource units available
 then the evaluation does not run out of resources and there are at
-least $Q(\state')$ resources left if the evaluation terminates in
+least $Q'(\state')$ resources left if the evaluation terminates in
 $\state'$.  The logic rules are similar to the ones in previous
 work and generalized to account for the cost introduced by  our
 cost-aware semantics.
 
-Finally, we define a strong compositional continuation based soundness for
+Finally, we define a strong compositional continuation-based soundness for
 triples and prove the validity of all the rules in Coq.  \ifshort{The full
 version of this paper \cite{anon_extended}, provides explanations for
 the rules and a thorough overview of our soundness proof.}{Details about
@@ -2451,10 +2449,10 @@ derivations of the automatic analysis to derivations in the quantitative
 logic we can directly obtain a certified resource bound for the analyzed
 program.
 
-The translation of an assertion $(\Gamma, Q)$ in the automatic
+The translation of an assertion $(\Gamma; Q)$ in the automatic
 analysis is defined by
 $$
-  \tr(\Gamma, Q) := \lambda\state .\, \Gamma(\state) + \Phi_Q(\state),
+  \tr(\Gamma; Q) := \lambda\state .\, \Gamma(\state) + \Phi_Q(\state),
 $$
 where we write $\Phi_Q$ for the unique linear potential function
 defined by the quantitative annotation $Q$.  The logical context $\Gamma$
@@ -2555,13 +2553,13 @@ Example \emph{t19}
 demonstrates the compositionality of the analysis.  The program consists
 of two loops that decrement a variable $i$.  In the first loop, $i$ is
 decremented down to 100 and in the second loop $i$ is decremented further
-down to $-1$.  However, between the loops we assign \code{i=i+k+50}.
+down to $-1$.  However, between the loops we assign \lstinline{i += k+50}.
 So in total the program performs $52 + |[-1,i]| + |[0,k]|$ ticks.
 Our analysis finds this tight bound because our amortized analysis
 naturally takes into account the relation between the two loops.
 Example \emph{t30} decrements both input variables $x$ and $y$ down to
 zero in an unconventional way.  In the loop body, first $x$ is decremented
-by one.  Then the values of the variables $x$ and $y$ are switched using
+by one, then the values of the variables $x$ and $y$ are switched using
 the local variable $t$ as a buffer.  Our analysis infers the tight
 bound $|[0,x]|+|[0,y]|$.  Sometimes we need some assumptions on the
 inputs in order to derive a bound.  Example \emph{t15} is such a case.
