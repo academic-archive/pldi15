@@ -1616,7 +1616,7 @@ described later.}{}
 % $q'_{xy} = q_{\ret y}$ and $q'_{yx} = q_{y \ret}$ for all $y$ and
 % $q_i'=q_i$ otherwise.
 
-The rules {\sc Q:IncP}\iffull{, {\sc Q:DecP},}{} and {\sc Q:Inc}
+The rules {\sc Q:IncP}, {\sc Q:DecP}, and {\sc Q:Inc}
 describe how the potential is distributed after a size change of
 a variable.
 \iffull{The rule {\sc Q:IncP} is for increments $x \gets x + y$
@@ -1629,12 +1629,13 @@ $\Gamma$ that $y \ge 0$.  Of course, we have symmetrical rules that
 can be applied for decrements and when $y$ is not positive.}
 The rules are all equivalent in the case where $y=0$.
 The rule {\sc Q:Inc} can be applied
-if we cannot deduce any information about $y$.  In $\toolname$,
-the rules for increments and decrements are combined into one rule\iffull{ where the specialized rules take priority over {\sc Q:Inc}.}{.}
+if we cannot find the sign of $y$.  % In $\toolname$,
+% the rules for increments and decrements are combined into one rule\iffull{ where
+% the specialized rules take priority over {\sc Q:Inc}.}{.}
 
-\iffull{To explain how rules for increment and decrement work, it is
+To explain how rules for increment and decrement work, it is
 sufficient to understand the rule {\sc Q:IncP}.  The others follow the
-same idea and are symmetrical.}{}  In {\sc Q:IncP}, the program updates a
+same idea and are symmetrical. In {\sc Q:IncP}, the program updates a
 variable $x$ with $x+y$ where $y \ge 0$.  Since $x$ is changed, the
 quantitative annotation must be updated to reflect the change of the
 program state.  We write $x'$ for the value of $x$ after the assignment.
@@ -1651,7 +1652,14 @@ $q_{vx}$ to pay for this change.  The rule ensures this
 only for $v \not\in \mathcal U$ because $x \le v$
 otherwise, and thus $|\inter v x| = 0$.
 
-\iffull{
+The rule {\sc Q:Loop} is a cornerstone of our analysis.  To apply it on a
+loop body one needs to find an invariant potential $Q$ that will pay for
+the iterations.  At each iteration, $M_l$ resources are spent to jump
+back, this explains the postcondition $Q{+}M_l$.  To exit the loop,
+the programmer uses the \code{break} statement, it is the reason why
+the postcondition for the full $\code{loop}~S$ statement $\{ \Gamma';
+Q' \}$ is used as break postcondition in the derivation for $S$.
+
 Another interesting rule is {\sc Q:Call}.  It needs to account for the
 changes to the stack caused by the function call, the arguments/return
 value passing, and the preservation of local variables.  We can sum up
@@ -1663,7 +1671,8 @@ the main ideas of the rule as follows.
   pre- and postcondition.
 \itemskipIn
 \item
-  $\!$The potential of intervals $|\inter x y|$ is preserved
+  The potential of intervals $|\inter x y|$ is preserved
+  across a function call
   if $x$ and $y$ are local\iffull{ variables.}{.}
 \item
   The unknown potentials after the call (e.g.
@@ -1678,43 +1687,32 @@ computation in the function $f$ and one part to keep for
 later use after the function call.  This splitting is
 realized by the equations $Q = P {+} S$ and $Q' =
 P' {+} S'$.  Arguments in the function precondition
-$(\Gamma_f, Q_f)$ are named using a fixed vector $\Vargs$
+$(\Gamma_f; Q_f)$ are named using a fixed vector $\Vargs$
 of names different from all program variables.  This
 prevents name conflicts from happening and ensures that
 the substitution $[\Vargs/\vec x]$ is meaningful.
 Symmetrically, we use the unique name $\Vret$ to represent
 the return value in the function's postcondition
-$(\Gamma'_f, Q'_f)$.
-}{}
+$(\Gamma'_f; Q'_f)$.
 
-The rule {\sc Q:Loop} is a cornerstone of our analysis.  To apply it on a
-loop body one needs to find an invariant potential $Q$ that will pay for
-the iterations.  At each iteration, $M_l$ resources are spent to jump back,
-this explains the postcondition $Q{+}M_l$. %  Assuming $M_l>0$, and if $Q$
-%is finite on the initial heap (i.e. the precondition is not $\bot$), the
-%loop can only run for a finite number of iterations.
-To exit the loop,
-the programmer uses the \code{break} statement, this explains why the postcondition
-for the full $\code{loop}~S$ statement $\{ \Gamma'; Q' \}$ is used as break
-postcondition in the derivation for $S$.
-
-\iffull{The rule {\sc Q:Weak} is not syntax directed. In the implementation
+The rule {\sc Q:Weak} is not syntax directed. In the implementation
 we apply {\sc Q:Weak} before loops and between the two statements of a
 sequential composition. We could integrate weakening into every
 syntax directed rule but this simple heuristic helps to make the analysis
-efficient.}{}  The high-level idea of {\sc Q:Weak} is the following: If
+efficient.  The high-level idea of {\sc Q:Weak} is the following: If
 we have a sound judgement, then it is sound to add more potential to the
 precondition and remove potential from the postcondition.  The concept of
 \emph{more potential} is formalized by the relation $Q' \succeq_\Gamma Q$
-that is defined in the rule {\sc Relax}\iffull{ that
+that is defined in the rule {\sc Relax} that
 also deals with the important task of transferring constant potential
 (represented by $q_0$) to interval sizes and vice versa.  If we can deduce
 from the logical context that the interval size $|\inter x y| \geq l$ is
-larger then a constant $l$ then we can transfer potential $q_{xy} {\cdot}
-|\inter x y|$ form the interval to constant potential $l{\cdot}q_{xy}$
+larger than a constant $l$ then we can turn the potential $q_{xy} {\cdot}
+|\inter x y|$ form the interval into the constant potential $l{\cdot}q_{xy}$
 and guarantee that we do not gain potential.  Conversely, if $|\inter
 x y| \leq u$ for a constant $u$ then we can transfer constant potential
-$u{\cdot}q_{xy}$ to the interval potential $q_{xy} {\cdot} |\inter x y|$ without gaining potential.}{.}
+$u{\cdot}q_{xy}$ to the interval potential $q_{xy} {\cdot} |\inter x y|$
+without gaining potential.
 
 \sectskip
 \section{Automatic Inference via LP Solving}
