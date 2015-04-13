@@ -574,19 +574,19 @@ again.
 \vspace{-1.5ex}
 \begin{lstlisting}[mathescape]
 ${\color{blue}%
-  \{ \cdot; \, 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \} }$
+  \{ \cdot; \, 0 + \frac{T}{K} {\cdot} |[x,y]| \} }$
 while (x+K<=y) {
   ${\color{blue}%
-  \{ x + K \le y; \; 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \} }$
+  \{ x + K \le y; \; 0 + \frac{T}{K} {\cdot} |[x,y]| \} }$
   x=x+K;
   ${\color{blue}%
-  \{ x \leq y; \, T + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \} }$
+  \{ x \leq y; \, T + \frac{T}{K} {\cdot} |[x,y]| \} }$
   tick(T);
   ${\color{blue}%
-  \{ x \leq y; \, 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \} }$
+  \{ x \leq y; \, 0 + \frac{T}{K} {\cdot} |[x,y]| \} }$
 }
 ${\color{blue}%
- \{ x \geq y; 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \} }$
+ \{ x \geq y; 0 + \frac{T}{K} {\cdot} |[x,y]| \} }$
 \end{lstlisting}
   \caption{Derivation of a tight bound on the number of
     ticks for a standard \emph{for loop}.  The parameters $K>0$ and
@@ -873,8 +873,8 @@ a finite number of elements are not zero. \iffull{ For soundness, we
 
 In the potential functions, we treat constants as global variables
 that cannot be assigned to.  For example, if the program contains the
-constant $8128$ then we have a variable $c_{8128}$ and
-$\state(c_{8128}) = 8128$.  We assume that every program state
+constant $1988$ then we have a variable $c_{1988}$ and
+$\state(c_{1988}) = 1988$.  We assume that every program state
 includes the constant $c_0$.
 
 \paraskip
