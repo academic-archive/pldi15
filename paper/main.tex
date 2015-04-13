@@ -1118,7 +1118,7 @@ point of two trains that approach each other with different speeds.}{}
 }
 %
 \and\Rule{Q:Call}
-{ (\Gamma_f, Q_f,  \Gamma_f', Q_f') \in \Delta(f) \!
+{ (\Gamma_f; Q_f,  \Gamma_f'; Q_f') \in \Delta(f) \!
 \\ \text{Loc} = \text{Locals}(Q) \!
 \\ \forall i \neq j . \, x_i \neq x_j \!
 \\ c \in \Qplusz \!
@@ -2394,7 +2394,7 @@ for stack usage~\cite{veristack14}, add support for arbitrary
 resources, and simplify the handling of auxiliary state.
 
 We define quantitative Hoare triples
-as $B;R\vdash\htriple Q S {Q'}$ where $B$, $R$, $Q$, and $Q'$ are
+as $B;R\vdash_L \htriple Q S {Q'}$ where $B$, $R$, $Q$, and $Q'$ are
 maps from program states to an element of $\Qplusz\cup\{\infty\}$ that represents
 an amount of resources available.  The assertions $B$ and $R$ are
 postconditions for the case in which the block $S$ exits by a \code{break}
@@ -2432,7 +2432,7 @@ program.
 The translation of an assertion $(\Gamma, Q)$ in the automatic
 analysis is defined by
 $$
-  \tr(\Gamma, Q) := \lambda\state .\, (\Gamma(\state)) + \Phi_Q(\state),
+  \tr(\Gamma, Q) := \lambda\state .\, \Gamma(\state) + \Phi_Q(\state),
 $$
 where we write $\Phi_Q$ for the unique linear potential function
 defined by the quantitative annotation $Q$.  The logical context $\Gamma$
@@ -2450,14 +2450,14 @@ $$
   )
 $$}{}
 %
-\iffull{These definitions let}{This lets} us translate the judgement
-$J := B; R; P \vdash S \dashv P'$\iffull{ in the context $\Delta$ by $\tr(J) :=$}{ by}
+These definitions let us translate the judgement
+$J := B, R \vdash \htriple P S {P'}$\iffull{ in the context $\Delta$ by $\tr(J) :=$}{ by}
 \iffull{$$
   (\lambda f .\, \tr(\Delta(f))); \tr(B); \tr(R) \vdash
     \htriple{\tr(P)}{S}{\tr(P')}.
 $$}{%
 $$
-  \tr(J) := \tr(B); \tr(R) \vdash \htriple{\tr(P)} S {\tr(P')}.
+  \tr(J) := \tr(B); \tr(R) \vdash_L \htriple{\tr(P)} S {\tr(P')}.
 $$}%
 \noindent{}The soundness of the automatic analysis can now be stated
 formally with the following theorem.
