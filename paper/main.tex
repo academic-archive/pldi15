@@ -554,7 +554,7 @@ while (x<y) { x=x+1; tick(1); } #\hfill \textnormal{(Example 1)}#
 To derive this bound, we start with the initial potential $\Phi_0 =
 |[x,y]|$, which
 we also use as the loop invariant.  For the loop body we have (like in
-Hoare logic) to derive a triple like
+Hoare logic) to derive a triple
 $\htriple{\Phi_0}{\code{x=x+1;tick(1)}}{\Phi_0}$.  We can only do so
 if we utilize the fact that $x<y$ at the beginning of the loop body.
 The reasoning then works as follows. We start with the potential
@@ -602,8 +602,9 @@ $\frac{T}{K}{\cdot}|[x,y]|$ on the number of ticks for a generalized
 version of Example~1 in which we increment $x$ by a constant $K>0$ and
 consume $T>0$ resources in each iteration.  The reasoning is similar
 to the one of Example~1 except that we obtain the potential
-$K{\cdot}\frac{T}{K}$ after the assignment.  Note that the logical
-assertions are only used in the rule for the assignment
+$K{\cdot}\frac{T}{K}$ after the assignment.  In the figure, we separate
+logical assertions from potential functions by semicolons. Note that the
+logical assertions are only used in the rule for the assignment
 \code{x=x+K}.
 
 To the best of our knowledge, no other implemented tool for C is
@@ -1231,26 +1232,6 @@ or additively.
 classes of challenging programs that we can automatically analyze.
 \pref{sec:exper} contains a more detailed comparison with other
 tools\iffull{ for automatic bound derivation.}{.}
-
-\paraskip
-\paragraph{Limitations.}
-The implementation of our analysis does not currently support all of Clight.
-Function pointers, goto statements, and stack-allocated
-variables that have their address taken are not supported by the
-automatic analysis.  While these limitations concern the current
-implementation, our technique is in principle capable to handle them.
-
-For the sake of simplicity, the automated system described here is
-restricted to finding only linear bounds.  However, the amortized analysis
-technique was shown to work with polynomial bounds~\cite{HoffmannAH11};
-we leave this extension of our system as future work.
-
-Even some linear programs cannot be analyzed automatically by
-$\toolname$, it is usually the case for programs that rely on heap
-invariants (like nul-terminated C strings), for programs making
-use of non-linear operations (like \code{\%} or \code{*}), or for
-programs whose
-termination can only be proved by complex path-sensitive reasoning.
 
 \iffull{
 \begin{figure*}
@@ -2792,6 +2773,29 @@ input variable $x$ is non-negative.  \iffull{If $x$ is negative then
   \emph{t08}. For $x\ge 0$ the bound is tight.}
 \label{fig:3d}
 \end{figure}
+
+\sectskip
+\section{Limitations}
+\label{sec:limitations}
+\aftersectskip
+
+Our current implementation of $\toolname$ does not currently support
+all of Clight.  Programs with function pointers, goto statements,
+and dereferences of stack-allocated variables cannot be analyzed
+automatically.  While these limitations concern the current
+implementation, our technique is in principle capable to handle them.
+
+For the sake of simplicity, the automated system described here is
+restricted to finding only linear bounds.  However, the amortized analysis
+technique was shown to work with polynomial bounds~\cite{HoffmannAH11};
+we leave this extension of our system as future work.
+
+Even certain linear programs cannot be analyzed automatically by
+$\toolname$, it is usually the case for programs that rely on heap
+invariants (like nul-terminated C strings), for programs making
+use of non-linear operations (like \code{\%} or \code{*}), or for
+programs whose
+termination can only be proved by complex path-sensitive reasoning.
 
 
 \sectskip
