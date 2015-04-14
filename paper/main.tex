@@ -124,13 +124,13 @@
 
 
 %SHORT
-\ifx\fullversion\undefined
-\abovedisplayskip=3pt
-\belowdisplayskip=3pt
-\abovedisplayshortskip=3pt
-\belowdisplayshortskip=3pt
-\else
-\fi
+%\ifx\fullversion\undefined
+%\abovedisplayskip=3pt
+%\belowdisplayskip=3pt
+%\abovedisplayshortskip=3pt
+%\belowdisplayshortskip=3pt
+%\else
+%\fi
 %SHORT
 
 %----------------------------------------------------
@@ -234,9 +234,9 @@
 {Software/Program Verification}
 \category{F.3.1}{Logics and Meanings of Programs}
 {Specifying and Verifying and Reasoning about Programs}
-\vspace{-3pt}
+%\vspace{-3pt}
 \terms Verification, Reliability
-\vspace{-3pt}
+%\vspace{-3pt}
 \keywords Quantitative Verification, Resource Bound Analysis, Static
 Analysis, Amortized Analysis, LP Solving, Program Logic
 
@@ -358,14 +358,14 @@ Our automated analysis is able to infer
 resource bounds on C programs with mutually-recursive functions and integer loops.
 %
 The resource behavior of functions can be summarized
-in a function specification that can be used at every
+in a functional specification that can be used at every
 call site without accessing the function body.
 %
 To our knowledge this is the first technique based on
 amortized analysis that is able to derive bounds that depend on negative numbers
 and differences of variables.  It is also the first
 resource analysis technique for C that deals naturally with
-recursive functions and sequenced loops, and can handle resources that can
+recursive functions and sequenced loops, and can handle resources that may
 become available during execution (e.g., when freeing
 memory).  Compared to more classical
 approaches based on ranking functions, our tool inherits
@@ -447,7 +447,7 @@ In summary, we make the following \emph{contributions}.
   programs. It is naturally compositional, tracks size changes of
   variables to derive global bounds, can handle mutually-recursive
   functions, generates resource abstractions for functions, derives
-  proof certificates, and handles resources that can
+  proof certificates, and handles resources that may
   become available during execution.
 \itemskipIn
 \item We show how to automatically reduce the inference of \emph{linear} resource
@@ -580,7 +580,7 @@ again.
 
 \begin{figure}[t]
   \centering
-\vspace{-1.5ex}
+%\vspace{-1.5ex}
 \begin{lstlisting}[mathescape]
 ${\color{blue}%
   \{ \cdot; \, 0 + \frac{T}{K} {\cdot} |[x,y]| \} }$
@@ -679,7 +679,7 @@ same set of variables.}{}
 
 \begin{figure*}
   \centering
-\vspace{-.3cm}
+%\vspace{-.3cm}
 \hspace{-0.4cm}
   \begin{minipage}[b]{.24\linewidth}
     \begin{center}
@@ -705,7 +705,7 @@ while (n>x) {
 } ${\color{blue}%
   \{ \cdot; \, |[x, n]| {+} |[y, m]| \} }$
    \end{lstlisting}
-\vspace{-2.5ex}
+%\vspace{-2.5ex}
 $|[x, n]| + |[y, m]|$
 \\[.4\baselineskip]
       {\bf speed\_1}
@@ -739,7 +739,7 @@ while (x<n) {
 } ${\color{blue}%
   \{ \cdot; \, |[x, n]| {+} |[z, n]| \} }$
    \end{lstlisting}
-\vspace{-2.5ex}
+%\vspace{-2.5ex}
 $|[x, n]| + |[z, n]|$
 \\[.4\baselineskip]
       {\bf speed\_2}
@@ -773,7 +773,7 @@ while (y>9) {
 } ${\color{blue}%
   \{ \cdot; \, 3.1|[y,z]| {+} 0.1|[0,y]| \} }$
    \end{lstlisting}
-\vspace{-2.5ex}
+%\vspace{-2.5ex}
 $3.1|[y,z]| + 0.1|[0,y]|$
 \\[.4\baselineskip]
       {\bf t08a}
@@ -809,7 +809,7 @@ while (n<0) {
 } ${\color{blue}%
   \{ \cdot; \, P(n,y) \} }$
    \end{lstlisting}
-\vspace{-2.5ex}
+%\vspace{-2.5ex}
 $59|[n,0]| {+} 0.05|[0,y]|$
 \\[.4\baselineskip]
       {\bf t27}
@@ -910,7 +910,7 @@ variables unchanged by the loop) is sufficient to obtain good bounds.
 
 \begin{figure*}
   \centering
-\ifshort{\vspace{-.3cm}
+\ifshort{%\vspace{-.3cm}
 \hspace{-0.4cm}}{}
   \begin{minipage}[b]{7cm}
     \begin{center}
@@ -922,7 +922,7 @@ void c_up (int x, int y) {
   if (y+1<x) {tick(1); c_down(x,y+2);}
 }
    \end{lstlisting}
-\vspace{-2.7ex}
+%\vspace{-2.7ex}
 $0.33 + 0.67 |[y,x]|\;\;$ (\code{c\_down(x,y)})\\
 $\;\;\;\;\;\;\,0.67 |[y,x]|\;\;$ (\code{c\_up(x,y)})
 \\[.4\baselineskip]
@@ -942,7 +942,7 @@ for (; l>0; l--)
   /* save leftovers */
   tick(1);
    \end{lstlisting}
-\vspace{-2.8ex}
+%\vspace{-2.8ex}
 $\;\;\;\;\;\;\;\;\;\;\;\;\;\frac{N}{8} |[0,l]|\;\;$ if $N \geq 8$\\
 $7\frac{8-N}{8} + \frac{N}{8}|[0,l]|\;\;$ if $N < 8$
 \\[.4\baselineskip]
@@ -1050,7 +1050,7 @@ point of two trains that approach each other with different speeds.}{}
 \ifshort{
 \begin{figure*}
 \small
-\vspace{-.4cm}
+%\vspace{-.4cm}
 \def \MathparLineskip {\lineskip=0.35cm}
 \begin{mathpar}
 \Rule{Q:Skip}
@@ -1639,7 +1639,7 @@ without gaining potential.
 
 \newcommand{\loopbody}[0]{\ensuremath{\code{if~(x \geq 10)~(x=x - 10; tick(5))~else~break}}}
 \begin{figure*}[t]
-\vspace{-.5cm}
+%\vspace{-.5cm}
 \centering
 \footnotesize
 \begin{mathpar}
@@ -1692,11 +1692,11 @@ without gaining potential.
 { (\cdot; B) \vdash
   \htriple{ \cdot; Q) }{ \code{loop}~{\loopbody} }{ x {<} 10; P }
 }
-\vspace{-.3cm}
+%\vspace{-.3cm}
 \end{mathpar}
 \flushleft
 \begin{tabular}{l}Constraints:\end{tabular}
-\vspace{-.2cm}
+%\vspace{-.2cm}
 $$
 \begin{array}{lll}
 P {=} B^\text{lo} \land Q {=} Q^\text{lo} {=} P^\text{lo}
@@ -1976,7 +1976,7 @@ while (k > 0) {
   k--;
 }
 \end{lstlisting}
-\vspace{-.2cm}
+%\vspace{-.2cm}
 \end{minipage}
 \caption{Assisted bound derivation using logical state.  We write
   $\#_1(a)$ for $\# \{ i \mid 0 {\le} i {<} N {\land} a[i] {=} 1 \}$ and use the
@@ -2005,7 +2005,7 @@ satisfy the proposition (*).  This can usually be piggybacked
 on standard static-analysis tools.
 
 \begin{figure}
-\vspace{-.3cm}
+%\vspace{-.3cm}
 \begin{lstlisting}[numbers=left]
 ${\color{blue}%
   \mbox{logical state invariant }
@@ -2021,7 +2021,7 @@ bsearch(x,l,h@,lg@) {
   } else return l;
 }
 \end{lstlisting}
-\vspace{-.2cm}
+%\vspace{-.2cm}
 \caption{Assisted bound derivation using logical state.
   % We use the tick metric to model the stack consumption of the program.
   % Before a function call to \code{bsearch}, a tick statement pays for
@@ -2082,7 +2082,7 @@ is proved by a translation morphism to the logic.
 
 \begin{figure*}
 \centering
-\vspace{-.5cm}
+%\vspace{-.5cm}
 \begin{tabular}{r|c|c|c|c|c}
 %
 & t09 & t19 & t30 & t15 & t13\\
@@ -2612,7 +2612,7 @@ int srch(
     return i;
   }
    \end{lstlisting}
-\vspace{-1.2cm}
+%\vspace{-1.2cm}
 \hspace{3.8cm}
 \footnotesize
 \begin{tabular}{|rl|}
@@ -2623,7 +2623,7 @@ LOOPUS & $2 {+} 3\max(n, 0)$\\
 \hline
 \end{tabular}
     \end{center}
-\vspace{-0.1cm}
+%\vspace{-0.1cm}
   \end{minipage}
   \caption{The Knuth-Morris-Pratt algorithm for string search.}
   \label{fig:KMP}
@@ -2755,8 +2755,8 @@ the compositionality of our analysis is essential to get a tight bound
 since loops on the same index are sequenced 4 and 2 times without
 resetting it.  All other tools derive much larger constant factors.
 
-Since we have a formal cost semantics, we can run our examples with
-this semantics for different inputs and measure the cost to compare it
+With our formal cost semantics, we can run our examples 
+for different inputs and measure the cost to compare it
 to our derived bound.  \pref{fig:3d} shows such a comparison for
 Example \emph{t08}, a variant of \emph{t08a} from \pref{sec:AAA}.  One
 can see that the derived constant factors are the best possible if the
@@ -2793,7 +2793,7 @@ input variable $x$ is non-negative.  \iffull{If $x$ is negative then
 
 \begin{figure}[t]
 \center
-% \vspace{-.2cm}
+\vspace{-.2cm}
 \includegraphics[width=.9\linewidth]{fig/bound3d}
 \caption{The automatically derived bound $1.33|[x,y]| + 0.33 |[0,x]|$
   (blue lines) and the measured runtime cost (red crosses) for Example
@@ -2860,10 +2860,9 @@ but has very rudimentary support for automation. It is not based on
 efficient LP solving and cannot automatically derive symbolic
 bounds.  In contrast, our main contribution is an automatic amortized
 analysis for C that can derive parametric bounds for loops and
-recursive functions fully automatically.
-%
-In this article, we also use a more general quantitative Hoare
-logic that is parametric in the resource of interest.
+recursive functions fully automatically. We
+use a more general quantitative Hoare
+logic that is parametric over the resource of interest.
 
 \iffull{
 In the development of our quantitative Hoare logic we have drawn
@@ -2904,10 +2903,10 @@ bounds is well known in the resource analysis
 community~\cite{AlonsoG12,Moser14,SinnZV14}.  Currently, the only
 other available tools that can be directly applied to C code are Rank
 and LOOPUS.  As demonstrated, $\toolname$ is more compositional than
-the aforementioned tools. Our technique, is the only one that is able
-to generate resource specifications for functions, deal with resources
-like memory that might become available, generates proof certificates
-for the bounds, and has support for user guidance that separates
+the aforementioned tools. Our technique, is the only one that can
+generate resource specifications for functions, deal with resources
+like memory that might become available, generate proof certificates
+for the bounds, and  support user guidance that separates
 qualitative and quantitative reasoning.
 
 There are techniques~\cite{Braberman08} that can compute the memory
@@ -2940,10 +2939,11 @@ compute symbolic bounds. \iffull{Furthermore, there is no way to
 We have developed a novel analysis framework for compositional and
 certified worst-case resource bound analysis for C programs.  The
 framework combines ideas from existing abstract interpretation--based
-techniques with the potential method of amortized analysis.  It is implemented in the publicly available tool
-$\toolname$. To the best of our knowledge, $\toolname$ is the first
-analysis tool for C programs that automatically reduces the derivation
-of symbolic bounds to LP solving.
+techniques with the potential method of amortized analysis.  It is
+implemented in the publicly available tool $\toolname$. To the best of
+our knowledge, $\toolname$ is the first tool for C programs
+that automatically reduces the derivation of symbolic bounds to LP
+solving.
 
 We have demonstrated that our approach improves the state-of-the-art
 in resource bound analysis for C programs in three ways. First, our
