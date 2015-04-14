@@ -1957,10 +1957,10 @@ $\#_1(a)$, the logical variable $na$ is decremented.
 Similarly, on line 8, an array entry which was 0 becomes 1, so
 $na$ is incremented.  To complete the step 2 of the systematic
 procedure described above, we must show that the extra assertion
-\lstinline{na > 0} on line 5 is always true.  It
-is done by proving inductively that $na = \#_1(a)$
+\lstinline{na > 0} on line 5 cannot fail.  We do it
+by proving inductively that $na = \#_1(a)$
 and remarking that since \lstinline{a[x] == 1} is true, we must have
-$\#_1(a) > 0$, thus the assertion \lstinline{na > 0} never fails.
+$\#_1(a) {>} 0$, thus the assertion \lstinline{na > 0} never fails.
 
 \begin{figure}[t]
 \begin{minipage}[b]{0.8\linewidth}
@@ -1995,7 +1995,7 @@ program is proved using logical variable annotations.  Once again,
 annotations are in blue in the program text.  In this example,
 to ease the proof of equivalence between the annotated program
 and the original one, we use the inequality $lg >
-\log_2(h-l)$ as an invariant.  This technique allows a simpler
+\log_2(h-l)$ as invariant.  This allows a simpler
 proof because, when working with integer arithmetic, it is not always
 the case that $\log_2(x-x/2) = \log_2(x)-1$.
 
@@ -2499,10 +2499,10 @@ formally with the following theorem.
 \noindent
 The proof of this theorem is constructive and maps each rule
 of the automatic analysis directly to its counterpart in the
-quantitative logic.  The most tricky parts are the translations of the
+quantitative logic.  The trickiest parts are the translations of the
 rules for increments and decrements and the rule {\sc Q:Weak} for
 weakening because they make essential use of the algebraic properties
-of our linear potential functions.
+of the potential functions.
 \iffull{ For instance we prove the following lemma to show the soundness
 of the translation of {\sc Q:Weak}.
 
