@@ -2755,7 +2755,7 @@ the compositionality of our analysis is essential to get a tight bound
 since loops on the same index are sequenced 4 and 2 times without
 resetting it.  All other tools derive much larger constant factors.
 
-With our formal cost semantics, we can run our examples 
+With our formal cost semantics, we can run our examples
 for different inputs and measure the cost to compare it
 to our derived bound.  \pref{fig:3d} shows such a comparison for
 Example \emph{t08}, a variant of \emph{t08a} from \pref{sec:AAA}.  One
@@ -2808,7 +2808,7 @@ input variable $x$ is non-negative.  \iffull{If $x$ is negative then
 
 Our implementation does not currently support
 all of Clight.  Programs with function pointers, goto statements,
-continue statements, and dereferences of stack-allocated variables
+continue statements, and pointers to stack-allocated variables
 cannot be analyzed automatically.  While these limitations concern the
 current implementation, our technique is in principle capable to handle
 them.
