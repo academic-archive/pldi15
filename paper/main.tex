@@ -2646,7 +2646,6 @@ bound derivation for the Knuth-Morris-Pratt algorithm for string
 search. $\toolname$ finds the tight linear bound $1+2|[0,n]|$.
 \fi
 
-
 To compare our tool with existing work, we focused on loop bounds and
 use a simple metric that counts the number of back edges (i.e., number
 of loop iterations) that are followed in the execution of the program
@@ -2683,34 +2682,6 @@ program.
   automatic tools.}
 \label{tab:compar}
 \end{table}
-
-\begin{table}[t]
-\centering
-\small
-\begin{tabular}{r|c|c|c}
-Function & LoC & Bound & Time (s) \\
-\hline
-\code{adpcm\_coder} & 145 & $1+|[0,\code{N}]|$ & 0.6 \\
-\code{adpcm\_decod} & 130 & $1+|[0,\code{N}]|$ & 0.2 \\
-\code{BF\_cfb64\_enc} & 151 & $1+2|[-1,\code{N}]|$ & 0.7 \\
-\code{BF\_cbc\_enc} & 180 & $2+0.25|[-8,\code{N}]|$ & 1.0 \\
-\code{mad\_bit\_crc} & 145 & $61.19{+}0.19|[-1,\code{N}]|$ & 0.4 \\
-\code{mad\_bit\_read} & 65 & $1+0.12|[0,\code{N}]|$ & 0.05 \\
-\code{MD5Update} & 200 & $133.95{+}1.05|[0,\code{N}]|$ & 1.0 \\
-\code{MD5Final} & 195 & 141 & 0.22 \\
-\code{sha\_update} & 98 & $2 + 3.55|[0,\code{N}]|$ & 1.2 \\
-% \code{build\_ycc\_rgb} & 68 & 257 & 0.05 \\
-\code{PackBitsDecode} & 61 & $1+65|[-129,\code{cc}]|$ & 0.6 \\
-\code{KMPSearch} & 20 & $1+2|[0,n]|$ & 0.1 \\
-\hline
-\code{ycc\_rgb\_conv} & 66 & $\code{nr}\cdot\code{nc}$ & 0.1 \\
-\code{uv\_decode} & 31 & $\log_2(\code{UV\_NVS})+1$ & 0.1 \\
-\end{tabular}
-\vspace{.1cm}
-\caption{Derived bounds for functions from cBench.}
-\label{tab:cbench}
-\end{table}
-
 
 \pref{tab:compar} summarizes the results of our experiments presented
 in \pref{tab:eval}.  It shows
@@ -2793,20 +2764,37 @@ input variable $x$ is non-negative.  \iffull{If $x$ is negative then
 
 
 
-\begin{figure}[t]
-\center
-\vspace{-.2cm}
-\includegraphics[width=.9\linewidth]{fig/bound3d}
-\caption{The automatically derived bound $1.33|[x,y]| + 0.33 |[0,x]|$
-  (blue lines) and the measured runtime cost (red crosses) for Example
-  \emph{t08}. For $x\ge 0$ the bound is tight.}
-\label{fig:3d}
-\end{figure}
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{r|c|c|c}
+Function & LoC & Bound & Time (s) \\
+\hline
+\code{adpcm\_coder} & 145 & $1+|[0,\code{N}]|$ & 0.6 \\
+\code{adpcm\_decod} & 130 & $1+|[0,\code{N}]|$ & 0.2 \\
+\code{BF\_cfb64\_enc} & 151 & $1+2|[-1,\code{N}]|$ & 0.7 \\
+\code{BF\_cbc\_enc} & 180 & $2+0.25|[-8,\code{N}]|$ & 1.0 \\
+\code{mad\_bit\_crc} & 145 & $61.19{+}0.19|[-1,\code{N}]|$ & 0.4 \\
+\code{mad\_bit\_read} & 65 & $1+0.12|[0,\code{N}]|$ & 0.05 \\
+\code{MD5Update} & 200 & $133.95{+}1.05|[0,\code{N}]|$ & 1.0 \\
+\code{MD5Final} & 195 & 141 & 0.22 \\
+\code{sha\_update} & 98 & $2 + 3.55|[0,\code{N}]|$ & 1.2 \\
+% \code{build\_ycc\_rgb} & 68 & 257 & 0.05 \\
+\code{PackBitsDecode} & 61 & $1+65|[-129,\code{cc}]|$ & 0.6 \\
+\code{KMPSearch} & 20 & $1+2|[0,n]|$ & 0.1 \\
+\hline
+\code{ycc\_rgb\_conv} & 66 & $\code{nr}\cdot\code{nc}$ & 0.1 \\
+\code{uv\_decode} & 31 & $\log_2(\code{UV\_NVS})+1$ & 0.1 \\
+\end{tabular}
+\vspace{.1cm}
+\caption{Derived bounds for functions from cBench.}
+\label{tab:cbench}
+\end{table}
 
-\sectskip
+\sectskip             \vspace{-3pt}
 \section{Limitations}
 \label{sec:limitations}
-\aftersectskip
+\aftersectskip              \vspace{-1pt}
 
 Our implementation does not currently support
 all of Clight.  Programs with function pointers, goto statements,
@@ -2828,9 +2816,9 @@ resource usage depends on the result of non-linear operations (like
 termination can only be proved by complex path-sensitive reasoning.
 
 
-\sectskip
+\sectskip                  \vspace{-3pt}
 \section{Related Work}
-\label{sec:related}
+\label{sec:related}        \vspace{-1pt}
 \aftersectskip
 
 Our work has been inspired by type-based amortized resource analysis
@@ -2853,6 +2841,17 @@ particular, recent systems~\cite{HoffmannS13} that deal with integers
 and arrays cannot derive bounds that depend on values in mutable
 locations, possibly negative integers, or on differences between
 integers.
+
+\begin{figure}[t]
+\center
+\vspace{-.2cm}
+\includegraphics[width=.9\linewidth]{fig/bound3d}
+\caption{The automatically derived bound $1.33|[x,y]| + 0.33 |[0,x]|$
+  (blue lines) and the measured runtime cost (red crosses) for Example
+  \emph{t08}. For $x\ge 0$ the bound is tight.}
+\label{fig:3d}
+\vspace{-10pt}
+\end{figure}
 
 A recent project~\cite{veristack14} has implemented and verified a
 quantitative logic to reason about stack-space usage, and modified the
@@ -2933,9 +2932,9 @@ compute symbolic bounds. \iffull{Furthermore, there is no way to
 
 
 
-\sectskip
+\sectskip                             \vspace{-3pt}
 \section{Conclusion}
-\label{sec:concl}
+\label{sec:concl}                     \vspace{-1pt}
 \aftersectskip
 
 We have developed a novel analysis framework for compositional and
