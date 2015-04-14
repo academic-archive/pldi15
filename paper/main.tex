@@ -27,13 +27,21 @@
 \newcommand{\iffull}[2]{\ifx\fullversion\undefined{#2}\else{#1}\fi}
 \newcommand{\ifshort}[2]{\ifx\fullversion\undefined{#1}\else{#2}\fi}
 
-\newcommand{\itemskip}[0]{\ifshort{\vspace{-3pt}}{}}
-\newcommand{\itemskipIn}[0]{\ifshort{\vspace{-1pt}}{}}
-\newcommand{\sectskip}[0]{\ifshort{\vspace{-3pt}}{}}
-\newcommand{\paraskip}[0]{\ifshort{\vspace{-4pt}}{}}
-\newcommand{\lstskip}[0]{\ifshort{\vspace{-2pt}}{}}
-\newcommand{\aftersectskip}[0]{\ifshort{\vspace{-1pt}}{}}
-\newcommand{\subsectskip}[0]{\ifshort{\vspace{-1pt}}{}}
+%\newcommand{\itemskip}[0]{\ifshort{\vspace{-3pt}}{}}
+%\newcommand{\itemskipIn}[0]{\ifshort{\vspace{-1pt}}{}}
+%\newcommand{\sectskip}[0]{\ifshort{\vspace{-3pt}}{}}
+%\newcommand{\paraskip}[0]{\ifshort{\vspace{-4pt}}{}}
+%\newcommand{\lstskip}[0]{\ifshort{\vspace{-2pt}}{}}
+%\newcommand{\aftersectskip}[0]{\ifshort{\vspace{-1pt}}{}}
+%\newcommand{\subsectskip}[0]{\ifshort{\vspace{-1pt}}{}}
+
+\newcommand{\itemskip}[0]{}
+\newcommand{\itemskipIn}[0]{}
+\newcommand{\sectskip}[0]{}
+\newcommand{\paraskip}[0]{}
+\newcommand{\lstskip}[0]{}
+\newcommand{\aftersectskip}[0]{}
+\newcommand{\subsectskip}[0]{}
 
 %SHORT
 %\usepackage[normal,belowskip=-11pt,aboveskip=1pt]{caption} %Remove extra space around captions
