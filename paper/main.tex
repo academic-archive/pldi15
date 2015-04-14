@@ -2664,6 +2664,10 @@ is derived for \emph{t08} only applies to the first loop in the
 program.
 
 \begin{table}[t]
+\nocaptionrule \caption{Comparison of $\toolname$ with other
+  automatic tools.}
+\vspace{6pt}
+\label{tab:compar}
 \small
 \centering
 \begin{tabular}{r|c|c|c|c|c}
@@ -2677,10 +2681,7 @@ program.
 \\
 \#tested & 14 & 33 & 33 & 14 & 33
 \end{tabular}
-\vspace{.01cm}
-\caption{Comparison of $\toolname$ with other
-  automatic tools.}
-\label{tab:compar}
+\vspace{-6pt}
 \end{table}
 
 \pref{tab:compar} summarizes the results of our experiments presented
@@ -2703,6 +2704,18 @@ all tested tools work very efficiently and need less then a second
 on every tested example.}{}
 
 \begin{table*}
+\nocaptionrule \caption{
+  Experimental evaluation comparing the bounds generated KoAT, Rank,
+  LOOPUS, SPEED, and our automatic amortized analysis on several
+  challenging linear examples. Results for KoAT and SPEED were extracted
+  from previous publications because KoAT cannot take C programs as
+  input in its current version and SPEED is not available.
+  Entries marked with ? indicate that we cannot test the respective example with the tool. Entries
+  marked with --- indicate that the tool failed to produce a result. We write
+  $\max(a,b)$ for the maximum of $a$ and $b$.
+}
+\vspace{6pt}
+\label{tab:eval}
 \footnotesize
 
 \newcommand{\dir}[2]{\texttt{#1} \\ \texttt{#2}}
@@ -3334,17 +3347,6 @@ $1 {+} |\inter 0 n|$
 
 %--------------------------------------------
 \end{tabular}
-\caption{
-  Experimental evaluation comparing the bounds generated KoAT, Rank,
-  LOOPUS, SPEED, and our automatic amortized analysis on several
-  challenging linear examples. Results for KoAT and SPEED were extracted
-  from previous publications because KoAT cannot take C programs as
-  input in its current version and SPEED is not available.
-  Entries marked with ? indicate that we cannot test the respective example with the tool. Entries
-  marked with --- indicate that the tool failed to produce a result. We write
-  $\max(a,b)$ for the maximum of $a$ and $b$.
-}
-\label{tab:eval}
 \end{table*}
 
 \pref{tab:cbench} contains a compilation of the results of our
@@ -3410,6 +3412,9 @@ input variable $x$ is non-negative.  \iffull{If $x$ is negative then
 
 
 \begin{table}[t]
+\nocaptionrule \caption{Derived bounds for functions from cBench.}
+\vspace{6pt}
+\label{tab:cbench}
 \centering
 \small
 \begin{tabular}{r|c|c|c}
@@ -3431,15 +3436,13 @@ Function & LoC & Bound & Time (s) \\
 \code{ycc\_rgb\_conv} & 66 & $\code{nr}\cdot\code{nc}$ & 0.1 \\
 \code{uv\_decode} & 31 & $\log_2(\code{UV\_NVS})+1$ & 0.1 \\
 \end{tabular}
-\vspace{.1cm}
-\caption{Derived bounds for functions from cBench.}
-\label{tab:cbench}
+\vspace{-4pt}
 \end{table}
 
-\sectskip             \vspace{-3pt}
+\sectskip
 \section{Limitations}
 \label{sec:limitations}
-\aftersectskip              \vspace{-1pt}
+\aftersectskip
 
 Our implementation does not currently support
 all of Clight.  Programs with function pointers, goto statements,
@@ -3461,9 +3464,9 @@ resource usage depends on the result of non-linear operations (like
 termination can only be proved by complex path-sensitive reasoning.
 
 
-\sectskip                  \vspace{-3pt}
+\sectskip
 \section{Related Work}
-\label{sec:related}        \vspace{-1pt}
+\label{sec:related}
 \aftersectskip
 
 Our work has been inspired by type-based amortized resource analysis
@@ -3577,9 +3580,9 @@ compute symbolic bounds. \iffull{Furthermore, there is no way to
 
 
 
-\sectskip                             \vspace{-3pt}
+\sectskip
 \section{Conclusion}
-\label{sec:concl}                     \vspace{-1pt}
+\label{sec:concl}
 \aftersectskip
 
 We have developed a novel analysis framework for compositional and
