@@ -66,6 +66,7 @@
 \usepackage{enumitem}
 \usepackage{array} %for stupid tables
 \usepackage{flushend} %equalize columns length on last page
+\usepackage{hhline}
 %\usepackage[firstpage]{draftwatermark}
 %\SetWatermarkText{\hspace*{8in}\raisebox{5.5in}{\includegraphics[scale=0.1]{fig/aec-badge-pldi.pdf}}}
 %\SetWatermarkAngle{0}
@@ -4875,6 +4876,25 @@ amortized analysis naturally tracks the size changes to the variables
 $x$ and $y$, and the interaction between \code{consume} and
 \code{produce}.
 
+\paragraph{Well-Known Algorithms}
+
+\pref{fig:cat3} shows well-known algorithms that can be automatically
+analyzed in our framework.  Example \emph{Knuth-Morris-Pratt} shows
+the search function of the Knuth-Morris-Pratt algorithm for string
+search.  To derive a bound for this algorithm we have add an assertion
+that indicates the bounds of the values that are stored in the array
+\code{b}.  Using this information we derive a tight linear bound.
+
+Example \emph{Greatest Common Divisor} is the usual implementation of
+the GCD algorithm.  We automatically derive a linear bound.  Note that
+the two tests at the beginning that check if the inputs are positive
+are essential.  Finally, Example \emph{Quick Sort} shows a skeleton of
+the quick sort sorting algorithm.  Since we can only derive linear
+bounds we left out the inner loop that swaps the array elements and
+determines the position \code{n+lo} of the pivot.  We only assert that
+\code{lo < n+lo <= hi}.  We then derive a tight linear bound.
+
+}\fi
 
 \begin{table*}
 \footnotesize
@@ -4883,7 +4903,6 @@ $x$ and $y$, and the interaction between \code{consume} and
 \newcommand{\file}[2][c]{%
   \begin{tabular}[#1]{@{}r@{}}#2\end{tabular}}
 \renewcommand{\max}[0]{{\rm mx}}
-\renewcommand{\min}[0]{{\rm mn}}
 
 \newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 
@@ -4892,16 +4911,15 @@ $x$ and $y$, and the interaction between \code{consume} and
 
 
 File &
-\multicolumn{2}{|c|}{KoAT} &
-\multicolumn{2}{|c|}{Rank} &
-\multicolumn{2}{|c|}{LOOPUS} &
+\multicolumn{2}{c|}{KoAT} &
+\multicolumn{2}{c|}{Rank} &
+\multicolumn{2}{c|}{LOOPUS} &
 SPEED &
 \toolname
 \\
-\hline
 
 %--------------------------------------------
-\hline \texttt{gcd.c} &
+\hhline{=|==|==|==|=|=} \texttt{gcd.c} &
 
 ? &
 &
@@ -5517,30 +5535,12 @@ $1 {+} |\inter 0 n|$
   from previous publications because KoAT cannot take C programs as
   input in its current version and SPEED is not available.
   Entries marked with ? indicate that we cannot test the respective example with the tool. Entries
-  marked with --- indicate that the tool failed to produce a result.
+  marked with --- indicate that the tool failed to produce a result. We write
+  $\max(a,b)$ for the maximum of $a$ and $b$.
 }
 \label{tab:eval}
 \end{table*}
 
-\paragraph{Well-Known Algorithms}
-
-\pref{fig:cat3} shows well-known algorithms that can be automatically
-analyzed in our framework.  Example \emph{Knuth-Morris-Pratt} shows
-the search function of the Knuth-Morris-Pratt algorithm for string
-search.  To derive a bound for this algorithm we have add an assertion
-that indicates the bounds of the values that are stored in the array
-\code{b}.  Using this information we derive a tight linear bound.
-
-Example \emph{Greatest Common Divisor} is the usual implementation of
-the GCD algorithm.  We automatically derive a linear bound.  Note that
-the two tests at the beginning that check if the inputs are positive
-are essential.  Finally, Example \emph{Quick Sort} shows a skeleton of
-the quick sort sorting algorithm.  Since we can only derive linear
-bounds we left out the inner loop that swaps the array elements and
-determines the position \code{n+lo} of the pivot.  We only assert that
-\code{lo < n+lo <= hi}.  We then derive a tight linear bound.
-
-}\fi
 
 \bibliographystyle{abbrvnat}
 \iffull{
