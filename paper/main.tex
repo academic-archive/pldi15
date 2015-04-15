@@ -105,7 +105,7 @@
 \conferenceinfo{PLDI'15}{June 13--17, 2015, Portland, OR, USA}
 \copyrightyear{2015}
 \copyrightdata{978-1-4503-3468-6/15/06}
-\doi{nnnnnnn.nnnnnnn}
+\doi{2737924.2737955}
 
 \titlebanner{\iffull{Extended Version}{}}%{Draft -- Do not distribute}        % These are ignored unless
 \preprintfooter{\iffull{Extended Version\hspace{-.8cm}}{Draft\hspace{.5cm}}}%{Draft}   % 'preprint' option specified.
@@ -2690,7 +2690,7 @@ program.
 \end{table}
 
 \pref{tab:compar} summarizes the results of our experiments presented
-in \pref{tab:eval}.  It shows
+in \pref{app:eval}.  It shows
 for each tool the number of derived bounds (\#bounds), the number of
 asymptotically tight bounds (\#lin. bounds), the number of bounds with
 the best constant factors in comparison with the other tools (\#best
@@ -4916,6 +4916,7 @@ determines the position \code{n+lo} of the pivot.  We only assert that
 \begin{table*}[h!]
 \appendix
 \section{Complete Experimental Results for the Tool Comparison}
+\label{app:eval}
 
 \renewcommand{\max}[0]{{\rm mx}}
 \nocaptionrule \caption{
@@ -4926,7 +4927,9 @@ determines the position \code{n+lo} of the pivot.  We only assert that
   input in its current version and SPEED is not available.
   Entries marked with ? indicate that we cannot test the respective example with the tool. Entries
   marked with --- indicate that the tool failed to produce a result. We write
-  $\max(a,b)$ for the maximum of $a$ and $b$.
+  $\max(a,b)$ for the maximum of $a$ and $b$.  Functions with names of the form \code{tXX} are complex tests
+  that we designed during the development of $\toolname$.  The source code for all the functions
+  is available in the extended version~\cite{anon_extended}.
 }
 \vspace{6pt}
 \label{tab:eval}
