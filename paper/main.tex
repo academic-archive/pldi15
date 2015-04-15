@@ -909,6 +909,74 @@ variables unchanged by the loop) is sufficient to obtain good bounds.
 
 
 
+
+\paraskip
+\paragraph{Challenging Loops.}
+
+One might think that our set of potential functions is too simplistic
+to be able to express and prove bounds for realistic
+programs. Nevertheless, we can handle challenging example programs
+without special tricks or techniques.  Examples \emph{speed\_1} and
+\emph{speed\_2} in Figure~\ref{fig:ex_list}, which are taken from previous work~\cite{GulwaniMC09},
+demonstrate that our method can handle \emph{tricky iteration
+  patterns}.  The SPEED tool~\cite{GulwaniMC09} derives the same
+bounds as our analysis but requires heuristics for its counter
+instrumentation.  These loops can also be handled with inference of
+\emph{disjunctive invariants}, but in the abstract interpretation
+community, these invariants are known to be notoriously difficult to
+generate.
+%
+In Example \emph{speed\_1} we have one loop that first increments
+variable $y$ up to $m$ and then increments variable $x$ up to $n$.  We
+derive the tight bound $|[x, n]| + |[y, m]|$.
+%
+Example \emph{speed\_2} is even trickier, and we found it hard to
+find a bound manually.  However, using potential transfer reasoning as
+in amortized analysis, it is easy to prove the tight bound
+$|[x, n]| + |[z, n]|$.
+
+\paraskip
+\paragraph{Nested and Sequenced Loops.}
+
+Example \emph{t08a} in Figure~\ref{fig:ex_list} shows the ability of the analysis to discover
+interaction between \emph{sequenced loops} through size change of
+variables.  We accurately track the size change of $y$ in the first
+loop by transferring the potential $0.1$ from $|[y,z]|$ to $|[0,y]|$.
+Furthermore, \emph{t08a} shows again that we do not handle the
+constants $1$ or $0$ in any special way.  In all examples we could
+replace $0$ and $1$ with other constants like in the second loop and
+still derive a tight bound.  \iffull{The only information, that the analyzer
+needs is $y \geq c$ before assigning $y = y - c$.}{}
+%
+Example \emph{t27} in Figure~\ref{fig:ex_list}
+shows how amortization can be used to handle
+\emph{interacting nested loops}.  In the outer loop we increment the
+variable $n$ until $n = 0$.  In each of the $|[n,0]|$ iterations, we
+increment the variable $y$ by $1000$.  Then we non-deterministically
+(expressed by \code{*}) execute an inner loop that decrements $y$ by
+$100$ until $y<100$.  The analysis discovers that only the first
+execution of the inner loop depends on the initial value of $y$.  We
+again derive tight constant factors.
+%
+
+\paraskip
+\paragraph{Mutually Recursive Functions.}
+
+As mentioned, the analysis also handles advanced control flow like
+\code{break} and \code{return} statements, and mutual recursion.
+Example \emph{t39} in \pref{fig:ex_list_2} contains two mutually-recursive functions with their
+automatically derived tick bounds.  The function \code{c\_down}
+decrements its first argument $x$ until it reaches the second argument
+$y$. It then recursively calls the function \code{c\_up},
+which is dual to \code{c\_down}.  Here, we
+count up $y$ by $2$ and call \code{c\_down}.  $\toolname$ is
+the only available system that computes a tight
+bound.  \iffull{The analysis amounts to computing the meeting
+point of two trains that approach each other with different speeds.}{}
+% This is comparable to the
+% determination of the point at which to trains meet if they approach
+% each other with different speeds.
+
 \begin{figure*}
   \centering
 \ifshort{%\vspace{-.3cm}
@@ -980,209 +1048,6 @@ $2+3|[l,h]|$
 \end{figure*}
 
 
-
-\paraskip
-\paragraph{Challenging Loops.}
-
-One might think that our set of potential functions is too simplistic
-to be able to express and prove bounds for realistic
-programs. Nevertheless, we can handle challenging example programs
-without special tricks or techniques.  Examples \emph{speed\_1} and
-\emph{speed\_2} in Figure~\ref{fig:ex_list}, which are taken from previous work~\cite{GulwaniMC09},
-demonstrate that our method can handle \emph{tricky iteration
-  patterns}.  The SPEED tool~\cite{GulwaniMC09} derives the same
-bounds as our analysis but requires heuristics for its counter
-instrumentation.  These loops can also be handled with inference of
-\emph{disjunctive invariants}, but in the abstract interpretation
-community, these invariants are known to be notoriously difficult to
-generate.
-%
-In Example \emph{speed\_1} we have one loop that first increments
-variable $y$ up to $m$ and then increments variable $x$ up to $n$.  We
-derive the tight bound $|[x, n]| + |[y, m]|$.
-%
-Example \emph{speed\_2} is even trickier, and we found it hard to
-find a bound manually.  However, using potential transfer reasoning as
-in amortized analysis, it is easy to prove the tight bound
-$|[x, n]| + |[z, n]|$.
-
-\paraskip
-\paragraph{Nested and Sequenced Loops.}
-
-Example \emph{t08a} in Figure~\ref{fig:ex_list} shows the ability of the analysis to discover
-interaction between \emph{sequenced loops} through size change of
-variables.  We accurately track the size change of $y$ in the first
-loop by transferring the potential $0.1$ from $|[y,z]|$ to $|[0,y]|$.
-Furthermore, \emph{t08a} shows again that we do not handle the
-constants $1$ or $0$ in any special way.  In all examples we could
-replace $0$ and $1$ with other constants like in the second loop and
-still derive a tight bound.  \iffull{The only information, that the analyzer
-needs is $y \geq c$ before assigning $y = y - c$.}{}
-%
-Example \emph{t27} in Figure~\ref{fig:ex_list}
-shows how amortization can be used to handle
-\emph{interacting nested loops}.  In the outer loop we increment the
-variable $n$ until $n = 0$.  In each of the $|[n,0]|$ iterations, we
-increment the variable $y$ by $1000$.  Then we non-deterministically
-(expressed by \code{*}) execute an inner loop that decrements $y$ by
-$100$ until $y<100$.  The analysis discovers that only the first
-execution of the inner loop depends on the initial value of $y$.  We
-again derive tight constant factors.
-%
-
-\paraskip
-\paragraph{Mutually Recursive Functions.}
-
-As mentioned, the analysis also handles advanced control flow like
-\code{break} and \code{return} statements, and mutual recursion.
-Example \emph{t39} in \pref{fig:ex_list_2} contains two mutually-recursive functions with their
-automatically derived tick bounds.  The function \code{c\_down}
-decrements its first argument $x$ until it reaches the second argument
-$y$. It then recursively calls the function \code{c\_up},
-which is dual to \code{c\_down}.  Here, we
-count up $y$ by $2$ and call \code{c\_down}.  $\toolname$ is
-the only available system that computes a tight
-bound.  \iffull{The analysis amounts to computing the meeting
-point of two trains that approach each other with different speeds.}{}
-% This is comparable to the
-% determination of the point at which to trains meet if they approach
-% each other with different speeds.
-
-\ifshort{
-\begin{figure*}
-\small
-%\vspace{-.4cm}
-\def \MathparLineskip {\lineskip=0.35cm}
-\begin{mathpar}
-\Rule{Q:Skip}
-{ }
-{ \!\! B, R \vdash \htriple{ \Gamma; Q }{ \code{skip} }{ \Gamma; Q } \!\!}
-%
-\and \Rule{Q:Assert}
-{ }
-{ B, R \vdash \htriple{ \Gamma; Q {+} M_a }{ \code{assert}~e }{ \Gamma {\land} e; Q } }
-%
-\and \Rule{Q:Tick}
-{ }
-{ B, R \vdash \htriple{ \Gamma; Q {+} M_t(n) }{ \code{tick}(n) }{ \Gamma; Q } }
-%
-\and \Rule{Q:Break}
-{ }
-{(\Gamma; Q_B), R \vdash \htriple{ \Gamma; Q_B {+} M_b }{ \code{break} }{ \Gamma'; Q' } }
-%
-\and \Rule{Q:Return}
-{ P = Q_R[\Vret/x]
-\\ \Gamma = \Gamma_R[\Vret/x]
-\\ \forall i \in \dom{P} . \, p_i = q_i
-}
-{ B, (\Gamma_R; Q_R) \vdash \htriple{ \Gamma; Q }{ \code{return}~x }{ \Gamma'; Q' } }
-%
-\and \Rule{Q:Loop}
-{ (\Gamma'; Q'), R \vdash \htriple{ \Gamma; Q }{ S }{ \Gamma;  Q {+} M_l } }
-{ B, R \vdash \htriple{ \Gamma; Q }{ \code{loop}~S }{ \Gamma'; Q' } }
-%
-\and \Rule{Q:Seq}
-{  B, R \vdash \htriple{ \Gamma; Q }{ S_1 }{ \Gamma'; Q' {+} M_s }
-\\ B, R \vdash \htriple{ \Gamma'; Q' }{ S_2 }{ \Gamma''; Q'' }
-}
-{ B, R \vdash \htriple{ \Gamma; Q }{ S_1;S_2 }{ \Gamma''; Q'' } }
-%
-\and \Rule{Q:If}
-{ B, R \vdash \htriple{ \Gamma {\land} e; Q {-} M_c^1) }{ S_1 }{ \Gamma'; Q' }
-\\\\ B, R \vdash \htriple{ \Gamma {\land} \neg e; Q {-} M_c^2 }{ S_2 }{ \Gamma'; Q' }
-}
-{ B, R \vdash \htriple{ \Gamma; Q{+}M_e(e) }{ \code{if}(e)~S_1~\code{else}~S_2 }{ \Gamma'; Q' } }
-%
-\\ \Rule{Q:IncP}
-{ \Gamma \models y \ge 0 \!
-\\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\} \!
-\\\\ \textstyle q'_{0y} = q_{0y}
-      + \sum_{u \in \mathcal U} q_{xu}
-      - \sum_{v \not\in \mathcal U} q_{vx} \!
-}
-{ \textstyle
-  B, R \vdash \htriple{ \Gamma[x/x {+} y]; Q {+} M_u {+} M_e(x {+} y) }{ x \gets x + y }{ \Gamma; Q' }
-}
-%
-\and \Rule{Q:Inc}
-{ M = M_u + M_e(x {\pm} y)
-\\\\ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
-\\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
-}
-{ \textstyle
-  B, R \vdash \htriple{ \Gamma[x/x {\pm} y]; Q {+} M }{ x \gets x \pm y }{ \Gamma; Q' }
-}
-%
-\and \Rule{Q:Set}
-{ q'_{xy}, q'_{yx} \in \Qplusz
-\\\\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
-}
-{ B, R \vdash \htriple{ \Gamma[x/y]; Q {+} M_u {+} M_e(y) }{ x \gets y }{ \Gamma; Q' } }
-%
-\and \Rule{Q:DecP}
-{ \Gamma \models y \ge 0
-\\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
-\\\\ \textstyle q'_{y0} = q_{y0}
-      + \sum_{u \in \mathcal U} q_{ux}
-      - \sum_{v \not\in \mathcal U} q_{xv}
-}
-{ \textstyle
-  B, R \vdash \htriple{ \Gamma[x/x {-} y]; Q {+} M_u {+} M_e(x {-} y) }{ x \gets x - y }{ \Gamma; Q' }
-}
-%
-\and\Rule{Q:Call}
-{ (\Gamma_f; Q_f,  \Gamma_f'; Q_f') \in \Delta(f) \!
-\\ \text{Loc} = \text{Locals}(Q) \!
-\\ \forall i \neq j . \, x_i \neq x_j \!
-\\ c \in \Qplusz \!
-\\ Q = P + S \!
-\\ Q' = P' + S
-\\ U = Q_f[\Vargs / \vec x]
-\\ U' = Q'_f[\Vret/r]
-\\ \forall i \in \dom{U} . \, p_i = u_i
-\\ \forall i \in \dom{U'} .\, p'_i = u'_i
-\\ \forall i \not\in \dom{U'} .\, p'_i = 0
-\\ \forall i \not\in \text{Loc}
-  .\, s_i = 0
-}
-{ B, R \vdash \htriple
-  { \Gamma_f[\Vargs / \vec x] {\land} \Gamma_{\text{Loc}}; Q {+} c {+} M_f }
-  { r \gets f(\vec x) }
-  { \Gamma_f'[\Vret/r] {\land} \Gamma_{\text{Loc}}; Q' {+} c {-} M_r }
-}
-%
-\and \Rule[leftskip=.2cm,rightskip=.2cm]{Q:Extend}
-{ \fenv f = (\vec y, S_f)
-\\\\ B, (\Gamma_f'; Q'_f) \vdash \htriple{ \Gamma_f[\Vargs/\vec y]; Q_f[\Vargs/ \vec y] }{ S_f }{ \Gamma'; Q' }
-}
-{ (\Gamma_f; Q_f, \Gamma_f'; Q_f') \in \Delta(f) }
-%
-\and \Rule{Q:Weak}
-{ B, R \vdash \htriple{ \Gamma_2; Q_2 }{ S }{ \Gamma'_2; Q'_2 }
-\\ \!\! \Gamma_1 \models \Gamma_2
-\\\\ Q_1 \succeq_{\Gamma_1} Q_2
-\\ \Gamma'_2 \models \Gamma'_1
-\\ Q'_2 \succeq_{\Gamma_2'} Q'_1
-}
-{ B, R \vdash \htriple{ \Gamma_1; Q_1 }{ S }{ \Gamma'_1; Q'_1 } }
-%
-\\ \Rule{Relax}
-{ \mathcal L = \{ xy \mid \exists l_{xy} {\in} \N \, . \, \Gamma \models l_{xy} \le |\inter x y| \}
-\\ \mathcal U = \{ xy \mid \exists u_{xy}{\in} \N \, . \, \Gamma \models |\inter x y| \le u_{xy} \}
-\\\\ \forall i \in \mathcal U.\, q'_i \ge q_i - r_i
-\\ \forall i \in \mathcal L.\, q'_i \ge q_i + p_i
-\\ \forall i \not\in \mathcal U {\cup} \mathcal L {\cup} \{0\} .\, q'_i \ge q_i
-\\ q'_0 \geq q_0 {\textstyle + \sum_{i \in \mathcal U} u_i r_i - \sum_{i \in \mathcal L} l_i p_i}
-}
-{ Q' \succeq_\Gamma Q }
-%\vspace{-.3cm}
-\end{mathpar}
-\caption{Inference rules of the quantitative analysis.}
-\label{fig:auto}
-\end{figure*}
-}{}
-
-
 \paraskip
 \paragraph{Compositionality.}
 
@@ -1245,6 +1110,9 @@ or additively.
 classes of challenging programs that we can automatically analyze.
 \pref{sec:exper} contains a more detailed comparison with other
 tools\iffull{ for automatic bound derivation.}{.}
+
+
+
 
 \iffull{
 \begin{figure*}
@@ -1474,6 +1342,143 @@ such that $q'_0 = q_0 \pm n$ and $\forall i \neq 0 .\, q'_i = q_i$.
 In all the rules, we have the implicit side condition that all rational
 coefficients are non-negative.  Finally, if a rule mentions $Q$ and $Q'$
 and leaves the latter undefined at some index $i$ we assume that $q'_i = q_i$.
+
+
+
+\ifshort{
+\begin{figure*}
+\small
+%\vspace{-.4cm}
+\def \MathparLineskip {\lineskip=0.35cm}
+\begin{mathpar}
+\Rule{Q:Skip}
+{ }
+{ \!\! B, R \vdash \htriple{ \Gamma; Q }{ \code{skip} }{ \Gamma; Q } \!\!}
+%
+\and \Rule{Q:Assert}
+{ }
+{ B, R \vdash \htriple{ \Gamma; Q {+} M_a }{ \code{assert}~e }{ \Gamma {\land} e; Q } }
+%
+\and \Rule{Q:Tick}
+{ }
+{ B, R \vdash \htriple{ \Gamma; Q {+} M_t(n) }{ \code{tick}(n) }{ \Gamma; Q } }
+%
+\and \Rule{Q:Break}
+{ }
+{(\Gamma; Q_B), R \vdash \htriple{ \Gamma; Q_B {+} M_b }{ \code{break} }{ \Gamma'; Q' } }
+%
+\and \Rule{Q:Return}
+{ P = Q_R[\Vret/x]
+\\ \Gamma = \Gamma_R[\Vret/x]
+\\ \forall i \in \dom{P} . \, p_i = q_i
+}
+{ B, (\Gamma_R; Q_R) \vdash \htriple{ \Gamma; Q }{ \code{return}~x }{ \Gamma'; Q' } }
+%
+\and \Rule{Q:Loop}
+{ (\Gamma'; Q'), R \vdash \htriple{ \Gamma; Q }{ S }{ \Gamma;  Q {+} M_l } }
+{ B, R \vdash \htriple{ \Gamma; Q }{ \code{loop}~S }{ \Gamma'; Q' } }
+%
+\and \Rule{Q:Seq}
+{  B, R \vdash \htriple{ \Gamma; Q }{ S_1 }{ \Gamma'; Q' {+} M_s }
+\\ B, R \vdash \htriple{ \Gamma'; Q' }{ S_2 }{ \Gamma''; Q'' }
+}
+{ B, R \vdash \htriple{ \Gamma; Q }{ S_1;S_2 }{ \Gamma''; Q'' } }
+%
+\and \Rule{Q:If}
+{ B, R \vdash \htriple{ \Gamma {\land} e; Q {-} M_c^1) }{ S_1 }{ \Gamma'; Q' }
+\\\\ B, R \vdash \htriple{ \Gamma {\land} \neg e; Q {-} M_c^2 }{ S_2 }{ \Gamma'; Q' }
+}
+{ B, R \vdash \htriple{ \Gamma; Q{+}M_e(e) }{ \code{if}(e)~S_1~\code{else}~S_2 }{ \Gamma'; Q' } }
+%
+\\ \Rule{Q:IncP}
+{ \Gamma \models y \ge 0 \!
+\\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\} \!
+\\\\ \textstyle q'_{0y} = q_{0y}
+      + \sum_{u \in \mathcal U} q_{xu}
+      - \sum_{v \not\in \mathcal U} q_{vx} \!
+}
+{ \textstyle
+  B, R \vdash \htriple{ \Gamma[x/x {+} y]; Q {+} M_u {+} M_e(x {+} y) }{ x \gets x + y }{ \Gamma; Q' }
+}
+%
+\and \Rule{Q:Inc}
+{ M = M_u + M_e(x {\pm} y)
+\\\\ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
+\\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
+}
+{ \textstyle
+  B, R \vdash \htriple{ \Gamma[x/x {\pm} y]; Q {+} M }{ x \gets x \pm y }{ \Gamma; Q' }
+}
+%
+\and \Rule{Q:Set}
+{ q'_{xy}, q'_{yx} \in \Qplusz
+\\\\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
+}
+{ B, R \vdash \htriple{ \Gamma[x/y]; Q {+} M_u {+} M_e(y) }{ x \gets y }{ \Gamma; Q' } }
+%
+\and \Rule{Q:DecP}
+{ \Gamma \models y \ge 0
+\\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
+\\\\ \textstyle q'_{y0} = q_{y0}
+      + \sum_{u \in \mathcal U} q_{ux}
+      - \sum_{v \not\in \mathcal U} q_{xv}
+}
+{ \textstyle
+  B, R \vdash \htriple{ \Gamma[x/x {-} y]; Q {+} M_u {+} M_e(x {-} y) }{ x \gets x - y }{ \Gamma; Q' }
+}
+%
+\and\Rule{Q:Call}
+{ (\Gamma_f; Q_f,  \Gamma_f'; Q_f') \in \Delta(f) \!
+\\ \text{Loc} = \text{Locals}(Q) \!
+\\ \forall i \neq j . \, x_i \neq x_j \!
+\\ c \in \Qplusz \!
+\\ Q = P + S \!
+\\ Q' = P' + S
+\\ U = Q_f[\Vargs / \vec x]
+\\ U' = Q'_f[\Vret/r]
+\\ \forall i \in \dom{U} . \, p_i = u_i
+\\ \forall i \in \dom{U'} .\, p'_i = u'_i
+\\ \forall i \not\in \dom{U'} .\, p'_i = 0
+\\ \forall i \not\in \text{Loc}
+  .\, s_i = 0
+}
+{ B, R \vdash \htriple
+  { \Gamma_f[\Vargs / \vec x] {\land} \Gamma_{\text{Loc}}; Q {+} c {+} M_f }
+  { r \gets f(\vec x) }
+  { \Gamma_f'[\Vret/r] {\land} \Gamma_{\text{Loc}}; Q' {+} c {-} M_r }
+}
+%
+\and \Rule[leftskip=.2cm,rightskip=.2cm]{Q:Extend}
+{ \fenv f = (\vec y, S_f)
+\\\\ B, (\Gamma_f'; Q'_f) \vdash \htriple{ \Gamma_f[\Vargs/\vec y]; Q_f[\Vargs/ \vec y] }{ S_f }{ \Gamma'; Q' }
+}
+{ (\Gamma_f; Q_f, \Gamma_f'; Q_f') \in \Delta(f) }
+%
+\and \Rule{Q:Weak}
+{ B, R \vdash \htriple{ \Gamma_2; Q_2 }{ S }{ \Gamma'_2; Q'_2 }
+\\ \!\! \Gamma_1 \models \Gamma_2
+\\\\ Q_1 \succeq_{\Gamma_1} Q_2
+\\ \Gamma'_2 \models \Gamma'_1
+\\ Q'_2 \succeq_{\Gamma_2'} Q'_1
+}
+{ B, R \vdash \htriple{ \Gamma_1; Q_1 }{ S }{ \Gamma'_1; Q'_1 } }
+%
+\\ \Rule{Relax}
+{ \mathcal L = \{ xy \mid \exists l_{xy} {\in} \N \, . \, \Gamma \models l_{xy} \le |\inter x y| \}
+\\ \mathcal U = \{ xy \mid \exists u_{xy}{\in} \N \, . \, \Gamma \models |\inter x y| \le u_{xy} \}
+\\\\ \forall i \in \mathcal U.\, q'_i \ge q_i - r_i
+\\ \forall i \in \mathcal L.\, q'_i \ge q_i + p_i
+\\ \forall i \not\in \mathcal U {\cup} \mathcal L {\cup} \{0\} .\, q'_i \ge q_i
+\\ q'_0 \geq q_0 {\textstyle + \sum_{i \in \mathcal U} u_i r_i - \sum_{i \in \mathcal L} l_i p_i}
+}
+{ Q' \succeq_\Gamma Q }
+%\vspace{-.3cm}
+\end{mathpar}
+\caption{Inference rules of the quantitative analysis.}
+\label{fig:auto}
+\end{figure*}
+}{}
+
 
 \paraskip
 \paragraph{Function Specifications.}
