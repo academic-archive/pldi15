@@ -831,6 +831,76 @@ $59|[n,0]| {+} 0.05|[0,y]|$
 \end{figure*}
 
 
+\begin{figure*}
+  \centering
+\ifshort{%\vspace{-.3cm}
+\hspace{-0.4cm}}{}
+  \begin{minipage}[b]{7cm}
+    \begin{center}
+   \begin{lstlisting}[]
+void c_down (int x,int y) {
+  if (x>y) {tick(1); c_up(x-1,y);}
+}
+void c_up (int x, int y) {
+  if (y+1<x) {tick(1); c_down(x,y+2);}
+}
+   \end{lstlisting}
+%\vspace{-2.7ex}
+$0.33 + 0.67 |[y,x]|\;\;$ (\code{c\_down(x,y)})\\
+$\;\;\;\;\;\;\,0.67 |[y,x]|\;\;$ (\code{c\_up(x,y)})
+\\[.4\baselineskip]
+      {\bf t39}
+    \end{center}
+  \end{minipage}
+%
+\hfill
+%
+  \begin{minipage}[b]{5cm}
+    \begin{center}
+   \begin{lstlisting}
+for (; l>=8; l-=8)
+  /* process one block */
+  tick(N);
+for (; l>0; l--)
+  /* save leftovers */
+  tick(1);
+   \end{lstlisting}
+%\vspace{-2.8ex}
+$\;\;\;\;\;\;\;\;\;\;\;\;\;\frac{N}{8} |[0,l]|\;\;$ if $N \geq 8$\\
+$7\frac{8-N}{8} + \frac{N}{8}|[0,l]|\;\;$ if $N < 8$
+\\[.4\baselineskip]
+      {\bf t61}
+    \end{center}
+  \end{minipage}
+%
+\hfill
+%
+  \begin{minipage}[b]{5.5cm}
+    \begin{center}
+\begin{lstlisting}
+for (;;) {
+  do { l++; tick(1); }
+    while (l<h && *);
+  do { h--; tick(1); }
+    while (h>l && *);
+  if (h<=l) break;
+  tick(1); /* swap elems. */ }
+\end{lstlisting}
+$2+3|[l,h]|$
+\\[.4\baselineskip]
+      {\bf t62}
+    \end{center}
+  \end{minipage}
+\vspace{1ex}
+\caption{Example \emph{t39} shows two mutually-recursive functions
+  with the computed tick bounds.  Example \emph{t61} and \emph{t62}
+  demonstrate the unique compositionality of our system. In \emph{t61},
+  $N\geq 0$ is a fixed but arbitrary constant. % The derived constant factors
+  %are tight.
+  }
+  \label{fig:ex_list_2}
+\end{figure*}
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -976,76 +1046,6 @@ point of two trains that approach each other with different speeds.}{}
 % This is comparable to the
 % determination of the point at which to trains meet if they approach
 % each other with different speeds.
-
-\begin{figure*}
-  \centering
-\ifshort{%\vspace{-.3cm}
-\hspace{-0.4cm}}{}
-  \begin{minipage}[b]{7cm}
-    \begin{center}
-   \begin{lstlisting}[]
-void c_down (int x,int y) {
-  if (x>y) {tick(1); c_up(x-1,y);}
-}
-void c_up (int x, int y) {
-  if (y+1<x) {tick(1); c_down(x,y+2);}
-}
-   \end{lstlisting}
-%\vspace{-2.7ex}
-$0.33 + 0.67 |[y,x]|\;\;$ (\code{c\_down(x,y)})\\
-$\;\;\;\;\;\;\,0.67 |[y,x]|\;\;$ (\code{c\_up(x,y)})
-\\[.4\baselineskip]
-      {\bf t39}
-    \end{center}
-  \end{minipage}
-%
-\hfill
-%
-  \begin{minipage}[b]{5cm}
-    \begin{center}
-   \begin{lstlisting}
-for (; l>=8; l-=8)
-  /* process one block */
-  tick(N);
-for (; l>0; l--)
-  /* save leftovers */
-  tick(1);
-   \end{lstlisting}
-%\vspace{-2.8ex}
-$\;\;\;\;\;\;\;\;\;\;\;\;\;\frac{N}{8} |[0,l]|\;\;$ if $N \geq 8$\\
-$7\frac{8-N}{8} + \frac{N}{8}|[0,l]|\;\;$ if $N < 8$
-\\[.4\baselineskip]
-      {\bf t61}
-    \end{center}
-  \end{minipage}
-%
-\hfill
-%
-  \begin{minipage}[b]{5.5cm}
-    \begin{center}
-\begin{lstlisting}
-for (;;) {
-  do { l++; tick(1); }
-    while (l<h && *);
-  do { h--; tick(1); }
-    while (h>l && *);
-  if (h<=l) break;
-  tick(1); /* swap elems. */ }
-\end{lstlisting}
-$2+3|[l,h]|$
-\\[.4\baselineskip]
-      {\bf t62}
-    \end{center}
-  \end{minipage}
-\vspace{1ex}
-\caption{Example \emph{t39} shows two mutually-recursive functions
-  with the computed tick bounds.  Example \emph{t61} and \emph{t62}
-  demonstrate the unique compositionality of our system. In \emph{t61},
-  $N\geq 0$ is a fixed but arbitrary constant. % The derived constant factors
-  %are tight.
-  }
-  \label{fig:ex_list_2}
-\end{figure*}
 
 
 \paraskip
