@@ -480,6 +480,9 @@ let _ =
     let f = Tools.auto_tick (f ()) in
     let f = lannot f in
     analyze f
+  else if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tqtick" then
+    let f = lannot (f ()) in
+    analyze f
   else if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tlannot" then
     let f = lannot (f ()) in
     let pre {lpre; lpost} =
