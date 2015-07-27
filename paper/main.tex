@@ -1101,6 +1101,25 @@ classes of challenging programs that we can automatically analyze.
 \pref{sec:exper} contains a more detailed comparison with other
 tools\iffull{ for automatic bound derivation.}{.}
 
+\paraskip
+\paragraph{Limitations.}
+The implementation of our analysis does not currently support all of Clight.
+Function pointers, goto statements, and stack-allocated
+variables that have their address taken are not supported by the
+automatic analysis.  While these limitations concern the current
+implementation, our technique is in principle capable to handle them.
+
+For the sake of simplicity, the automated system described here is
+restricted to finding only linear bounds.  However, the amortized analysis
+technique was shown to work with polynomial bounds~\cite{HoffmannAH11};
+we leave this extension of our system as future work.
+
+Even some linear programs cannot be analyzed automatically by
+$\toolname$, it is usually the case for programs that rely on heap
+invariants (like nul-terminated C strings), for programs making
+use of non-linear operations (like \code{\%} or \code{*}), or for
+programs whose
+termination can only be proved by complex path-sensitive reasoning.
 
 
 \iffull{
@@ -1844,10 +1863,10 @@ proof because, when working with integer arithmetic, it is not always
 the case that $\log_2(x-x/2) = \log_2(x)-1$.
 
 Generally, we observed that because the instrumented program
-is structurally same as the original one, it is sufficient to prove
-that the added assertions never fail to show that they have identical
-resource consumption.  This can be piggybacked on standard
-static-analysis tools.
+is structurally same as the original one, it is enough to prove
+that the added assertions never fail in order to show the two programs
+have identical resource consumption.  This can usually be piggybacked
+on standard static-analysis tools.
 
 % On the other hand, it might be the case that even with annotations, a
 % resource bound cannot be found automatically.  With existing tools, this
