@@ -574,19 +574,19 @@ again.
 \vspace{-1.5ex}
 \begin{lstlisting}[mathescape]
 ${\color{blue}%
-  \cdot; \, 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \vdash }$
+  \{ \cdot; \, 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \} }$
 while (x+K<=y) {
   ${\color{blue}%
-  x + K \le y; \; 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \vdash }$
+  \{ x + K \le y; \; 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \} }$
   x=x+K;
   ${\color{blue}%
-  \dashv x \leq y; \, T + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \vdash }$
+  \{ x \leq y; \, T + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \} }$
   tick(T);
   ${\color{blue}%
-  \dashv x \leq y; \, 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| }$
+  \{ x \leq y; \, 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \} }$
 }
 ${\color{blue}%
- \dashv x \geq y; 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]|}$
+ \{ x \geq y; 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \} }$
 \end{lstlisting}
   \caption{Derivation of a tight bound on the number of
     ticks for a standard \emph{for loop}.  The parameters $K>0$ and
@@ -677,24 +677,24 @@ same set of variables.}{}
    \begin{lstlisting}[]
 while (n>x) {
   ${\color{blue}%
-  n{>}x; \, |[x, n]| {+} |[y, m]| \vdash }$
+  \{ n{>}x; \, |[x, n]| {+} |[y, m]| \} }$
   if (m>y)
     ${\color{blue}%
-    m{>}y; \, |[x, n]| {+} |[y, m]| \vdash }$
+    \{ m{>}y; \, |[x, n]| {+} |[y, m]| \} }$
     y=y+1;
     ${\color{blue}%
-    \dashv \cdot ; \, 1 {+} |[x, n]| {+} |[y, m]| }$
+    \{ \cdot ; \, 1 {+} |[x, n]| {+} |[y, m]| \} }$
   else
     ${\color{blue}%
-    n{>}x; \, |[x, n]| {+} |[y, m]| \vdash }$
+    \{ n{>}x; \, |[x, n]| {+} |[y, m]| \} }$
     x=x+1;
     ${\color{blue}%
-    \dashv \cdot; \, 1 {+} |[x, n]| {+} |[y, m]| }$
+    \{ \cdot; \, 1 {+} |[x, n]| {+} |[y, m]| \} }$
   ${\color{blue}%
-  \dashv \cdot; \, 1 {+} |[x, n]| {+} |[y, m]| \vdash }$
+  \{ \cdot; \, 1 {+} |[x, n]| {+} |[y, m]| \} }$
   tick(1);
 } ${\color{blue}%
-  \dashv \cdot; \, |[x, n]| {+} |[y, m]| }$
+  \{ \cdot; \, |[x, n]| {+} |[y, m]| \} }$
    \end{lstlisting}
 \vspace{-2.5ex}
 $|[x, n]| + |[y, m]|$
@@ -711,24 +711,24 @@ $|[x, n]| + |[y, m]|$
 
 while (x<n) {
   ${\color{blue}%
-  x{<}n; \, |[x, n]| {+} |[z, n]| \vdash }$
+  \{ x{<}n; \, |[x, n]| {+} |[z, n]| \} }$
   if (z>x)
     ${\color{blue}%
-    x{<}n; \, |[x, n]| {+} |[z, n]| \vdash }$
+    \{ x{<}n; \, |[x, n]| {+} |[z, n]| \} }$
     x=x+1;
     ${\color{blue}%
-    \dashv \cdot; \, 1 {+} |[x, n]| {+} |[z, n]| }$
+    \{ \cdot; \, 1 {+} |[x, n]| {+} |[z, n]| \} }$
   else
     ${\color{blue}%
-    z{\leq}x, x{<}n; \, |[x, n]| {+} |[z, n]| \vdash }$
+    \{ z{\leq}x, x{<}n; \, |[x, n]| {+} |[z, n]| \} }$
     z=z+1;
     ${\color{blue}%
-    \dashv \cdot; \, 1 {+} |[x, n]| {+} |[z, n]| }$
+    \{ \cdot; \, 1 {+} |[x, n]| {+} |[z, n]| \} }$
   ${\color{blue}%
-  \dashv \cdot; \, 1 {+} |[x, n]| {+} |[z, n]| \vdash }$
+  \{ \cdot; \, 1 {+} |[x, n]| {+} |[z, n]| \} }$
   tick(1);
 } ${\color{blue}%
-  \dashv \cdot; \, |[x, n]| {+} |[z, n]| }$
+  \{ \cdot; \, |[x, n]| {+} |[z, n]| \} }$
    \end{lstlisting}
 \vspace{-2.5ex}
 $|[x, n]| + |[z, n]|$
@@ -744,25 +744,25 @@ $|[x, n]| + |[z, n]|$
    \begin{lstlisting}
 while (z-y>0) {
   ${\color{blue}%
-  y{<}z; \, 3.1|[y,z]| {+} 0.1|[0,y]| \vdash }$
+  \{ y{<}z; \, 3.1|[y,z]| {+} 0.1|[0,y]| \} }$
   y=y+1;
   ${\color{blue}%
-  \dashv \cdot; \, 3 {+} 3.1|[y,z]| {+} 0.1|[0,y]| \vdash }$
+  \{ \cdot; \, 3 {+} 3.1|[y,z]| {+} 0.1|[0,y]| \} }$
   tick(3);
   ${\color{blue}%
-  \dashv \cdot; \, 3.1|[y,z]| {+} 0.1|[0,y]| }$
+  \{ \cdot; \, 3.1|[y,z]| {+} 0.1|[0,y]| \} }$
 }
 ${\color{blue}%
-\dashv \cdot; \, 3.1|[y,z]| {+} 0.1|[0,y]| \vdash }$
+\{ \cdot; \, 3.1|[y,z]| {+} 0.1|[0,y]| \} }$
 while (y>9) {
   ${\color{blue}%
-  y{>}9; \, 3.1|[y,z]| {+} 0.1|[0,y]| \vdash }$
+  \{ y{>}9; \, 3.1|[y,z]| {+} 0.1|[0,y]| \} }$
   y=y-10;
   ${\color{blue}%
-  \dashv \cdot; \, 1 {+} 3.1|[y,z]| {+} 0.1|[0,y]| \vdash }$
+  \{ \cdot; \, 1 {+} 3.1|[y,z]| {+} 0.1|[0,y]| \} }$
   tick(1);
 } ${\color{blue}%
-  \dashv \cdot; \, 3.1|[y,z]| {+} 0.1|[0,y]| }$
+  \{ \cdot; \, 3.1|[y,z]| {+} 0.1|[0,y]| \} }$
    \end{lstlisting}
 \vspace{-2.5ex}
 $3.1|[y,z]| + 0.1|[0,y]|$
@@ -780,25 +780,25 @@ $3.1|[y,z]| + 0.1|[0,y]|$
    \begin{lstlisting}
 while (n<0) {
   ${\color{blue}%
-  n{<}0; \,  P(n,y) \vdash }$
+  \{ n{<}0; \,  P(n,y) \} }$
   n=n+1;
   ${\color{blue}%
-  \dashv \cdot; \,  59 {+} P(n,y) \vdash }$
+  \{ \cdot; \,  59 {+} P(n,y) \} }$
   y=y+1000;
   ${\color{blue}%
-  \dashv \cdot; \, 9 {+} P(n,y) \vdash }$
+  \{ \cdot; \, 9 {+} P(n,y) \} }$
   while (y>=100 && *){
     ${\color{blue}%
-    y{>}99; \, 9 {+} P(n,y) \vdash }$
+    \{ y{>}99; \, 9 {+} P(n,y) \} }$
     y=y-100;
     ${\color{blue}%
-    \dashv \cdot; \, 14 {+} P(n,y) \vdash }$
+    \{ \cdot; \, 14 {+} P(n,y) \} }$
     tick(5);
   } ${\color{blue}%
-  \dashv \cdot; \, 9 {+} P(n,y) \vdash }$
+  \{ \cdot; \, 9 {+} P(n,y) \} }$
   tick(9);
 } ${\color{blue}%
-  \dashv \cdot; \, P(n,y) }$
+  \{ \cdot; \, P(n,y) \} }$
    \end{lstlisting}
 \vspace{-2.5ex}
 $59|[n,0]| {+} 0.05|[0,y]|$
@@ -1212,11 +1212,8 @@ tools\iffull{ for automatic bound derivation.}{.}
 \end{figure*}
 }{}
 
+\jan{QUENTIN FIX ABOVE FIGURE}
 
-
-\ifshort{
-                    \jan{XXX THIS FIGURE NEEDS TO BE UPDATED XXX}
-}{}
 
 \sectskip
 \section{Derivation System}
@@ -1230,11 +1227,11 @@ rules of the automatic amortized analysis.
 The derivation system for the automatic amortized analysis is defined
 in~\pref{fig:auto}.  The derivation rules yield judgements of the form
 $$
-  (\Gamma_B, Q_B); (\Gamma_R, Q_R);
-    (\Gamma, Q) \vdash S \dashv (\Gamma', Q').
+  (\Gamma_B; Q_B), (\Gamma_R; Q_R) \vdash
+    \htriple{ \Gamma; Q }{ S }{ \Gamma'; Q' }.
 $$
 %
-The part $(\Gamma, Q) \! \vdash \! S \! \dashv \! (\Gamma', Q')$ of the judgement
+The part $\htriple{ \Gamma; Q }{ S }{ \Gamma'; Q' }$ of the judgement
 can be seen as a quantitative Hoare triple.  All assertions are split into
 two parts, the logical part and the quantitative part.  The
 quantitative part $Q$ represents a potential function as a collection
@@ -1252,20 +1249,20 @@ resources left and $\Gamma'$ holds for $\state'$.
 The judgement is a bit more involved since we have to take into
 account the early exit statements \code{break} and \code{return}.
 This is similar to classical Hoare triples in the presence of non-linear
-control flow. In the judgement, $(\Gamma_B, Q_B)$ is the postcondition
+control flow. In the judgement, $(\Gamma_B; Q_B)$ is the postcondition
 that holds when breaking out of a loop using \code{break}.  % For example, it is set upon entry
 % of looping statements by the rule {\sc Q:Loop} and used before
 % \code{break} statements by the rule {\sc Q:Break}.
-Similarly, $(\Gamma_R, Q_R)$ is the postcondition that holds when
+Similarly, $(\Gamma_R; Q_R)$ is the postcondition that holds when
 returning from a function call with \code{return}. \iffull{(This becomes clear
 in the rules.)}{}
 
 % These judgements correspond to the logic judgements $\Delta; B; R
 % \vdash \htriple P S Q$ where each assertion splits in two parts, a
 % logical part $\Gamma$ and a quantitative part $Q$.  That means that
-% $(\Gamma_B, Q_B)$ is the postcondition of \code{break} statements,
-% $(\Gamma_R, Q_R)$ is the postcondition for return statements, and
-% $(\Gamma, Q) \vdash S \dashv (\Gamma', Q')$ can be understood as a
+% $(\Gamma_B; Q_B)$ is the postcondition of \code{break} statements,
+% $(\Gamma_R; Q_R)$ is the postcondition for return statements, and
+% $(\Gamma; Q) \vdash S \dashv (\Gamma'; Q')$ can be understood as a
 % simple Hoare triple.  We leave out the function context $\Delta$ in
 % the presentation to avoid cluttering notations.  Instead we assume a
 % fixed function context $\Delta$ that is implicit on all judgements.
@@ -1303,8 +1300,8 @@ like $q_{xa}$ and $q_{ax}$ that depend on $x$ after the assignment.
 \paragraph{Function Specifications.}
 
 During the analysis, function specifications are quadruples
-$(\Gamma_f, Q_f, \Gamma'_f, Q'_f)$ where $\Gamma_f, Q_f$ depend on
-$\Vargs$, and $\Gamma'_f, Q'_f$ depend on $\Vret$.  These parameters
+$(\Gamma_f; Q_f, \Gamma'_f; Q'_f)$ where $\Gamma_f; Q_f$ depend on
+$\Vargs$, and $\Gamma'_f; Q'_f$ depend on $\Vret$.  These parameters
 are instantiated by appropriate variables on call sites.  A distinctive
 feature of our analysis is that it respects the function abstraction:
 when deriving a function specification it generates a set of
@@ -1386,59 +1383,60 @@ by $\max(q_{ux}, -q_{xu})$ to pay for the change on
 $|\inter x u|$ and $|\inter u x|$.  A symmetric argument explains the
 change on $q_{y0}$.
 
-\newcommand{\loopbody}[0]{\ensuremath{\code{if~(x - 10 \geq 0)~\{x=x{-}10; tick(5);\}~else~break;}}}
+\newcommand{\loopbody}[0]{\ensuremath{\code{if~(x \geq 10)~(x=x - 10; tick(5))~else~break}}}
 \begin{figure*}[t]
 \vspace{-.5cm}
 \centering
 \footnotesize
 \begin{mathpar}
 \inferrule*[right={\scriptsize (Q:Loop)},leftskip=0cm,rightskip=0cm,width=20cm]
-{ \inferrule*[right={\scriptsize (Q:If)},leftskip=0cm,rightskip=1cm,width=20cm]
-  { \inferrule*[right={\scriptsize (Q:Weak)},leftskip=2.5cm,rightskip=2.5cm, vdots=1cm]
+{ \inferrule*[right={\scriptsize (Q:If)},leftskip=0cm,rightskip=0cm,width=20cm]
+  { \inferrule*[right={\scriptsize (Q:Weak)},leftskip=2cm,rightskip=4cm, vdots=1cm]
     { \inferrule*[right={\scriptsize (Q:Seq)},leftskip=0cm,rightskip=0cm]
       { \inferrule*[right={\scriptsize (Q:Weak)},leftskip=0cm,rightskip=0cm]
-        { \inferrule*[right={\scriptsize (Q:Dec)},leftskip=0cm,rightskip=0cm]
+        { \inferrule*[right={\scriptsize (Q:DecP)},leftskip=0cm,rightskip=0cm]
           {
           }
-          { (\cdot, B^\text{de}); ((x {\geq} 10,Q^\text{de})  \vdash \code{x = x - 10}
-            \dashv (x {\ge} 0, P^\text{de})
+          { (x {<} 10; B^\text{de}) \vdash
+	    \htriple{ x {\geq} 10; Q^\text{de} }{ \code{x = x - 10} }{ \cdot; P^\text{de} }
           }
         }
-        { (\cdot, B^\text{we}); ((x {\geq} 10,Q^\text{we})  \vdash \code{x = x - 10}
-          \dashv (\cdot, P^\text{we})
+        { (x {<} 10; B^\text{we}) \vdash
+	  \htriple{ x {\geq} 10; Q^\text{we} }{ \code{x = x - 10} }{ \cdot; P^\text{we} }
         }
         \and
         \inferrule*[right={\scriptsize (Q:Tick)},leftskip=0cm,rightskip=0cm]
         {
         }
-        { (\cdot, B^\text{ti}); (\cdot,Q^\text{ti})  \vdash \code{tick(5)}
-          \dashv (\cdot, P^\text{ti})
+        { (x {<} 10; B^\text{ti}) \vdash
+	  \htriple{ \cdot; Q^\text{ti} }{ \code{tick(5)} }{ \cdot; P^\text{ti} }
         }
       }
-      { (\cdot, B^\text{sq}); ((x {\geq} 10,Q^\text{sq}) \vdash
-        \code{x=x{-}10; tick(5);} \dashv (\cdot,P^\text{sq})
+      { (x {<} 10; B^\text{sq}) \vdash
+	\htriple{ x {\geq} 10; Q^\text{sq} }{ \code{x=x - 10; tick(5)} }{ \cdot; P^\text{sq} }
       }
     }
-    { (\cdot, B^\text{if}); ((x {\geq} 10,Q^\text{if}) \vdash
-      \code{x=x{-}10; tick(5);} \dashv (\cdot,P^\text{if})
+    { (x {<} 10; B^\text{if}) \vdash
+      \htriple{ x {\geq} 10; Q^\text{if} }{ \code{x=x - 10; tick(5)} }{ \cdot; P^\text{if} }
     }
     \and
     \inferrule*[right={\scriptsize (Q:Weak)},leftskip=4.5cm,rightskip=4cm]
     { \inferrule*[right={\scriptsize (Q:Break)},leftskip=0cm,rightskip=0cm]
       { }
-      { (\cdot, B^\text{br}); (\cdot,Q^\text{br}) \vdash
-        \code{break} \dashv (\bot,P^\text{br})
+      { (x {<} 10; B^\text{br}) \vdash
+	\htriple{ x {<} 10; Q^\text{br} }{ \code{break} }{ \bot; P^\text{br} }
       }
     }
-    { (\cdot, B^\text{el}); (x {<} 10,Q^\text{el}) \vdash
-      \code{break} \dashv (\cdot,P^\text{el})
+    { (x {<} 10; B^\text{el}) \vdash
+      \htriple{ x {<} 10; Q^\text{el} }{ \code{break} }{ \cdot; P^\text{el} }
     }
   }
-  { \hspace{3cm} (\cdot, B^\text{lo}); (\cdot,Q^\text{lo}) \vdash
-    \loopbody \dashv (\cdot,P^\text{lo}) \hspace{3cm}
+  { \hspace{3cm} (x {<} 10; B^\text{lo}) \vdash
+    \htriple{ \cdot; Q^\text{lo} }{ \loopbody }{ \cdot; P^\text{lo} } \hspace{3cm}
   }
 }
-{ (\cdot, B); (\cdot, Q) \vdash \code{loop}~{\loopbody} \dashv (\cdot, P)
+{ (\cdot; B) \vdash
+  \htriple{ \cdot; Q) }{ \code{loop}~{\loopbody} }{ x {<} 10; P }
 }
 \vspace{-.3cm}
 \end{mathpar}
@@ -1462,7 +1460,7 @@ B^\text{br} {=} Q^\text{br}
 \\
 Q^\text{ti} {=} P^\text{ti} + 5
 & B^\text{we} {=} B^\text{de} \land Q^\text{we} \succeq_{(x{<}10)} Q^\text{de}
-    \land P^\text{de} \succeq_{(x{\ge}0)} P^\text{we}
+    \land P^\text{de} \succeq_{(\cdot)} P^\text{we}
 & p^\text{de}_{0,10} {=} q^\text{de}_{0,10} + q^\text{de}_{0,x}
     \land p^\text{de}_{0} {=} q^\text{de}_{0}
     \land \forall (\alpha, \beta) \neq (0,10)  . \,
