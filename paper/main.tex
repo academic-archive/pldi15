@@ -1121,71 +1121,81 @@ use of non-linear operations (like \code{\%} or \code{*}), or for
 programs whose
 termination can only be proved by complex path-sensitive reasoning.
 
-
-\iffull{
 \begin{figure*}
+\small
+\def \MathparLineskip {\lineskip=0.35cm}
 \begin{mathpar}
-%
-\Rule[leftskip=.4cm,rightskip=.3cm]{Q:Skip}
+\Rule{Q:Skip}
 { }
-{ B; R; (\Gamma, Q) \vdash \code{skip} \dashv (\Gamma, Q) }
+{ \!\! B, R \vdash \htriple{ \Gamma; Q }{ \code{skip} }{ \Gamma; Q } \!\!}
 %
-\and
-\Rule{Q:Break}
+\and \Rule{Q:Assert}
 { }
-{ (\Gamma, Q_B); R; (\Gamma, Q_B) \vdash \code{break} \dashv (\Gamma', Q') }
+{ B, R \vdash \htriple{ \Gamma; Q {+} M_a }{ \code{assert}~e }{ \Gamma {\land} e; Q } }
 %
-\and
-\Rule[leftskip=.3cm,rightskip=.4cm]{Q:Tick}
-{ n < 0 \implies Q \ge 0 }
-{ B; R; (\Gamma, Q) \vdash \code{tick}(n) \dashv (\Gamma, Q{-}n) }
+\and \Rule{Q:Break}
+{ }
+{(\Gamma; Q_B), R \vdash \htriple{ \Gamma; Q_B {+} M_b }{ \code{break} }{ \Gamma'; Q' } }
 %
-\and
-\Rule{Q:Return}
+\and \Rule{Q:Return}
 { P = Q_R[\Vret/x]
 \\ \Gamma = \Gamma_R[\Vret/x]
 \\ \forall i \in \dom{P} . \, p_i = q_i
 }
-{ B; (\Gamma_R,Q_R); (\Gamma, Q) \vdash \code{return}~x \dashv (\Gamma',Q') }
+{ B, (\Gamma_R; Q_R) \vdash \htriple{ \Gamma; Q }{ \code{return}~x }{ \Gamma'; Q' } }
 %
-\and \Rule{Q:Update}
-{ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
-}
-{ B; R; (\Gamma[x/y], Q {+} M_u {+} M_e(y)) \vdash x \gets y \dashv (\Gamma, Q') }
+\and \Rule{Q:Loop}
+{ (\Gamma'; Q'), R \vdash \htriple{ \Gamma; Q }{ S }{ \Gamma;  Q {+} M_l } }
+{ B, R \vdash \htriple{ \Gamma; Q }{ \code{loop}~S }{ \Gamma'; Q' } }
 %
-\and \Rule[leftskip=.1cm,rightskip=.1cm]{Q:Loop}
-{ Q \ge Q'
-\\ (\Gamma', Q'); R; (\Gamma,Q) \vdash S \dashv (\Gamma,  Q)
+\and \Rule{Q:Seq}
+{  B, R \vdash \htriple{ \Gamma; Q }{ S_1 }{ \Gamma'; Q' {+} M_s }
+\\ B, R \vdash \htriple{ \Gamma'; Q' }{ S_2 }{ \Gamma''; Q'' }
 }
-{ B; R; (\Gamma, Q) \vdash \code{loop}~S \dashv (\Gamma', Q') }
-%
-\and \Rule{Q:Inc}
-{  \textstyle q'_{0y} = q_{0y} - \sum_u \max(q_{ux}, -q_{xu})
-\\\\ \textstyle q'_{y0} = q_{y0} - \sum_u \max(q_{xu}, -q_{ux})
-}
-{ \textstyle
-  B; R; (\Gamma[x/x {+} y], Q) \vdash x \gets x + y \dashv (\Gamma, Q')
-}
-%
-\and \Rule{Q:Dec}
-{  \textstyle q'_{0y} = q_{0y} - \sum_u \max(q_{xu}, -q_{ux})
-\\\\ \textstyle q'_{y0} = q_{y0} - \sum_u \max(q_{ux}, -q_{xu})
-}
-{ \textstyle
-  B; R; (\Gamma[x/x {-} y], Q) \vdash x \gets x - y \dashv (\Gamma, Q')
-}
+{ B, R \vdash \htriple{ \Gamma; Q }{ S_1;S_2 }{ \Gamma''; Q'' } }
 %
 \and \Rule{Q:If}
-{ B; R; (\Gamma \land e, Q) \vdash S_1 \dashv (\Gamma',Q')
-\\\\ B; R; (\Gamma \land \neg e, Q) \vdash S_2 \dashv (\Gamma',Q')
+{ B, R \vdash \htriple{ \Gamma {\land} e; Q {-} M_c^1) }{ S_1 }{ \Gamma'; Q' }
+\\\\ B, R \vdash \htriple{ \Gamma {\land} \neg e; Q {-} M_c^2 }{ S_2 }{ \Gamma'; Q' }
 }
-{ B; R; (\Gamma, Q) \vdash \code{if}(e)~S_1~\code{else}~S_2 \dashv (\Gamma',Q') }
+{ B, R \vdash \htriple{ \Gamma; Q{+}M_e(e) }{ \code{if}(e)~S_1~\code{else}~S_2 }{ \Gamma'; Q' } }
 %
-\and\Rule{Q:Seq}
-{  B; R; (\Gamma, Q) \vdash S_1 \dashv (\Gamma', Q')
-\\\\ B; R; (\Gamma', Q') \vdash S_2 \dashv (\Gamma'',Q'')
+\\ \Rule{Q:IncP}
+{ \Gamma \models y \ge 0 \!
+\\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\} \!
+\\\\ \textstyle q'_{0y} = q_{0y}
+      + \sum_{u \in \mathcal U} q_{xu}
+      - \sum_{v \not\in \mathcal U} q_{vx} \!
 }
-{ B; R; (\Gamma, Q) \vdash S_1;S_2 \dashv (\Gamma'',Q'') }
+{ \textstyle
+  B, R \vdash \htriple{ \Gamma[x/x {+} y]; Q {+} M_u {+} M_e(x {+} y) }{ x \gets x + y }{ \Gamma; Q' }
+}
+%
+\and \Rule{Q:Inc}
+{ M = M_u + M_e(x {\pm} y)
+\\\\ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
+\\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
+}
+{ \textstyle
+  B, R \vdash \htriple{ \Gamma[x/x {\pm} y]; Q {+} M }{ x \gets x \pm y }{ \Gamma; Q' }
+}
+%
+\and \Rule{Q:Set}
+{ q'_{xy}, q'_{yx} \in \Qplusz
+\\\\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
+}
+{ B, R \vdash \htriple{ \Gamma[x/y]; Q {+} M_u {+} M_e(y) }{ x \gets y }{ \Gamma; Q' } }
+%
+\and \Rule{Q:DecP}
+{ \Gamma \models y \ge 0
+\\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
+\\\\ \textstyle q'_{y0} = q_{y0}
+      + \sum_{u \in \mathcal U} q_{ux}
+      - \sum_{v \not\in \mathcal U} q_{xv}
+}
+{ \textstyle
+  B, R \vdash \htriple{ \Gamma[x/x {-} y]; Q {+} M_u {+} M_e(x {-} y) }{ x \gets x - y }{ \Gamma; Q' }
+}
 %
 \and\Rule{Q:Call}
 { (\Gamma_f, Q_f,  \Gamma_f', Q_f') \in \Delta(f) \!
@@ -1202,49 +1212,41 @@ termination can only be proved by complex path-sensitive reasoning.
 \\ \forall i \not\in \text{Loc}
   .\, s_i = 0
 }
-{ B; R; (\Gamma_f[\Vargs / \vec x] \land \Gamma_{\text{Loc}}, Q {+} c)
-  \vdash r \gets f(\vec x) \dashv
-  (\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}, Q' {+} c)
+{ B, R \vdash \htriple
+  { \Gamma_f[\Vargs / \vec x] {\land} \Gamma_{\text{Loc}}; Q {+} c {+} M_f }
+  { r \gets f(\vec x) }
+  { \Gamma_f'[\Vret/r] {\land} \Gamma_{\text{Loc}}; Q' {+} c {-} M_r }
 }
 %
-\and \Rule[leftskip=.2cm,rightskip=.2cm]{Q:Assert}
-{ }
-{ B; R; (\Gamma, Q) \vdash \code{assert}~e \dashv (\Gamma \land e, Q) }
-%
-\and \Rule[leftskip=.2cm,rightskip=.2cm]{Q:Extend}
+\and \Rule{Q:Extend}
 { \fenv f = (\vec y, S_f)
-\\ Q_f \ge 0
-\\ Q'_f \ge 0
-\\\\ B; (\Gamma_f', Q'_f); (\Gamma_f[\Vargs/\vec y], Q_f[\Vargs/ \vec y] ) \vdash S_f \dashv (\Gamma', Q')
+\\\\ B, (\Gamma_f'; Q'_f) \vdash \htriple{ \Gamma_f[\Vargs/\vec y]; Q_f[\Vargs/ \vec y] }{ S_f }{ \Gamma'; Q' }
 }
 { (\Gamma_f, Q_f, \Gamma_f', Q_f') \in \Delta(f) }
 %
 \and \Rule{Q:Weak}
-{  \!\! \Gamma_1 \models \Gamma_2
-\\ Q_1 \succeq_{\Gamma_1} Q_2
-\\ B; R; (\Gamma_2,Q_2) \vdash S \dashv (\Gamma'_2, Q'_2)
+{ B, R \vdash \htriple{ \Gamma_2; Q_2 }{ S }{ \Gamma'_2; Q'_2 }
+\\ \!\! \Gamma_1 \models \Gamma_2
+\\\\ Q_1 \succeq_{\Gamma_1} Q_2
 \\ \Gamma'_2 \models \Gamma'_1
 \\ Q'_2 \succeq_{\Gamma_2'} Q'_1
 }
-{ B; R; (\Gamma_1,Q_1) \vdash S \dashv (\Gamma'_1, Q'_1) }
+{ B, R \vdash \htriple{ \Gamma_1; Q_1 }{ S }{ \Gamma'_1; Q'_1 } }
 %
-\and \Rule{Relax}
+\\ \Rule{Relax}
 { \mathcal L = \{ xy \mid \exists l_{xy} {\in} \N \, . \, \Gamma \models l_{xy} \le |\inter x y| \}
 \\ \mathcal U = \{ xy \mid \exists u_{xy}{\in} \N \, . \, \Gamma \models |\inter x y| \le u_{xy} \}
-\\ \forall i.\, p_i, r_i \in \Qplusz
 \\\\ \forall i \in \mathcal U.\, q'_i \ge q_i - r_i
 \\ \forall i \in \mathcal L.\, q'_i \ge q_i + p_i
 \\ \forall i \not\in \mathcal U {\cup} \mathcal L {\cup} \{0\} .\, q'_i \ge q_i
 \\ q'_0 \geq q_0 {\textstyle + \sum_{i \in \mathcal U} u_i r_i - \sum_{i \in \mathcal L} l_i p_i}
 }
 { Q' \succeq_\Gamma Q }
+%\vspace{-.3cm}
 \end{mathpar}
-\caption{Inference rules of the quantitative analysis.}
+\caption{Selected inference rules of the quantitative analysis.}
 \label{fig:auto}
 \end{figure*}
-}{}
-
-\jan{QUENTIN FIX ABOVE FIGURE}
 
 
 \sectskip
