@@ -1831,8 +1831,7 @@ procedure described above, we must show that the extra assertion
 \lstinline{na > 0} on line 5 is always true.  It
 is done by proving inductively that $na = \#_1(a)$
 and remarking that since \lstinline{a[x] == 1} is true, we must have
-$\#_1(a) > 0$, thus the assertion \lstinline{na > 0} never fails. %  So the
-% test is in fact semantically equivalent to \lstinline{true}.
+$\#_1(a) > 0$, thus the assertion \lstinline{na > 0} never fails.
 
 Another simple example is given in \pref{fig:xmplbsaux} where
 a logarithmic bound on the stack consumption of a binary search
@@ -1843,6 +1842,12 @@ and the original one, we use the inequality $lg >
 \log_2(h-l)$ as an invariant.  This technique allows a simpler
 proof because, when working with integer arithmetic, it is not always
 the case that $\log_2(x-x/2) = \log_2(x)-1$.
+
+Generally, we observed that because the instrumented program
+is structurally same as the original one, it is sufficient to prove
+that the added assertions never fail to show that they have identical
+resource consumption.  This can be piggybacked on standard
+static-analysis tools.
 
 % On the other hand, it might be the case that even with annotations, a
 % resource bound cannot be found automatically.  With existing tools, this
