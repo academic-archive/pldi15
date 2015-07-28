@@ -56,6 +56,7 @@
 \usepackage{url}
 \usepackage{enumitem}
 \usepackage{array} %for stupid tables
+\usepackage{hhline}
 
 %----------------------------------------------------
 
@@ -103,8 +104,8 @@
 \newcommand{\jan}[1]{{\color{orange}[[{#1}]]}}
 
 
-\titlebanner{\iffull{Extended Version}{}}%{Draft -- Do not distribute}        % These are ignored unless
-\preprintfooter{\iffull{Extended Version\hspace{-.8cm}}{Draft\hspace{.5cm}}}%{Draft}   % 'preprint' option specified.
+\titlebanner{\iffull{Extended version}{}}%{Draft -- Do not distribute}        % These are ignored unless
+\preprintfooter{\iffull{YALEU/DCS/TR-1505\hspace{-.8cm}}{Draft\hspace{.5cm}}}%{Draft}   % 'preprint' option specified.
 
 \title{Compositional Certified Resource Bounds\ifshort{\vspace{-1.15cm}}{}}
 % Certified Resource Bounds for C
@@ -302,7 +303,7 @@ data-structure predicates of separation logic~\cite{Atkey10} can play
 the role of the type system in imperative programs.
 However, a major weakness of existing potential-based techniques
 is that they can only associate \emph{potential}
-with individual program variable or data structure.
+with individual program variables or data structures.
 For C programs, this
 fails for loops as simple as \lstinline{for(i=x;i<y;i++)} where
 $y-i$ decreases, but not $|i|$. %  Mutation is yet another problem.
@@ -343,14 +344,14 @@ Our automated analysis is able to infer
 resource bounds on C programs with mutually-recursive functions and integer loops.
 %
 The resource behavior of functions can be summarized
-in a function specification that can be used at every
+in a functional specification that can be used at every
 call site without accessing the function body.
 %
 To our knowledge this is the first technique based on
 amortized analysis that is able to derive bounds that depend on negative numbers
 and differences of variables.  It is also the first
 resource analysis technique for C that deals naturally with
-recursive functions and sequenced loops, and can handle resources that can
+recursive functions and sequenced loops, and can handle resources that may
 become available during execution (e.g., when freeing
 memory).  Compared to more classical
 approaches based on ranking functions, our tool inherits
@@ -432,7 +433,7 @@ In summary, we make the following \emph{contributions}.
   programs. It is naturally compositional, tracks size changes of
   variables to derive global bounds, can handle mutually-recursive
   functions, generates resource abstractions for functions, derives
-  proof certificates, and handles resources that can
+  proof certificates, and handles resources that may
   become available during execution.
 \itemskipIn
 \item We show how to automatically reduce the inference of \emph{linear} resource
@@ -554,7 +555,7 @@ while (x<y) { x=x+1; tick(1); } #\hfill \textnormal{(Example 1)}#
 To derive this bound, we start with the initial potential $\Phi_0 =
 |[x,y]|$, which
 we also use as the loop invariant.  For the loop body we have (like in
-Hoare logic) to derive a triple like
+Hoare logic) to derive a triple
 $\htriple{\Phi_0}{\code{x=x+1;tick(1)}}{\Phi_0}$.  We can only do so
 if we utilize the fact that $x<y$ at the beginning of the loop body.
 The reasoning then works as follows. We start with the potential
@@ -574,19 +575,19 @@ again.
 \vspace{-1.5ex}
 \begin{lstlisting}[mathescape]
 ${\color{blue}%
-  \{ \cdot; \, 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \} }$
+  \{ \cdot; \, 0 + \frac{T}{K} {\cdot} |[x,y]| \} }$
 while (x+K<=y) {
   ${\color{blue}%
-  \{ x + K \le y; \; 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \} }$
+  \{ x + K \le y; \; 0 + \frac{T}{K} {\cdot} |[x,y]| \} }$
   x=x+K;
   ${\color{blue}%
-  \{ x \leq y; \, T + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \} }$
+  \{ x \leq y; \, T + \frac{T}{K} {\cdot} |[x,y]| \} }$
   tick(T);
   ${\color{blue}%
-  \{ x \leq y; \, 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \} }$
+  \{ x \leq y; \, 0 + \frac{T}{K} {\cdot} |[x,y]| \} }$
 }
 ${\color{blue}%
- \{ x \geq y; 0 + \frac{T}{K} {\cdot} |[x,y]| + 0 {\cdot} |[y,x]| \} }$
+ \{ x \geq y; 0 + \frac{T}{K} {\cdot} |[x,y]| \} }$
 \end{lstlisting}
   \caption{Derivation of a tight bound on the number of
     ticks for a standard \emph{for loop}.  The parameters $K>0$ and
@@ -602,8 +603,9 @@ $\frac{T}{K}{\cdot}|[x,y]|$ on the number of ticks for a generalized
 version of Example~1 in which we increment $x$ by a constant $K>0$ and
 consume $T>0$ resources in each iteration.  The reasoning is similar
 to the one of Example~1 except that we obtain the potential
-$K{\cdot}\frac{T}{K}$ after the assignment.  Note that the logical
-assertions are only used in the rule for the assignment
+$K{\cdot}\frac{T}{K}$ after the assignment.  In the figure, we separate
+logical assertions from potential functions with semicolons. Note that the
+logical assertions are only used in the rule for the assignment
 \code{x=x+K}.
 
 To the best of our knowledge, no other implemented tool for C is
@@ -839,7 +841,7 @@ and motivate our design decisions.
 \paragraph{Linear Potential Functions.}
 
 To find resource bounds automatically, we first need to restrict our
-search space.  In this work, we focus on a the following form of
+search space.  In this work, we focus on the following form of
 potential functions, which can express tight bounds for many typical
 programs and allows for inference with \emph{linear programming}.
 $$
@@ -880,7 +882,7 @@ includes the constant $c_0$.
 \paraskip
 \paragraph{Abstract Program State.}
 
-In addition to the quantitative annotations our automatic amortized
+In addition to the quantitative annotations, our automatic amortized
 analysis needs to maintain a minimal abstract state to justify certain
 operations on quantitative annotations.  For example when analyzing
 the code $x \gets x + y$, it is helpful to know the sign of $y$ to
@@ -893,7 +895,7 @@ The abstract program state is represented as \emph{logical contexts} in the
 derivation system used by our automated tool.
 Our implementation finds these logical contexts using abstract
 interpretation with the domain of linear inequalities.  We observed that
-the rules of the analysis often requires only minimal local knowledge.
+the rules of the analysis often require only minimal local knowledge.
 This means that it is not necessary for us to compute precise loop
 invariants and only a rough fixpoint (e.g. keeping only inequalities on
 variables unchanged by the loop) is sufficient to obtain good bounds.
@@ -1072,18 +1074,18 @@ our novel analysis, no other available tool derives the aforementioned
 Example \emph{t62} (\pref{fig:ex_list_2})
 is the inner loop of a quick sort implementation in cBench.  More
 precisely, it is the partitioning part of the algorithm.  This partition
-loop has linear complexity, and feeding it to our analysis gives a
-worst-case bound $2+3|[l,h]|$.  The bound is not optimal but it can be
+loop has linear complexity, and feeding it to our analysis gives the
+worst-case bound $2+3|[l,h]|$.  This bound is not optimal but it can be
 refined by rewriting the program. % to let our logical inference
 %discover more invariants.
 %With the potential
 %method in mind, it is clear that the three loops get their
 %potential from the same interval $[l,h]$ regardless of their nesting.
-With the potential method in mind, we can reason as follows.
+To understand the bound, we can reason as follows.
 %
 If $h \geq l$ initially, the cost of the loop is 2.
 Otherwise, the cost of each round (at
-most 3) is payed using the potential of $[l,h]$ by the first
+most 3) can be payed using the potential of $[l,h]$ by the first
 increment to $l$ because we know that $l<h$.  The two inner loops
 can also use $[l,h]$ to pay for their inner costs.
 %
@@ -1101,104 +1103,72 @@ classes of challenging programs that we can automatically analyze.
 \pref{sec:exper} contains a more detailed comparison with other
 tools\iffull{ for automatic bound derivation.}{.}
 
-\paraskip
-\paragraph{Limitations.}
-The implementation of our analysis does not currently support all of Clight.
-Function pointers, goto statements, and stack-allocated
-variables that have their address taken are not supported by the
-automatic analysis.  While these limitations concern the current
-implementation, our technique is in principle capable to handle them.
-
-For the sake of simplicity, the automated system described here is
-restricted to finding only linear bounds.  However, the amortized analysis
-technique was shown to work with polynomial bounds~\cite{HoffmannAH11};
-we leave this extension of our system as future work.
-
-Even some linear programs cannot be analyzed automatically by
-$\toolname$, it is usually the case for programs that rely on heap
-invariants (like nul-terminated C strings), for programs making
-use of non-linear operations (like \code{\%} or \code{*}), or for
-programs whose
-termination can only be proved by complex path-sensitive reasoning.
-
 \begin{figure*}
-\small
-\def \MathparLineskip {\lineskip=0.35cm}
 \begin{mathpar}
+%
 \Rule{Q:Skip}
 { }
-{ \!\! B, R \vdash \htriple{ \Gamma; Q }{ \code{skip} }{ \Gamma; Q } \!\!}
+{ B, R \vdash \htriple {\Gamma; Q}{\code{skip}}{\Gamma; Q} }
 %
-\and \Rule{Q:Assert}
+\and
+\Rule{Q:Break}
 { }
-{ B, R \vdash \htriple{ \Gamma; Q {+} M_a }{ \code{assert}~e }{ \Gamma {\land} e; Q } }
+{ (\Gamma; Q_B), R \vdash \htriple{\Gamma; Q_B}{\code{break}}{\Gamma'; Q'} }
 %
-\and \Rule{Q:Break}
-{ }
-{(\Gamma; Q_B), R \vdash \htriple{ \Gamma; Q_B {+} M_b }{ \code{break} }{ \Gamma'; Q' } }
+\and
+\Rule{Q:Tick}
+{ n < 0 \implies Q \ge 0 }
+{ B, R \vdash \htriple{\Gamma; Q}{\code{tick}(n)}{\Gamma; Q{-}n} }
 %
-\and \Rule{Q:Return}
+\and
+\Rule{Q:Return}
 { P = Q_R[\Vret/x]
 \\ \Gamma = \Gamma_R[\Vret/x]
 \\ \forall i \in \dom{P} . \, p_i = q_i
 }
-{ B, (\Gamma_R; Q_R) \vdash \htriple{ \Gamma; Q }{ \code{return}~x }{ \Gamma'; Q' } }
+{ B, (\Gamma_R; Q_R) \vdash \htriple{\Gamma; Q}{\code{return}~x}{\Gamma'; Q'} }
+%
+\and \Rule{Q:Update}
+{ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
+}
+{ B, R \vdash \htriple{\Gamma[x/y]; Q}{x \gets y}{\Gamma; Q'} }
 %
 \and \Rule{Q:Loop}
-{ (\Gamma'; Q'), R \vdash \htriple{ \Gamma; Q }{ S }{ \Gamma;  Q {+} M_l } }
-{ B, R \vdash \htriple{ \Gamma; Q }{ \code{loop}~S }{ \Gamma'; Q' } }
-%
-\and \Rule{Q:Seq}
-{  B, R \vdash \htriple{ \Gamma; Q }{ S_1 }{ \Gamma'; Q' {+} M_s }
-\\ B, R \vdash \htriple{ \Gamma'; Q' }{ S_2 }{ \Gamma''; Q'' }
+{ Q \ge Q'
+\\ (\Gamma'; Q'), R \vdash \htriple{\Gamma; Q}{ S }{\Gamma;  Q}
 }
-{ B, R \vdash \htriple{ \Gamma; Q }{ S_1;S_2 }{ \Gamma''; Q'' } }
-%
-\and \Rule{Q:If}
-{ B, R \vdash \htriple{ \Gamma {\land} e; Q {-} M_c^1) }{ S_1 }{ \Gamma'; Q' }
-\\\\ B, R \vdash \htriple{ \Gamma {\land} \neg e; Q {-} M_c^2 }{ S_2 }{ \Gamma'; Q' }
-}
-{ B, R \vdash \htriple{ \Gamma; Q{+}M_e(e) }{ \code{if}(e)~S_1~\code{else}~S_2 }{ \Gamma'; Q' } }
-%
-\\ \Rule{Q:IncP}
-{ \Gamma \models y \ge 0 \!
-\\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\} \!
-\\\\ \textstyle q'_{0y} = q_{0y}
-      + \sum_{u \in \mathcal U} q_{xu}
-      - \sum_{v \not\in \mathcal U} q_{vx} \!
-}
-{ \textstyle
-  B, R \vdash \htriple{ \Gamma[x/x {+} y]; Q {+} M_u {+} M_e(x {+} y) }{ x \gets x + y }{ \Gamma; Q' }
-}
+{ B, R \vdash \htriple{\Gamma; Q}{\code{loop}~S}{\Gamma'; Q'} }
 %
 \and \Rule{Q:Inc}
-{ M = M_u + M_e(x {\pm} y)
-\\\\ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
-\\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
+{  \textstyle q'_{0y} = q_{0y} - \sum_u \max(q_{ux}, -q_{xu})
+\\\\ \textstyle q'_{y0} = q_{y0} - \sum_u \max(q_{xu}, -q_{ux})
 }
 { \textstyle
-  B, R \vdash \htriple{ \Gamma[x/x {\pm} y]; Q {+} M }{ x \gets x \pm y }{ \Gamma; Q' }
+  B, R \vdash \htriple{\Gamma[x/x {+} y]; Q}{x \gets x + y}{\Gamma; Q'}
 }
 %
-\and \Rule{Q:Set}
-{ q'_{xy}, q'_{yx} \in \Qplusz
-\\\\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
-}
-{ B, R \vdash \htriple{ \Gamma[x/y]; Q {+} M_u {+} M_e(y) }{ x \gets y }{ \Gamma; Q' } }
-%
-\and \Rule{Q:DecP}
-{ \Gamma \models y \ge 0
-\\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
-\\\\ \textstyle q'_{y0} = q_{y0}
-      + \sum_{u \in \mathcal U} q_{ux}
-      - \sum_{v \not\in \mathcal U} q_{xv}
+\and \Rule{Q:Dec}
+{  \textstyle q'_{0y} = q_{0y} - \sum_u \max(q_{xu}, -q_{ux})
+\\\\ \textstyle q'_{y0} = q_{y0} - \sum_u \max(q_{ux}, -q_{xu})
 }
 { \textstyle
-  B, R \vdash \htriple{ \Gamma[x/x {-} y]; Q {+} M_u {+} M_e(x {-} y) }{ x \gets x - y }{ \Gamma; Q' }
+  B, R \vdash \htriple{\Gamma[x/x {-} y]; Q}{x \gets x - y}{\Gamma; Q'}
 }
+%
+\and \Rule{Q:If}
+{ B, R \vdash \htriple{\Gamma \land e; Q}{S_1}{\Gamma'; Q'}
+\\\\ B, R \vdash \htriple{\Gamma \land \neg e; Q}{S_2}{\Gamma'; Q'}
+}
+{ B, R \vdash \htriple{\Gamma; Q}{\code{if}(e)~S_1~\code{else}~S_2}{\Gamma'; Q'} }
+%
+\and\Rule{Q:Seq}
+{  B, R \vdash \htriple{\Gamma; Q}{S_1}{\Gamma'; Q'}
+\\\\ B, R \vdash \htriple{\Gamma'; Q'}{S_2}{\Gamma''; Q''}
+}
+{ B, R \vdash \htriple{\Gamma; Q}{S_1;S_2}{\Gamma''; Q''} }
 %
 \and\Rule{Q:Call}
-{ (\Gamma_f, Q_f,  \Gamma_f', Q_f') \in \Delta(f) \!
+{ (\Gamma_f; Q_f,  \Gamma_f'; Q_f') \in \Delta(f) \!
 \\ \text{Loc} = \text{Locals}(Q) \!
 \\ \forall i \neq j . \, x_i \neq x_j \!
 \\ c \in \Qplusz \!
@@ -1212,39 +1182,44 @@ termination can only be proved by complex path-sensitive reasoning.
 \\ \forall i \not\in \text{Loc}
   .\, s_i = 0
 }
-{ B, R \vdash \htriple
-  { \Gamma_f[\Vargs / \vec x] {\land} \Gamma_{\text{Loc}}; Q {+} c {+} M_f }
-  { r \gets f(\vec x) }
-  { \Gamma_f'[\Vret/r] {\land} \Gamma_{\text{Loc}}; Q' {+} c {-} M_r }
+{ B, R \vdash \htriple {\Gamma_f[\Vargs / \vec x] \land \Gamma_{\text{Loc}}; Q {+} c}
+  {r \gets f(\vec x)}
+  {\Gamma_f'[\Vret/r] \land \Gamma_{\text{Loc}}; Q' {+} c}
 }
+%
+\and \Rule{Q:Assert}
+{ }
+{ B, R \vdash \htriple{\Gamma; Q}{\code{assert}~e}{\Gamma \land e; Q} }
 %
 \and \Rule{Q:Extend}
 { \fenv f = (\vec y, S_f)
-\\\\ B, (\Gamma_f'; Q'_f) \vdash \htriple{ \Gamma_f[\Vargs/\vec y]; Q_f[\Vargs/ \vec y] }{ S_f }{ \Gamma'; Q' }
+\\ Q_f \ge 0
+\\ Q'_f \ge 0
+\\\\ B, (\Gamma_f'; Q'_f) \vdash \htriple{\Gamma_f[\Vargs/\vec y]; Q_f[\Vargs/ \vec y]}{S_f}{\Gamma'; Q'}
 }
-{ (\Gamma_f, Q_f, \Gamma_f', Q_f') \in \Delta(f) }
+{ (\Gamma_f; Q_f, \Gamma_f'; Q_f') \in \Delta(f) }
 %
 \and \Rule{Q:Weak}
-{ B, R \vdash \htriple{ \Gamma_2; Q_2 }{ S }{ \Gamma'_2; Q'_2 }
-\\ \!\! \Gamma_1 \models \Gamma_2
-\\\\ Q_1 \succeq_{\Gamma_1} Q_2
+{   \Gamma_1 \models \Gamma_2
+\\ Q_1 \succeq_{\Gamma_1} Q_2
+\\ B, R \vdash \htriple{\Gamma_2;Q_2}{S}{\Gamma'_2; Q'_2}
 \\ \Gamma'_2 \models \Gamma'_1
 \\ Q'_2 \succeq_{\Gamma_2'} Q'_1
 }
-{ B, R \vdash \htriple{ \Gamma_1; Q_1 }{ S }{ \Gamma'_1; Q'_1 } }
+{ B, R \vdash \htriple{\Gamma_1; Q_1}{S}{\Gamma'_1; Q'_1} }
 %
-\\ \Rule{Relax}
+\and \Rule{Relax}
 { \mathcal L = \{ xy \mid \exists l_{xy} {\in} \N \, . \, \Gamma \models l_{xy} \le |\inter x y| \}
 \\ \mathcal U = \{ xy \mid \exists u_{xy}{\in} \N \, . \, \Gamma \models |\inter x y| \le u_{xy} \}
+\\ \forall i.\, p_i, r_i \in \Qplusz
 \\\\ \forall i \in \mathcal U.\, q'_i \ge q_i - r_i
 \\ \forall i \in \mathcal L.\, q'_i \ge q_i + p_i
 \\ \forall i \not\in \mathcal U {\cup} \mathcal L {\cup} \{0\} .\, q'_i \ge q_i
 \\ q'_0 \geq q_0 {\textstyle + \sum_{i \in \mathcal U} u_i r_i - \sum_{i \in \mathcal L} l_i p_i}
 }
 { Q' \succeq_\Gamma Q }
-%\vspace{-.3cm}
 \end{mathpar}
-\caption{Selected inference rules of the quantitative analysis.}
+\caption{Inference rules of the quantitative analysis.}
 \label{fig:auto}
 \end{figure*}
 
@@ -1254,6 +1229,29 @@ termination can only be proved by complex path-sensitive reasoning.
 
 In the following we describe the local and compositional derivation
 rules of the automatic amortized analysis.
+
+\paraskip
+\paragraph{Cost Aware Clight.}
+
+We present the rules for a subset of Clight.
+Clight is the first intermediate
+language of the CompCert compiler~\cite{CompcertCACM}.  It
+is a subset of C with a unified looping construct and
+side-effect free expressions.  We reuse most of CompCert's
+syntax but instrument the semantics with a resource counter
+(an arbitrary rational number) that can be modified by
+\code{tick()} function calls.
+More details on this cost-aware semantics are provided in \pref{sec:soundness}.
+
+In the rules, assignments are restricted to the form $x \gets
+y$ or $x \gets x \pm y$.  In the implementation, a Clight
+program is converted into this form prior to analysis without changing
+the resource cost.
+Non-linear operations such as $x \gets z*y$ or $x \gets
+a[y]$ are handled by assigning $0$ to coefficients
+like $q_{xa}$ and $q_{ax}$ that contain $x$ after the assignment.
+This sound treatment ensures that no further loop bounds
+depend on the result of the non-linear operation.
 
 \paraskip
 \paragraph{Judgements.}
@@ -1301,8 +1299,8 @@ in the rules.)}{}
 % the presentation to avoid cluttering notations.  Instead we assume a
 % fixed function context $\Delta$ that is implicit on all judgements.
 % Function contexts are treated exactly as in the logic.  % We call
-% % precondition the pair $(\Gamma, Q)$ and postcondition the pair
-% % $(\Gamma', Q')$.
+% % precondition the pair $(\Gamma; Q)$ and postcondition the pair
+% % $(\Gamma'; Q')$.
 % The correspondence between judgements of the
 % automation and the ones of the quantitative logic is made formal by
 % our soundness proof of the automatic amortized analysis at the end of
@@ -1320,19 +1318,21 @@ such that $q'_0 = q_0 \pm n$ and $\forall i \neq 0 .\, q'_i = q_i$.
 Finally, if a rule mentions $Q$ and $Q'$
 and leaves the latter undefined at some index $i$ we assume that $q'_i = q_i$.
 
-We describe the automatic amortized analysis for a subset of
-expressions of Clight.  Clight is the first intermediate
-language of the CompCert compiler~\cite{CompcertCACM}, it
-is a cleaner C with a unified looping construct and
-side-effect free expressions.
-Assignments are restricted to the form $x \gets
-y$ or $x \gets x \pm y$.  In the implementation, a Clight
-program is converted into this form prior to analysis without changing
-the resource cost.  This is achieved by using a series of \emph{cost-free
-  assignments} that do not result in additional cost in the
-semantics.  Non-linear operations such as $x \gets z*y$ or $x \gets
-a[y]$ are handled by assigning $0$ to coefficients
-like $q_{xa}$ and $q_{ax}$ that depend on $x$ after the assignment.
+% We describe the automatic amortized analysis for a subset of
+% expressions of Clight.  Clight is the first intermediate
+% language of the CompCert compiler~\cite{CompcertCACM}, it
+% is a cleaner C with a unified looping construct and
+% side-effect free expressions.
+% Assignments are restricted to the form $x \gets
+% y$ or $x \gets x \pm y$.  In the implementation, a Clight
+% program is converted into this form prior to analysis without changing
+% the resource cost.  This is achieved by using a series of \emph{cost-free
+%   assignments} that do not result in additional cost in the
+% semantics.  Non-linear operations such as $x \gets z*y$ or $x \gets
+% a[y]$ are handled by assigning $0$ to coefficients
+% like $q_{xa}$ and $q_{ax}$ that depend on $x$ after the assignment.
+% This sound treatment ensures that no further loop bounds
+% depend on the result of the non-linear operation.
 
 \paraskip
 \paragraph{Function Specifications.}
@@ -1359,10 +1359,10 @@ The rules of our derivation system must serve two purposes.  They must
 this potential, when it is allowed, to \emph{pay} for resource consuming
 operations.  These two purposes are illustrated on the {\sc Q:Skip}
 rule.  This rule reuses its precondition as postcondition, it is
-explained by two observations: first, no resource is consumed by the skip
-operation, thus no potential has to be used to pay for the evaluation;
-second, the program state is not changed by
-the execution of a skip statement, thus all the potential available
+explained by two observations: First, no resource is consumed by the skip
+operation, thus no potential has to be used to pay for the evaluation.
+Second, the program state is not changed by
+the execution of a skip statement.  Thus all potential available
 before the execution of the skip statement is still available after.
 \iffull{
 These two observations would also justify a rule with the side-condition
@@ -1370,36 +1370,6 @@ $Q \ge Q'$, because some potential is always safely lost.  For the sake
 of orthogonality, it is not how we present the rule and this form of
 weakening is in fact expressed as the stand-alone rule {\sc Q:Weak}
 described later.}{}
-
-% Most of the rules correspond exactly to the respective rules of the
-% quantitative Hoare logic.
-% \iffull{
-%   For example, the rule {\sc Q:Skip} simply reuses its postcondition
-%   as precondition.  This is sound since evaluating a $\code{skip}$
-%   statement never costs any resources and does not change the program
-%   state.  Similarly, the rule {\sc Q:Tick} enforces that the
-%   quantitative annotation of the precondition is at least $M_t(n)$ to
-%   pay for the resource consumption.  Since the program state is also
-%   unchanged in this case, the logical part $\Gamma$ of the
-%   precondition can soundly be reused in the postcondition.  In the
-%   rule {\sc Q:Break}, where the linear control flow is broken, the
-%   postcondition $(\Gamma', Q')$ can be arbitrary.  The precondition is
-%   taken from the break part of the judgement similarly as it is done
-%   in the quantitative logic.
-% }
-% %
-% { Examples include {\sc Q:Skip, Q:Tick, Q:Break, Q:Seq, Q:Assert}, and
-%   {\sc Q:Loop}.  We only show {\sc Q:Seq} and {\sc Q:Loop}.  The other
-%   rules can be found in the extended version.
-% }
-% %
-% The rule {\sc Q:Return} exhibits a slight
-% difference to the quantitative logic.  While we have a function $\Z
-% \to \Assn$ to represent return values in the logic, we assume that a
-% special variable $\ret$ is part of the index set of $Q_R$.  The
-% substitution $Q[\ret/x]$ denotes an potential annotation $Q'$ with
-% $q'_{xy} = q_{\ret y}$ and $q'_{yx} = q_{y \ret}$ for all $y$ and
-% $q_i'=q_i$ otherwise.
 
 The rules {\sc Q:Inc} and {\sc Q:Dec} describe how the potential is
 distributed after a size change of a variable.
@@ -1420,6 +1390,67 @@ This means that we must decrease the potential $q_{0y}$ of $|\inter 0 y|$
 by $\max(q_{ux}, -q_{xu})$ to pay for the change on
 $|\inter x u|$ and $|\inter u x|$.  A symmetric argument explains the
 change on $q_{y0}$.
+
+The rule {\sc Q:Loop} is a cornerstone of our analysis.  To apply it on a
+loop body, one needs to find an invariant potential $Q$ that will pay for
+the iterations.  At each iteration, some resources are spent by the loop
+body.  Since the  loop can only be exited with a \code{break} statement,
+the postcondition $\{ \Gamma'; Q' \}$ for the statement
+$\code{loop}~S$ is used as break postcondition in the derivation for $S$.
+
+Another interesting rule is {\sc Q:Call}.  It needs to account for the
+changes to the stack caused by the function call, the arguments/return
+value passing, and the preservation of local variables.  We can sum up
+the main ideas of the rule as follows.
+\itemskip
+\begin{itemize}
+\item The potential in the pre- and postcondition of the function
+  specification is equalized to its matching potential in the callee's
+  pre- and postcondition.
+\itemskipIn
+\item
+  The potential of intervals $|\inter x y|$ is preserved
+  across a function call
+  if $x$ and $y$ are local\iffull{ variables.}{.}
+\item
+  The unknown potentials after the call (e.g.
+  $|\inter x g|$, with $x$ local and $g$ global)
+  are set to zero in the postcondition.
+\end{itemize}
+\itemskip
+If $x$ and $y$ are local variables and $f(x,y)$ is
+called, {\sc Q:Call} splits the potential of
+$|\inter x y|$ in two parts.  One part to perform the
+computation in the function $f$ and one part to keep for
+later use after the function call.  This splitting is
+realized by the equations $Q = P {+} S$ and $Q' =
+P' {+} S'$.  Arguments in the function precondition
+$(\Gamma_f; Q_f)$ are named using a fixed vector $\Vargs$
+of names different from all program variables.  This
+prevents name conflicts and ensures that
+the substitution $[\Vargs/\vec x]$ is meaningful.
+Symmetrically, we use the unique name $\Vret$ to represent
+the return value in the function's postcondition
+$(\Gamma'_f; Q'_f)$.
+
+The rule {\sc Q:Weak} is not syntax directed. In the implementation
+we apply {\sc Q:Weak} before loops and between the two statements of a
+sequential composition. We could integrate weakening into every
+syntax directed rule but this simple heuristic helps to make the analysis
+efficient.  The high-level idea of {\sc Q:Weak} is the following: If
+we have a sound judgement, then it is sound to add more potential to the
+precondition and remove potential from the postcondition.  The concept of
+\emph{more potential} is formalized by the relation $Q' \succeq_\Gamma Q$
+that is defined in the rule {\sc Relax}. This rule
+also deals with the important task of transferring constant potential
+(represented by $q_0$) to interval sizes and vice versa.  If we can deduce
+from the logical context that the interval size $|\inter x y| \geq \ell$ is
+larger than a constant $\ell$ then we can turn the potential $q_{xy} {\cdot}
+|\inter x y|$ form the interval into the constant potential $\ell{\cdot}q_{xy}$
+and guarantee that we do not gain potential.  Conversely, if $|\inter
+x y| \leq u$ for a constant $u$ then we can transfer constant potential
+$u{\cdot}q_{xy}$ to the interval potential $q_{xy} {\cdot} |\inter x y|$
+without gaining potential.
 
 \newcommand{\loopbody}[0]{\ensuremath{\code{if~(x \geq 10)~(x=x - 10; tick(5))~else~break}}}
 \begin{figure*}[t]
@@ -1518,66 +1549,12 @@ $$
 \label{fig:derivation}
 \end{figure*}
 
-\iffull{
-Another interesting rule is {\sc Q:Call}.  It needs to account for the
-changes to the stack caused by the function call, the arguments/return
-value passing, and the preservation of local variables.  We can sum up
-the main ideas of the rule as follows.
-\itemskip
-\begin{itemize}
-\item The potential in the pre- and postcondition of the function
-  specification is equalized to its matching potential in the callee's
-  pre- and postcondition.
-\itemskipIn
-\item
-  $\!$The potential of intervals $|\inter x y|$ is preserved
-  if $x$ and $y$ are local\iffull{ variables.}{.}
-\item
-  The unknown potentials after the call (e.g.
-  $|\inter x g|$, with $x$ local and $g$ global)
-  are set to zero in the postcondition.
-\end{itemize}
-\itemskip
-If $x$ and $y$ are local variables and $f(x,y)$ is
-called, {\sc Q:Call} splits the potential of
-$|\inter x y|$ in two parts, one part to perform the
-computation in the function $f$ and one part to keep for
-later use after the function call.  This splitting is
-realized by the equations $Q = P {+} S$ and $Q' =
-P' {+} S'$.  Arguments in the function precondition
-$(\Gamma_f, Q_f)$ are named using a fixed vector $\Vargs$
-of names different from all program variables.  This
-prevents name conflicts from happening and ensures that
-the substitution $[\Vargs/\vec x]$ is meaningful.
-Symmetrically, we use the unique name $\Vret$ to represent
-the return value in the function's postcondition
-$(\Gamma'_f, Q'_f)$.
-}{}
-
-\iffull{The rule {\sc Q:Weak} is not syntax directed. In the implementation
-we apply {\sc Q:Weak} before loops and between the two statements of a
-sequential composition. We could integrate weakening into every
-syntax directed rule but this simple heuristic helps to make the analysis
-efficient.}{}  The high-level idea of {\sc Q:Weak} is the following: If
-we have a sound judgement, then it is sound to add more potential to the
-precondition and remove potential from the postcondition.  The concept of
-\emph{more potential} is formalized by the relation $Q' \succeq_\Gamma Q$
-that is defined in the rule {\sc Relax}\iffull{ that
-also deals with the important task of transferring constant potential
-(represented by $q_0$) to interval sizes and vice versa.  If we can deduce
-from the logical context that the interval size $|\inter x y| \geq l$ is
-larger then a constant $l$ then we can transfer potential $q_{xy} {\cdot}
-|\inter x y|$ form the interval to constant potential $l{\cdot}q_{xy}$
-and guarantee that we do not gain potential.  Conversely, if $|\inter
-x y| \leq u$ for a constant $u$ then we can transfer constant potential
-$u{\cdot}q_{xy}$ to the interval potential $q_{xy} {\cdot} |\inter x y|$ without gaining potential.}{.}
-
 \sectskip
 \section{Automatic Inference via LP Solving}
 \label{sec:lp}
 \aftersectskip
 
-We separate the search of a derivation into two steps.  As a first
+We separate the search of a derivation in two steps.  As a first
 step we go through the functions of the program and apply inductively
 the derivation rules of the automatic amortized analysis.  This is
 done in a bottom-up way for each strongly connected component (SCC) of the
@@ -1594,8 +1571,8 @@ off-the-shelf LP solver (currently CLP~\cite{clp}).
 If the solver successfully finds a solution, we know that a derivation
 exists and extract the values for the initial
 $Q$ from the solver to get a resource bound for the program.  To get
-a full derivation we extract the complete solution from the
-solver, and apply it to the symbolic names $q_i$ of the coefficients
+a full derivation, we extract the complete solution from the
+solver and apply it to the symbolic names $q_i$ of the coefficients
 in the derivation.  If the LP solver fails to find a solution, an
 error is reported.
 
@@ -1624,8 +1601,6 @@ used to gather information on interval sizes.  For example,
 &\land  \forall (\alpha, \beta) \neq (0,10)  . \, p^\text{we}_{\alpha,\beta} \leq p^\text{de}_{\alpha,\beta} \;.
   \end{align*}
 }
-
-\noindent
 The other rules are syntax directed and applied inductively.  For example,
 the outermost expression is a loop, so we use the rule \text{Q:Loop}
 at the root of the derivation tree.  At this point, we do not know yet
@@ -1705,7 +1680,9 @@ the derived bound is $0.5 |[0,x]|$.
 
 A notable advantage of the LP-based approach compared to
 SMT-solver--based techniques is that a satisfying assignment is
-a proof certificate instead of a counter example.
+a proof certificate instead of a counter example.  To provide
+high-assurance bounds, this certificate can be checked
+in linear time by a simple validator.
 
 % SSS SPACING
 %\vspace{-.24cm}
@@ -1759,7 +1736,7 @@ bsearch(x,l,h@,lg@) {
     tick($M_\code{bsearch}$);
     l = bsearch(x,l,h@,lg@);
     tick($-M_\code{bsearch}$);
-  } else return l;
+  } return l;
 }
 \end{lstlisting}
 \vspace{-.2cm}
@@ -1815,14 +1792,14 @@ More precisely, the technique consists of the following steps. First,
 a program $P$ that fails to be analyzed automatically is enriched by
 auxiliary variables $\vec x$ to form a program
 $P_l(\vec x)$.  Second, an initial value $\vec X(\sigma)$ for the
-logical variables is selected so that:
-$$
+logical variables is selected to satisfy the proposition:
+\begin{equation} \tag{*}
 \forall n\, \sigma\, \sigma'.\,
   (\sigma, P_l(\vec X(\sigma))) \Downarrow_n \sigma'
     {\implies}
   \exists n' {\le} n.\,
     (\sigma, P) \Downarrow_{n'} \sigma'.
-$$
+\end{equation}
 Since the annotated program and the original one are usually
 syntactically close, the proof of this result goes
 by simple induction on the resource-aware evaluation judgement.
@@ -1867,7 +1844,7 @@ the case that $\log_2(x-x/2) = \log_2(x)-1$.
 Generally, we observed that because the instrumented program
 is structurally same as the original one, it is enough to prove
 that the added assertions never fail in order to show the two programs
-have identical resource consumption.  This can usually be piggybacked
+satisfy the proposition (*).  This can usually be piggybacked
 on standard static-analysis tools.
 
 % On the other hand, it might be the case that even with annotations, a
@@ -2068,7 +2045,7 @@ for stack usage~\cite{veristack14}, add support for arbitrary
 resources, and simplify the handling of auxiliary state.
 
 We define quantitative Hoare triples
-as $B;R\vdash\htriple Q S {Q'}$ where $B$, $R$, $Q$, and $Q'$ are
+as $\iffull{\Delta;\,}{}B;R\vdash_L \htriple Q S {Q'}$ where $B$, $R$, $Q$, and $Q'$ are
 maps from program states to an element of $\Q\cup\{\infty\}$ that represents
 an amount of resources available.  The assertions $B$ and $R$ are
 postconditions for the case in which the block $S$ exits by a \code{break}
@@ -2081,7 +2058,7 @@ least $Q'(\state')$ resources left if the evaluation terminates in state
 $\state'$.  The logic rules are similar to the ones in previous
 work.
 
-Finally, we define a strong compositional continuation based soundness for
+Finally, we define a strong compositional continuation-based soundness for
 triples and prove the validity of all the rules in Coq.  \ifshort{The full
 version of this paper \cite{anon_extended}, provides explanations for
 the rules and a thorough overview of our soundness proof.}{Details about
@@ -2102,10 +2079,10 @@ derivations of the automatic analysis to derivations in the quantitative
 logic we can directly obtain a certified resource bound for the analyzed
 program.
 
-The translation of an assertion $(\Gamma, Q)$ in the automatic
+The translation of an assertion $(\Gamma; Q)$ in the automatic
 analysis is defined by
 $$
-  \tr(\Gamma, Q) := \lambda\state .\, (\Gamma(\state)) + \Phi_Q(\state),
+  \tr(\Gamma; Q) := \lambda\state .\, \Gamma(\state) + \Phi_Q(\state),
 $$
 where we write $\Phi_Q$ for the unique linear potential function
 defined by the quantitative annotation $Q$.  The logical context $\Gamma$
@@ -2113,24 +2090,24 @@ is implicitly lifted to a quantitative assertion by mapping a state
 $\state$ to 0 if $\Gamma(\state)$ holds and to $\infty$ otherwise.
 \iffull{We also need to
 translate the assumptions in function contexts of the automatic
-analysis.  We define $\tr(\Gamma_f, Q_f, \Gamma'_f, Q'_f) :=$
+analysis.  We define $\tr(\Gamma_f; Q_f, \Gamma'_f; Q'_f) :=$
 %
 \begin{multline*}
 \forall z \, \vec v \, v . \,
 (
-  \lambda \vec v \, \state .\, \tr(\Gamma_f, Q_f)(\state[\Vargs {\mapsto} \vec v]), \\
-  \lambda v \, \state .\, \tr(\Gamma'_f, Q'_f)(\state[\Vret {\mapsto} v])
+  \lambda \vec v \, \state .\, \tr(\Gamma_f; Q_f)(\state[\Vargs {\mapsto} \vec v]), \\
+  \lambda v \, \state .\, \tr(\Gamma'_f; Q'_f)(\state[\Vret {\mapsto} v])
   )
 \end{multline*}}{}%
 %
-\iffull{These definitions let}{This lets} us translate the judgement
-$J := B; R; P \vdash S \dashv P'$\iffull{ in the context $\Delta$ by $\tr(J) :=$}{ by}
+These definitions let us translate the judgement
+$J := B, R \vdash \htriple P S {P'}$\iffull{ in the context $\Delta$ by $\tr(J) :=$}{ by}
 \iffull{$$
-  (\lambda f .\, \tr(\Delta(f))); \tr(B); \tr(R) \vdash
+  (\lambda f .\, \tr(\Delta(f))); \tr(B); \tr(R) \vdash_L
     \htriple{\tr(P)}{S}{\tr(P')}.
 $$}{%
 $$
-  \tr(J) := \tr(B); \tr(R) \vdash \htriple{\tr(P)} S {\tr(P')}.
+  \tr(J) := \tr(B); \tr(R) \vdash_L \htriple{\tr(P)} S {\tr(P')}.
 $$}%
 The soundness of the automatic analysis can now be stated
 formally with the following theorem.
@@ -2314,13 +2291,13 @@ Example \emph{t19}
 demonstrates the compositionality of the analysis.  The program consists
 of two loops that decrement a variable $i$.  In the first loop, $i$ is
 decremented down to 100 and in the second loop $i$ is decremented further
-down to $-1$.  However, between the loops we assign \code{i=i+k+50}.
+down to $-1$.  However, between the loops we assign \lstinline{i=i+k+50}.
 So in total the program performs $52 + |[-1,i]| + |[0,k]|$ ticks.
 Our analysis finds this tight bound because our amortized analysis
 naturally takes into account the relation between the two loops.
 Example \emph{t30} decrements both input variables $x$ and $y$ down to
 zero in an unconventional way.  In the loop body, first $x$ is decremented
-by one.  Then the values of the variables $x$ and $y$ are switched using
+by one, then the values of the variables $x$ and $y$ are switched using
 the local variable $t$ as a buffer.  Our analysis infers the tight
 bound $|[0,x]|+|[0,y]|$.  Sometimes we need some assumptions on the
 inputs in order to derive a bound.  Example \emph{t15} is such a case.
@@ -2465,7 +2442,8 @@ Function & LoC & Bound & Time (s) \\
 \end{table}
 
 
-\pref{tab:compar} summarizes the results of our experiments.  It shows
+\pref{tab:compar} summarizes the results of our experiments presented
+in \pref{tab:eval}.  It shows
 for each tool the number of derived bounds (\#bounds), the number of
 asymptotically tight bounds (\#lin. bounds), the number of bounds with
 the best constant factors in comparison with the other tools (\#best
@@ -2509,8 +2487,8 @@ the compositionality of our analysis is essential to get a tight bound
 since loops on the same index are sequenced 4 and 2 times without
 resetting it.  All other tools derive much larger constant factors.
 
-Since we have a formal cost semantics, we can run our examples with
-this semantics for different inputs and measure the cost to compare it
+With our formal cost semantics, we can run our examples
+for different inputs and measure the cost to compare it
 to our derived bound.  \pref{fig:3d} shows such a comparison for
 Example \emph{t08}, a variant of \emph{t08a} from \pref{sec:AAA}.  One
 can see that the derived constant factors are the best possible if the
@@ -2555,6 +2533,30 @@ input variable $x$ is non-negative.  \iffull{If $x$ is negative then
 \label{fig:3d}
 \end{figure}
 
+\sectskip
+\section{Limitations}
+\label{sec:limitations}
+\aftersectskip
+
+Our implementation does not currently support
+all of Clight.  Programs with function pointers, goto statements,
+continue statements, and pointers to stack-allocated variables
+cannot be analyzed automatically.  While these limitations concern the
+current implementation, our technique is in principle capable to handle
+them.
+
+For the sake of simplicity, the automated system described here is
+restricted to finding only linear bounds.  However, the amortized analysis
+technique was shown to work with polynomial bounds~\cite{HoffmannAH11};
+we leave this extension of our system as future work.
+
+Even certain linear programs cannot be analyzed automatically by
+$\toolname$, it is usually the case for programs that rely on heap
+invariants (like nul-terminated C strings), for programs in which
+resource usage depends on the result of non-linear operations (like
+\code{\%} or \code{*}) in a non-trivial way, or for programs whose
+termination can only be proved by complex path-sensitive reasoning.
+
 
 \sectskip
 \section{Related Work}
@@ -2590,10 +2592,9 @@ but has very rudimentary support for automation. It is not based on
 efficient LP solving and cannot automatically derive symbolic
 bounds.  In contrast, our main contribution is an automatic amortized
 analysis for C that can derive parametric bounds for loops and
-recursive functions fully automatically.
-%
-In this article, we also use a more general quantitative Hoare
-logic that is parametric in the resource of interest.
+recursive functions fully automatically.  We
+use a more general quantitative Hoare
+logic that is parametric over the resource of interest.
 
 \iffull{
 In the development of our quantitative Hoare logic we have drawn
@@ -2634,10 +2635,10 @@ bounds is well known in the resource analysis
 community~\cite{AlonsoG12,Moser14,SinnZV14}.  Currently, the only
 other available tools that can be directly applied to C code are Rank
 and LOOPUS.  As demonstrated, $\toolname$ is more compositional than
-the aforementioned tools. Our technique, is the only one that is able
-to generate resource specifications for functions, deal with resources
-like memory that might become available, generates proof certificates
-for the bounds, and has support for user guidance that separates
+the aforementioned tools. Our technique, is the only one that can
+generate resource specifications for functions, deal with resources
+like memory that might become available, generate proof certificates
+for the bounds, and  support user guidance that separates
 qualitative and quantitative reasoning.
 
 There are techniques~\cite{Braberman08} that can compute the memory
@@ -2670,10 +2671,11 @@ compute symbolic bounds. \iffull{Furthermore, there is no way to
 We have developed a novel analysis framework for compositional and
 certified worst-case resource bound analysis for C programs.  The
 framework combines ideas from existing abstract interpretation--based
-techniques with the potential method of amortized analysis.  It is implemented in the publicly available tool
-$\toolname$. To the best of our knowledge, $\toolname$ is the first
-analysis tool for C programs that automatically reduces the derivation
-of symbolic bounds to LP solving.
+techniques with the potential method of amortized analysis.  It is
+implemented in the publicly available tool $\toolname$. To the best of
+our knowledge, $\toolname$ is the first tool for C programs
+that automatically reduces the derivation of symbolic bounds to LP
+solving.
 
 We have demonstrated that our approach improves the state-of-the-art
 in resource bound analysis for C programs in three ways. First, our
@@ -4711,16 +4713,15 @@ $x$ and $y$, and the interaction between \code{consume} and
 
 
 File &
-\multicolumn{2}{|c|}{KoAT} &
-\multicolumn{2}{|c|}{Rank} &
-\multicolumn{2}{|c|}{LOOPUS} &
+\multicolumn{2}{c|}{KoAT} &
+\multicolumn{2}{c|}{Rank} &
+\multicolumn{2}{c|}{LOOPUS} &
 SPEED &
 \toolname
 \\
-\hline
 
 %--------------------------------------------
-\hline \texttt{gcd.c} &
+\hhline{=|==|==|==|=|=} \texttt{gcd.c} &
 
 ? &
 &
@@ -4946,7 +4947,7 @@ $O(n^2)$ &
 $\max(0, m {-} y) + \max(0, n {-} x)$ &
 $O(n)$ &
 
-$\max(0, m{-}y) + \max(0, n{-}x)$ &
+$\max(0, n{-}x) + \max(0, m{-}y)$ &
 
 $|\inter x n| {+} |\inter y m|$
 \\
@@ -5330,13 +5331,14 @@ $1 {+} |\inter 0 n|$
 %--------------------------------------------
 \end{tabular}
 \caption{
-  Experimental evaluation comparing the bounds generated KoAT, Rank,
-  LOOPUS, SPEED, and our automatic amortized analysis on several
+  Comparison of the bounds generated by KoAT, Rank,
+  LOOPUS, SPEED, and our tool $\toolname$ on several
   challenging linear examples. Results for KoAT and SPEED were extracted
   from previous publications because KoAT cannot take C programs as
   input in its current version and SPEED is not available.
   Entries marked with ? indicate that we cannot test the respective example with the tool. Entries
-  marked with --- indicate that the tool failed to produce a result.
+  marked with --- indicate that the tool failed to produce a result. We write
+  $\max(a,b)$ for the maximum of $a$ and $b$.
 }
 \label{tab:eval}
 \end{table*}
@@ -5367,7 +5369,6 @@ determines the position \code{n+lo} of the pivot.  We only assert that
 }
 {
 \sectskip
-\scriptsize
 \bibliography{lit}
 }
 
