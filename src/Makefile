@@ -3,7 +3,7 @@
 include config.mk
 
 #SOURCES = Parse.ml Tools.ml Logic.ml Eval.ml clp_stubs.c Clp.ml Hood.ml Cee.ml
-SOURCES = Ast.ml Grammar.mly Parse.mll Tools.ml Logic.ml clp_stubs.c Clp.ml Hood.ml Cee.ml
+SOURCES = Ast.ml Cfg.ml Grammar.mly Parse.mll Tools.ml Logic.ml clp_stubs.c Clp.ml Hood.ml Cee.ml
 RESULT = app
 CLIBS = Clp CoinUtils z bz2 stdc++
 CFLAGS = -Wall -O3
