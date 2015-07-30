@@ -1,131 +1,103 @@
-
 open Ast
 
-type nexts = NBlocks of int list
-	     | NReturn of var
+module IdMap = Map.Make(struct type t = id let compare = compare end)
+
+type next =
+  | NBlocks of int list
+  | NReturn of var
 
 type inst =
   | ITick   of int
   | IAssert of cond
   | IInc    of id * op * var
   | ISet    of id * var option
-  | ICall of var list * cfun ref * var option
+  | ICall   of var list * cfun ref * var option
 
 and block =
   { bPreds: int list
   ; bInsts: inst list
-  ; bNexts: nexts
+  ; bNexts: next
   }
 
 and cfun =
-    { fName : id
-    ; fArgs: id list
-    ; fLocals: id list
-    ; fBlocks: block array
-    }
+  { fName : id
+  ; fArgs: id list
+  ; fLocals: id list
+  ; fBlocks: block array
+  }
 
+let tr_prog: unit prog -> (block array * int) =
 
+  let module IMap = Map.Make(
+    struct
+      type t = int
+      let compare = compare
+    end
+  ) in
 
-module IdMap = Map.Make(struct type t = id let compare = compare end)
+  let n: int ref = ref 0 in
+  let id: unit -> int =
+    fun () -> incr n; !n in
 
-let of_prog : int IdMap.t -> 'a func -> cfun =
+  let m: (inst list * next) IMap.t ref =
+    ref IMap.empty in
 
-  fun fidmap astFun ->
+  let add: int -> (inst list * next) -> unit =
+    fun id ln ->
+      assert(not (IMap.mem id !m));
+      m := IMap.add id ln !m in
 
-    let counter = ref (-1) in
+  let tac: inst -> int -> unit =
+    fun ins id ->
+      assert(IMap.mem id !m);
+      let (l,n) = IMap.find id !m in
+      m := IMap.add id (ins::l,n) !m in
 
-    let fresh_int _ =
-      counter := !counter + 1;
-      !counter
+  let rec tr p brki seqi =
+    match p with
+    | PTick (n,_) ->
+      tac (ITick (n)) seqi;
+      seqi
+    | PInc (i,o,v,_) ->
+      tac (IInc (i,o,v)) seqi;
+      seqi
+    | PSet (i,vo,_) ->
+      tac (ISet (i,vo)) seqi;
+      seqi
+    | PBreak (_) ->
+      brki
+    | PReturn (v,_) ->
+      let reti = id () in
+      add reti ([], NReturn (v));
+      reti
+    | PIf (c,a,b,_) ->
+      let ida = tr a brki seqi in
+      let idb = tr b brki seqi in
+      let ifi = id () in
+      add ifi ([], NBlocks [ida; idb]);
+      ifi
+    | PLoop (a,_) ->
+      let lid = id () in
+      add lid ([], NBlocks []);
+      let aid = tr a seqi lid in
+      let (l,_) = IMap.find lid !m in
+      m := IMap.add lid (l, NBlocks [aid]) !m;
+      lid
+    | PSeq (a,b,_) ->
+      let bid = tr b brki seqi in
+      let aid = tr a brki bid in
+      aid
     in
 
-    let cont_return var insts =
-      let n = fresh_int () in
-      (n, { bPreds = []
-	  ; bInsts = insts
-	  ; bNexts = NReturn var
-	  }
-      )
-    in
-
-    let cont_break_init _ = failwith "Not in a loop." in
-
-    let cont_end_init _ = failwith "Missing return statement." in
-
-    let constraints = ref [] in
-
-    let add_constr n m =
-      constraints := (n,m) :: !constraints
-    in
-
-    let rec mkblocks cont_break cont_end prog =
-      match prog with
-    	| PTick (n,_) ->
-	  ((fun insts -> cont_end (List.append insts [ITick n]) ), [])
-	| PAssert (cond,_) ->
-	  ((fun insts -> cont_end (List.append insts [IAssert cond]) ), [])
-    	| PInc (id,op,var,_) ->
-	  ((fun insts -> cont_end (List.append insts [IInc (id,op,var)]) ), [])
-    	| PSet (id,ovar,_) ->
-	  ((fun insts -> cont_end (List.append insts [ISet (id,ovar)]) ), [])
-	| PCall (oid,id,vars,_) ->
-	  (*ICall of var list * cfun ref * var option*) failwith "function calls not implemented"
-    	| PBreak _ ->
-	  (cont_break, [])
-    	| PReturn (v,_) ->
-	  (cont_return v, [])
-    	| PLoop (p,_) ->
-	  let loop_entry = fresh_int () in
-	  let cont_loop insts =
-	    let n = fresh_int () in
-	    let newblock =
-	      { bPreds = []
-	      ; bInsts = insts
-	      ; bNexts = NBlocks [loop_entry]
-	      }
-	    in
-	    (n,newblock)
-	  in
-	  let (loop_cont, blocks) = mkblocks cont_end cont_loop p in
-	  let (n_loop, block_loop) = loop_cont [] in
-	  let _ = add_constr n_loop loop_entry in
-	  (cont_loop,(n_loop,block_loop)::blocks)
-	    
-    	| PIf (cond, pif, pelse, _) ->
-	  let (cont_if,blocks_if) = mkblocks cont_break cont_end pif in
-	  let (cont_else,blocks_else) = mkblocks cont_break cont_end pelse in
-	  let (n_if,block_if) = cont_if [] in
-	  let (n_else,block_else) = cont_else [] in
-	  let blocks =
-	    let x = (n_if,block_if)::blocks_if in
-	    let y = (n_else,block_else)::blocks_else in
-	    List.append x y
-	  in
-	  let cont insts =
-	    let n = fresh_int () in
-	    ( n,
-	      { bPreds = []
-	      ; bInsts = insts
-	      ; bNexts = NBlocks [n_if;n_else]
-	      }
-	    )
-	  in
-	  (cont,blocks)
-
-    	| PSeq (p1,p2,_) ->
-	  let (cont_end',blocks2) = mkblocks cont_break cont_end p2 in
-	  let (cont_end'',blocks1) = mkblocks cont_break cont_end' p1 in
-	  (cont_end'',List.append blocks1 blocks2) 
-    in
-    
-    let blocklist =
-      let (cont,blocks) = mkblocks cont_break_init cont_end_init astFun.fbody in
-      (cont [])::blocks
-    in
-    let blocks = failwith "" in
-    { fName = astFun.fname
-    ; fArgs = astFun.fargs
-    ; fLocals = astFun.flocs
-    ; fBlocks = blocks
-    }
-
+    fun p ->
+      let entry = tr p (-1) (-1) in
+      let a = Array.make !n {bPreds = []; bInsts = []; bNexts = NBlocks []} in
+      IMap.fold (fun k v () ->
+        let (l,n) = IMap.find k !m in
+        a.(k) <-
+          { bPreds = []
+          ; bInsts = l
+          ; bNexts = n
+          }
+      ) !m ();
+      (a, entry)
