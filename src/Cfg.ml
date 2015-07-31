@@ -92,15 +92,25 @@ let of_func: 'a Ast.func -> func =
   let rpo (a, entry) =
     let n = ref (Array.length a) in
     let b = Array.make !n (Obj.magic 0) in
+    let r = Array.make !n 0 in
     let rec f i =
       begin match a.(i).bnexts with
       | NReturn _ -> ()
       | NBlocks bs -> List.iter f bs
       end;
       decr n;
+      r.(i) <- !n;
       b.(!n) <- a.(i);
     in
-    f entry; b
+    f entry;
+    Array.mapi (fun i b ->
+      let bnexts =
+          match b.bnexts with
+          | NBlocks l ->
+            NBlocks (List.map (fun i -> r.(i)) l)
+          | n -> n in
+      { b with bnexts }
+    ) b
   in
 
   let preds a =
