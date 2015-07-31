@@ -1,7 +1,5 @@
 type id = string
 
-module IdMap = Map.Make(struct type t = id let compare = compare end)
-
 type next =
   | NBlocks of int list
   | NReturn of Ast.var
@@ -37,12 +35,11 @@ let of_func: 'a Ast.func -> func =
       end
     ) in
     let n = ref 0 in
-    let id () =
-      incr n; !n in
     let m = ref IMap.empty in
-    let add id ln =
-      assert(not (IMap.mem id !m));
-      m := IMap.add id ln !m in
+    let nuw nxt =
+      incr n;
+      m := IMap.add !n ([],nxt) !m;
+      !n in
     let tac ins id =
       assert(IMap.mem id !m);
       let (l,n) = IMap.find id !m in
@@ -54,30 +51,22 @@ let of_func: 'a Ast.func -> func =
       | PInc (i,o,v,_) -> tac (IInc (i,o,v)) seqi
       | PSet (i,vo,_) ->  tac (ISet (i,vo)) seqi
       | PAssert (c,_) ->  tac (IAssert (c)) seqi
-      | PBreak (_) ->     brki
-      | PReturn (v,_) ->
-        let reti = id () in
-        add reti ([], NReturn (v));
-        reti
+      | PBreak (_) ->     nuw (NBlocks [brki])
+      | PReturn (v,_) ->  nuw (NReturn (v))
       | PIf (c,a,b,_) ->
         let ida = tr a brki seqi in
         let idb = tr b brki seqi in
-        let ifi = id () in
-        add ifi ([], NBlocks [ida; idb]);
-        ifi
+        nuw (NBlocks [ida; idb])
       | PLoop (a,_) ->
-        let lid = id () in
-        add lid ([], NBlocks []);
+        let lid = nuw (NBlocks []) in
         let aid = tr a seqi lid in
         let (l,_) = IMap.find lid !m in
         m := IMap.add lid (l, NBlocks [aid]) !m;
         lid
       | PSeq (a,b,_) ->
-        let bid = tr b brki seqi in
-        let aid = tr a brki bid in
-        aid
+        tr a brki (tr b brki seqi)
     in
-    let endi = tr (PReturn (VNum 0,())) (-1) (-1) in
+    let endi = nuw (NReturn (VNum 0)) in
     let entry = tr p endi endi in
     let a = Array.make !n (Obj.magic 0) in
     IMap.iter (fun k v ->
