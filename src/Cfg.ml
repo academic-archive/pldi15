@@ -36,21 +36,18 @@ let of_func: 'a Ast.func -> func =
         let compare = compare
       end
     ) in
-    let n: int ref = ref 0 in
-    let id: unit -> int =
-      fun () -> incr n; !n in
-    let m: (inst list * next) IMap.t ref =
-      ref IMap.empty in
-    let add: int -> (inst list * next) -> unit =
-      fun id ln ->
-        assert(not (IMap.mem id !m));
-        m := IMap.add id ln !m in
-    let tac: inst -> int -> int =
-      fun ins id ->
-        assert(IMap.mem id !m);
-        let (l,n) = IMap.find id !m in
-        m := IMap.add id (ins::l,n) !m;
-        id in
+    let n = ref 0 in
+    let id () =
+      incr n; !n in
+    let m = ref IMap.empty in
+    let add id ln =
+      assert(not (IMap.mem id !m));
+      m := IMap.add id ln !m in
+    let tac ins id =
+      assert(IMap.mem id !m);
+      let (l,n) = IMap.find id !m in
+      m := IMap.add id (ins::l,n) !m;
+      id in
     let rec tr p brki seqi =
       match p with
       | PTick (n,_) ->    tac (ITick (n)) seqi
