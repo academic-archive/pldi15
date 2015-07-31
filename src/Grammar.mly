@@ -26,7 +26,7 @@ let mk_while cond bdy =
 %nonassoc ELSE
 
 %start program
-%type <unit Ast.func list * unit Ast.prog> program
+%type <unit Ast.ast_func list * unit Ast.prog> program
 
 %%
 

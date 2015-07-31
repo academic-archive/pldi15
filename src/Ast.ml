@@ -1,4 +1,5 @@
-(* AST definition of while programs *)
+(* Global types *)
+
 
 type id = string
 type var = VId of id | VNum of int
@@ -19,6 +20,9 @@ let cond_neg = function
     in CTest (a, List.assoc op nl, b)
   | CNonDet -> CNonDet
 
+
+(* AST definition of while programs *)
+
 type 'a prog =
   | PTick   of int * 'a
   | PBreak  of 'a
@@ -30,13 +34,6 @@ type 'a prog =
   | PLoop   of 'a prog * 'a
   | PIf     of cond * 'a prog * 'a prog * 'a
   | PSeq    of 'a prog * 'a prog * 'a
-
-type 'a func =
-  { fname: id
-  ; fargs: id list
-  ; flocs: id list
-  ; fbody: 'a prog
-  }
 
 let prog_data = function
   | PTick (_, a)
@@ -62,3 +59,36 @@ module Mk = struct
       | _ -> PSeq (a, b, ())
       end
 end
+
+
+(* Control flow graphs for while programs *)
+
+type jump =
+  | JList of int list
+  | JRet of var
+
+type inst =
+  | ITick   of int
+  | IAssert of cond
+  | IInc    of id * op * var
+  | ISet    of id * var option
+  | ICall   of id option * id * var list
+
+type block =
+  { bpreds: int list
+  ; binsts: inst list
+  ; bjump: jump
+  }
+
+
+(* Functions *)
+
+type 'a func =
+  { fname: id
+  ; fargs: id list
+  ; flocs: id list
+  ; fbody: 'a
+  }
+
+type 'a cfg_func = block array func
+type 'a ast_func = 'a prog func
