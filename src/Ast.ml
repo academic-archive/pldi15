@@ -64,7 +64,7 @@ end
 (* Control flow graphs for while programs *)
 
 type jump =
-  | JList of int list
+  | JJmp of int list
   | JRet of var
 
 type inst =
