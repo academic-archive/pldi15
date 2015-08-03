@@ -94,3 +94,61 @@ let of_func: 'a ast_func -> 'a cfg_func =
     ; flocs = f.flocs
     ; fbody = blocks f.fbody |> rpo |> preds
     }
+
+
+let pp_func {fname; fargs; flocs; fbody} =
+  let open Printf in
+  let pp_var = Parse.pp_var in
+
+  let rec pp_list p oc = function
+    | [x] -> fprintf oc "%a" p x
+    | x :: xs -> fprintf oc "%a, %a" p x (pp_list p) xs
+    | [] -> () in
+
+  let rec lsum prns = function
+    | LAdd (l1, l2) ->
+      if prns then printf "(";
+      lsum false l1; printf " + "; lsum false l2;
+      if prns then printf ")"
+    | LSub (l1, l2) ->
+      if prns then printf "(";
+      lsum false l1; printf " - "; lsum true l2;
+      if prns then printf ")"
+    | LMult (k, l) ->
+      printf "%d * " k;
+      lsum true l
+    | LVar v ->
+      printf "%a" pp_var v in
+
+  let cond = function
+    | CTest (l1, cmp, l2) ->
+      lsum false l1;
+      printf " %s " (
+        match cmp with
+        | CLe -> "<="
+        | CGe -> ">="
+        | CLt -> "<"
+        | CGt -> ">"
+      );
+      lsum false l2
+    | CNonDet -> printf "*" in
+
+  Array.iteri (fun i {binsts=is; bjump} ->
+    printf "\nblock_%d:\n" i;
+    List.iter (function
+      | ITick n -> printf "\ttick %d\n" n
+      | IAssert c -> printf "\tassert "; cond c; printf "\n"
+      | IInc (id, o, v) ->
+        let op = match o with OPlus -> "+" | OMinus -> "-" in
+        printf "\t%s %s= %a\n" id op pp_var v
+      | ISet (id, Some v) -> printf "\t%s = %a\n" id pp_var v
+      | ISet (id, None) -> printf "\t%s = *\n" id
+      | ICall _ -> failwith "pp_func, no call supported"
+    ) is;
+    match bjump with
+    | JList l ->
+      let f oc = fprintf oc "block_%d" in
+      printf "\tgoto (%a)\n" (pp_list f) l
+    | JRet v ->
+      printf "\tret %a\n" pp_var v
+  ) fbody
