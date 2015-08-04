@@ -41,7 +41,7 @@ let of_func: 'a ast_func -> 'a cfg_func =
         let aid = tr a seqi lid in
         let (l,_) = IMap.find lid !m in
         m := IMap.add lid (l, JJmp [aid]) !m;
-        aid
+        nuw (JJmp [aid])
       | PSeq (a,b,_) ->
         tr a brki (tr b brki seqi)
     in
@@ -54,11 +54,6 @@ let of_func: 'a ast_func -> 'a cfg_func =
     (a, entry) in
 
   let merge a =
-    let rec dst f t =
-      if t < f then t else
-      match a.(t).bjump with
-      | JJmp [x] -> dst t x
-      | _ -> t in
     let chg = ref true in
     while !chg do
       chg := false;
@@ -71,17 +66,32 @@ let of_func: 'a ast_func -> 'a cfg_func =
             a.(n) <-
               { bpreds = b.bpreds
               ; binsts = b.binsts @ s.binsts
-              ; bjump =
-                match s.bjump with
-                | JJmp l -> JJmp (List.map (dst n) l)
-                | j -> j
+              ; bjump = s.bjump
               };
             chg := true;
           end
         | _ -> ()
       done;
     done;
-    a in
+    Array.mapi (fun n b ->
+      let rec dst f t =
+        if List.exists
+            (function IAssert _ -> false | _ -> true)
+            a.(t).binsts || t <= f
+        then t else
+          match a.(t).bjump with
+        | JJmp [x] -> dst t x
+        | _ -> t in
+      { b with
+        bjump =
+          match b.bjump with
+          | JJmp l ->
+            let l' = List.map (dst n) l in
+            if l' <> l then chg := true;
+            JJmp l'
+          | j -> j
+      }
+    ) a in
 
   let rpo entry a =
     let n = ref (Array.length a) in
