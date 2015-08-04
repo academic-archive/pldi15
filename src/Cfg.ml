@@ -23,7 +23,8 @@ let of_func: 'a ast_func -> 'a cfg_func =
       id in
     let rec tr p brki seqi =
       match p with
-      | PTick (n,_) ->    tac (ITick (n)) seqi
+      | PTick (n,_) ->
+        if n=0 then seqi else tac (ITick (n)) seqi
       | PInc (i,o,v,_) -> tac (IInc (i,o,v)) seqi
       | PSet (i,vo,_) ->  tac (ISet (i,vo)) seqi
       | PAssert (c,_) ->  tac (IAssert (c)) seqi
@@ -185,6 +186,7 @@ let pp_func {fname; fargs; flocs; fbody} =
     | JJmp l -> printf "\tgoto %a\n" (pp_list pp_b) l
     | JRet v -> printf "\tret %a\n" pp_var v
   ) fbody
+
 
 let _ =
   if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tcfg" then
