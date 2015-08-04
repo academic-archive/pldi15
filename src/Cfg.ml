@@ -32,13 +32,15 @@ let of_func: 'a ast_func -> 'a cfg_func =
       | PIf (c,a,b,_) ->
         let ida = tr a brki (nuw (JJmp [seqi])) in
         let idb = tr b brki (nuw (JJmp [seqi])) in
+        let ida = tac (IAssert (c)) ida in
+        let idb = tac (IAssert (cond_neg c)) idb in
         nuw (JJmp [ida; idb])
       | PLoop (a,_) ->
         let lid = nuw (JJmp []) in
         let aid = tr a seqi lid in
         let (l,_) = IMap.find lid !m in
         m := IMap.add lid (l, JJmp [aid]) !m;
-        lid
+        aid
       | PSeq (a,b,_) ->
         tr a brki (tr b brki seqi)
     in
@@ -50,7 +52,29 @@ let of_func: 'a ast_func -> 'a cfg_func =
     ) !m;
     (a, entry) in
 
-  let rpo (a, entry) =
+  let merge a =
+    let chg = ref true in
+    while !chg do
+      chg := false;
+      for n=0 to Array.length a - 1 do
+        let b = a.(n) in
+        match b.bjump with
+        | JJmp [n'] ->
+          let s = a.(n') in
+          if s.bpreds = [n] then begin
+            a.(n) <-
+              { bpreds = b.bpreds
+              ; binsts = b.binsts @ s.binsts
+              ; bjump = s.bjump
+              };
+            chg := true;
+          end
+        | _ -> ()
+      done;
+    done;
+    a in
+
+  let rpo entry a =
     let n = ref (Array.length a) in
     let b = Array.make !n (Obj.magic 0) in
     let r = Array.make !n (-1) in
@@ -81,6 +105,7 @@ let of_func: 'a ast_func -> 'a cfg_func =
   let preds a =
     let p = Array.make (Array.length a) [] in
     let addp b i = p.(i) <- b :: p.(i) in
+    addp (-1) 0; (* the start block gets an extra predecessor *)
     for n = 0 to Array.length a - 1 do
       match a.(n).bjump with
       | JRet _ -> ()
@@ -95,7 +120,12 @@ let of_func: 'a ast_func -> 'a cfg_func =
     { fname = f.fname
     ; fargs = f.fargs
     ; flocs = f.flocs
-    ; fbody = blocks f.fbody |> rpo |> preds
+    ; fbody = blocks f.fbody
+           |> (fun (a,e) -> rpo e a)
+           |> preds
+           |> merge
+           |> rpo 0
+           |> preds
     }
 
 
@@ -107,6 +137,9 @@ let pp_func {fname; fargs; flocs; fbody} =
     | [x] -> fprintf oc "%a" p x
     | x :: xs -> fprintf oc "%a, %a" p x (pp_list p) xs
     | [] -> () in
+  let pp_b oc n =
+    if n = -1 then fprintf oc "start"
+              else fprintf oc "b%d" n in
 
   let rec lsum prns = function
     | LAdd (l1, l2) ->
@@ -136,8 +169,8 @@ let pp_func {fname; fargs; flocs; fbody} =
       lsum false l2
     | CNonDet -> printf "*" in
 
-  Array.iteri (fun i {binsts=is; bjump} ->
-    printf "\nb%d:\n" i;
+  Array.iteri (fun i {binsts=is; bjump; bpreds=ps} ->
+    printf "\nb%d: # preds: %a \n" i (pp_list pp_b) ps;
     List.iter (function
       | ITick n -> printf "\ttick %d\n" n
       | IAssert c -> printf "\tassert "; cond c; printf "\n"
@@ -149,11 +182,8 @@ let pp_func {fname; fargs; flocs; fbody} =
       | ICall _ -> failwith "pp_func, no call supported"
     ) is;
     match bjump with
-    | JJmp l ->
-      let f oc = fprintf oc "b%d" in
-      printf "\tgoto %a\n" (pp_list f) l
-    | JRet v ->
-      printf "\tret %a\n" pp_var v
+    | JJmp l -> printf "\tgoto %a\n" (pp_list pp_b) l
+    | JRet v -> printf "\tret %a\n" pp_var v
   ) fbody
 
 let _ =
