@@ -54,6 +54,11 @@ let of_func: 'a ast_func -> 'a cfg_func =
     (a, entry) in
 
   let merge a =
+    let rec dst f t =
+      if t < f then t else
+      match a.(t).bjump with
+      | JJmp [x] -> dst t x
+      | _ -> t in
     let chg = ref true in
     while !chg do
       chg := false;
@@ -66,7 +71,10 @@ let of_func: 'a ast_func -> 'a cfg_func =
             a.(n) <-
               { bpreds = b.bpreds
               ; binsts = b.binsts @ s.binsts
-              ; bjump = s.bjump
+              ; bjump =
+                match s.bjump with
+                | JJmp l -> JJmp (List.map (dst n) l)
+                | j -> j
               };
             chg := true;
           end
