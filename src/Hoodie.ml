@@ -852,6 +852,7 @@ let analyze (fdefs, p) =
 type ('b, 'a) ba = { bef: 'b; aft: 'a }
 
 let analyze glos {fbody=bs; _} =
+  let dumplings = ref [] in
 
   (* 1. logical analysis (per-block) *)
 
@@ -892,7 +893,7 @@ let analyze glos {fbody=bs; _} =
   Array.iteri (fun i blk ->
     let {bef; aft} = cs.(i) in
     let log = log blk in
-    let inum = ref 0 in
+    let inum = ref (List.length blk.binsts) in
 
     (* 2.1. merge after contexts *)
     let () =
@@ -907,8 +908,7 @@ let analyze glos {fbody=bs; _} =
     (* 2.2 process block instructions *)
     List.fold_right (fun i q ->
 
-      let {bef=lbef; aft=laft} =
-        log.(incr inum; !inum - 1) in
+      let {bef=lbef; aft=laft} = log.(decr inum; !inum) in
 
       match i with
       | ITick n ->
@@ -923,6 +923,7 @@ let analyze glos {fbody=bs; _} =
           | OPlus -> LVar y, iyz, izy
           | OMinus -> LMult (-1, LVar y), izy, iyz in
         let q = Q.relax laft q in
+        if x = "x" then dumplings := ("after x+=N", q) :: !dumplings;
         let q' =
         begin match
           Logic.entails lbef opy CLe (LVar (VNum 0)),
@@ -933,6 +934,7 @@ let analyze glos {fbody=bs; _} =
         | true, false -> (* op y < 0 *) Q.incr q (VId x) (-1) iopyz
         | false, true -> (* op y > 0 *) Q.incr q (VId x) (+1) izopy
         end in
+        if x = "x" then dumplings := ("before x+=N", q') :: !dumplings;
         Q.relax lbef q'
       | ISet (_x, _) ->
         failwith "ISet is not implemented yet"
@@ -944,7 +946,7 @@ let analyze glos {fbody=bs; _} =
   ) bs;
 
   let {bef=qini; _} = cs.(0) in
-  Q.solve (qini, !qret)
+  Q.solve ~dumps:(!dumplings) (qini, !qret)
 
 let _ =
   let f tick =
@@ -961,6 +963,7 @@ let _ =
       Cfg.of_func
         { fname="main"; fargs=[]
         ; flocs=[]; fbody=pmain} in
+    Cfg.pp_func fmain;
     analyze glos fmain
   in
   if Array.length Sys.argv > 1 then
