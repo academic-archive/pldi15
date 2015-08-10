@@ -351,14 +351,14 @@ end = struct
     )
 
   let _ =
-    let vars = VSet.of_list
+    let _vars = VSet.of_list
       [ VId "c"; VId "b"; VNum 0 ] in
-    let idx =
+    let _idx =
       one
       |> I.add (Dst (VNum 0, VId "a")) 2
       |> I.add (Dst (VId "a", VId "c")) 2
     in
-    (* shift vars (VId "a") (+1) idx *) ()
+    (* shift _vars (VId "a") (+1) _idx *) ()
   (* END DEBUG *)
 
 end
@@ -487,16 +487,17 @@ end = struct
           Printf.printf " + %d" n; Idx.print_delta i;
         ) m
       in
-      let f1 = function
+      let _f1 = function
         | ((_,k), `D (dev,_)) ->
           Printf.printf " %d {{" k; p dev; print_string "}}"
         | _ -> () in
-      let f2 = function
+      let _f2 = function
         | ((_,k), `I (i)) ->
           Printf.printf " %d {{" (-k); Idx.print i; print_string "}}"
         | _ -> () in
       (*
-      List.iter f1 ro; print_string " >= "; List.iter f2 ro; print_newline ();
+      List.iter _f1 ro; print_string " >= "; List.iter _f2 ro;
+      print_newline ();
       *)
       row_ ~lo:0. ~up:0. (List.map fst ro) 0
     ) cm ();
@@ -850,17 +851,120 @@ let analyze (fdefs, p) =
 
 type ('b, 'a) ba = { bef: 'b; aft: 'a }
 
-let analyze {fbody=bs; _} =
-  print_string "it's all right";
-  print_newline ()
+let analyze glos {fbody=bs; _} =
+
+  (* 1. logical analysis (per-block) *)
+
+  let log blk =
+    let ni = List.length blk.binsts in
+    let log = Array.make ni {bef=[]; aft=[]} in
+    List.fold_left (fun (bef, n) i ->
+      let aft = match i with
+        | ITick _ -> bef
+        | IAssert c -> Logic.of_cond c @ bef
+        | IInc (id, op, v) -> Logic.incr id op v bef
+        | ISet (id, vo) -> Logic.set id vo bef
+        | ICall _ -> [] (* reset all knowledge *)
+      in
+      log.(n) <- {bef; aft};
+      (aft, n+1)
+    ) ([], 0) blk.binsts |> ignore;
+    log in
+
+  (* 2. quantitative analysis *)
+
+  let qret = ref Q.empty in
+  let cs =
+    (* this is the quantitative contexts
+     * at block borders *)
+    Array.init (Array.length bs)
+      (fun i ->
+        let ret, sign =
+          match bs.(i).bjump with
+          | JJmp bl -> false, if List.exists ((>=) i) bl then +1 else 0
+          | JRet _  -> true,  +1 in
+        let bef = Q.addv Q.empty glos in
+        let aft = Q.addv ~sign Q.empty glos in
+        if ret then qret := aft;
+        {bef; aft}
+      ) in
+
+  Array.iteri (fun i blk ->
+    let {bef; aft} = cs.(i) in
+    let log = log blk in
+    let inum = ref 0 in
+
+    (* 2.1. merge after contexts *)
+    let () =
+      let befs =
+        match blk.bjump with
+        | JJmp bl -> List.map (fun b -> cs.(b).bef) bl
+        | JRet _ -> [] in
+      if befs <> [] then
+        Q.eqc (Q.merge befs) aft
+    in
+
+    (* 2.2 process block instructions *)
+    List.fold_right (fun i q ->
+
+      let {bef=lbef; aft=laft} =
+        log.(incr inum; !inum - 1) in
+
+      match i with
+      | ITick n ->
+        if n = 0 then q else
+        let q = Q.inc q [Idx.one, [], n] in
+        if n < 0 then Q.merge ~sign:(+1) [q] else q
+      | IAssert _ -> q
+      | IInc (x, op, y) ->
+        let opy, iopyz, izopy =
+          let iyz = (y, VNum 0) and izy = (VNum 0, y) in
+          match op with
+          | OPlus -> LVar y, iyz, izy
+          | OMinus -> LMult (-1, LVar y), izy, iyz in
+        let q = Q.relax laft q in
+        let q' =
+        begin match
+          Logic.entails lbef opy CLe (LVar (VNum 0)),
+          Logic.entails lbef opy CGe (LVar (VNum 0))
+        with
+        | true, true -> q
+        | false, false -> assert false
+        | true, false -> (* op y < 0 *) Q.incr q (VId x) (-1) iopyz
+        | false, true -> (* op y > 0 *) Q.incr q (VId x) (+1) izopy
+        end in
+        Q.relax lbef q'
+      | ISet (_x, _) ->
+        failwith "ISet is not implemented yet"
+      | ICall _ ->
+        failwith "ICall is not implemented yet"
+
+    ) blk.binsts aft |> Q.eqc bef;
+
+  ) bs;
+
+  let {bef=qini; _} = cs.(0) in
+  Q.solve (qini, !qret)
 
 let _ =
-  let mk_cfg f =
-    Cfg.of_func {fname="main"; fargs=[]; flocs=[]; fbody=f} in
-  let f () = Tools.clean_file (Parse.pa_file stdin) in
-  if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tc" then
-    let (_,fmain) = Tools.auto_tick (f ()) in
-    analyze (mk_cfg fmain)
-  else if Array.length Sys.argv > 1 && Sys.argv.(1) = "-tctick" then
-    let (_,fmain) = f () in
-    analyze (mk_cfg fmain)
+  let f tick =
+    let (_, pmain) =
+      stdin
+      |> Parse.pa_file
+      |> Tools.clean_file in
+    let (_, pmain) =
+      if tick then Tools.auto_tick ([], pmain)
+              else ([], pmain) in
+    let glos = file_globals ([], pmain) in
+    let glos = VSet.add (VNum 0) glos in
+    let fmain =
+      Cfg.of_func
+        { fname="main"; fargs=[]
+        ; flocs=[]; fbody=pmain} in
+    analyze glos fmain
+  in
+  if Array.length Sys.argv > 1 then
+  match Sys.argv.(1) with
+  | "-tc"     -> f true
+  | "-tctick" -> f false
+  | _ -> ()
