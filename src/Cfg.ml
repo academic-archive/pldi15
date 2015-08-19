@@ -77,18 +77,15 @@ let of_func: 'a ast_func -> 'a cfg_func =
       let rec dst f t =
         if List.exists
             (function IAssert _ -> false | _ -> true)
-            a.(t).binsts || t <= f
-        then t else
-          match a.(t).bjump with
-        | JJmp [x] -> dst t x
-        | _ -> t in
+            a.(t).binsts then [t] else
+        match a.(t).bjump with
+        | JJmp l -> List.concat (List.map (dst t) l)
+        | _ -> [t] in
       { b with
         bjump =
           match b.bjump with
           | JJmp l ->
-            let l' = List.map (dst n) l in
-            if l' <> l then chg := true;
-            JJmp l'
+            JJmp (List.concat (List.map (dst n) l))
           | j -> j
       }
     ) a in
@@ -140,11 +137,8 @@ let of_func: 'a ast_func -> 'a cfg_func =
     ; fargs = f.fargs
     ; flocs = f.flocs
     ; fbody = blocks f.fbody
-           |> (fun (a,e) -> rpo e a)
-           |> preds
-           |> merge
-           |> rpo 0
-           |> preds
+           |> (fun (a,e) -> rpo e a) |> preds
+           |> merge |> rpo 0 |> preds
     }
 
 
