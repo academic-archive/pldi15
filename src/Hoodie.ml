@@ -911,11 +911,24 @@ let analyze glos {fbody=bs; _} =
       let {bef=lbef; aft=laft} = log.(decr inum; !inum) in
 
       match i with
+
       | ITick n ->
         if n = 0 then q else
         let q = Q.inc q [Idx.one, [], n] in
         if n < 0 then Q.merge ~sign:(+1) [q] else q
+
       | IAssert _ -> q
+
+      | ISet (x, Some v) ->
+        let q = Q.subst q [x] [v] in
+        (* Q.relax lbef q *) q
+
+      | ISet (x, None) ->
+        let vars = VSet.remove (VId x) (Q.vars q) in
+        VSet.fold begin fun u q ->
+          Q.free (Q.free q (Idx.dst (u, VId x))) (Idx.dst (VId x, u))
+        end vars q
+
       | IInc (x, op, y) ->
         let opy, iopyz, izopy =
           let iyz = (y, VNum 0) and izy = (VNum 0, y) in
@@ -923,7 +936,7 @@ let analyze glos {fbody=bs; _} =
           | OPlus -> LVar y, iyz, izy
           | OMinus -> LMult (-1, LVar y), izy, iyz in
         let q = Q.relax laft q in
-        if x = "x" then dumplings := ("after x+=N", q) :: !dumplings;
+        (* if x = "x" then dumplings := ("after x+=N", q) :: !dumplings; *)
         let q' =
         begin match
           Logic.entails lbef opy CLe (LVar (VNum 0)),
@@ -934,10 +947,9 @@ let analyze glos {fbody=bs; _} =
         | true, false -> (* op y < 0 *) Q.incr q (VId x) (-1) iopyz
         | false, true -> (* op y > 0 *) Q.incr q (VId x) (+1) izopy
         end in
-        if x = "x" then dumplings := ("before x+=N", q') :: !dumplings;
+        (* if x = "x" then dumplings := ("before x+=N", q') :: !dumplings; *)
         Q.relax lbef q'
-      | ISet (_x, _) ->
-        failwith "ISet is not implemented yet"
+
       | ICall _ ->
         failwith "ICall is not implemented yet"
 
@@ -963,7 +975,7 @@ let _ =
       Cfg.of_func
         { fname="main"; fargs=[]
         ; flocs=[]; fbody=pmain} in
-    Cfg.pp_func fmain;
+    (* Cfg.pp_func fmain; *)
     analyze glos fmain
   in
   if Array.length Sys.argv > 1 then
