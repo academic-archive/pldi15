@@ -499,7 +499,7 @@ end = struct
       List.iter _f1 ro; print_string " >= "; List.iter _f2 ro;
       print_newline ();
       *)
-      row_ ~lo:0. ~up:0. (List.map fst ro) 0
+      row_ ~lo:0. ~up:max_float (List.map fst ro) 0
     ) cm ();
     {cmap = m'; cvars = v}
 
