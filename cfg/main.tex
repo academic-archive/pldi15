@@ -1,0 +1,303 @@
+
+\documentclass[letterpaper,11pt]{article}
+
+% \documentclass[preprint]{sigplanconf}
+\usepackage[numbers]{natbib}
+
+\usepackage[utf8]{inputenc} %for utf8 input
+\usepackage{amssymb} %for shift symbol
+\usepackage{amsmath}
+\usepackage{listings} %for code
+\usepackage{mathpartir} %for typing rules
+%\usepackage{graphicx} %to include png images
+\usepackage{microtype} %better micro typing
+\usepackage[standard,amsmath,thmmarks]{ntheorem}
+\usepackage{mathabx} %for blackdiamond
+
+\usepackage{prettyref}
+\newcommand{\pref}[1]{\prettyref{#1}}
+\newcommand{\Pref}[1]{\prettyref{#1} \vpageref[]{#1}}
+\newcommand{\ppref}[1]{\vpageref[]{#1}}
+
+
+\input{definitions}
+
+%------------Draft---------------------------------------
+\usepackage{eso-pic}
+\usepackage{xcolor}
+\AddToShipoutPicture{\setlength{\unitlength}{1in}\put(4.25,10.0){\makebox[0pt][c]{\normalfont\textsf{\textbf{\large \color{gray} Draft -- \today}}}}}
+%--------------------------------------------------------
+
+\newcommand{\jan}[1]{{\color{blue}{[Jan: #1]}}}
+
+\title{Automated Amortized Resource Bound Analysis \\ for Control Flow Graphs}
+
+\author{Quentin Carbonneaux \and Jan Hoffmann}
+
+\begin{document}
+
+\maketitle
+
+
+\section{Control Flow Graphs}
+
+\paragraph{Straight Line Statements}
+
+Straight line statements (also just statements) are inductively
+defined by the following grammar.
+%
+\begin{align*}
+S &:= \code{tick}(n) \mid \code{assert}~E
+\mid \code{skip}
+\mid x \gets E
+\mid x \gets f(x^*)
+\mid S;S
+\end{align*}
+%
+Expressions $E$ are left abstract in our presentation.  For our
+analysis framework, it is only important that they are side-effect
+free. We write $\statements$ for the set of statements.
+
+\paragraph{Control Flow Graphs}
+
+A control flow graph (CFG) is a set a graph $G=(V,E,\labels)$ with
+statement-labeled nodes. Here, $V$ is a set of nodes,
+$E \subseteq V \times V$ is a set of edges, and
+$\labels : V \to \statements$ is a mapping from nodes to statements.
+
+\section{Operational Semantics of CFGs}
+
+
+\jan{Here we probably need some non-deterministic choice on the
+  edges. We have to watch out that this is consistent
+  with the assertions that we insert in the blocks. We might have to
+  put assertion on the edges to avoid accounting cost for a jump that
+  might not happen.}
+
+
+\section{Potential Annotations for CFGs}
+
+\subsection{Linear Potential Functions.}
+
+To find resource bounds automatically, we first need to restrict our
+search space.  In this work, we focus on the following form of
+potential functions, which can express tight bounds for many typical
+programs and allows for inference with \emph{linear programming}.
+$$
+  \Phi(\state) = q_0 + \sum_{x, y \in \dom\state \land x \neq y}
+    q_{(x, y)} \cdot |\inter {\state(x)} {\state(y)}| \, .
+$$
+%
+Here $\state : (\text{Locals} \to \Z) \times (\text{Globals} \to \Z)$
+is a simplified program state that maps variable names to integers,
+$|\inter a b| = \max(0,b-a)$, and $q_i \in \Q$.  To simplify the
+references to the linear coefficients $q_i$, we introduce an \emph{index
+  set} $I$.  This set is defined to be $\{0\} \cup \{(x, y) \mid x, y
+\in \Var \land x \neq y \}$.  Each index $i$ corresponds to a \emph{base function}
+$f_i$ in the potential function: $0$ corresponds to the constant
+function $\state \mapsto 1$, and $(x,y)$ corresponds to $\state \mapsto
+|\inter {\state(x)} {\state(y)}|$.  Using these notations we can
+rewrite the above equality as 
+$$ \Phi(\state) = \sum_{i \in I} q_i f_i(\state).$$
+%
+We often write $xy$ to denote the
+index $(x,y)$.  This allows us to
+uniquely represent any linear potential function
+$\Phi$ as a \emph{quantitative annotation} $Q = (q_i)_{i \in I}$, that
+is, a family of rational numbers where only
+a finite number of elements are not zero.  
+
+In the potential functions, we treat constants as global variables
+that cannot be assigned to.  For example, if the program contains the
+constant $8128$ then we have a variable $c_{8128}$ and
+$\state(c_{8128}) = 8128$.  We assume that every program state
+includes the constant $c_0$.
+
+\begin{figure*}
+\small
+%\vspace{-.4cm}
+\def \MathparLineskip {\lineskip=0.35cm}
+\begin{mathpar}
+\Rule{Q:Skip}
+{ }
+{ \htriple{ \Gamma; Q }{ \code{skip} }{ \Gamma; Q } }
+%
+\and \Rule{Q:Assert}
+{ }
+{ \htriple{ \Gamma; Q {+} M_a }{ \code{assert}~e }{ \Gamma {\land} e; Q } }
+%
+\and \Rule{Q:Tick}
+{ }
+{ \htriple{ \Gamma; Q {+} M_t(n) }{ \code{tick}(n) }{ \Gamma; Q } }
+%
+\and \Rule{Q:Seq}
+{  \htriple{ \Gamma; Q }{ S_1 }{ \Gamma'; Q' {+} M_s }
+\\ \htriple{ \Gamma'; Q' }{ S_2 }{ \Gamma''; Q'' }
+}
+{ \htriple{ \Gamma; Q }{ S_1;S_2 }{ \Gamma''; Q'' } }
+%
+\\ \Rule{Q:IncP}
+{ \Gamma \models y \ge 0 \!
+\\ \mathcal U = \left\{ u \mid \Gamma \models x + y \in \inter x u \right\} \!
+\\\\ \textstyle q'_{0y} = q_{0y}
+      + \sum_{u \in \mathcal U} q_{xu}
+      - \sum_{v \not\in \mathcal U} q_{vx} \!
+}
+{ \textstyle
+  \htriple{ \Gamma[x/x {+} y]; Q {+} M_u {+} M_e(x {+} y) }{ x \gets x + y }{ \Gamma; Q' }
+}
+%
+\and \Rule{Q:Inc}
+{ M = M_u + M_e(x {\pm} y)
+\\\\ \textstyle q'_{0y} = q_{0y} - \sum_{v} q_{vx}
+\\ \textstyle q'_{y0} = q_{y0} - \sum_{v} q_{xv}
+}
+{ \textstyle
+  \htriple{ \Gamma[x/x {\pm} y]; Q {+} M }{ x \gets x \pm y }{ \Gamma; Q' }
+}
+%
+\and \Rule{Q:Set}
+{ q'_{xy}, q'_{yx} \in \Qplusz
+\\ \forall u. (q_{yu} = q'_{xu} + q'_{yu} \land q_{uy} = q'_{ux} + q'_{uy})
+}
+{ \htriple{ \Gamma[x/y]; Q {+} M_u {+} M_e(y) }{ x \gets y }{ \Gamma; Q' } }
+%
+\and \Rule{Q:DecP}
+{ \Gamma \models y \ge 0
+\\ \mathcal U = \left\{ u \mid \Gamma \models x - y \in \inter u x \right\}
+\\\\ \textstyle q'_{y0} = q_{y0}
+      + \sum_{u \in \mathcal U} q_{ux}
+      - \sum_{v \not\in \mathcal U} q_{xv}
+}
+{ \textstyle
+  \htriple{ \Gamma[x/x {-} y]; Q {+} M_u {+} M_e(x {-} y) }{ x \gets x - y }{ \Gamma; Q' }
+}
+% %
+% \and\Rule{Q:Call}
+% { (\Gamma_f; Q_f,  \Gamma_f'; Q_f') \in \Delta(f) \!
+% \\ \text{Loc} = \text{Locals}(Q) \!
+% \\ \forall i \neq j . \, x_i \neq x_j \!
+% \\ c \in \Qplusz \!
+% \\ Q = P + S \!
+% \\ Q' = P' + S
+% \\ U = Q_f[\Vargs / \vec x]
+% \\ U' = Q'_f[\Vret/r]
+% \\ \forall i \in \dom{U} . \, p_i = u_i
+% \\ \forall i \in \dom{U'} .\, p'_i = u'_i
+% \\ \forall i \not\in \dom{U'} .\, p'_i = 0
+% \\ \forall i \not\in \text{Loc}
+%   .\, s_i = 0
+% }
+% { B, R \vdash \htriple
+%   { \Gamma_f[\Vargs / \vec x] {\land} \Gamma_{\text{Loc}}; Q {+} c {+} M_f }
+%   { r \gets f(\vec x) }
+%   { \Gamma_f'[\Vret/r] {\land} \Gamma_{\text{Loc}}; Q' {+} c {-} M_r }
+% }
+%
+% \and \Rule{Q:Extend}
+% { \fenv f = (\vec y, S_f)
+% \\\\ B, (\Gamma_f'; Q'_f) \vdash \htriple{ \Gamma_f[\Vargs/\vec y]; Q_f[\Vargs/ \vec y] }{ S_f }{ \Gamma'; Q' }
+% }
+% { (\Gamma_f; Q_f, \Gamma_f'; Q_f') \in \Delta(f) }
+%
+\and \Rule{Q:Weak}
+{ \htriple{ \Gamma_2; Q_2 }{ S }{ \Gamma'_2; Q'_2 }
+\\ \!\! \Gamma_1 \models \Gamma_2
+\\\\ Q_1 \succeq_{\Gamma_1} Q_2
+\\ \Gamma'_2 \models \Gamma'_1
+\\ Q'_2 \succeq_{\Gamma_2'} Q'_1
+}
+{ \htriple{ \Gamma_1; Q_1 }{ S }{ \Gamma'_1; Q'_1 } }
+%
+\\ \Rule{Relax}
+{ \mathcal L = \{ xy \mid \exists l_{xy} {\in} \N \, . \, \Gamma \models l_{xy} \le |\inter x y| \}
+\\ \mathcal U = \{ xy \mid \exists u_{xy}{\in} \N \, . \, \Gamma \models |\inter x y| \le u_{xy} \}
+\\\\ \forall i \in \mathcal U.\, q'_i \ge q_i - r_i
+\\ \forall i \in \mathcal L.\, q'_i \ge q_i + p_i
+\\ \forall i \not\in \mathcal U {\cup} \mathcal L {\cup} \{0\} .\, q'_i \ge q_i
+\\ q'_0 \geq q_0 {\textstyle + \sum_{i \in \mathcal U} u_i r_i - \sum_{i \in \mathcal L} l_i p_i}
+}
+{ Q' \succeq_\Gamma Q }
+%\vspace{-.3cm}
+\end{mathpar}
+\caption{Inference rules of the straight-line statements.}
+\label{fig:auto}
+\end{figure*}
+
+\subsection{Analyzing Straight Line Statements}
+
+In the rules, assignments are restricted to the form $x \gets
+y$ or $x \gets x \pm y$.  In the implementation, a Clight
+program is converted into this form prior to analysis without changing
+the resource cost.
+Non-linear operations such as $x \gets z*y$ or $x \gets
+a[y]$ are handled by assigning $0$ to coefficients
+like $q_{xa}$ and $q_{ax}$ that contain $x$ after the assignment.
+This sound treatment ensures that no further loop bounds
+depend on the result of the non-linear operation.
+
+\paragraph{Judgements.}
+
+The derivation system for the automatic amortized analysis is defined
+in~\pref{fig:auto}.  The derivation rules yield judgements of the form
+$$
+    \htriple{ \Gamma; Q }{ S }{ \Gamma'; Q' }.
+$$
+%
+The judgement
+can be seen as a quantitative Hoare triple.  All assertions are split into
+two parts, the logical part and the quantitative part.  The
+quantitative part $Q$ represents a potential function as a collection
+of rational numbers $q_i$ indexed by the index set $I$.  The
+logical part $\Gamma$ is left abstract but is enforced by our
+derivation system to respect classic Hoare logic constraints.
+%
+The meaning of this basic judgment is as follows: If $S$ is executed
+with starting state $\state$, the assertions in $\Gamma$
+hold, $Q' {\ge} 0$, and at least $Q(\state)$ resources are available then the
+evaluation does not run out of resources and, if the execution
+terminates in state $\state'$, there are at least $Q'(\state')$
+resources left and $\Gamma'$ holds for $\state'$.
+
+
+As a convention, if $Q$ and $Q'$ are quantitative annotations
+we assume that $Q = (q_i)_{i\in I}$ and $Q' = (q'_i)_{i \in I}$.
+The notation $Q \pm n$ used in many rules defines a new context $Q'$
+such that $q'_0 = q_0 \pm n$ and $\forall i \neq 0 .\, q'_i = q_i$.
+
+In all the rules, we have the implicit side condition that all rational
+coefficients are non-negative.
+%
+Finally, if a rule mentions $Q$ and $Q'$
+and leaves the latter undefined at some index $i$ we assume that $q'_i = q_i$.
+
+\subsection{Analyzing Control Flow Graphs}
+
+Let $G = (V,E,\labels)$ be a CFG. A potential annotation $\mathcal{P}$
+for $G$ is mapping from notes $v \in V$ to pairs
+$\left<(\Gamma,Q);(\Gamma',Q')\right>$ of quantitative assertions so
+that the following holds.
+%
+\begin{enumerate}
+\item  For every edge $(v_1,v_2) \in E$: 
+  If $\mathcal{P}(v_1) = \left<(\Gamma_1,Q_1);(\Gamma'_1,Q'_1)\right>$ and 
+   $\mathcal{P}(v_2) = \left<(\Gamma_2,Q_2);(\Gamma'_2,Q'_2)\right>$ then
+   $\Gamma'_1 \models \Gamma_2$ and $Q_1' \geq Q_2$.
+ \item For every node $v \in V$: If $\labels(v) = S$ and
+   $\mathcal{P}(v) = \left<(\Gamma,Q);(\Gamma',Q')\right>$ then
+  $\htriple{(\Gamma,Q)}{S}{(\Gamma',Q')}$.
+\end{enumerate}
+
+\bibliographystyle{plain}
+\bibliography{lit}
+
+
+\end{document}
+
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% mode: flyspell
+%%% TeX-master: t
+%%% End: 
