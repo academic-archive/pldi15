@@ -60,7 +60,7 @@ free. We write $\statements$ for the set of statements.
 
 \paragraph{Control Flow Graphs}
 
-A control flow graph (CFG) is a set a graph $G=(V,E,\labels)$ with
+A control flow graph (CFG) is a graph $G=(V,E,\labels)$ with
 statement-labeled nodes. Here, $V$ is a set of nodes,
 $E \subseteq V \times V$ is a set of edges, and
 $\labels : V \to \statements$ is a mapping from nodes to statements.
@@ -254,7 +254,7 @@ derivation system to respect classic Hoare logic constraints.
 %
 The meaning of this basic judgment is as follows: If $S$ is executed
 with starting state $\state$, the assertions in $\Gamma$
-hold, $Q' {\ge} 0$, and at least $Q(\state)$ resources are available then the
+hold, and at least $Q(\state)$ resources are available then the
 evaluation does not run out of resources and, if the execution
 terminates in state $\state'$, there are at least $Q'(\state')$
 resources left and $\Gamma'$ holds for $\state'$.
@@ -274,7 +274,7 @@ and leaves the latter undefined at some index $i$ we assume that $q'_i = q_i$.
 \subsection{Analyzing Control Flow Graphs}
 
 Let $G = (V,E,\labels)$ be a CFG. A potential annotation $\mathcal{P}$
-for $G$ is mapping from notes $v \in V$ to pairs
+for $G$ is mapping from nodes $v \in V$ to pairs
 $\left<(\Gamma,Q);(\Gamma',Q')\right>$ of quantitative assertions so
 that the following holds.
 %
