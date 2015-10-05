@@ -58,9 +58,6 @@ Section Toy.
   Definition bottom: assn :=
     λ _, False.
 
-  Parameter I: assn.
-  (* I is an invariant *)
-
   Inductive triple: assn → prog → assn → assn → Prop :=
 
   | tskip (A B: assn)
@@ -89,6 +86,9 @@ Section Toy.
   .
 
   Definition spec: Type := nat → config → Prop.
+
+  Parameter I: assn.
+  (* I is an invariant *)
 
   Inductive safe: spec :=
   | safe0 c: safe 0 c
