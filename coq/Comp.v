@@ -84,7 +84,6 @@ Section Toy.
     : triple (A1) (palt p1 p2) (A2) (B)
 
   | tloop p (A1 A2: assn)
-          (INV: ∀ m, A1 m → I m)
           (P: triple A1 p A1 A2)
     : triple (A1) (ploop p) (A2) (bottom)
   .
@@ -94,8 +93,8 @@ Section Toy.
   Inductive safe: spec :=
   | safe0 c: safe 0 c
   | safeN n c
-          (INV: I (memof c))
-          (SAFE: ∀ c' (STEP: c ↦ c'), safe n c')
+          (SAFE: ∀ c' (STEP: c ↦ c') (INV: I (memof c)),
+                   safe n c' ∧ I (memof c'))
     : safe (S n) c
   .
 
@@ -113,17 +112,11 @@ Section Toy.
       + apply safe0.
       + inversion SAFE; subst.
         apply safeN.
-        * apply INV.
-        * intros.
-          apply IND; auto with arith.
+        intros. split.
+        * apply IND; auto with arith.
+          apply SAFE0; assumption.
+        * apply SAFE0; assumption.
   Qed.
-
-  Lemma safe_I n c (SAFE: safe (S n) c):
-    I (memof c).
-  Proof.
-    inversion_clear SAFE. exact INV.
-  Qed.
-
 
   Definition valid n (A1: assn) p (A2 B: assn) :=
     ∀ n' k
@@ -137,20 +130,7 @@ Section Toy.
       valid n' A1 p A2 B.
   Proof.
     unfold valid; intros.
-    apply VALID; (eassumption || omega).
-  Qed.
- 
-  Lemma valid_I n p k
-        (A1 A2 B: assn)
-        (VALID: valid (S n) (A1) (p) (A2) (B))
-        (SAFES: ∀ m, A2 m → safe (S n) (m, pskip, k))
-
-        (SAFEB: ∀ m, B m  → safe (S n) (m, pbreak, k)):
-    ∀ m, A1 m → I m.
-  Proof.
-    intros m A1M.
-    replace m with (memof (m, p, k)) by reflexivity.
-    eapply safe_I; eauto using VALID.
+    apply VALID; (omega || eauto).
   Qed.
 
   
@@ -170,16 +150,13 @@ Section Toy.
     apply SAFEB, MOK.
   Qed.
 
-  Let A0 (A: assn) b m1 :=
-    ∀ m2, sem_base m1 b m2 → A m2.
-
   Ltac step :=
     match goal with
       | [ |- safe ?n _ ] =>
         destruct n;
           [ apply safe0
-          | apply safeN;
-            [| inversion_clear 1 ]
+          | apply safeN; inversion_clear 1;
+            intros; split; try assumption
           ]
     end.
 
@@ -189,90 +166,60 @@ Section Toy.
       | [ |- valid ?n _ _ _ _ ] => eapply valid_le
     end; [apply H|]; try omega.
 
-  Lemma valid_base n b (A B: assn):
-    valid n (A0 A b) (pbase b) (A) (B).
-  Proof.
-    unfold A0, valid; intros.
-    step.
-    - admit.  (* this could be a reasonable hypothesis of the
-                 whole development *)
-    - ale SAFES. apply MOK, BASE.
-  Qed.
+  Section Base.
+    Let A0 (A: assn) b m1 :=
+      ∀ m2, sem_base m1 b m2 → A m2.
 
-  Section Sequence.
-    Lemma safe_skip_kseq n n₁ n₂
-          p A1 A2 B (VALID: valid n₁ A1 p A2 B) k
-          (SAFES: ∀ m, A2 m → safe (S n₂) (m, pskip, k))
-        (SAFEB: ∀ m, B m  → safe (S n₂) (m, pbreak, k))
-        m (A1M: A1 m) (LE: n ≤ S n₂ ∧ S n₂ ≤ n₁):
-      safe n (m, pskip, kseq p k).
+    Lemma valid_base n b (A B: assn):
+      valid n (A0 A b) (pbase b) (A) (B).
     Proof.
+      unfold A0, valid; intros.
       step.
-      - eapply valid_I; eauto. ale VALID.
-      - ale VALID; eauto; omega.
+      - ale SAFES. apply MOK, BASE.
+      - admit.  (* this could be a reasonable hypothesis of the
+                 whole development *)
     Qed.
-    
-    Lemma safe_break_kseq n n₁ B p k 
-          (SAFEB: ∀ m, B m  → safe (S n₁) (m, pbreak, k))
-          (LE1: n ≤ S n₁)
-          m (BM: B m):
-      safe n (m, pbreak, kseq p k).
-    Proof.
-      step.
-      - replace (memof _) with (memof (m, pbreak, k))
-          by reflexivity.
-        eapply safe_I; eauto.
-      - ale SAFEB; assumption.
-    Qed.
-    
-    Lemma valid_seq n p1 p2 A1 A2 A3 B
-          (VALID1: valid n (A1) (p1) (A2) (B))
-          (VALID2: valid n (A2) (p2) (A3) (B)):
-      valid n (A1) (pseq p1 p2) (A3) (B).
-    Proof with (omega || eauto); intros.
-      unfold valid; intros.
-      step.
-      - eapply (valid_I n' p1 (kseq p2 k))...
-        + ale VALID1.
-        + eapply safe_skip_kseq; eauto; omega.
-        + eapply safe_break_kseq; eauto.
-      - apply VALID1...
-        + eapply safe_skip_kseq; eauto; omega.
-        + eapply safe_break_kseq; eauto.
-    Qed.
-  End Sequence.
+  End Base.
+
+  Lemma valid_seq n p1 p2 A1 A2 A3 B
+        (VALID1: valid n (A1) (p1) (A2) (B))
+        (VALID2: valid n (A2) (p2) (A3) (B)):
+    valid n (A1) (pseq p1 p2) (A3) (B).
+  Proof with (omega || eauto); intros.
+    unfold valid; intros.
+    step. apply VALID1...
+    - step. apply VALID2...
+      + ale SAFES; assumption.
+      + ale SAFEB; assumption.
+    - step.
+      ale SAFEB; assumption.
+  Qed.
 
   Lemma valid_alt n p1 p2 A1 A2 B
         (VALID1: valid n (A1) (p1) (A2) (B))
         (VALID2: valid n (A1) (p2) (A2) (B)):
     valid n (A1) (palt p1 p2) (A2) (B).
-  Proof.
+  Proof with (omega || eauto).
     unfold valid; intros.
     step.
-    - eapply valid_I; eauto. ale VALID1.
-    - ale VALID1; (omega || eauto).
-    - ale VALID2; (omega || eauto).
+    - ale VALID1...
+    - ale VALID2...
   Qed.
 
   Lemma valid_loop n p A1 A2
-        (VALID: valid n (A1) (p) (A1) (A2))
-        (INV: ∀ m, A1 m → I m):
+        (VALID: valid n (A1) (p) (A1) (A2)):
     valid n (A1) (ploop p) (A2) (bottom).
   Proof.
-    revert p A1 A2 INV VALID.
+    revert p A1 A2 VALID.
     induction n as [n IND] using lt_wf_rec.
     intros; unfold valid; intros.
-    step. auto.
-    eapply VALID; (omega || eauto); intros.
-    - step. auto.
+    step. apply VALID; (omega || eauto).
+    - intros. step. clear INV0.
       eapply (IND (S n')); (omega || eauto).
-      + ale VALID.
-      + intros; ale SAFES; eauto.
-      + intros; ale SAFEB; eauto.
-    - step.
-      replace (memof _) with (memof (m0, pskip, k))
-        by reflexivity.
-      eauto using safe_I.
+      ale VALID.
+      intros; ale SAFES; assumption.
+      intros; ale SAFEB; assumption.
+    - intros. step.
       ale SAFES; eauto.
   Qed.
 
@@ -289,6 +236,7 @@ Section Toy.
     - eauto using valid_alt.
     - eauto using valid_loop.
   Qed.
+
 
 End Toy.
 
