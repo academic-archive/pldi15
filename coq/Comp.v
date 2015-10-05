@@ -87,8 +87,12 @@ Section Toy.
 
   Definition spec: Type := nat → config → Prop.
 
+  (* I is an invariant
+   * preserved by the base operations
+   * of the semantics
+   *)
   Parameter I: assn.
-  (* I is an invariant *)
+  Hypothesis IBASE: ∀ b m m₁, sem_base m b m₁ → I m → I m₁.
 
   Inductive safe: spec :=
   | safe0 c: safe 0 c
@@ -209,8 +213,7 @@ Section Toy.
       unfold A0, valid; intros.
       step.
       - ale SAFES. apply MOK, BASE.
-      - admit.  (* this could be a reasonable hypothesis of the
-                 whole development *)
+      - eapply IBASE; eassumption.
     Qed.
   End Base.
 
