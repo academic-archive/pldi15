@@ -101,22 +101,55 @@ Section Toy.
   Require Import Arith.
   Require Import Omega.
 
-  Lemma safe_le: (* safe is downward closed *)
-    ∀ n c (SAFE: safe n c) n' (LE: n' ≤ n),
-      safe n' c.
-  Proof.
-    induction n as [|n IND]; intros.
-    - inversion_clear LE.
-      apply safe0.
-    - destruct n' as [|n'].
-      + apply safe0.
-      + inversion SAFE; subst.
-        apply safeN.
-        intros. split.
-        * apply IND; auto with arith.
-          apply SAFE0; assumption.
-        * apply SAFE0; assumption.
-  Qed.
+  Section SafeRemarks.
+    Inductive multi: config → config → Prop :=
+    | multi0 c: multi c c
+    | multiN c c₁ c₂: c ↦ c₁ → multi c₁ c₂ → multi c c₂
+    .
+
+    (* safety expresses the preservation of
+     * invariants, during a given number of
+     * steps
+     *)
+    Theorem safe_preserve:
+      ∀ c c₁
+        (MULT: multi c c₁)
+        (IINI: I (memof c))
+        (SAFE: ∀ n, safe n c),
+        I (memof c₁).
+    Proof.
+      induction 1; intros.
+      - assumption.
+      - apply IHMULT.
+        + generalize (SAFE 1). clear SAFE.
+          inversion_clear 1.
+          apply SAFE; assumption.
+        + intros.
+          generalize (SAFE (S n)). clear SAFE.
+          inversion_clear 1.
+          apply SAFE; assumption.
+    Qed.
+
+    (* safe is downward closed
+     *)
+    Lemma safe_le:
+      ∀ n c (SAFE: safe n c) n' (LE: n' ≤ n),
+        safe n' c.
+    Proof.
+      induction n as [|n IND]; intros.
+      - inversion_clear LE.
+        apply safe0.
+      - destruct n' as [|n'].
+        + apply safe0.
+        + inversion SAFE; subst.
+          apply safeN.
+          intros. split.
+          * apply IND; auto with arith.
+            apply SAFE0; assumption.
+          * apply SAFE0; assumption.
+    Qed.
+  End SafeRemarks.
+
 
   Definition valid n (A1: assn) p (A2 B: assn) :=
     ∀ n' k
