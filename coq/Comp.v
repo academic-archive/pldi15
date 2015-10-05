@@ -58,6 +58,9 @@ Section Toy.
   Definition bottom: assn :=
     λ _, False.
 
+  (* I is an invariant *)
+  Parameter I: assn.
+
   Inductive triple: assn → prog → assn → assn → Prop :=
 
   | tskip (A B: assn)
@@ -67,7 +70,7 @@ Section Toy.
     : triple (B) (pbreak) (bottom) (B)
 
   | tbase b (A B: assn)
-    : let A0 m1 := ∀ m2, sem_base m1 b m2 → A m2
+    : let A0 m1 := ∀ m2, sem_base m1 b m2 → A m2 ∧ I m2
       in triple (A0) (pbase b) (A) (B)
 
   | tseq p1 p2 (A1 A2 A3 B: assn)
@@ -87,12 +90,6 @@ Section Toy.
 
   Definition spec: Type := nat → config → Prop.
 
-  (* I is an invariant
-   * preserved by the base operations
-   * of the semantics
-   *)
-  Parameter I: assn.
-  Hypothesis IBASE: ∀ b m m₁, sem_base m b m₁ → I m → I m₁.
 
   Inductive safe: spec :=
   | safe0 c: safe 0 c
@@ -205,7 +202,7 @@ Section Toy.
 
   Section Base.
     Let A0 (A: assn) b m1 :=
-      ∀ m2, sem_base m1 b m2 → A m2.
+      ∀ m2, sem_base m1 b m2 → A m2 ∧ I m2.
 
     Lemma valid_base n b (A B: assn):
       valid n (A0 A b) (pbase b) (A) (B).
@@ -213,7 +210,7 @@ Section Toy.
       unfold A0, valid; intros.
       step.
       - ale SAFES. apply MOK, BASE.
-      - eapply IBASE; eassumption.
+      - eapply MOK; eassumption.
     Qed.
   End Base.
 
