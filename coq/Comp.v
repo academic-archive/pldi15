@@ -47,7 +47,7 @@ Section Toy.
   | sloop1 p m k
     : (m, ploop p, k) ↦ (m, p, kloop p k)
   | sloop2 p m k
-    : (m, pskip, kloop p k) ↦ (m, p, kloop p k)
+    : (m, pskip, kloop p k) ↦ (m, ploop p, k)
   | sloop3 p m k
     : (m, pbreak, kloop p k) ↦ (m, pskip, k)
 
@@ -57,6 +57,9 @@ Section Toy.
     mem → Prop.
   Definition bottom: assn :=
     λ _, False.
+
+  Parameter I: assn.
+  (* I is an invariant *)
 
   Inductive triple: assn → prog → assn → assn → Prop :=
 
@@ -73,7 +76,7 @@ Section Toy.
   | tseq p1 p2 (A1 A2 A3 B: assn)
          (P1: triple A1 p1 A2 B)
          (P2: triple A2 p2 A3 B)
-    : triple (A1) (pseq p1 p2) (A2) (B)
+    : triple (A1) (pseq p1 p2) (A3) (B)
 
   | talt p1 p2 (A1 A2 B: assn)
          (P1: triple A1 p1 A2 B)
@@ -81,12 +84,10 @@ Section Toy.
     : triple (A1) (palt p1 p2) (A2) (B)
 
   | tloop p (A1 A2: assn)
+          (INV: ∀ m, A1 m → I m)
           (P: triple A1 p A1 A2)
     : triple (A1) (ploop p) (A2) (bottom)
   .
-
-  Parameter I: assn.
-  (* I is an invariant *)
 
   Definition spec: Type := nat → config → Prop.
 
@@ -143,6 +144,7 @@ Section Toy.
         (A1 A2 B: assn)
         (VALID: valid (S n) (A1) (p) (A2) (B))
         (SAFES: ∀ m, A2 m → safe (S n) (m, pskip, k))
+
         (SAFEB: ∀ m, B m  → safe (S n) (m, pbreak, k)):
     ∀ m, A1 m → I m.
   Proof.
@@ -183,11 +185,9 @@ Section Toy.
 
   Ltac ale H :=
     match goal with
-      | [ |- safe _ _ ] =>
-        eapply safe_le; [apply H|]; try omega
-      | [ |- valid ?n _ _ _ _ ] =>
-        eapply valid_le; [apply H|]; try omega
-    end.  
+      | [ |- safe _ _ ] => eapply safe_le
+      | [ |- valid ?n _ _ _ _ ] => eapply valid_le
+    end; [apply H|]; try omega.
 
   Lemma valid_base n b (A B: assn):
     valid n (A0 A b) (pbase b) (A) (B).
@@ -204,7 +204,7 @@ Section Toy.
           p A1 A2 B (VALID: valid n₁ A1 p A2 B) k
           (SAFES: ∀ m, A2 m → safe (S n₂) (m, pskip, k))
         (SAFEB: ∀ m, B m  → safe (S n₂) (m, pbreak, k))
-        m (A1M: A1 m) (LE: n ≤ S n₂ /\ S n₂ ≤ n₁):
+        m (A1M: A1 m) (LE: n ≤ S n₂ ∧ S n₂ ≤ n₁):
       safe n (m, pskip, kseq p k).
     Proof.
       step.
@@ -255,47 +255,42 @@ Section Toy.
   Qed.
 
   Lemma valid_loop n p A1 A2
-        (VALID: valid n (A1) (p) (A1) (A2)):
+        (VALID: valid n (A1) (p) (A1) (A2))
+        (INV: ∀ m, A1 m → I m):
     valid n (A1) (ploop p) (A2) (bottom).
   Proof.
-    revert p A1 A2 VALID.
+    revert p A1 A2 INV VALID.
     induction n as [n IND] using lt_wf_rec.
     intros; unfold valid; intros.
-    step.
-    - destruct n as [|n]; [inversion NLE|].
-      eapply valid_I.
-      eapply (valid_I _ _ (kloop p k)); eauto; intros.
-      step.
+    step. auto.
+    eapply VALID; (omega || eauto); intros.
+    - step. auto.
+      eapply (IND (S n')); (omega || eauto).
+      + ale VALID.
+      + intros; ale SAFES; eauto.
+      + intros; ale SAFEB; eauto.
+    - step.
+      replace (memof _) with (memof (m0, pskip, k))
+        by reflexivity.
+      eauto using safe_I.
+      ale SAFES; eauto.
+  Qed.
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  fail.
-  
-  | tloop p (A1 A2: assn)
-          (P: triple A1 p A1 A2)
-    : triple (A1) (ploop p) (A2) (bottom)
-  .
+  Theorem soundness A1 p A2 B:
+    triple (A1) (p) (A2) (B) →
+    ∀ n, valid n (A1) (p) (A2) (B).
+  Proof.
+    induction 1; intros.
+    - eauto using valid_skip.
+    - eauto using valid_break.
+    - eauto using valid_base.
+    - eauto using valid_seq.
+    - eauto using valid_alt.
+    - eauto using valid_loop.
+  Qed.
 
 End Toy.
-
 
 (* 
 Notation "n \ B \ R ⊨ {{ P }} S {{ Q }}" :=
