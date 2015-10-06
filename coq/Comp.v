@@ -286,6 +286,18 @@ Section Toy.
       ale SAFES; eauto.
   Qed.
 
+  Lemma valid_weak n p
+        (A1 A2 B A1' A2' B': assn)
+        (P: valid n (A1) (p) (A2) (B))
+        (PRE: ∀ m, A1' m → A1 m)
+        (PST: ∀ m, A2 m → A2' m)
+        (BRK: ∀ m, B m → B' m):
+    valid n (A1') (p) (A2') (B').
+  Proof.
+    unfold valid; intros.
+    apply P; (omega || eauto).
+  Qed.
+
   Theorem soundness A1 p A2 B:
     triple (A1) (p) (A2) (B) →
     ∀ n, valid n (A1) (p) (A2) (B).
@@ -297,7 +309,7 @@ Section Toy.
     - eauto using valid_seq.
     - eauto using valid_alt.
     - eauto using valid_loop.
-    - admit.
+    - eauto using valid_weak.
   Qed.
 
 
