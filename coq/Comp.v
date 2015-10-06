@@ -303,6 +303,15 @@ Section Toy.
 
   (* Completeness: safe → triple *)
 
+  Ltac pets H := (* step, inverted *)
+    match goal with
+      | [ |- safe ?n _ ] =>
+        generalize (H (S n)); clear H;
+        inversion 1 as [|n__ c__ SAFE];
+        subst; apply SAFE;
+        [ constructor | assumption ]
+    end.
+      
   Definition mgt p :=
     ∀ k, triple
            (λ m, I m ∧ ∀ n, safe n (m, p, k))
@@ -314,10 +323,9 @@ Section Toy.
     mgt (pbase b).
   Proof.
     unfold mgt in *; simpl. intro.
-    eapply tweak.
-    constructor. 3: eauto.
+    eapply tweak; eauto.
+    constructor.
     instantiate (1 := (λ m, I m ∧ ∀ n, safe n (m, pskip, k))).
-    2: eauto.
     simpl. intros.
     assert (I m'). {
       replace m' with (memof (m', pskip, k)) by reflexivity.
@@ -326,12 +334,8 @@ Section Toy.
         repeat (eauto; econstructor).
     }
     intuition.
-    generalize (H3 (S n)). clear H3.
-    inversion_clear 1.
-    apply SAFE.
-    constructor.
-    assumption.
-    assumption.
+    pets H3; assumption.
+    simpl; eauto.
   Qed.
  
   Lemma mgt_seq p1 p2
@@ -345,22 +349,15 @@ Section Toy.
       clear MGT1 MGT2. intro MGT1.
       eapply tweak; eauto.
       simpl. clear. intuition.
-      generalize (H1 (S n)). clear H1.
-      inversion_clear 1.
-      apply SAFE.
-      constructor.
-      assumption.
+      pets H1.
     - generalize (MGT2 k).
       clear MGT1 MGT2. intro MGT2.
       eapply tweak; eauto; simpl; eauto.
       simpl. intuition.
-      generalize (H1 (S n)). clear H1.
-      inversion_clear 1.
-      apply SAFE.
-      constructor.
-      assumption.
+      pets H1.
   Qed.
-        
+
+  
 
 
 
