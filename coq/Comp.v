@@ -88,10 +88,10 @@ Section Toy.
     : triple (A1) (ploop p) (A2) (bottom)
 
   | tweak p (A1 A2 B A1' A2' B': assn)
+          (P: triple A1 p A2 B)
           (PRE: ∀ m, A1' m → A1 m)
           (PST: ∀ m, A2 m → A2' m)
           (BRK: ∀ m, B m → B' m)
-          (P: triple A1 p A2 B)
     : triple (A1') p (A2') (B')
   .
 
@@ -114,10 +114,12 @@ Section Toy.
       transitivity proved by assn_eq_trans
         as assn_eq_rel.
 
+(*
   Add Parametric Morphism : (triple) with signature
       (assn_eq ==> eq ==> assn_eq ==> assn_eq ==> iff)
         as triple_mor.
-  Proof. unfold assn_eq. esplit; apply tweak; firstorder. Qed.
+  Proof. unfold assn_eq. esplit. apply tweak; firstorder. Qed.
+*)
 
   
   (* Safety of configurations. *)
@@ -284,7 +286,6 @@ Section Toy.
       ale SAFES; eauto.
   Qed.
 
-
   Theorem soundness A1 p A2 B:
     triple (A1) (p) (A2) (B) →
     ∀ n, valid n (A1) (p) (A2) (B).
@@ -296,6 +297,7 @@ Section Toy.
     - eauto using valid_seq.
     - eauto using valid_alt.
     - eauto using valid_loop.
+    - admit.
   Qed.
 
 
@@ -303,11 +305,35 @@ Section Toy.
 
   Definition mgt p :=
     ∀ k, triple
-           (λ m, ∀ n, safe n (m, p, k))
+           (λ m, I m ∧ ∀ n, safe n (m, p, k))
            (p)
-           (λ m, ∀ n, safe n (m, pskip, k))
+           (λ m, I m ∧ ∀ n, safe n (m, pskip, k))
            (bottom).
 
+  Lemma mgt_base b:
+    mgt (pbase b).
+  Proof.
+    unfold mgt in *; simpl. intro.
+    eapply tweak.
+    constructor. 3: eauto.
+    instantiate (1 := (λ m, I m ∧ ∀ n, safe n (m, pskip, k))).
+    2: eauto.
+    simpl. intros.
+    assert (I m'). {
+      replace m' with (memof (m', pskip, k)) by reflexivity.
+      destruct H.
+      apply (safe_preserve (m, pbase b, k) (m', pskip, k));
+        repeat (eauto; econstructor).
+    }
+    intuition.
+    generalize (H3 (S n)). clear H3.
+    inversion_clear 1.
+    apply SAFE.
+    constructor.
+    assumption.
+    assumption.
+  Qed.
+ 
   Lemma mgt_seq p1 p2
         (MGT1: mgt p1)
         (MGT2: mgt p2):
@@ -316,8 +342,25 @@ Section Toy.
     unfold mgt in *; simpl. intro.
     eapply tseq.
     - generalize (MGT1 (kseq p2 k)).
-      clear MGT1. intro MGT1.
-
+      clear MGT1 MGT2. intro MGT1.
+      eapply tweak; eauto.
+      simpl. clear. intuition.
+      generalize (H1 (S n)). clear H1.
+      inversion_clear 1.
+      apply SAFE.
+      constructor.
+      assumption.
+    - generalize (MGT2 k).
+      clear MGT1 MGT2. intro MGT2.
+      eapply tweak; eauto; simpl; eauto.
+      simpl. intuition.
+      generalize (H1 (S n)). clear H1.
+      inversion_clear 1.
+      apply SAFE.
+      constructor.
+      assumption.
+  Qed.
+        
 
 
 
@@ -360,3 +403,16 @@ Notation "n \ B \ R ⊨ {{ P }} S {{ Q }}" :=
   (at level 74, R at next level, B at next level,
   format "n \  B \  R  ⊨  '[' {{  P  }} '/'  S  '/' {{  Q  }} ']'").
 *)
+(* 
+  Lemma safe_determ p k p' k'
+        (DETERM: ∀ m c, (m, p, k) ↦ c → c = (m, p', k')):
+    ∀ m, (∀ n, safe n (m, p', k')) → (∀ n, safe n (m, p, k)).
+  Proof.
+    destruct n; [apply safe0 | apply safeN].
+    intros.
+    replace c' with (m, p', k').
+    now eauto.
+    symmetry; eauto.
+  Qed.
+  *)  
+ 
