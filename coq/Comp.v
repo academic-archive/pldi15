@@ -70,8 +70,8 @@ Section Toy.
     : triple (B) (pbreak) (bottom) (B)
 
   | tbase b (A B: assn)
-          (HI: ∀ m, A m → ∀ m', sem_base m b m' → I m')
-    : triple (A) (pbase b) (λ m', ∃ m, A m ∧ sem_base m b m') (B)
+    : triple (λ m, ∀ m', sem_base m b m' → A m' ∧ I m')
+             (pbase b) (A) (B)
 
   | tseq p1 p2 (A1 A2 A3 B: assn)
          (P1: triple A1 p1 A2 B)
@@ -200,14 +200,14 @@ Section Toy.
       | [ |- valid ?n _ _ _ _ ] => eapply valid_le
     end; [apply H|]; try omega.
 
-  Lemma valid_base n b (A B: assn)
-    (HI: ∀ m, A m → ∀ m', sem_base m b m' → I m'):
-    valid n (A) (pbase b) (λ m', ∃ m, A m ∧ sem_base m b m') (B).
+  Lemma valid_base n b (A B: assn):
+    valid n (λ m, ∀ m', sem_base m b m' → A m' ∧ I m')
+          (pbase b) (A) (B).
   Proof.
     unfold valid; intros.
     step.
-    - ale SAFES. eauto.
-    - eauto using HI.
+    - ale SAFES. apply MOK, BASE.
+    - apply MOK, BASE.
   Qed.
 
   Lemma valid_seq n p1 p2 A1 A2 A3 B
