@@ -63,15 +63,15 @@ Section Toy.
 
   Inductive triple: assn → prog → assn → assn → Prop :=
 
-  | tskip (A B: assn)
-    : triple (A) (pskip) (A) (B)
+  | tskip (A: assn)
+    : triple (A) (pskip) (A) (bottom)
 
   | tbreak (B: assn)
     : triple (B) (pbreak) (bottom) (B)
 
-  | tbase b (A B: assn)
+  | tbase b (A: assn)
     : triple (λ m, ∀ m', sem_base m b m' → A m' ∧ I m')
-             (pbase b) (A) (B)
+             (pbase b) (A) (bottom)
 
   | tseq p1 p2 (A1 A2 A3 B: assn)
          (P1: triple A1 p1 A2 B)
@@ -86,10 +86,43 @@ Section Toy.
   | tloop p (A1 A2: assn)
           (P: triple A1 p A1 A2)
     : triple (A1) (ploop p) (A2) (bottom)
+
+  | tweak p (A1 A2 B A1' A2' B': assn)
+          (PRE: ∀ m, A1' m → A1 m)
+          (PST: ∀ m, A2 m → A2' m)
+          (BRK: ∀ m, B m → B' m)
+          (P: triple A1 p A2 B)
+    : triple (A1') p (A2') (B')
   .
 
-  Definition spec: Type := nat → config → Prop.
+  Require Import Setoid.
 
+  Definition assn_eq (A1 A2: assn) :=
+    ∀ m, A1 m ↔ A2 m.
+
+  Lemma assn_eq_refl: ∀ A, assn_eq A A.
+  Proof. unfold assn_eq; firstorder. Qed.
+  Lemma assn_eq_sym: ∀ A1 A2, assn_eq A1 A2 → assn_eq A2 A1.
+  Proof. unfold assn_eq; firstorder. Qed.
+  Lemma assn_eq_trans:
+    ∀ A1 A2 A3, assn_eq A1 A2 → assn_eq A2 A3 → assn_eq A1 A3.
+  Proof. unfold assn_eq; firstorder. Qed.
+
+  Add Parametric Relation : (assn) (assn_eq)
+      reflexivity proved by assn_eq_refl
+      symmetry proved by assn_eq_sym
+      transitivity proved by assn_eq_trans
+        as assn_eq_rel.
+
+  Add Parametric Morphism : (triple) with signature
+      (assn_eq ==> eq ==> assn_eq ==> assn_eq ==> iff)
+        as triple_mor.
+  Proof. unfold assn_eq. esplit; apply tweak; firstorder. Qed.
+
+  
+  (* Safety of configurations. *)
+  
+  Definition spec: Type := nat → config → Prop.
 
   Inductive safe: spec :=
   | safe0 c: safe 0 c
@@ -151,7 +184,6 @@ Section Toy.
     Qed.
   End SafeRemarks.
 
-
   Definition valid n (A1: assn) p (A2 B: assn) :=
     ∀ n' k
       (SAFES: ∀ m, A2 m → safe n' (m, pskip, k))
@@ -170,8 +202,8 @@ Section Toy.
   
   (* Soundness: triple → valid *)
   
-  Lemma valid_skip n (A B: assn):
-    valid n (A) (pskip) (A) (B).
+  Lemma valid_skip n (A: assn):
+    valid n (A) (pskip) (A) (bottom).
   Proof.
     unfold valid; intros.
     apply SAFES, MOK.
@@ -200,9 +232,9 @@ Section Toy.
       | [ |- valid ?n _ _ _ _ ] => eapply valid_le
     end; [apply H|]; try omega.
 
-  Lemma valid_base n b (A B: assn):
+  Lemma valid_base n b (A: assn):
     valid n (λ m, ∀ m', sem_base m b m' → A m' ∧ I m')
-          (pbase b) (A) (B).
+          (pbase b) (A) (bottom).
   Proof.
     unfold valid; intros.
     step.
@@ -267,6 +299,59 @@ Section Toy.
   Qed.
 
 
+  (* Completeness: safe → triple *)
+
+  Definition mgt p :=
+    ∀ k, triple
+           (λ m, ∀ n, safe n (m, p, k))
+           (p)
+           (λ m, ∀ n, safe n (m, pskip, k))
+           (bottom).
+
+  Lemma mgt_seq p1 p2
+        (MGT1: mgt p1)
+        (MGT2: mgt p2):
+    mgt (pseq p1 p2).
+  Proof.
+    unfold mgt in *; simpl. intro.
+    eapply tseq.
+    - generalize (MGT1 (kseq p2 k)).
+      clear MGT1. intro MGT1.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
 End Toy.
 
 (* 
