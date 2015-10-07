@@ -389,6 +389,21 @@ Section Toy.
       pets H1.
   Qed.
 
+  Lemma mgt_loop p
+        (MGT: mgt p):
+    mgt (ploop p).
+  Proof.
+    unfold mgt in *; simpl. intro.
+    eapply tloop.
+    generalize (MGT (kloop p k)).
+    clear MGT. intro MGT.
+    eapply tweak; eauto.
+    - simpl. intuition.
+      pets H1.
+    - simpl. intuition.
+      pets H1.
+    - firstorder.
+  Qed.
 
   Lemma key p (X: assn) (MGT: mgt p):
     (∀ m, X m → I m ∧ ∀ n, safe n (m, p, kstop)) →
