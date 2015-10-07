@@ -369,9 +369,36 @@ Section Toy.
       pets H1.
   Qed.
 
-  
+  Lemma mgt_alt p1 p2
+        (MGT1: mgt p1)
+        (MGT2: mgt p2):
+    mgt (palt p1 p2).
+  Proof.
+    unfold mgt in *; simpl. intro.
+    eapply talt.
+    - generalize (MGT1 k).
+      clear MGT1 MGT2. intro MGT.
+      eapply tweak; eauto.
+      simpl. clear. intuition.
+      pets H1.
+    - (* same proof *)
+      generalize (MGT2 k).
+      clear MGT1 MGT2. intro MGT.
+      eapply tweak; eauto.
+      simpl. clear. intuition.
+      pets H1.
+  Qed.
 
 
+  Lemma key p (X: assn) (MGT: mgt p):
+    (∀ m, X m → I m ∧ ∀ n, safe n (m, p, kstop)) →
+    triple (X) p (λ _, True) (bottom).
+  Proof.
+    unfold mgt. intros VALIDX.
+    eapply tweak; eauto.
+    intuition.
+  Qed.
+    
 
 
 
