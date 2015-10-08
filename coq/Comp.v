@@ -364,8 +364,7 @@ Section Toy.
         apply (safe_preserve (m, pbase b, k) (m', pskip, k));
           repeat (eauto; econstructor).
       }
-      intuition.
-      pets H3; assumption.
+      intuition. pets H3; assumption.
     - simpl; eauto.
     - firstorder.
   Qed.
@@ -398,14 +397,12 @@ Section Toy.
     - generalize (MGT1 k).
       clear MGT1 MGT2. intro MGT.
       eapply tweak; eauto.
-      simpl. clear. intuition.
-      pets H1.
+      simpl. intuition. pets H1.
     - (* same proof *)
       generalize (MGT2 k).
       clear MGT1 MGT2. intro MGT.
       eapply tweak; eauto.
-      simpl. clear. intuition.
-      pets H1.
+      simpl. intuition. pets H1.
   Qed.
 
   Lemma mgt_loop p
@@ -421,10 +418,8 @@ Section Toy.
       assert (∀ n, safe n (m, ploop p, k))
         by (intro; pets H1).
       pets H.
-    - simpl. intuition.
-      pets H1.
-    - simpl. intuition.
-      pets H1.
+    - simpl. intuition. pets H1.
+    - simpl. intuition. pets H1.
     - firstorder.
   Qed.
 
