@@ -329,25 +329,45 @@ Section Toy.
            (λ m, I m ∧ ∀ n, safe n (m, p, k))
            (p)
            (λ m, I m ∧ ∀ n, safe n (m, pskip, k))
-           (bottom).
+           (λ m, I m ∧ ∀ n, safe n (m, pbreak, k)).
+
+  Lemma mgt_skip:
+    mgt (pskip).
+  Proof.
+    intro.
+    eapply tweak; eauto using tskip.
+    - intros. exact H.
+    - eauto.
+    - firstorder.
+  Qed.
+
+  Lemma mgt_break:
+    mgt (pbreak).
+  Proof.
+    intro.
+    eapply tweak; eauto using tbreak.
+    - intros. exact H.
+    - firstorder.
+    - eauto.
+  Qed.
 
   Lemma mgt_base b:
     mgt (pbase b).
   Proof.
-    unfold mgt in *; simpl. intro.
-    eapply tweak; eauto.
-    constructor.
-    instantiate (1 := (λ m, I m ∧ ∀ n, safe n (m, pskip, k))).
-    simpl. intros.
-    assert (I m'). {
-      replace m' with (memof (m', pskip, k)) by reflexivity.
-      destruct H.
-      apply (safe_preserve (m, pbase b, k) (m', pskip, k));
-        repeat (eauto; econstructor).
-    }
-    intuition.
-    pets H3; assumption.
-    simpl; eauto.
+    intro.
+    eapply tweak; eauto using tbase.
+    - instantiate (1 := (λ m, I m ∧ ∀ n, safe n (m, pskip, k))).
+      simpl. intros.
+      assert (I m'). {
+        replace m' with (memof (m', pskip, k)) by reflexivity.
+        destruct H.
+        apply (safe_preserve (m, pbase b, k) (m', pskip, k));
+          repeat (eauto; econstructor).
+      }
+      intuition.
+      pets H3; assumption.
+    - simpl; eauto.
+    - firstorder.
   Qed.
  
   Lemma mgt_seq p1 p2
@@ -355,18 +375,17 @@ Section Toy.
         (MGT2: mgt p2):
     mgt (pseq p1 p2).
   Proof.
-    unfold mgt in *; simpl. intro.
+    intro.
     eapply tseq.
     - generalize (MGT1 (kseq p2 k)).
       clear MGT1 MGT2. intro MGT1.
       eapply tweak; eauto.
-      simpl. clear. intuition.
-      pets H1.
+      + simpl. intuition. pets H1.
+      + simpl. intuition. pets H1.
     - generalize (MGT2 k).
       clear MGT1 MGT2. intro MGT2.
       eapply tweak; eauto; simpl; eauto.
-      simpl. intuition.
-      pets H1.
+      simpl. intuition. pets H1.
   Qed.
 
   Lemma mgt_alt p1 p2
@@ -374,7 +393,7 @@ Section Toy.
         (MGT2: mgt p2):
     mgt (palt p1 p2).
   Proof.
-    unfold mgt in *; simpl. intro.
+    intro.
     eapply talt.
     - generalize (MGT1 k).
       clear MGT1 MGT2. intro MGT.
@@ -393,11 +412,15 @@ Section Toy.
         (MGT: mgt p):
     mgt (ploop p).
   Proof.
-    unfold mgt in *; simpl. intro.
-    eapply tloop.
+    intro.
+    eapply tweak. apply tloop.
     generalize (MGT (kloop p k)).
     clear MGT. intro MGT.
     eapply tweak; eauto.
+    - simpl. intuition.
+      assert (∀ n, safe n (m, ploop p, k))
+        by (intro; pets H1).
+      pets H.
     - simpl. intuition.
       pets H1.
     - simpl. intuition.
@@ -405,65 +428,29 @@ Section Toy.
     - firstorder.
   Qed.
 
-  Lemma key p (X: assn) (MGT: mgt p):
+  Lemma key0: ∀ p, mgt p.
+  Proof.
+    induction p.
+    - eauto using mgt_skip.
+    - eauto using mgt_break.
+    - eauto using mgt_base.
+    - eauto using mgt_seq.
+    - eauto using mgt_alt.
+    - eauto using mgt_loop.
+  Qed.
+
+  Lemma key1 p (X: assn) (MGT: mgt p):
     (∀ m, X m → I m ∧ ∀ n, safe n (m, p, kstop)) →
-    triple (X) p (λ _, True) (bottom).
+    triple (X) p (λ _, True) (λ _, True).
   Proof.
     unfold mgt. intros VALIDX.
     eapply tweak; eauto.
     intuition.
   Qed.
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  Theorem completeness p (X: assn):
+    (∀ m, X m → I m ∧ ∀ n, safe n (m, p, kstop)) →
+    triple (X) p (λ _, True) (λ _, True).
+  Proof. eauto using key0, key1. Qed.
   
 End Toy.
-
-(* 
-Notation "n \ B \ R ⊨ {{ P }} S {{ Q }}" :=
-  (valid n B%L R%L P%L S Q%L)
-  (at level 74, R at next level, B at next level,
-  format "n \  B \  R  ⊨  '[' {{  P  }} '/'  S  '/' {{  Q  }} ']'").
-*)
-(* 
-  Lemma safe_determ p k p' k'
-        (DETERM: ∀ m c, (m, p, k) ↦ c → c = (m, p', k')):
-    ∀ m, (∀ n, safe n (m, p', k')) → (∀ n, safe n (m, p, k)).
-  Proof.
-    destruct n; [apply safe0 | apply safeN].
-    intros.
-    replace c' with (m, p', k').
-    now eauto.
-    symmetry; eauto.
-  Qed.
-  *)  
- 
