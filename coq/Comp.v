@@ -302,14 +302,10 @@ Section Toy.
     triple (A1) (p) (A2) (B) →
     ∀ n, valid n (A1) (p) (A2) (B).
   Proof.
-    induction 1; intros.
-    - eauto using valid_skip.
-    - eauto using valid_break.
-    - eauto using valid_base.
-    - eauto using valid_seq.
-    - eauto using valid_alt.
-    - eauto using valid_loop.
-    - eauto using valid_weak.
+    induction 1; intros;
+    eauto using valid_skip, valid_break, valid_base,
+                valid_seq, valid_alt, valid_loop,
+                valid_weak.
   Qed.
 
 
@@ -425,13 +421,9 @@ Section Toy.
 
   Lemma key0: ∀ p, mgt p.
   Proof.
-    induction p.
-    - eauto using mgt_skip.
-    - eauto using mgt_break.
-    - eauto using mgt_base.
-    - eauto using mgt_seq.
-    - eauto using mgt_alt.
-    - eauto using mgt_loop.
+    induction p;
+    eauto using mgt_skip, mgt_break, mgt_base,
+                mgt_seq, mgt_alt, mgt_loop.
   Qed.
 
   Lemma key1 p (X: assn) (MGT: mgt p):
