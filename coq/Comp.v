@@ -95,32 +95,6 @@ Section Toy.
     : triple (A1') p (A2') (B')
   .
 
-  Require Import Setoid.
-
-  Definition assn_eq (A1 A2: assn) :=
-    ∀ m, A1 m ↔ A2 m.
-
-  Lemma assn_eq_refl: ∀ A, assn_eq A A.
-  Proof. unfold assn_eq; firstorder. Qed.
-  Lemma assn_eq_sym: ∀ A1 A2, assn_eq A1 A2 → assn_eq A2 A1.
-  Proof. unfold assn_eq; firstorder. Qed.
-  Lemma assn_eq_trans:
-    ∀ A1 A2 A3, assn_eq A1 A2 → assn_eq A2 A3 → assn_eq A1 A3.
-  Proof. unfold assn_eq; firstorder. Qed.
-
-  Add Parametric Relation : (assn) (assn_eq)
-      reflexivity proved by assn_eq_refl
-      symmetry proved by assn_eq_sym
-      transitivity proved by assn_eq_trans
-        as assn_eq_rel.
-
-(*
-  Add Parametric Morphism : (triple) with signature
-      (assn_eq ==> eq ==> assn_eq ==> assn_eq ==> iff)
-        as triple_mor.
-  Proof. unfold assn_eq. esplit. apply tweak; firstorder. Qed.
-*)
-
   
   (* Safety of configurations. *)
   
