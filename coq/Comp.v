@@ -6,6 +6,9 @@ Section Toy.
   Parameter base: Type.
   Parameter sem_base: mem → base → mem → Prop.
 
+
+  (* Syntax *)
+
   Inductive prog: Type :=
   | pskip
   | pbreak
@@ -24,6 +27,9 @@ Section Toy.
   .
 
   Parameter pmap: nat -> option prog.
+
+
+  (* Semantics *)
 
   Definition config: Type :=
     (mem * prog * cont) %type.
@@ -62,10 +68,13 @@ Section Toy.
 
   where "a ↦ b" := (step a b).
 
+
+  (* Assertions and derivability *)
+  
   Definition assn: Type :=
     mem → Prop.
-  Definition bottom: assn :=
-    λ _, False.
+  Definition bottom: assn := λ _, False.
+  Definition top: assn    := λ _, True.
 
   Inductive pspec: Type :=
     mk_pspec (Z: Type) (SPEC: Z → (assn * assn)).
@@ -102,7 +111,7 @@ Section Toy.
              (pbase b) (A) (bottom)
 
   | tcall C pn ps z (A1 A2: assn)
-          (LOOK: C pn = Some ps)
+          (LOOKS: C pn = Some ps)
           (SPEC: pspec_spec ps z = (A1, A2))
     : triple C (A1) (pcall pn) (A2) (bottom)
 
@@ -132,12 +141,30 @@ Section Toy.
                            (LOOKS: C' pn = Some ps),
                  ∀ z A1 A2,
                    pspec_spec ps z = (A1, A2) →
-                   triple (C ∪ C') (A1) (p) (A2) (bottom)
+                   triple (C ∪ C') (A1) (p) (A2) (top)
           )
           p (A1 A2 B: assn)
           (P: triple (C ∪ C') (A1) (p) (A2) (B))
     : triple C (A1) (p) (A2) (B)
   .
+
+  Lemma ctxt_extensionality:
+    ∀ C p A1 A2 B
+      (TRIPLE: triple C A1 p A2 B)
+      C' (CEQ: ∀ pn, C pn = C' pn),
+    triple C' A1 p A2 B.
+  Proof.
+    induction 1; econstructor; eauto.
+    - (* tcall *) congruence.
+    - (* tctxt *)
+      assert (U: ∀ pn, (C ∪ C') pn = (C'0 ∪ C') pn). {
+        intros; unfold ctxt_union.
+        case_eq (C pn); case_eq (C'0 pn);
+        intros; congruence.
+      }
+      eapply (tctxt _ C'); intros;
+      eauto using H, IHTRIPLE.
+  Qed.
 
   
   (* Safety of configurations. *)
@@ -222,7 +249,7 @@ Section Toy.
   Definition valid_ctxt n (C: ctxt) :=
     ∀ pn p ps (LOOKP: pmap pn = Some p) (LOOKS: C pn = Some ps),
     ∀ z A1 A2 (SPEC: pspec_spec ps z = (A1, A2)),
-      valid n (A1) p (A2) (bottom).
+      valid n (A1) p (A2) (top).
 
   Lemma valid_ctxt_extend n C C'
         (COK: valid_ctxt n C)
@@ -230,7 +257,7 @@ Section Toy.
                          (LOOKS: C' pn = Some ps),
                ∀ z A1 A2 (SPEC: pspec_spec ps z = (A1, A2)),
                ∀ n, valid_ctxt n (C ∪ C') →
-                    valid (1 + n) (A1) (p) (A2) (bottom)
+                    valid (1 + n) (A1) (p) (A2) (top)
         ):
     valid_ctxt n (C ∪ C').
   Proof.
@@ -307,7 +334,7 @@ Section Toy.
       step.
       eapply VALIDC; (omega || eauto).
       + intros. step. ale SAFES; assumption.
-      + firstorder.
+      + intros. step.
     - (* pn is invalid *) step. congruence.
   Qed.
 
@@ -378,30 +405,40 @@ Section Toy.
 
   (* Completeness: safe → triple *)
 
-  Ltac pets H := (* step, inverted *)
-    match goal with
-      | [ |- safe ?n _ ] =>
-        generalize (H (S n)); clear H;
-        inversion 1 as [|n__ c__ SAFE];
-        subst; apply SAFE;
-        [ constructor | assumption ]
-    end.
-      
+  Definition mga p k := λ m, I m ∧ ∀ n, safe n (m, p, k).
+  Definition mgpspec p :=
+    mk_pspec (cont) (λ k, (mga p k, mga pskip k)).
+  Definition mgc: ctxt :=
+    λ pn, match pmap pn with
+            | Some p => Some (mgpspec p)
+            | None => None
+          end.
+
+  Lemma mga_step p p' k k' m m'
+        (MGA: mga p k m)
+        (STEP: (m, p, k) ↦ (m', p', k'))
+        (INV: I m'):
+    mga p' k' m'.
+  Proof.
+    unfold mga in *; intuition.
+    generalize (H0 (S n)).
+    inversion 1; subst.
+    apply SAFE; assumption.
+  Qed.
+
+  Ltac pets H :=
+    eapply (mga_step _ _ _ _ _ _ H);
+    (econstructor || eauto using (proj1 H)).
+
   Definition mgt p :=
-    ∀ k, triple
-           (λ m, I m ∧ ∀ n, safe n (m, p, k))
-           (p)
-           (λ m, I m ∧ ∀ n, safe n (m, pskip, k))
-           (λ m, I m ∧ ∀ n, safe n (m, pbreak, k)).
+    ∀ k, triple mgc (mga p k) (p) (mga pskip k) (mga pbreak k).
 
   Lemma mgt_skip:
     mgt (pskip).
   Proof.
     intro.
     eapply tweak; eauto using tskip.
-    - intros. exact H.
-    - eauto.
-    - firstorder.
+    firstorder.
   Qed.
 
   Lemma mgt_break:
@@ -409,9 +446,7 @@ Section Toy.
   Proof.
     intro.
     eapply tweak; eauto using tbreak.
-    - intros. exact H.
-    - firstorder.
-    - eauto.
+    firstorder.
   Qed.
 
   Lemma mgt_base b:
@@ -419,19 +454,31 @@ Section Toy.
   Proof.
     intro.
     eapply tweak; eauto using tbase.
-    - instantiate (1 := (λ m, I m ∧ ∀ n, safe n (m, pskip, k))).
-      simpl. intros.
+    - simpl. intros.
       assert (I m'). {
         replace m' with (memof (m', pskip, k)) by reflexivity.
         destruct H.
         apply (safe_preserve (m, pbase b, k) (m', pskip, k));
           repeat (eauto; econstructor).
       }
-      intuition. pets H3; assumption.
-    - simpl; eauto.
+      intuition. pets H. assumption.
     - firstorder.
   Qed.
- 
+
+  Lemma mgt_call pn (PNOK: pmap pn ≠ None):
+    mgt (pcall pn).
+  Proof.
+    intro.
+    case_eq (pmap pn); [intros p PN | congruence].
+    eapply tweak.
+    eapply tcall with (ps := mgpspec p) (z := kcall k).
+    - unfold mgc; rewrite PN; reflexivity.
+    - reflexivity.
+    - intros ? MGA; pets MGA; assumption.
+    - intros ? MGA; pets MGA; assumption.
+    - firstorder.
+  Qed.
+
   Lemma mgt_seq p1 p2
         (MGT1: mgt p1)
         (MGT2: mgt p2):
@@ -442,12 +489,12 @@ Section Toy.
     - generalize (MGT1 (kseq p2 k)).
       clear MGT1 MGT2. intro MGT1.
       eapply tweak; eauto.
-      + simpl. intuition. pets H1.
-      + simpl. intuition. pets H1.
+      + intros ? MGA; pets MGA.
+      + intros ? MGA; pets MGA.
     - generalize (MGT2 k).
       clear MGT1 MGT2. intro MGT2.
       eapply tweak; eauto; simpl; eauto.
-      simpl. intuition. pets H1.
+      intros ? MGA; pets MGA.
   Qed.
 
   Lemma mgt_alt p1 p2
@@ -460,12 +507,12 @@ Section Toy.
     - generalize (MGT1 k).
       clear MGT1 MGT2. intro MGT.
       eapply tweak; eauto.
-      simpl. intuition. pets H1.
+      simpl. intros ? MGA. pets MGA.
     - (* same proof *)
       generalize (MGT2 k).
       clear MGT1 MGT2. intro MGT.
       eapply tweak; eauto.
-      simpl. intuition. pets H1.
+      intros ? MGA; pets MGA.
   Qed.
 
   Lemma mgt_loop p
@@ -478,33 +525,57 @@ Section Toy.
     clear MGT. intro MGT.
     eapply tweak; eauto.
     - simpl. intuition.
-      assert (∀ n, safe n (m, ploop p, k))
-        by (intro; pets H1).
-      pets H.
-    - simpl. intuition. pets H1.
-    - simpl. intuition. pets H1.
+      assert (MGA: mga (ploop p) k m)
+        by (pets H).
+      pets MGA.
+    - intros ? MGA; pets MGA.
+    - intros ? MGA; pets MGA.
     - firstorder.
   Qed.
 
-  Lemma key0: ∀ p, mgt p.
+  Fixpoint defined p :=
+    match p with
+      | pseq p1 p2 => defined p1 ∧ defined p2
+      | palt p1 p2 => defined p1 ∧ defined p2
+      | ploop p => defined p
+      | pcall pn => pmap pn <> None
+      | _ => True
+    end.
+
+  Lemma key0: ∀ p, defined p → mgt p.
   Proof.
-    induction p;
+    induction p; simpl; intuition;
     eauto using mgt_skip, mgt_break, mgt_base,
-                mgt_seq, mgt_alt, mgt_loop.
+                mgt_call, mgt_seq, mgt_alt,
+                mgt_loop.
   Qed.
 
-  Lemma key1 p (X: assn) (MGT: mgt p):
+  Theorem completeness p (X: assn)
+          (DEFM: ∀ pn p, pmap pn = Some p → defined p)
+          (DEFP: defined p):
     (∀ m, X m → I m ∧ ∀ n, safe n (m, p, kstop)) →
-    triple (X) p (λ _, True) (λ _, True).
+    triple (λ _, None) (X) p (top) (top).
   Proof.
     unfold mgt. intros VALIDX.
-    eapply tweak; eauto.
-    intuition.
+    apply tctxt with (C' := mgc).
+    - intros ? ? ? ? ?.
+      unfold mgc in LOOKS.
+      rewrite LOOKP in LOOKS.
+      injection LOOKS.
+      intros ? ? ? ? SPEC; subst.
+      simpl in SPEC; injection SPEC;
+      clear SPEC; intros; subst.
+      apply ctxt_extensionality with (C := mgc).
+      eapply tweak. apply key0.
+      eauto using DEFM.
+      eauto. eauto. firstorder.
+      unfold ctxt_union. intros; simpl.
+      reflexivity.
+    - apply ctxt_extensionality with (C := mgc).
+      eapply tweak. apply key0.
+      assumption. eauto. firstorder. firstorder.
+      unfold ctxt_union. intros; simpl.
+      reflexivity.
   Qed.
-    
-  Theorem completeness p (X: assn):
-    (∀ m, X m → I m ∧ ∀ n, safe n (m, p, kstop)) →
-    triple (X) p (λ _, True) (λ _, True).
-  Proof. eauto using key0, key1. Qed.
   
 End Toy.
