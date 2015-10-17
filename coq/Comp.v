@@ -5,10 +5,11 @@ Section Toy.
   Parameter mem: Type.
   Parameter base: Type.
   Parameter sem_base: mem → base → mem → Prop.
-  
+
   Inductive prog: Type :=
   | pskip
   | pbreak
+  | pcall (n: nat): prog
   | pbase (b: base): prog
   | pseq (p1 p2: prog): prog
   | palt (p1 p2: prog): prog
@@ -17,9 +18,12 @@ Section Toy.
 
   Inductive cont: Type :=
   | kstop
+  | kcall (k: cont)
   | kseq (p: prog) (k: cont)
   | kloop (p: prog) (k: cont)
   .
+
+  Parameter pmap: nat -> option prog.
 
   Definition config: Type :=
     (mem * prog * cont) %type.
@@ -31,6 +35,11 @@ Section Toy.
 
   | sbase b m1 m2 k (BASE: sem_base m1 b m2)
     : (m1, pbase b, k) ↦ (m2, pskip, k)
+
+  | scall1 pn m p k (LOOK: pmap pn = Some p)
+    : (m, pcall pn, k) ↦ (m, p, kcall k)
+  | scall2 m k
+    : (m, pskip, kcall k) ↦ (m, pskip, k)
 
   | sseq1 p1 p2 m k
     : (m, pseq p1 p2, k) ↦ (m, p1, kseq p2 k)
@@ -58,41 +67,76 @@ Section Toy.
   Definition bottom: assn :=
     λ _, False.
 
+  Inductive pspec: Type :=
+    mk_pspec (Z: Type) (SPEC: Z → (assn * assn)).
+  Definition ctxt: Type :=
+    nat → option pspec.
+
+  Definition ctxt_union (C1 C2: ctxt): ctxt :=
+    λ pn, match C1 pn with
+           | None => C2 pn
+           | ospec => ospec
+         end.
+  Notation "C1 ∪ C2" := (ctxt_union C1 C2) (at level 70).
+
+  Definition pspec_ty (ps: pspec): Type := 
+    let (ty, _) := ps in ty.
+  Definition pspec_spec ps (z: pspec_ty ps) :=
+    match ps return (pspec_ty ps) → (assn * assn) with
+        mk_pspec _ spec => spec
+    end z.
+
   (* I is an invariant *)
   Parameter I: assn.
 
-  Inductive triple: assn → prog → assn → assn → Prop :=
+  Inductive triple: ctxt → assn → prog → assn → assn → Prop :=
 
-  | tskip (A: assn)
-    : triple (A) (pskip) (A) (bottom)
+  | tskip C (A: assn)
+    : triple C (A) (pskip) (A) (bottom)
 
-  | tbreak (B: assn)
-    : triple (B) (pbreak) (bottom) (B)
+  | tbreak C (B: assn)
+    : triple C (B) (pbreak) (bottom) (B)
 
-  | tbase b (A: assn)
-    : triple (λ m, ∀ m', sem_base m b m' → A m' ∧ I m')
+  | tbase C b (A: assn)
+    : triple C (λ m, ∀ m', sem_base m b m' → A m' ∧ I m')
              (pbase b) (A) (bottom)
 
-  | tseq p1 p2 (A1 A2 A3 B: assn)
-         (P1: triple A1 p1 A2 B)
-         (P2: triple A2 p2 A3 B)
-    : triple (A1) (pseq p1 p2) (A3) (B)
+  | tcall C pn ps z (A1 A2: assn)
+          (LOOK: C pn = Some ps)
+          (SPEC: pspec_spec ps z = (A1, A2))
+    : triple C (A1) (pcall pn) (A2) (bottom)
 
-  | talt p1 p2 (A1 A2 B: assn)
-         (P1: triple A1 p1 A2 B)
-         (P2: triple A1 p2 A2 B)
-    : triple (A1) (palt p1 p2) (A2) (B)
+  | tseq C p1 p2 (A1 A2 A3 B: assn)
+         (P1: triple C (A1) (p1) (A2) (B))
+         (P2: triple C (A2) (p2) (A3) (B))
+    : triple C (A1) (pseq p1 p2) (A3) (B)
 
-  | tloop p (A1 A2: assn)
-          (P: triple A1 p A1 A2)
-    : triple (A1) (ploop p) (A2) (bottom)
+  | talt C p1 p2 (A1 A2 B: assn)
+         (P1: triple C (A1) (p1) (A2) (B))
+         (P2: triple C (A1) (p2) (A2) (B))
+    : triple C (A1) (palt p1 p2) (A2) (B)
 
-  | tweak p (A1 A2 B A1' A2' B': assn)
-          (P: triple A1 p A2 B)
+  | tloop C p (A1 A2: assn)
+          (P: triple C (A1) (p) (A1) (A2))
+    : triple C (A1) (ploop p) (A2) (bottom)
+
+  | tweak C p (A1 A2 B A1' A2' B': assn)
+          (P: triple C (A1) (p) (A2) (B))
           (PRE: ∀ m, A1' m → A1 m)
           (PST: ∀ m, A2 m → A2' m)
           (BRK: ∀ m, B m → B' m)
-    : triple (A1') p (A2') (B')
+    : triple C (A1') p (A2') (B')
+
+  | tctxt C C'
+          (C'OK: ∀ pn ps p (LOOKP: pmap pn = Some p)
+                           (LOOKS: C' pn = Some ps),
+                 ∀ z A1 A2,
+                   pspec_spec ps z = (A1, A2) →
+                   triple (C ∪ C') (A1) (p) (A2) (bottom)
+          )
+          p (A1 A2 B: assn)
+          (P: triple (C ∪ C') (A1) (p) (A2) (B))
+    : triple C (A1) (p) (A2) (B)
   .
 
   
@@ -175,6 +219,40 @@ Section Toy.
     apply VALID; (omega || eauto).
   Qed.
 
+  Definition valid_ctxt n (C: ctxt) :=
+    ∀ pn p ps (LOOKP: pmap pn = Some p) (LOOKS: C pn = Some ps),
+    ∀ z A1 A2 (SPEC: pspec_spec ps z = (A1, A2)),
+      valid n (A1) p (A2) (bottom).
+
+  Lemma valid_ctxt_extend n C C'
+        (COK: valid_ctxt n C)
+        (C'OK: ∀ pn ps p (LOOKP: pmap pn = Some p)
+                         (LOOKS: C' pn = Some ps),
+               ∀ z A1 A2 (SPEC: pspec_spec ps z = (A1, A2)),
+               ∀ n, valid_ctxt n (C ∪ C') →
+                    valid (1 + n) (A1) (p) (A2) (bottom)
+        ):
+    valid_ctxt n (C ∪ C').
+  Proof.
+    induction n as [n IND] using lt_wf_rec.
+    unfold valid_ctxt, ctxt_union.
+    intros ? ? ? ?. case_eq (C pn).
+    - (* when pn is in C *) 
+      intro ps'; intros.
+      replace ps' with ps in H by congruence.
+      eapply COK; eauto.
+    - (* when pn is in C' *)
+      intros.
+      destruct n.
+      + unfold valid; intros.
+        replace n' with 0 by omega.
+        now apply safe0.
+      + eapply C'OK; eauto.
+        eapply IND; eauto.
+        unfold valid_ctxt in *.
+        eauto using valid_le, COK.
+  Qed.
+
   
   (* Soundness: triple → valid *)
   
@@ -216,6 +294,21 @@ Section Toy.
     step.
     - ale SAFES. apply MOK, BASE.
     - apply MOK, BASE.
+  Qed.
+
+  Lemma valid_call n C pn ps z A1 A2
+        (VALIDC: valid_ctxt n C)
+        (LOOKS: C pn = Some ps)
+        (SPEC: pspec_spec ps z = (A1, A2)):
+    valid (1 + n) (A1) (pcall pn) (A2) (bottom).
+  Proof.
+    case_eq (pmap pn); unfold valid; intros.
+    - (* pn is a valid program reference *)
+      step.
+      eapply VALIDC; (omega || eauto).
+      + intros. step. ale SAFES; assumption.
+      + firstorder.
+    - (* pn is invalid *) step. congruence.
   Qed.
 
   Lemma valid_seq n p1 p2 A1 A2 A3 B
@@ -272,14 +365,14 @@ Section Toy.
     apply P; (omega || eauto).
   Qed.
 
-  Theorem soundness A1 p A2 B:
-    triple (A1) (p) (A2) (B) →
-    ∀ n, valid n (A1) (p) (A2) (B).
+  Theorem soundness C A1 p A2 B:
+    triple C (A1) (p) (A2) (B) →
+    ∀ n, valid_ctxt n C → valid (1 + n) (A1) (p) (A2) (B).
   Proof.
     induction 1; intros;
     eauto using valid_skip, valid_break, valid_base,
-                valid_seq, valid_alt, valid_loop,
-                valid_weak.
+                valid_call, valid_seq, valid_alt,
+                valid_loop, valid_weak, valid_ctxt_extend.
   Qed.
 
 
