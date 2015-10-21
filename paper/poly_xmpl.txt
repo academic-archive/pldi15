@@ -1,0 +1,89 @@
+We consider the following assignment:
+
+	x = x + 1       // where x < 0
+
+and apply the polynomial increment rule,
+using first, the shift, then the projection.
+
+___________________________________________________________________________
+Example 1: Linear case.
+
+  # is the box I use in poly.tex
+
++ Part 1, weakening + shift, remark that in
+  the definition, of the shift, only indices
+  with boxes inside are modified.
+
+       Initial    Weakening   Shift
+       potential  (no logic)  (details below)
+  1    0          0           0
+[0,x]  0         -1          -1
+[x,0]  1          1           1
+[0,1]  0          0           0
+[1,0]  0          0           0
+[#,0]  -          -           1
+[0,#]  -          -           1
+
+                 ___ / i(#,z) + i(x,z) \ / i(z,#) + i(z,x) \      i(z,#)
+q'[0,#] = q[0,x] | | \     i(#,z)      / \     i(z,#)      /  (-1)
+                  z
+        = -1 . -1
+        = 1
+
+Because only the factor with z=0 gives -1, since i(z,#)=1 and
+0 choose 0 = 1 choose 1 = 1.
+
+                 ___ / i(#,z) + i(x,z) \ / i(z,#) + i(z,x) \      i(z,#)
+q'[#,0] = q[x,0] | | \     i(#,z)      / \     i(z,#)      /  (-1)
+                  z
+        = 1 . 1
+        = 1
+
+
++ Part 2, projection + relax
+
+
+       Shift      Projection       Relax       DONE!
+       potential  (details below)  (x <= 0)
+  1    0          0                1
+[0,x] -1         -1                0
+[x,0]  1          1                1
+[0,1]  0          1                0
+[1,0]  0          0                0
+[#,0]  1          -                -
+[0,#]  1          -                -
+
+The only index that has non-trivial developments is
+[0,1] (all the others have only one development that
+leaves them unchanged). [0,1] can be split in three
+ways:
+	1. P(#,0) + P(0,#)   (the interesting one)
+	2. P(#,x) + P(x,#)
+	3. P(#,1) + P(1,#)
+
+thus:
+	q'[0,1] = q1[0,1] + q2[0,1] + q3[0,1]
+
+where q1,q2,q3 are constrained to satisfy:
+
+                          ___ / i(#,z) + i(z,#) \
+q[0,#] = q[#,0] = q1[0,1] | | \      i(#,z)     /
+                           z
+
+                          ___ / i(#,z) + i(z,#) \
+q[x,#] = q[#,x] = q2[0,1] | | \      i(#,z)     /
+                           z
+
+                          ___ / i(#,z) + i(z,#) \
+q[1,#] = q[#,1] = q3[0,1] | | \      i(#,z)     /
+                           z
+
+because [0,#] [#,0] [x,#] ... [#,1] all project to the
+[0,1] indice according to the paper definitions.
+
+The above three equations are satisfied by taking
+q2=q3=0 and q1=1.
+
+So we finally have q'[0,1] = 1, and all the others
+unchanged.  After the projection, indices with #
+disappeared, so I marked them with -.
