@@ -1,0 +1,13 @@
+# If we delete m+=1, we don't find a bound
+# unless m=0 goes away, this is a bug!
+#
+# This is because of the stupid logic.
+# It infers false in the inner loop.
+#
+
+m=0;
+while n>0
+  ( if *   ( m+=1; (1) )
+    else   while m>0 ( m-=1; (1) )
+  ; n-=1
+  )

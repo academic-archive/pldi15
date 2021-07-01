@@ -1,0 +1,6 @@
+loop (
+	assert x > 0;
+	assert y > 0;
+	x -= 2
+#	y += x
+)

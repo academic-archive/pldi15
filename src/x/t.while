@@ -1,0 +1,20 @@
+# while n > 1
+#   ( if *
+#       ( s += 1; (1) )
+#     else
+#       while s > 0
+#         ( s -= 1; (1) )
+#   ; assert n > 1
+#   ; n -= 1
+#   )
+# ; s += 1
+
+c=0;
+while c<n
+  ( assert c>=0
+  ; d=c
+  ; while d<m
+      d+=1
+  ; assert c<n
+  ; c+=1
+  )
